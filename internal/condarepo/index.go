@@ -12,6 +12,15 @@ import (
 )
 
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, subdir string) {
+	// Remote-owned (or unowned) subdirs are answered from upstream; a local
+	// owner, or an upstream outage, falls through to the local composition.
+	served, remoteErr := s.serveRemoteIndex(w, r, p, feed, subdir)
+	if served {
+		return
+	}
+	if remoteErr != nil {
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	// A whole subdir is a single ownership unit. Never union sources by filename.
@@ -38,6 +47,11 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		return
 	}
 	if len(entries) > 4096 {
+		failure(w, artifact.ErrUnavailable)
+		return
+	}
+	if len(entries) == 0 && remoteErr != nil {
+		w.Header().Del("X-Kuvryn-Cache")
 		failure(w, artifact.ErrUnavailable)
 		return
 	}
@@ -86,7 +100,7 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 			return
 		}
 		m, err := parseMetadata(data)
-		if err != nil || m.Subdir != subdir || m.Name+"-"+m.Version+"-"+m.Build+".tar.bz2" != x.filename {
+		if err != nil || m.Subdir != subdir || m.Name+"-"+m.Version+"-"+m.Build+remoteExt(x.filename) != x.filename {
 			failure(w, artifact.ErrUnavailable)
 			return
 		}

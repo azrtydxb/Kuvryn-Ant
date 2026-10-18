@@ -28,10 +28,10 @@ func validSubdir(s string) bool {
 	return false
 }
 func validFilename(s string) bool {
-	if len(s) > 240 || !strings.HasSuffix(s, ".tar.bz2") {
+	if len(s) > 240 || !strings.HasSuffix(s, ".tar.bz2") && !strings.HasSuffix(s, ".conda") {
 		return false
 	}
-	p := strings.Split(strings.TrimSuffix(s, ".tar.bz2"), "-")
+	p := strings.Split(strings.TrimSuffix(strings.TrimSuffix(s, ".tar.bz2"), ".conda"), "-")
 	return len(p) >= 3 && namePattern.MatchString(strings.Join(p[:len(p)-2], "-")) && partPattern.MatchString(p[len(p)-2]) && partPattern.MatchString(p[len(p)-1])
 }
 
