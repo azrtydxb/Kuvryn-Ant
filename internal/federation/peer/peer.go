@@ -179,7 +179,7 @@ func (h *Handler) verifySignature(r *http.Request, m Member, body []byte) string
 	if len(nonce) < 16 || len(nonce) > 64 {
 		return "signature_invalid"
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(sig)
+	raw, err := DecodeCanonical(sig)
 	if err != nil || len(raw) != ed25519.SignatureSize || !ed25519.Verify(m.SigningKey, signingString(r.Method, r.URL.RequestURI(), member, ts, nonce, body), raw) {
 		return "signature_invalid"
 	}

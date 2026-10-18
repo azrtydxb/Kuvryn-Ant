@@ -520,6 +520,9 @@ func TestFederationMembershipScenarios(t *testing.T) {
 		t.Fatalf("authority renewal: %v", err)
 	}
 	g5 := alpha.document(5)
+	// The authority nudges asynchronously: keep gamma unreachable inbound so a
+	// late nudge cannot deliver generation 5 before the rejection checks.
+	gamma.proxy.set(faultDrop)
 	gamma.restart()
 	tampered := g5
 	tampered.Members = append([]federation.Member(nil), g5.Members...)
@@ -571,6 +574,7 @@ func TestFederationMembershipScenarios(t *testing.T) {
 	if err := gamma.svc.SyncOnce(ctx); err != nil || gamma.generation() != 5 {
 		t.Fatalf("gamma sync after rejections: %v (gen %d)", err, gamma.generation())
 	}
+	gamma.proxy.set(faultPass)
 
 	// --- remove: the revoked member is refused everywhere ---
 	if code := alpha.call("DELETE", "/api/v1/federation/members/"+beta.id+"?confirm=true", nil, nil); code != 200 {

@@ -171,6 +171,7 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 }
 
 func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) error {
+	resynced := false
 	for range 1000 {
 		st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
 		if err != nil {
@@ -187,9 +188,18 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 		if err := json.Unmarshal(raw, &h); err != nil || h.FederationID != st.FederationID {
 			return &RejectedError{Reason: "wrong_federation", Err: ErrWrongFed}
 		}
+		authority := src.InstanceID == s.trust.Load().authorityID()
+		if authority && !resynced && h.Membership.Generation == st.AppliedGeneration && h.Membership.Hash != st.AppliedHash {
+			resynced = true
+			// Same generation, another document: the chains diverged.
+			if err := s.resyncMembership(ctx, id, src); err != nil && !errors.Is(err, errNoDivergence) {
+				return err
+			}
+			continue
+		}
 		if h.Membership.Generation <= st.AppliedGeneration {
 			// Membership is current: bring policy and topology up to this source.
-			if err := s.syncPolicyFrom(ctx, id, src, h.Policy); err != nil {
+			if err := s.syncPolicyFrom(ctx, id, src, h.Policy, authority); err != nil {
 				return err
 			}
 			return s.syncTopologyFrom(ctx, id, src, h.Topology)
@@ -208,6 +218,13 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 			return &RejectedError{Reason: "generation_gap", Err: ErrGap}
 		}
 		n, err := s.applyDocuments(ctx, docs.Documents, src.Name, false)
+		if err != nil && authority && !resynced && isChainMismatch(err) {
+			resynced = true
+			if rerr := s.resyncMembership(ctx, id, src); rerr != nil && !errors.Is(rerr, errNoDivergence) {
+				return rerr
+			}
+			continue
+		}
 		if err != nil {
 			return err
 		}

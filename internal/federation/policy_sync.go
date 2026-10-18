@@ -140,7 +140,8 @@ func (s *Service) localPolicyHead(ctx context.Context, role string) (policyHead,
 
 // syncPolicyFrom brings the policy up to the source's head and records the
 // source's confirmation time. It returns nil when already current.
-func (s *Service) syncPolicyFrom(ctx context.Context, id peer.Identity, src Member, head policyHead) error {
+func (s *Service) syncPolicyFrom(ctx context.Context, id peer.Identity, src Member, head policyHead, authority bool) error {
+	resynced := false
 	for range 100 {
 		ps, err := loadPolicyState(ctx, s.cfg.DB, s.cfg.InstanceID)
 		if err != nil {
@@ -149,6 +150,14 @@ func (s *Service) syncPolicyFrom(ctx context.Context, id peer.Identity, src Memb
 		confirmed := time.UnixMilli(head.ConfirmedUnixMS).UTC()
 		if head.ConfirmedUnixMS <= 0 || confirmed.After(s.now()) {
 			confirmed = s.now()
+		}
+		if authority && !resynced && head.Generation == ps.Generation && ps.Generation > 0 && head.Hash != ps.Hash {
+			// Same generation, another document: the chains diverged.
+			resynced = true
+			if err := s.resyncPolicy(ctx, id, src, confirmed); err != nil && !errors.Is(err, errNoDivergence) {
+				return err
+			}
+			continue
 		}
 		if head.Generation <= ps.Generation {
 			// Current (or the source is behind us): move the confirmation
@@ -175,6 +184,13 @@ func (s *Service) syncPolicyFrom(ctx context.Context, id peer.Identity, src Memb
 			return &RejectedError{Reason: "generation_gap", Err: ErrGap}
 		}
 		n, err := s.applyPolicyDocuments(ctx, docs.Documents, src.Name, confirmed)
+		if err != nil && authority && !resynced && isChainMismatch(err) {
+			resynced = true
+			if rerr := s.resyncPolicy(ctx, id, src, confirmed); rerr != nil && !errors.Is(rerr, errNoDivergence) {
+				return rerr
+			}
+			continue
+		}
 		if err != nil {
 			return err
 		}

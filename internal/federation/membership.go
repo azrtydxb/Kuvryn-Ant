@@ -43,7 +43,7 @@ func parseRecovery(s string) (ed25519.PrivateKey, error) {
 	if !ok {
 		return nil, ErrRecoveryMismatch
 	}
-	seed, err := base64.RawURLEncoding.DecodeString(raw)
+	seed, err := peer.DecodeCanonical(raw)
 	if err != nil || len(seed) != ed25519.SeedSize {
 		return nil, ErrRecoveryMismatch
 	}

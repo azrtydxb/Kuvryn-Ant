@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 )
 
 // Protocol versions this build speaks on the federation listener.
@@ -164,7 +166,7 @@ func decodeKey(s string) (ed25519.PublicKey, error) {
 	if !ok {
 		return nil, ErrMalformed
 	}
-	b, err := base64.RawURLEncoding.DecodeString(raw)
+	b, err := peer.DecodeCanonical(raw)
 	if err != nil || len(b) != ed25519.PublicKeySize {
 		return nil, ErrMalformed
 	}
@@ -186,7 +188,7 @@ func verify(encodedKey, sig string, payload []byte) bool {
 	if err != nil {
 		return false
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(sig)
+	raw, err := peer.DecodeCanonical(sig)
 	if err != nil || len(raw) != ed25519.SignatureSize {
 		return false
 	}

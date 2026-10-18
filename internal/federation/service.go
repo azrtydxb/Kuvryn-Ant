@@ -587,3 +587,11 @@ func (s *Service) logOnce(key string, msg string, args ...any) {
 	s.logMu.Unlock()
 	s.cfg.Logger.Warn(msg, args...)
 }
+
+// authorityID is the authority instance of the applied membership.
+func (t *trust) authorityID() string {
+	if t == nil || t.doc == nil {
+		return ""
+	}
+	return t.doc.Authority.InstanceID
+}
