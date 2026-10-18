@@ -15,6 +15,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 )
 
 type Pinger interface{ Ping(context.Context) error }
@@ -80,7 +81,8 @@ func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog
 		}
 		mux.ServeHTTP(w, r)
 	})
-	s.http = &http.Server{Handler: management.WithRequestID(telemetry.Wrap(logger, func(r *http.Request) string { _, pattern := mux.Handler(r); return pattern }, handler)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError)}
+	resolve := func(r *http.Request) string { _, pattern := mux.Handler(r); return pattern }
+	s.http = &http.Server{Handler: tracing.Middleware(resolve)(management.WithRequestID(telemetry.Wrap(logger, resolve, handler))), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError)}
 	return s
 }
 

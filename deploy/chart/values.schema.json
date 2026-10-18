@@ -29,6 +29,31 @@
       "type": "integer",
       "minimum": 11
     },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tracing": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "endpoint": { "type": "string", "pattern": "^(https?://[^/@\\s]+(/.*)?)?$" },
+            "protocol": { "enum": ["http/protobuf", "grpc"] },
+            "serviceName": { "type": "string", "minLength": 1 },
+            "sampleRatio": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "auditRetention": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "retain": { "type": "string", "pattern": "^(0|[0-9]+h)$" },
+        "purgeInterval": { "type": "string", "pattern": "^[0-9]+(m|h)$" }
+      }
+    },
     "maxRequests": {
       "type": "integer",
       "minimum": 1,

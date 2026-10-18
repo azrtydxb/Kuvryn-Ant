@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/auditsink"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
@@ -94,6 +96,14 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 	}
 	if o.cfg.PublicURL != "" {
 		d.Env = append([]management.EnvSetting{{Key: "public_url", Value: o.cfg.PublicURL, Description: "Public origin of this instance (ANT_PUBLIC_URL)."}}, d.Env...)
+	}
+	var resolve storeResolver
+	if o.artifacts != nil {
+		resolve = o.artifacts.stores.Resolve
+	}
+	d.Diagnostics = func(ctx context.Context, w io.Writer) error {
+		health := func(ctx context.Context) any { return o.readiness(ctx) }
+		return diagnostics.Build(ctx, w, diagnosticsInput(o.cfg, o.pool, resolve, health, "api"))
 	}
 	if r := o.artifacts; r != nil {
 		if r.remote != nil {

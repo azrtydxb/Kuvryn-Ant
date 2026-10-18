@@ -7,6 +7,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
+	"go.opentelemetry.io/otel/attribute"
 	"io"
 	"math/big"
 	"net"
@@ -252,6 +254,16 @@ func retryable(status int) bool {
 // Fetch permits only GET/HEAD. Callers own and must close a successful response
 // body. Retries cover connection/header failures, never a partially read body.
 func (f *Fetcher) Fetch(ctx context.Context, method, target string, headers http.Header) (*http.Response, error) {
+	ctx, span := tracing.Start(ctx, "upstream fetch", attribute.String("http.request.method", method), attribute.String("server.address", f.origin.Hostname()))
+	response, err := f.fetch(ctx, method, target, headers)
+	if response != nil {
+		span.SetAttributes(attribute.Int("http.response.status_code", response.StatusCode))
+	}
+	tracing.End(span, err)
+	return response, err
+}
+
+func (f *Fetcher) fetch(ctx context.Context, method, target string, headers http.Header) (*http.Response, error) {
 	if method != "GET" && method != "HEAD" {
 		return nil, ErrPolicy
 	}

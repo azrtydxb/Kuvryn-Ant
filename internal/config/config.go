@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"io"
 	"net"
 	"os"
@@ -28,6 +29,8 @@ type Config struct {
 	MaxRequests     int
 	Retention       Retention
 	OCIMirror       OCIMirror
+	Tracing         tracing.Config
+	AuditRetention  AuditRetention
 }
 
 func Load(getenv func(string) string) (Config, error) {
@@ -68,6 +71,12 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	c.OCIMirror, err = loadOCIMirror(getenv)
 	if err != nil {
+		return Config{}, err
+	}
+	if c.Tracing, err = loadTracing(getenv); err != nil {
+		return Config{}, err
+	}
+	if c.AuditRetention, err = loadAuditRetention(getenv); err != nil {
 		return Config{}, err
 	}
 	c.Retention, err = loadRetention(getenv)

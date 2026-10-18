@@ -236,6 +236,7 @@ listStorageJobs: { body: undefined; response: StorageJobPage };
 startStorageJob: { body: StartStorageJob; response: StorageJob };
 getStorageJob: { body: undefined; response: StorageJob };
 storageJobAction: { body: undefined; response: StorageJob };
+getDiagnostics: { body: undefined; response: undefined };
 }
 export const routes = {
   "getStatus": {
@@ -711,6 +712,11 @@ export const routes = {
   "storageJobAction": {
     "path": "/api/v1/storage/migrations/{id}/{action}",
     "method": "POST",
+    "idempotent": false
+  },
+  "getDiagnostics": {
+    "path": "/api/v1/diagnostics",
+    "method": "GET",
     "idempotent": false
   }
 } as const;

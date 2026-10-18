@@ -10,21 +10,30 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/console"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 )
 
 func run(ctx context.Context, logger *slog.Logger) int { return execute(ctx, logger, nil, os.Stdout) }
 
 func execute(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
+	if len(args) > 0 && args[0] == "diagnostics" {
+		return diagnosticsCommand(ctx, logger, args[1:], output)
+	}
+	if len(args) > 0 && args[0] == "repair" {
+		return repairCommand(ctx, logger, args[1:], output)
+	}
 	if len(args) > 0 && (args[0] == "backup" || args[0] == "restore") {
 		return backupCommand(ctx, logger, args, output)
 	}
@@ -37,7 +46,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" && mode != "gc" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" && mode != "gc" || mode == "gc" && len(args) == 2 && args[1] != "--dry-run" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | backup | restore]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -49,6 +58,16 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		return 1
 	}
 	defer clear(cfg.RootKey)
+	cfg.Tracing.Version = buildVersion()
+	shutdownTracing, err := tracing.Setup(ctx, cfg.Tracing)
+	if err != nil {
+		logger.Error("tracing configuration rejected", "reason", err)
+		return 1
+	}
+	defer func() { _ = shutdownTracing(context.WithoutCancel(ctx)) }()
+	if cfg.Tracing.Enabled {
+		cfg.Database.ConnConfig.Tracer = tracing.PGTracer{}
+	}
 	pool, err := database.Open(ctx, cfg.Database)
 	if err != nil {
 		logger.Error("startup failed", "reason", err)
@@ -125,6 +144,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	}
 	defer workers.Close()
 	workers.startRetention(pool, artifacts, cfg.Retention, logger)
+	workers.startAuditPurge(pool, artifacts, cfg.AuditRetention, logger)
 	ops := newOperations(pool, artifacts, cfg)
 	ops.start(workers)
 	management.EnableStatusDetail(pool, ops.readiness)
@@ -212,8 +232,16 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	return 0
 }
 
+func buildVersion() string {
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" {
+		return bi.Main.Version
+	}
+	return "unknown"
+}
+
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	errorRing = diagnostics.NewRing(500)
+	logger := slog.New(tracing.LogHandler(diagnostics.NewHandler(slog.NewJSONHandler(os.Stderr, nil), errorRing)))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	code := execute(ctx, logger, os.Args[1:], os.Stdout)
 	stop()

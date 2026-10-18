@@ -7939,6 +7939,58 @@
           }
         }
       }
+    },
+    "/api/v1/diagnostics": {
+      "get": {
+        "operationId": "getDiagnostics",
+        "description": "Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.",
+        "responses": {
+          "200": {
+            "description": "Support bundle archive",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "Content-Disposition": {
+                "description": "Attachment file name",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/gzip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
