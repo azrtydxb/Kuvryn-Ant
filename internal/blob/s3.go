@@ -36,8 +36,8 @@ const s3MaximumParts = 10000
 // S3Config accepts any compatible S3 endpoint. HTTPClient may supply private CA
 // roots and transport limits. Plain HTTP requires an explicit opt-in. Credentials
 // are injected; this package neither reads environment secrets nor requires AWS.
-// PartSize is 5–64 MiB (default64MiB); MaxObjectSize is PartSize*10000. Transfers
-// are not resumable across process restarts. The bucket must support conditional
+// PartSize is 5–64 MiB (default64MiB); MaxObjectSize is PartSize*10000. Plain Stage
+// transfers are not resumable; StageResumable with a StateStore is. The bucket must support conditional
 // multipart completion and have application-private objects/staging namespaces.
 type S3Config struct {
 	Endpoint, Region, Bucket, Prefix string
@@ -45,6 +45,11 @@ type S3Config struct {
 	Credentials                      aws.CredentialsProvider
 	HTTPClient                       aws.HTTPClient
 	PartSize, BufferBudget           int64
+	// StateStore, when set, makes StageResumable persist multipart progress so an
+	// interrupted upload can continue after a process restart.
+	StateStore StateStore
+	// Now overrides the clock used for stale-upload decisions (tests).
+	Now func() time.Time
 }
 
 type s3API interface {
@@ -57,6 +62,8 @@ type s3API interface {
 	DeleteObject(context.Context, *s3.DeleteObjectInput, ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
 	HeadObject(context.Context, *s3.HeadObjectInput, ...func(*s3.Options)) (*s3.HeadObjectOutput, error)
 	GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+	ListParts(context.Context, *s3.ListPartsInput, ...func(*s3.Options)) (*s3.ListPartsOutput, error)
+	ListMultipartUploads(context.Context, *s3.ListMultipartUploadsInput, ...func(*s3.Options)) (*s3.ListMultipartUploadsOutput, error)
 }
 
 // S3 holds one shared upload buffer budget. Callers must abort uploads they do
@@ -140,7 +147,14 @@ func (s *S3) Stage(ctx context.Context) (Upload, error) {
 		<-s.slots
 		return nil, &CapabilityError{"multipart upload ID"}
 	}
-	return &s3Upload{store: s, ctx: ctx, key: key, id: aws.ToString(out.UploadId), buffer: make([]byte, s.config.PartSize), digest: sha256.New()}, nil
+	return &s3Upload{store: s, ctx: ctx, key: key, id: aws.ToString(out.UploadId), buffer: make([]byte, s.config.PartSize), digest: sha256.New(), createdAt: s.now()}, nil
+}
+
+func (s *S3) now() time.Time {
+	if s.config.Now != nil {
+		return s.config.Now()
+	}
+	return time.Now()
 }
 
 type s3Upload struct {
@@ -155,6 +169,9 @@ type s3Upload struct {
 	parts                                  []types.CompletedPart
 	failure                                error
 	closed                                 bool
+	// stateID, when non-empty, names the persisted resume state of this upload.
+	stateID   string
+	createdAt time.Time
 }
 
 func (u *s3Upload) Write(p []byte) (int, error) {
@@ -209,7 +226,7 @@ func (u *s3Upload) flush(ctx context.Context) error {
 	}
 	u.parts = append(u.parts, types.CompletedPart{ETag: out.ETag, PartNumber: aws.Int32(number)})
 	u.used = 0
-	return nil
+	return u.persist(ctx)
 }
 func (u *s3Upload) Abort() error { u.mu.Lock(); defer u.mu.Unlock(); return u.cleanup() }
 func (u *s3Upload) cleanup() error {
@@ -234,6 +251,11 @@ func (u *s3Upload) cleanup() error {
 	_, err := u.store.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(u.key)})
 	if err != nil {
 		failures = append(failures, s3Error(err))
+	}
+	if u.stateID != "" && u.store.config.StateStore != nil {
+		if err := u.store.config.StateStore.Delete(ctx, u.stateID); err != nil {
+			failures = append(failures, err)
+		}
 	}
 	u.buffer = nil
 	<-u.store.slots

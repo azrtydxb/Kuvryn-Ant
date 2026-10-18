@@ -32,9 +32,14 @@ type Registry struct {
 	mu     sync.Mutex
 	closed bool
 	config Config
-	stores map[string]blob.Store
+	stores map[string]blob.Store // per-backend stores keyed "backend/domain"
+	routed map[string]*routed
 	slots  chan struct{}
 	client *http.Client
+	router Router
+	s3ok   bool
+	// factories override backend construction (tests and embedding).
+	factories map[string]func(domain string) (blob.Store, error)
 }
 
 func New(c Config) (*Registry, error) {
@@ -47,11 +52,15 @@ func New(c Config) (*Registry, error) {
 	if c.Backend != "disk" && c.Backend != "s3" {
 		return nil, ErrConfiguration
 	}
-	r := &Registry{config: c, stores: map[string]blob.Store{}, slots: make(chan struct{}, 16)}
-	if c.Backend == "s3" {
-		if c.CredentialsFile == "" || c.Region == "" || c.Bucket == "" {
+	r := &Registry{config: c, stores: map[string]blob.Store{}, routed: map[string]*routed{}, slots: make(chan struct{}, 16)}
+	// S3 is also initialized for a disk deployment when fully configured, so a
+	// storage migration can target it without changing environment.
+	complete := c.CredentialsFile != "" && c.Region != "" && c.Bucket != ""
+	if c.Backend == "s3" || complete {
+		if !complete {
 			return nil, ErrConfiguration
 		}
+		r.s3ok = true
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		transport.ResponseHeaderTimeout = 15 * time.Second
 		if c.CAFile != "" {
@@ -106,6 +115,11 @@ func credentials(path string) (aws.Credentials, error) {
 	}
 	return aws.Credentials{AccessKeyID: c.AccessKeyID, SecretAccessKey: c.SecretAccessKey, SessionToken: c.SessionToken, Source: "mounted-file"}, nil
 }
+
+// Resolve returns the store for one deduplication domain. The returned store is
+// routed: every operation consults the active backend, so a completed storage
+// migration takes effect without re-resolving, and reads fall back to the
+// previous backend until its data is explicitly cleaned up.
 func (r *Registry) Resolve(ctx context.Context, domain string) (blob.Store, error) {
 	if !uuid.MatchString(domain) {
 		return nil, ErrConfiguration
@@ -118,25 +132,84 @@ func (r *Registry) Resolve(ctx context.Context, domain string) (blob.Store, erro
 	if r.closed {
 		return nil, ErrClosed
 	}
-	if s := r.stores[domain]; s != nil {
+	if s := r.routed[domain]; s != nil {
 		return s, nil
 	}
-	if len(r.stores) >= 1024 {
+	if len(r.routed) >= 1024 {
+		return nil, ErrConfiguration
+	}
+	s := &routed{r: r, domain: domain}
+	r.routed[domain] = s
+	return s, nil
+}
+
+// Backend returns the store of one specific backend ("disk" or "s3"), bypassing
+// routing. Migration uses it to address source and target independently.
+func (r *Registry) Backend(ctx context.Context, kind, domain string) (blob.Store, error) {
+	if !uuid.MatchString(domain) || (kind != "disk" && kind != "s3") {
+		return nil, ErrConfiguration
+	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.backendLocked(kind, domain)
+}
+
+func (r *Registry) backendLocked(kind, domain string) (blob.Store, error) {
+	if r.closed {
+		return nil, ErrClosed
+	}
+	key := kind + "/" + domain
+	if s := r.stores[key]; s != nil {
+		return s, nil
+	}
+	if len(r.stores) >= 2048 {
 		return nil, ErrConfiguration
 	}
 	var store blob.Store
 	var err error
-	if r.config.Backend == "disk" {
+	switch {
+	case r.factories[kind] != nil:
+		store, err = r.factories[kind](domain)
+	case kind == "disk":
 		store, err = blob.NewDisk(filepath.Join(r.config.Directory, "blobs", domain), 1<<30)
-	} else {
+	case r.s3ok:
 		store, err = r.s3(domain)
+	default:
+		err = ErrConfiguration
 	}
 	if err != nil {
 		return nil, ErrConfiguration
 	}
 	wrapped := &limited{Store: store, slots: r.slots}
-	r.stores[domain] = wrapped
+	r.stores[key] = wrapped
 	return wrapped, nil
+}
+
+// Available lists the backends this deployment is configured to use.
+func (r *Registry) Available() []string {
+	out := []string{"disk"}
+	if r.s3ok || r.factories["s3"] != nil {
+		out = append(out, "s3")
+	}
+	return out
+}
+
+// DefaultBackend is the backend named by configuration; a persisted switch
+// (see Router) takes precedence.
+func (r *Registry) DefaultBackend() string { return r.config.Backend }
+
+// SetFactory overrides how one backend's per-domain store is built. It exists
+// for tests and embedders and must be called before the first Resolve.
+func (r *Registry) SetFactory(kind string, f func(domain string) (blob.Store, error)) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.factories == nil {
+		r.factories = map[string]func(string) (blob.Store, error){}
+	}
+	r.factories[kind] = f
 }
 
 // Sixteen concurrent uploads cap application S3 part buffers at1GiB across all
@@ -167,6 +240,39 @@ func (s *limited) Delete(ctx context.Context, d blob.Digest) error {
 	}
 	return &blob.CapabilityError{Feature: "object deletion"}
 }
+func (s *limited) AbortStaleUploads(ctx context.Context, olderThan time.Duration, dryRun bool) (int, error) {
+	if x, ok := s.Store.(blob.StaleUploadAborter); ok {
+		return x.AbortStaleUploads(ctx, olderThan, dryRun)
+	}
+	return 0, nil
+}
+
+// StageResumable exposes resumable multipart uploads of the wrapped store.
+func (s *limited) StageResumable(ctx context.Context, id string) (blob.ResumableUpload, error) {
+	x, ok := s.Store.(blob.ResumableStager)
+	if !ok {
+		return nil, &blob.CapabilityError{Feature: "resumable uploads"}
+	}
+	select {
+	case s.slots <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	u, err := x.StageResumable(ctx, id)
+	if err != nil {
+		<-s.slots
+		return nil, err
+	}
+	return &resumableUpload{upload: upload{Upload: u, release: func() { <-s.slots }}, offset: u.Offset}, nil
+}
+
+type resumableUpload struct {
+	upload
+	offset func() int64
+}
+
+func (u *resumableUpload) Offset() int64 { return u.offset() }
+
 func (s *limited) List(ctx context.Context, after blob.Digest, limit int) ([]blob.Object, error) {
 	if x, ok := s.Store.(blob.Lister); ok {
 		return x.List(ctx, after, limit)

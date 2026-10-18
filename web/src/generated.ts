@@ -135,6 +135,10 @@ export type ReplicationHead = { "seq": number; "changed_at"?: string; "now": str
 export type ReplicationManifestPage = { "kind": "asset" | "tag"; "items"?: Array<ReplicationItem>; "tags"?: Array<ReplicationTagItem>; "next"?: string; "total"?: number };
 export type ReplicationChange = { "seq": number; "at": string; "kind": string; "op": string; "source_id": string; "coordinate": string; "version"?: string; "key"?: string; "asset"?: ReplicationItem; "tag"?: ReplicationTagItem; "component"?: ReplicationComponentItem };
 export type ReplicationChangePage = { "changes": Array<ReplicationChange>; "next": number; "more": boolean; "head": number; "head_at"?: string };
+export type StorageJob = { "id": string; "kind": "migrate" | "cleanup"; "from": "disk" | "s3"; "to": "disk" | "s3"; "dry_run": boolean; "state": "running" | "paused" | "failed" | "completed"; "throttle_bytes_per_second": number; "total_blobs": number; "total_bytes": number; "processed_blobs": number; "processed_bytes": number; "copied_blobs": number; "copied_bytes": number; "skipped_blobs": number; "deleted_blobs": number; "deleted_bytes": number; "failed_blobs": number; "pass": number; "last_error"?: string; "requested_by"?: string; "started_at": string; "updated_at": string; "finished_at"?: string; "switched_at"?: string };
+export type StorageJobPage = { "items": Array<StorageJob> };
+export type StorageMigrationStatus = { "active_backend": "disk" | "s3"; "previous_backend"?: "disk" | "s3"; "cleanup_pending": boolean; "available_backends": Array<"disk" | "s3">; "current_job"?: StorageJob };
+export type StartStorageJob = { "action": "migrate" | "cleanup"; "to"?: "disk" | "s3"; "dry_run": boolean; "throttle_bytes_per_second"?: number };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -227,6 +231,11 @@ getReplicationExportHead: { body: undefined; response: ReplicationHead };
 getReplicationExportManifest: { body: undefined; response: ReplicationManifestPage };
 getReplicationExportChanges: { body: undefined; response: ReplicationChangePage };
 getReplicationExportBlob: { body: undefined; response: undefined };
+getStorageMigration: { body: undefined; response: StorageMigrationStatus };
+listStorageJobs: { body: undefined; response: StorageJobPage };
+startStorageJob: { body: StartStorageJob; response: StorageJob };
+getStorageJob: { body: undefined; response: StorageJob };
+storageJobAction: { body: undefined; response: StorageJob };
 }
 export const routes = {
   "getStatus": {
@@ -677,6 +686,31 @@ export const routes = {
   "getReplicationExportBlob": {
     "path": "/api/v1/replication/export/feeds/{feed}/blobs/{digest}",
     "method": "GET",
+    "idempotent": false
+  },
+  "getStorageMigration": {
+    "path": "/api/v1/storage/migration",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listStorageJobs": {
+    "path": "/api/v1/storage/migrations",
+    "method": "GET",
+    "idempotent": false
+  },
+  "startStorageJob": {
+    "path": "/api/v1/storage/migrations",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getStorageJob": {
+    "path": "/api/v1/storage/migrations/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "storageJobAction": {
+    "path": "/api/v1/storage/migrations/{id}/{action}",
+    "method": "POST",
     "idempotent": false
   }
 } as const;

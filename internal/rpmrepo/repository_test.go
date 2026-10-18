@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
-	"golang.org/x/crypto/openpgp"
 )
 
 func (f fixture) requestAs(token, method, path string, body []byte, headers map[string]string) *httptest.ResponseRecorder {
@@ -147,10 +147,10 @@ func TestPostgres(t *testing.T) {
 	}
 	sig := f.request("GET", base+"repodata/repomd.xml.asc", nil, nil)
 	assertCode(t, sig, 200)
-	if _, err = openpgp.CheckArmoredDetachedSignature(ring, bytes.NewReader(repomd1), bytes.NewReader(sig.Body.Bytes())); err != nil {
+	if _, err = openpgp.CheckArmoredDetachedSignature(ring, bytes.NewReader(repomd1), bytes.NewReader(sig.Body.Bytes()), nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = openpgp.CheckArmoredDetachedSignature(ring, bytes.NewReader(append(repomd1[:len(repomd1):len(repomd1)], ' ')), bytes.NewReader(sig.Body.Bytes())); err == nil {
+	if _, err = openpgp.CheckArmoredDetachedSignature(ring, bytes.NewReader(append(repomd1[:len(repomd1):len(repomd1)], ' ')), bytes.NewReader(sig.Body.Bytes()), nil); err == nil {
 		t.Fatal("tampered repomd verified")
 	}
 	// The private key lives only as an encrypted secret.

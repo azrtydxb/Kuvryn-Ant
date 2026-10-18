@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/clearsign"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
@@ -28,8 +30,6 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/clearsign"
 )
 
 type fixture struct {
@@ -258,7 +258,7 @@ func verifyInRelease(kr openpgp.EntityList, inRelease []byte, now time.Time) (st
 	if block == nil {
 		return "", fmt.Errorf("no clearsigned block")
 	}
-	if _, err := openpgp.CheckDetachedSignature(kr, bytes.NewReader(block.Bytes), block.ArmoredSignature.Body); err != nil {
+	if _, err := openpgp.CheckDetachedSignature(kr, bytes.NewReader(block.Bytes), block.ArmoredSignature.Body, nil); err != nil {
 		return "", err
 	}
 	text := string(block.Plaintext)
@@ -311,7 +311,7 @@ func TestPublishSignedRepository(t *testing.T) {
 	assertCode(t, plain, 200)
 	sig := f.request("GET", base+"dists/stable/Release.gpg", nil)
 	assertCode(t, sig, 200)
-	if _, err = openpgp.CheckArmoredDetachedSignature(kr, bytes.NewReader(plain.Body.Bytes()), bytes.NewReader(sig.Body.Bytes())); err != nil {
+	if _, err = openpgp.CheckArmoredDetachedSignature(kr, bytes.NewReader(plain.Body.Bytes()), bytes.NewReader(sig.Body.Bytes()), nil); err != nil {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"Architectures: amd64\n", "Components: main\n", "Acquire-By-Hash: yes\n", "Codename: stable\n"} {
@@ -449,7 +449,7 @@ func TestTamperAndExpiry(t *testing.T) {
 	// Detached signature over a modified Release fails too.
 	rel := f.request("GET", base+"dists/stable/Release", nil).Body.Bytes()
 	sig := f.request("GET", base+"dists/stable/Release.gpg", nil).Body.Bytes()
-	if _, err := openpgp.CheckArmoredDetachedSignature(kr, bytes.NewReader(append([]byte("X"), rel...)), bytes.NewReader(sig)); err == nil {
+	if _, err := openpgp.CheckArmoredDetachedSignature(kr, bytes.NewReader(append([]byte("X"), rel...)), bytes.NewReader(sig), nil); err == nil {
 		t.Fatal("tampered Release verified")
 	}
 	// A different key does not verify.

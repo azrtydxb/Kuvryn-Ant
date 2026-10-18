@@ -316,3 +316,33 @@ func TestSweepFailsClosedWithoutLease(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+type abortingStore struct {
+	blob.Store
+	calls []bool
+	age   time.Duration
+}
+
+func (a *abortingStore) AbortStaleUploads(_ context.Context, olderThan time.Duration, dryRun bool) (int, error) {
+	a.calls = append(a.calls, dryRun)
+	a.age = olderThan
+	return 3, nil
+}
+
+func TestGCAbortsStaleMultipartUploads(t *testing.T) {
+	f := newFixture(t, Options{Grace: time.Hour, StaleUploadAge: 6 * time.Hour})
+	store := &abortingStore{Store: f.disk}
+	f.svc.Stores = func(context.Context, string) (blob.Store, error) { return store, nil }
+	ctx := context.Background()
+	rep, err := f.svc.CollectGarbage(ctx, true)
+	if err != nil || rep.StaleUploadsAborted != 3 || store.age != 6*time.Hour {
+		t.Fatalf("dry run: %+v %v age=%v", rep, err, store.age)
+	}
+	rep, err = f.svc.CollectGarbage(ctx, false)
+	if err != nil || rep.StaleUploadsAborted != 3 {
+		t.Fatalf("real run: %+v %v", rep, err)
+	}
+	if len(store.calls) < 2 || !store.calls[0] || store.calls[len(store.calls)-1] {
+		t.Fatalf("dry-run flag not propagated: %v", store.calls)
+	}
+}

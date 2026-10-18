@@ -16,6 +16,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -98,6 +99,12 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 		if r.remote != nil {
 			d.Health = r.remote.Health()
 			d.Prober = r.remote.Probe
+		}
+		d.StorageMigrator = func(instance string) *storage.Migrator {
+			if instance != r.instanceID {
+				return nil
+			}
+			return r.migrator
 		}
 		d.Retention = func(instance string) *retention.Service {
 			if instance != r.instanceID {

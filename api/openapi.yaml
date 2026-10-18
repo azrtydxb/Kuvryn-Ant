@@ -7620,6 +7620,325 @@
           }
         }
       }
+    },
+    "/api/v1/storage/migration": {
+      "get": {
+        "operationId": "getStorageMigration",
+        "description": "All storage migration endpoints require instance admin. The active blob backend, whether the previous backend still holds data awaiting cleanup, and the latest job.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageMigrationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/storage/migrations": {
+      "get": {
+        "operationId": "listStorageJobs",
+        "description": "All storage migration endpoints require instance admin. Recent migration and cleanup jobs, newest first.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageJobPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "startStorageJob",
+        "description": "All storage migration endpoints require instance admin. Starts a migration of all blobs to another backend (action migrate), or removes the retained previous backend's data (action cleanup), in the background (202). An interrupted job of the same shape is resumed instead. Copies are verified by size and SHA-256 and the active backend switches atomically only when every blob is verified; repository URLs do not change and reads fall back to the old store. dry_run copies and deletes nothing and reports exactly what a real run would do. One unfinished job at a time (409). Poll the job.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartStorageJob"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job started",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "Location": {
+                "description": "Job resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/storage/migrations/{id}": {
+      "get": {
+        "operationId": "getStorageJob",
+        "description": "All storage migration endpoints require instance admin. One job with its progress counters.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/storage/migrations/{id}/{action}": {
+      "post": {
+        "operationId": "storageJobAction",
+        "description": "All storage migration endpoints require instance admin. pause stops a running job at its next checkpoint, keeping its cursor; resume continues a paused or abandoned job in the background (202).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "action",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pause",
+                "resume"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job paused",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageJob"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Job resumed",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12308,6 +12627,242 @@
           "head_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "StorageJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "from",
+          "to",
+          "dry_run",
+          "state",
+          "throttle_bytes_per_second",
+          "total_blobs",
+          "total_bytes",
+          "processed_blobs",
+          "processed_bytes",
+          "copied_blobs",
+          "copied_bytes",
+          "skipped_blobs",
+          "deleted_blobs",
+          "deleted_bytes",
+          "failed_blobs",
+          "pass",
+          "started_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "migrate",
+              "cleanup"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "disk",
+              "s3"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "enum": [
+              "disk",
+              "s3"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "paused",
+              "failed",
+              "completed"
+            ]
+          },
+          "throttle_bytes_per_second": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_blobs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "processed_blobs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "processed_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "copied_blobs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "copied_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "skipped_blobs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "deleted_blobs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "deleted_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "failed_blobs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "pass": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "requested_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "switched_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "Totals are measured at start. For a dry run the copied and deleted counters are projections of what a real run would do. A running job whose updated_at is older than 90 seconds was abandoned and can be resumed."
+      },
+      "StorageJobPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StorageJob"
+            }
+          }
+        }
+      },
+      "StorageMigrationStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "active_backend",
+          "cleanup_pending",
+          "available_backends"
+        ],
+        "properties": {
+          "active_backend": {
+            "type": "string",
+            "enum": [
+              "disk",
+              "s3"
+            ]
+          },
+          "previous_backend": {
+            "type": "string",
+            "enum": [
+              "disk",
+              "s3"
+            ]
+          },
+          "cleanup_pending": {
+            "type": "boolean"
+          },
+          "available_backends": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "disk",
+                "s3"
+              ]
+            }
+          },
+          "current_job": {
+            "$ref": "#/components/schemas/StorageJob"
+          }
+        }
+      },
+      "StartStorageJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "dry_run"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "migrate",
+              "cleanup"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "enum": [
+              "disk",
+              "s3"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "throttle_bytes_per_second": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       }
