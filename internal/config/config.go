@@ -32,6 +32,7 @@ type Config struct {
 	OCIMirror       OCIMirror
 	Tracing         tracing.Config
 	AuditRetention  AuditRetention
+	Federation      Federation
 }
 
 func Load(getenv func(string) string) (Config, error) {
@@ -86,6 +87,9 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	c.Replication, err = loadReplicationHistory(getenv)
 	if err != nil {
+		return Config{}, err
+	}
+	if c.Federation, err = loadFederation(getenv); err != nil {
 		return Config{}, err
 	}
 	c.UpstreamCAs, err = upstreamCAs(getenv("ANT_UPSTREAM_CA_MAP_FILE"))

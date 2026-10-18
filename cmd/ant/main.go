@@ -210,6 +210,10 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	// Loopback development: let the login runtime learn its own origin.
 	browser.SetDefaultOrigin(serveCtx, publicURL)
 	clientAuth, githubOIDC := newClientAuth(pool, artifacts, browser)
+	// Federation is optional and never on the serving path (Phase 2, D1/D4).
+	fed := openFederation(ctx, pool, artifacts, cfg, publicURL, logger)
+	workers.StartFederation(fed)
+	fed.serve(serveCtx)
 	logger.Info("service listening", "address", listener.Addr().String())
 	svc := server.New(pool, cfg.MaxRequests, cfg.ShutdownTimeout, logger, func(mux *http.ServeMux) {
 		management.RegisterFeeds(mux, pool, management.NewCursorCodec(cfg.RootKey))
@@ -231,6 +235,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterClientAuth(mux, clientAuthDeps)
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
+		management.RegisterFederation(mux, pool, fed.service())
 		replicationRT.Register(mux)
 		artifacts.Register(mux)
 		browser.Register(mux)
