@@ -93,6 +93,11 @@ spec:
               value: /run/ant/s3-ca/ca.crt
             {{- end }}
             {{- end }}
+            {{- range $name, $value := .Values.extraEnv }}
+            {{- if not (hasPrefix "ANT_" $name) }}{{ fail "extraEnv names must start with ANT_" }}{{ end }}
+            - name: {{ $name | quote }}
+              value: {{ $value | quote }}
+            {{- end }}
             {{- range $name, $provider := .Values.auth }}
             {{- if $provider.existingSecret }}
             - name: {{ printf "ANT_%s_CONFIG_FILE" (upper $name) }}
