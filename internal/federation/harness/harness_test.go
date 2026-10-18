@@ -133,7 +133,8 @@ func newInstance(t *testing.T, name string) *instance {
 	in.clock = &fakeClock{}
 	in.fedURL = "https://" + in.proxy.addr()
 	in.svc, err = federation.New(federation.Config{DB: pool, Keys: in.keys, InstanceID: in.id, PublicURL: in.fedURL, ListenAddress: in.addr,
-		APIURL: "http://" + name + ".example.test", SoftwareVersion: "harness", PeerTimeout: 5 * time.Second, Logger: quiet, Now: in.clock.Now})
+		APIURL: "http://" + name + ".example.test", SoftwareVersion: "harness", PeerTimeout: 5 * time.Second, Logger: quiet, Now: in.clock.Now,
+		SearchMemberTimeout: 700 * time.Millisecond, SearchTimeout: 2 * time.Second, SearchPeerRate: 30, SearchPrincipalRate: 15})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,6 +146,7 @@ func newInstance(t *testing.T, name string) *instance {
 	management.Register(mux)
 	management.RegisterFeeds(mux, pool, management.NewCursorCodec(key))
 	management.RegisterFederation(mux, pool, in.svc)
+	management.RegisterFederationSearch(mux, pool, in.svc, management.NewCursorCodec(key))
 	management.RegisterIdentities(mux, pool)
 	in.api = httptest.NewServer(management.WithRequestID(mux))
 	doc, err := api.GetSwagger()

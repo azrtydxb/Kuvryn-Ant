@@ -86,7 +86,10 @@ type Config struct {
 	Now             func() time.Time
 	PollInterval    time.Duration
 	PeerTimeout     time.Duration
-	Logger          *slog.Logger
+	// Search tuning (zero means the section 7 defaults).
+	SearchConcurrency, SearchPeerRate, SearchPrincipalRate int
+	SearchMemberTimeout, SearchTimeout, SearchCacheTTL     time.Duration // negative TTL disables the cache
+	Logger                                                 *slog.Logger
 }
 
 // Service is safe for concurrent use.
@@ -106,6 +109,9 @@ type Service struct {
 	alerts atomic.Pointer[[]Alert]
 	// policyHeadGauge is the last evaluated policy status (metrics).
 	policyHeadGauge atomic.Pointer[PolicyStatus]
+	// search is the cross-instance search runtime (search.go).
+	search   searchState
+	searcher atomic.Pointer[PackageSearcher]
 }
 
 type trust struct {

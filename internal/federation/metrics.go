@@ -49,4 +49,17 @@ func (s *Service) WriteMetrics(w io.Writer) {
 	fmt.Fprintf(w, "ant_federation_assertions_total{outcome=\"issued\"} %d\n", s.metrics.issued.Load())
 	fmt.Fprintf(w, "ant_federation_assertions_total{outcome=\"accepted\"} %d\n", s.metrics.accepted.Load())
 	fmt.Fprintf(w, "ant_federation_assertions_total{outcome=\"rejected\"} %d\n", s.metrics.rejected.Load())
+	s.writeSearchMetrics(w)
+}
+
+// writeSearchMetrics emits the cross-instance search counters.
+func (s *Service) writeSearchMetrics(w io.Writer) {
+	fmt.Fprintln(w, "# HELP ant_federation_search_requests_total Federated searches fanned out by this member.\n# TYPE ant_federation_search_requests_total counter")
+	fmt.Fprintf(w, "ant_federation_search_requests_total %d\n", s.search.requests.Load())
+	fmt.Fprintln(w, "# HELP ant_federation_search_partial_total Federated searches that reported a member as not ok.\n# TYPE ant_federation_search_partial_total counter")
+	fmt.Fprintf(w, "ant_federation_search_partial_total %d\n", s.search.partial.Load())
+	fmt.Fprintln(w, "# HELP ant_federation_search_cache_hits_total Per-member search answers served from the 30 s cache.\n# TYPE ant_federation_search_cache_hits_total counter")
+	fmt.Fprintf(w, "ant_federation_search_cache_hits_total %d\n", s.search.cacheHits.Load())
+	fmt.Fprintln(w, "# HELP ant_federation_search_rate_limited_total Peer search requests refused by the per-peer or per-principal limit.\n# TYPE ant_federation_search_rate_limited_total counter")
+	fmt.Fprintf(w, "ant_federation_search_rate_limited_total %d\n", s.search.rateLimited.Load())
 }

@@ -282,6 +282,10 @@ export type FederatedPrincipal = { "id": string; "kind": string; "issuer": strin
 export type FederatedPrincipalList = { "items": Array<FederatedPrincipal> };
 export type AdoptFederatedPrincipal = { "confirm": boolean };
 export type FederationAccessCheck = { "member_id": string; "kind": "artifact" | "feed" | "instance"; "feed_key"?: string; "namespace"?: string; "action": "read" | "publish" | "delete" | "configure" | "replicate" | "admin" };
+export type FederationSearchCopy = { "member": string; "member_name": string; "origin": "local" | "remote" | "replica"; "home": boolean; "api_url": string };
+export type FederationSearchHit = { "member": string; "member_name": string; "feed_key": string; "feed_slug": string; "format": string; "coordinate": string; "namespace": string; "origin": "local" | "remote" | "replica"; "home": boolean; "api_url": string; "metadata"?: {  }; "copies": Array<FederationSearchCopy> };
+export type FederationSearchMember = { "id": string; "name": string; "status": "ok" | "timeout" | "error" | "skipped"; "code"?: string; "took_ms": number; "hits": number; "cached"?: boolean };
+export type FederationSearchPage = { "items": Array<FederationSearchHit>; "members": Array<FederationSearchMember>; "partial": boolean; "page": PageInfo };
 export type FederationAccessCheckResult = { "member_id": string; "allowed": boolean; "reason"?: string; "policy_generation": number; "federated_id"?: string };
 export type EffectiveRole = { "name": string; "origin": "local" | "federation" };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
@@ -470,6 +474,7 @@ listFederatedPrincipals: { body: undefined; response: FederatedPrincipalList };
 adoptFederatedPrincipal: { body: AdoptFederatedPrincipal; response: FederationPolicyReport };
 getFederationSettings: { body: undefined; response: FederationSettings };
 setFederationSettings: { body: FederationSettings; response: FederationSettings };
+federatedSearch: { body: undefined; response: FederationSearchPage };
 checkFederationAccess: { body: FederationAccessCheck; response: FederationAccessCheckResult };
 }
 export const routes = {
@@ -1392,6 +1397,11 @@ export const routes = {
     "path": "/api/v1/federation/settings",
     "method": "PUT",
     "idempotent": true
+  },
+  "federatedSearch": {
+    "path": "/api/v1/federation/search",
+    "method": "GET",
+    "idempotent": false
   },
   "checkFederationAccess": {
     "path": "/api/v1/federation/access-check",

@@ -420,3 +420,74 @@ it("shows policy alerts on a member and adopts a conflicting local principal", a
     ),
   );
 });
+
+it("toggles the package search scope to the federation and reports partial results", async () => {
+  install((url) => {
+    if (url === "/api/v1/federation/status") return json(active);
+    if (url.startsWith("/api/v1/packages"))
+      return json({ items: [], page: { has_more: false }, total: 0 });
+    if (url.startsWith("/api/v1/federation/search"))
+      return json({
+        items: [
+          {
+            member: alpha,
+            member_name: "alpha",
+            feed_key: "lab/release",
+            feed_slug: "release",
+            format: "raw",
+            coordinate: "pkg-a",
+            namespace: "public",
+            origin: "local",
+            home: true,
+            api_url: "https://alpha.example",
+            copies: [
+              {
+                member: alpha,
+                member_name: "alpha",
+                origin: "local",
+                home: true,
+                api_url: "https://alpha.example",
+              },
+              {
+                member: beta,
+                member_name: "beta",
+                origin: "replica",
+                home: false,
+                api_url: "https://beta.example",
+              },
+            ],
+          },
+        ],
+        members: [
+          { id: alpha, name: "alpha", status: "ok", took_ms: 3, hits: 1 },
+          {
+            id: beta,
+            name: "beta",
+            status: "timeout",
+            code: "deadline",
+            took_ms: 700,
+            hits: 0,
+          },
+        ],
+        partial: true,
+        page: { has_more: false },
+      });
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Packages");
+  const scope = await screen
+    .findByRole("radio", { name: "Federation" })
+    .catch(() => screen.findByText("Federation"));
+  fireEvent.click(scope);
+  await screen.findByText("Partial results");
+  await screen.findByText("pkg-a");
+  expect(
+    screen.getByText("beta: timeout (deadline) · 0 · 700 ms"),
+  ).toBeTruthy();
+  expect(screen.getByText("beta (replica)")).toBeTruthy();
+  expect(calls.some((c) => c.url.startsWith("/api/v1/federation/search"))).toBe(
+    true,
+  );
+});

@@ -78,6 +78,7 @@ func (s *Service) applyPolicyDocuments(ctx context.Context, docs []PolicyDocumen
 	}
 	if applied > 0 {
 		s.policyCache.Store(nil)
+		s.search.resetCache()
 	}
 	return applied, nil
 }
@@ -380,6 +381,7 @@ func (s *Service) PublishPolicyTx(ctx context.Context, tx pgx.Tx, actor string, 
 // AfterPolicyPublish pushes new policy documents to members (never fails).
 func (s *Service) AfterPolicyPublish(ctx context.Context, doc *PolicyDocument) {
 	s.policyCache.Store(nil)
+	s.search.resetCache()
 	if doc != nil {
 		go s.nudgeMembers(context.WithoutCancel(ctx))
 	}

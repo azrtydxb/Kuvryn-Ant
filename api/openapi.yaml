@@ -14083,6 +14083,134 @@
         ]
       }
     },
+    "/api/v1/federation/search": {
+      "get": {
+        "operationId": "federatedSearch",
+        "description": "Cross-instance package search. This member searches its own federation-keyed feeds and fans the query out over the mTLS peer listener with a signed principal assertion; every member applies its own authorization to the asserted caller. Members that time out (1.5 s each, 2 s overall), are unreachable or refuse are reported in members[] and partial=true; they never fail the query. A digest query is the checksum lookup. Local-only principals get 403 not_federated.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "description": "Case-insensitive literal substring of the package coordinate."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 32
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "digest",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "description": "Only packages with an asset of this blob digest."
+          },
+          {
+            "name": "feed_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Restrict to one federation feed key."
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            },
+            "description": "Comma-separated member IDs or names to query; default all active members."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationSearchPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/federation/access-check": {
       "post": {
         "operationId": "checkFederationAccess",
@@ -23796,6 +23924,183 @@
           "kind",
           "action"
         ]
+      },
+      "FederationSearchCopy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "member",
+          "member_name",
+          "origin",
+          "home",
+          "api_url"
+        ],
+        "properties": {
+          "member": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_name": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "remote",
+              "replica"
+            ]
+          },
+          "home": {
+            "type": "boolean"
+          },
+          "api_url": {
+            "type": "string"
+          }
+        }
+      },
+      "FederationSearchHit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "member",
+          "member_name",
+          "feed_key",
+          "feed_slug",
+          "format",
+          "coordinate",
+          "namespace",
+          "origin",
+          "home",
+          "api_url",
+          "copies"
+        ],
+        "properties": {
+          "member": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_name": {
+            "type": "string"
+          },
+          "feed_key": {
+            "type": "string"
+          },
+          "feed_slug": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "remote",
+              "replica"
+            ]
+          },
+          "home": {
+            "type": "boolean",
+            "description": "Whether the primary copy is not a replica."
+          },
+          "api_url": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Format metadata, omitted above 8 KiB."
+          },
+          "copies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationSearchCopy"
+            },
+            "description": "Every member that answered with this package; replicas collapse under the home copy."
+          }
+        }
+      },
+      "FederationSearchMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "status",
+          "took_ms",
+          "hits"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "timeout",
+              "error",
+              "skipped"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "unreachable, deadline, rate_limited, no_identity, unavailable, or a peer error code."
+          },
+          "took_ms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hits": {
+            "type": "integer"
+          },
+          "cached": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FederationSearchPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "members",
+          "partial",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/FederationSearchHit"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationSearchMember"
+            }
+          },
+          "partial": {
+            "type": "boolean",
+            "description": "True when any member is not ok."
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
       },
       "FederationAccessCheckResult": {
         "type": "object",

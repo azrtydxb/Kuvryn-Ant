@@ -81,6 +81,7 @@ func (s *Service) PeerHandler() http.Handler {
 	mux.HandleFunc("POST /federation/v1/csr/renew", s.peerRenew)
 	mux.HandleFunc("GET /federation/v1/status", s.peerStatus)
 	mux.HandleFunc("POST /federation/v1/access-check", s.peerAccessCheck)
+	mux.HandleFunc("POST /federation/v1/search", s.peerSearch)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { peerFail(w, http.StatusNotFound, "not_found") })
 	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true}, Logger: s.cfg.Logger, Reject: s.peerRejected}
 }
