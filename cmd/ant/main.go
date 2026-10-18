@@ -18,6 +18,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 )
 
@@ -167,6 +168,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		artifacts.Register(mux)
 		browser.Register(mux)
+		mcp.Register(mux, pool, logger)
 		mux.Handle("/console", console.Handler())
 		mux.Handle("/console/", console.Handler())
 	})
