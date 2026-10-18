@@ -33,8 +33,8 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if len(args) > 0 {
 		mode = args[0]
 	}
-	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | backup | restore]")
+	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" && mode != "gc" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" && mode != "gc" || mode == "gc" && len(args) == 2 && args[1] != "--dry-run" {
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | backup | restore]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -59,6 +59,13 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if mode == "rotate-secrets" {
 		if err := rotateSecrets(ctx, pool, cfg, output); err != nil {
 			logger.Error("secret rotation failed")
+			return 1
+		}
+		return 0
+	}
+	if mode == "gc" {
+		if err := runGC(ctx, pool, cfg, len(args) == 2, output); err != nil {
+			logger.Error("garbage collection failed", "reason", err)
 			return 1
 		}
 		return 0
@@ -114,6 +121,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		return 1
 	}
 	defer workers.Close()
+	workers.startRetention(pool, artifacts, cfg.Retention, logger)
 	serveCtx, stopServing := context.WithCancel(ctx)
 	defer stopServing()
 	if artifacts != nil {
@@ -147,7 +155,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 			logger.Error("invalid ANT_PUBLIC_URL")
 			return 1
 		}
-		origins := []interface{ SetPublicURL(string) error }{artifacts.nuget, artifacts.npm, artifacts.cargo, artifacts.gitlfs, artifacts.composer, artifacts.pubrepo, artifacts.conan, artifacts.conda, artifacts.ansible, artifacts.cran}
+		origins := []interface{ SetPublicURL(string) error }{artifacts.nuget, artifacts.npm, artifacts.cargo, artifacts.gitlfs, artifacts.composer, artifacts.pubrepo, artifacts.conan, artifacts.conda, artifacts.ansible, artifacts.cran, artifacts.apk, artifacts.apt, artifacts.rpm, artifacts.terraform, artifacts.swift, artifacts.cocoapods, artifacts.huggingface, artifacts.p2}
 		for _, adapter := range origins {
 			if err = adapter.SetPublicURL(publicURL); err != nil {
 				logger.Error("invalid artifact public origin")

@@ -499,3 +499,25 @@ func TestPublishPolicyCASAndDestinationValidation(t *testing.T) {
 		t.Fatal("policy audit count mismatch")
 	}
 }
+
+// A sweep that removes the finalized bytes before the metadata transaction must
+// make the publish fail instead of committing metadata for missing bytes.
+func TestPublishRejectsSweptBlob(t *testing.T) {
+	f := newPublishFixture(t)
+	data := []byte("swept-artifact")
+	publication := f.publication(data)
+	base := f.service.Storage
+	f.service.Storage = func(ctx context.Context, domain string) (blob.Store, error) {
+		store, err := base(ctx, domain)
+		if err != nil {
+			return nil, err
+		}
+		return finalizeHookStore{Store: store, hook: func() error {
+			return f.disk.Delete(context.Background(), publication.Info.Digest)
+		}}, nil
+	}
+	if _, err := f.service.Publish(context.Background(), f.principal, publication, bytes.NewReader(data)); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("publish of swept blob = %v, want ErrUnavailable", err)
+	}
+	f.assertInvisible(t)
+}

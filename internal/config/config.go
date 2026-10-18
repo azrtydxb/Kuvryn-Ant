@@ -26,6 +26,7 @@ type Config struct {
 	SecretKeys      *secrets.Keyring
 	ShutdownTimeout time.Duration
 	MaxRequests     int
+	Retention       Retention
 }
 
 func Load(getenv func(string) string) (Config, error) {
@@ -63,6 +64,10 @@ func Load(getenv func(string) string) (Config, error) {
 		if err != nil || c.MaxRequests < 1 || c.MaxRequests > 4096 {
 			return Config{}, errors.New("ANT_MAX_REQUESTS must be between 1 and 4096")
 		}
+	}
+	c.Retention, err = loadRetention(getenv)
+	if err != nil {
+		return Config{}, err
 	}
 	c.UpstreamCAs, err = upstreamCAs(getenv("ANT_UPSTREAM_CA_MAP_FILE"))
 	if err != nil {
