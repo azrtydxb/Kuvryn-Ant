@@ -49,7 +49,7 @@ Scoped `go test` passed for: `internal/{conan,ansiblerepo,condarepo,cran,gitlfs,
 
 ## 3. Known gaps / not done
 
-- **Remote materialization is not wired**: `internal/remoteruntime` is tested in isolation but the adapters do not yet consume remote sources end-to-end. Remote/replica resolution remains a release gate (also stated in `docs/implementation/local-delivery.md`).
+- **Remote materialization is wired for raw, npm, pypi, maven, go and OCI** (see `docs/implementation/pull-through.md`). The other adapters still serve local content only and can be enabled with the two documented hooks. Replica resolution remains a release gate.
 - **Formats remaining** (8 of 26 are still not implemented): APK, APT, CocoaPods, HuggingFace, p2, Swift, Terraform, RPM. Implemented (18): ansible, cargo, composer, conan, conda, cran, git-lfs, go, helm, maven, npm, nuget, oci, oci-artifacts, pub, pypi, raw, rubygems.
 - **Phase-1 backlog still open**: replication, retention/GC (failed metadata commits can leave unreferenced verified bytes), backups/restore, provider administration, release packaging/qualification, deployment evidence. Target: OKE + MinIO on TrueNAS SCALE; AWS and compatible providers supported without a separate fleet.
 - **Web console**: live OIDC/SAML/LDAP provider end-to-end auth is not exercised (covered only by frontend tests with mocked fixtures).
