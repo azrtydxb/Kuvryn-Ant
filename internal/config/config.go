@@ -85,6 +85,12 @@ func Load(getenv func(string) string) (Config, error) {
 			return Config{}, errors.New("ANT_S3_PATH_STYLE is invalid")
 		}
 	}
+	if value := getenv("ANT_S3_ALLOW_INSECURE_HTTP"); value != "" {
+		c.Storage.AllowInsecureHTTP, err = strconv.ParseBool(value)
+		if err != nil {
+			return Config{}, errors.New("ANT_S3_ALLOW_INSECURE_HTTP is invalid")
+		}
+	}
 	if c.Storage.Backend != "" && c.Storage.Backend != "disk" && c.Storage.Backend != "s3" {
 		return Config{}, errors.New("ANT_STORAGE_BACKEND must be disk or s3")
 	}

@@ -11,13 +11,13 @@ persistence:
 storage:
   backend: s3
   s3:
-    endpoint: https://truenas.example.invalid:9000 # TrueNAS MinIO URL
+    endpoint: http://192.168.10.253:9000 # TrueNAS MinIO (plaintext, trusted LAN only)
     region: us-east-1
-    bucket: ant
+    bucket: kuvryn-ant
     prefix: ant/
     pathStyle: true
     credentialsExistingSecret: ant-s3
-    caExistingSecret: ant-s3-ca
+    allowInsecureHTTP: true
 postgres:
   existingSecret: ant-postgres
   tlsExistingSecret: ant-pg-rootcert

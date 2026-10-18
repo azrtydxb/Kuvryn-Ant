@@ -82,6 +82,10 @@ spec:
               value: {{ .Values.storage.s3.prefix | quote }}
             - name: ANT_S3_PATH_STYLE
               value: {{ .Values.storage.s3.pathStyle | quote }}
+            {{- if .Values.storage.s3.allowInsecureHTTP }}
+            - name: ANT_S3_ALLOW_INSECURE_HTTP
+              value: "true"
+            {{- end }}
             - name: ANT_S3_CREDENTIALS_FILE
               value: /run/ant/s3/credentials.json
             {{- if .Values.storage.s3.caExistingSecret }}

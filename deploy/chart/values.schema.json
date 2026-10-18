@@ -66,6 +66,14 @@
             "disk",
             "s3"
           ]
+        },
+        "s3": {
+          "type": "object",
+          "properties": {
+            "allowInsecureHTTP": {
+              "type": "boolean"
+            }
+          }
         }
       }
     },

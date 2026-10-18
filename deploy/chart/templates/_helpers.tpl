@@ -33,6 +33,6 @@ app.kubernetes.io/instance: {{ .Release.Name | quote }}
 {{- end -}}
 {{- if eq .Values.storage.backend "s3" -}}
 {{- if or (not .Values.storage.s3.region) (not .Values.storage.s3.bucket) (not .Values.storage.s3.credentialsExistingSecret) }}{{ fail "S3 requires region, bucket and credentialsExistingSecret" }}{{ end -}}
-{{- if and .Values.storage.s3.endpoint (not (hasPrefix "https://" .Values.storage.s3.endpoint)) }}{{ fail "S3 endpoint must use HTTPS" }}{{ end -}}
+{{- if and .Values.storage.s3.endpoint (not (hasPrefix "https://" .Values.storage.s3.endpoint)) (not (and .Values.storage.s3.allowInsecureHTTP (hasPrefix "http://" .Values.storage.s3.endpoint))) }}{{ fail "S3 endpoint must use HTTPS unless storage.s3.allowInsecureHTTP is true for an http:// endpoint" }}{{ end -}}
 {{- end -}}
 {{- end -}}

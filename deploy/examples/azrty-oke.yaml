@@ -13,9 +13,9 @@ persistence:
 storage:
   backend: s3
   s3:
-    endpoint: https://<namespace>.compat.objectstorage.me-dubai-1.oraclecloud.com
+    endpoint: https://axmcgpqk0w0z.compat.objectstorage.me-dubai-1.oraclecloud.com
     region: me-dubai-1
-    bucket: ant
+    bucket: kuvryn-ant
     prefix: ant/
     pathStyle: true
     credentialsExistingSecret: ant-s3
