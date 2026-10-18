@@ -122,6 +122,9 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	}
 	defer workers.Close()
 	workers.startRetention(pool, artifacts, cfg.Retention, logger)
+	ops := newOperations(pool, artifacts, cfg)
+	ops.start(workers)
+	management.EnableStatusDetail(pool, ops.readiness)
 	replicationRT, err := openReplication(pool, artifacts, cfg)
 	if err != nil {
 		logger.Error("replication startup rejected")
@@ -184,6 +187,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterRemoteSources(mux, pool, cfg.SecretKeys, caRefs, cfg.RootKey)
 		management.RegisterIdentities(mux, pool)
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
+		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
 		replicationRT.Register(mux)
 		artifacts.Register(mux)
 		browser.Register(mux)
@@ -192,6 +196,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		mux.Handle("/console/", console.Handler())
 	})
 	svc.WrapHTTP(browser.Middleware)
+	svc.WrapHTTP(ops.traffic.Middleware)
 	if err := svc.Serve(serveCtx, listener); err != nil {
 		logger.Error("HTTP service failed to drain or serve")
 		return 1
