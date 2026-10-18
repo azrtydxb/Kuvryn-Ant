@@ -57,17 +57,17 @@ func writeJSON(w http.ResponseWriter, r *http.Request, v any) {
 }
 func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
-	if e != nil {
-		failure(w, e)
-		return
+	if isNotFound(e) {
+		if name, _, ok := strings.Cut(pub.Version, "_"); ok {
+			rp := artifact.Publication{FeedID: pub.FeedID, Coordinate: name, Version: strings.TrimPrefix(pub.Version, name+"_"), AssetKey: "archive", MediaType: "application/gzip"}
+			var served bool
+			record, body, served, e = s.fetchRemote(w, r, p, rp, name, channel+"/"+pub.Version+".tar.gz")
+			if served {
+				return
+			}
+		}
 	}
-	defer body.Close()
-	w.Header().Set("Content-Type", record.MediaType)
-	w.Header().Set("Content-Length", strconv.FormatInt(record.Info.Size, 10))
-	w.Header().Set("ETag", `"`+string(record.Info.Digest)+`"`)
-	if r.Method != "HEAD" {
-		_, _ = io.CopyBuffer(w, struct{ io.Reader }{body}, make([]byte, 64<<10))
-	}
+	s.writeArchive(w, r, record, body, e)
 }
 
 type progressBody struct {

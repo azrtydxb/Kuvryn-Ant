@@ -57,6 +57,17 @@ func writeJSON(w http.ResponseWriter, r *http.Request, v any) {
 }
 func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		retry, served, pe := s.pullThrough(w, r, p, pub)
+		if served {
+			return
+		}
+		if !retry {
+			failure(w, pe)
+			return
+		}
+		record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+	}
 	if e != nil {
 		failure(w, e)
 		return

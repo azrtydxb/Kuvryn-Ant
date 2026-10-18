@@ -3,7 +3,7 @@
 Pull-through is implemented once, in `internal/artifact` (`remote.go`), on top of
 `internal/remoteruntime`. Adapters add a small hook to their existing read path.
 Enabled today: raw, npm, pypi, maven, go, rubygems, conda, conan, composer, terraform, oci (blobs and manifests by digest, tags,
-tag lists), helm, cargo, nuget, apt, rpm (see "Format notes"). `cmd/ant/artifacts.go` builds the `remoteruntime.Manager` from the
+tag lists), helm, cargo, nuget, apt, rpm, pub, cocoapods, cran, ansible, huggingface (see "Format notes"). `cmd/ant/artifacts.go` builds the `remoteruntime.Manager` from the
 secret keyring and `ANT_UPSTREAM_CA_MAP_FILE` and sets `artifact.Service.Remote`;
 without a keyring pull-through is off and feeds serve local content only.
 
@@ -119,6 +119,54 @@ that host in the source's redirect origins; the source credential is never sent 
   them with a sha256 checksum, verified before serving and cached. Repositories with local
   RPMs keep serving their local snapshot; a package name owned locally is never fetched.
   Not supported: zstd-compressed `primary.xml` (Fedora) and non-sha256 repomd checksums.
+
+## Format notes (pub, cocoapods, cran, ansible, huggingface)
+
+- **Pub** (`internal/pubrepo`). Origin is the pub.dev API host (`api/packages/<name>`). The
+  package document is validated (name, semver, pubspec identity, `archive_sha256` hex) and
+  re-rendered with every `archive_url` pointing at the feed (`packages/<name>/versions/<v>.tar.gz`);
+  unknown fields (`isDiscontinued`, `published`, `retracted`, ...) are kept and `latest` follows
+  upstream. Archives come from the upstream `archive_url` (pub.dev redirects to a storage host:
+  add it as a redirect origin), are verified against `archive_sha256` before the first byte is
+  served and cached; the pubspec is cached beside it so cached versions stay listable offline.
+  Documents above the 4 MiB metadata limit (very large packages) cannot be proxied.
+- **CocoaPods** (`internal/cocoapods`). Origin is the CDN root (`cdn.cocoapods.org`).
+  `all_pods_versions_<a>_<b>_<c>.txt` shards come through the metadata cache and are merged by pod
+  name (a pod owned by a local source keeps only its local versions; cached remote pods are
+  replaced by the upstream list while it is reachable). `Specs/.../<Pod>.podspec.json` is served
+  verbatim and cached on first read. Only specs are proxied: a podspec's `source` (VCS or http)
+  is not rewritten, so clients fetch pod sources from their original hosts, and `archives/...`
+  serves locally published archives only. `CocoaPods-version.yml` and
+  `deprecated_podspecs.txt` stay local.
+- **CRAN** (`internal/cran`). Origin is the mirror root (`cloud.r-project.org`). Upstream
+  `src/contrib/PACKAGES.gz` is read (compressed, so the 4 MiB limit holds), validated and merged
+  into the feed `PACKAGES`/`PACKAGES.gz` by package name: names present in a local source never take
+  upstream metadata or archives (local ownership is checked per package name across all versions).
+  Source tarballs (`src/contrib/<pkg>_<ver>.tar.gz`, `src/contrib/Archive/<pkg>/...`) share one cache
+  entry per version; `bin/<platform>/contrib/<rver>/PACKAGES[.gz]` is passed through and binaries are
+  cached on first download. CRAN publishes MD5 only, so fills are length checked, not hash verified.
+  `PACKAGES.rds`, `Meta/archive.rds` and `Archive/<pkg>/` listings are not served (R falls back to
+  `PACKAGES.gz`).
+- **Ansible Galaxy** (`internal/ansiblerepo`). Origin is the API root serving `v3/` (for example
+  `https://galaxy.ansible.com/api/`). Collection detail, the version list (all pages are fetched; only
+  absolute `links.next`, or relative ones when an absolute `href` reveals the origin, can be
+  followed, at most 50 pages) and version detail are re-rendered with feed `href`/`download_url`
+  values. Archives come from the upstream `download_url`, are verified against `artifact.sha256` and
+  cached with a `metadata` asset for offline listing. A collection owned by a local source is never
+  answered from upstream. The rendered list keeps the upstream `data`/`meta`/`links` shape (single page).
+- **Hugging Face** (`internal/huggingface`). Origin is the hub endpoint; the CDN hosts the hub redirects
+  to (cdn-lfs, xethub) must be redirect origins. The source credential (the way to reach gated or
+  private repos) is sent to hub requests only, never to a CDN host, and the client's own token is never
+  forwarded. Files are cached per upstream commit under `models|datasets/<repo>`; a branch or tag is
+  resolved through the metadata cache and remembered as a ref so cached files stay reachable by
+  branch name in an outage. sha256 and size come from the upstream tree entry (LFS oid): a miss streams
+  to the client while staging and the digest is checked at EOF (a mismatch aborts the connection and caches
+  nothing; `Origin.StreamVerified`), so multi-GB files are not held back. HEAD answers from the tree entry
+  without downloading. A Range request on a miss triggers a verified fill that survives the client giving
+  up, then is answered from the store (resume hits the cache). Non-LFS files carry only a blob sha1
+  upstream and are length checked only. Upstream 401/403 (gated, no access) surfaces as 503. Listing
+  limits: tree pages beyond the first are not followed and the recursive tree is a bounded directory walk
+  (64 directories, 10,000 entries); revision names containing `/` are not supported.
 
 Remote cache objects live in their own namespaces (`apt-remote`, `rpm-remote`) or in the
 adapter's package namespace, so they never become snapshot owners of a local repository.

@@ -93,6 +93,10 @@ type lfsInfo struct {
 
 func (s *Repository) info(w http.ResponseWriter, r *http.Request, p identity.Principal, t target, rev string) {
 	commit, m, e := s.revision(r.Context(), p, t, rev)
+	if isNotFound(e) {
+		s.infoRemote(w, r, p, t, rev)
+		return
+	}
 	if e != nil {
 		failure(w, e)
 		return
@@ -110,6 +114,10 @@ func (s *Repository) info(w http.ResponseWriter, r *http.Request, p identity.Pri
 
 func (s *Repository) tree(w http.ResponseWriter, r *http.Request, p identity.Principal, t target, rev, sub string) {
 	_, m, e := s.revision(r.Context(), p, t, rev)
+	if isNotFound(e) {
+		s.treeRemote(w, r, p, t, rev, sub)
+		return
+	}
 	if e != nil {
 		failure(w, e)
 		return
@@ -155,6 +163,10 @@ func (s *Repository) resolve(w http.ResponseWriter, r *http.Request, p identity.
 	defer s.release()
 	ctx := r.Context()
 	commit, m, e := s.revision(ctx, p, t, rev)
+	if isNotFound(e) {
+		s.resolveRemote(w, r, p, t, rev, path)
+		return
+	}
 	if e != nil {
 		failure(w, e)
 		return

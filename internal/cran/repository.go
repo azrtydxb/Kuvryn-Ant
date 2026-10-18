@@ -62,7 +62,12 @@ func (s *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	p, _ := identity.PrincipalFromContext(r.Context())
 	a := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
-	if len(a) != 6 || a[0] != "feeds" || a[2] != "cran" || a[3] != "src" || a[4] != "contrib" || p.InstanceID != s.instance || strings.Contains(r.URL.EscapedPath(), "%") {
+	var extra extraRoute
+	isExtra := false
+	if len(a) > 6 && a[0] == "feeds" && a[2] == "cran" {
+		extra, isExtra = parseExtra(a)
+	}
+	if !isExtra && (len(a) != 6 || a[3] != "src" || a[4] != "contrib") || len(a) < 6 || a[0] != "feeds" || a[2] != "cran" || p.InstanceID != s.instance || strings.Contains(r.URL.EscapedPath(), "%") {
 		failure(w, artifact.ErrNotFound)
 		return
 	}
@@ -80,6 +85,15 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "PUT" {
 		w.Header().Set("Allow", "GET, HEAD, PUT")
 		w.WriteHeader(405)
+		return
+	}
+	if isExtra {
+		if r.Method == "PUT" {
+			w.Header().Set("Allow", "GET, HEAD")
+			w.WriteHeader(405)
+			return
+		}
+		s.serveExtra(w, r, p, feed, extra)
 		return
 	}
 	if (a[5] == "PACKAGES" || a[5] == "PACKAGES.gz") && r.Method != "PUT" {

@@ -183,11 +183,24 @@ func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity
 	if e == nil && unlisted {
 		e = artifact.ErrNotFound
 	}
-	if e != nil {
-		failure(w, e)
-		return
+	pub := artifact.Publication{FeedID: feed, Coordinate: pod, Version: version, AssetKey: key}
+	var record artifact.Record
+	var body io.ReadCloser
+	if e == nil {
+		record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
 	}
-	record, body, e := s.service.Open(r.Context(), p, artifact.Publication{FeedID: feed, Coordinate: pod, Version: version, AssetKey: key}, 0, -1)
+	if isNotFound(e) && !unlisted && key == podspecKey {
+		// Only podspecs are proxied; the remote owner (or no owner) may answer.
+		retry, served, pe := s.pullSpec(w, r, p, feed, pod, version)
+		if served {
+			return
+		}
+		if !retry {
+			failure(w, pe)
+			return
+		}
+		record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+	}
 	if e != nil {
 		failure(w, e)
 		return
@@ -206,20 +219,20 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 	s.authorizeFeed(w, r, p, feed, func() {
 		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 		defer cancel()
-		rows, e := s.db.Query(ctx, `WITH owner AS (SELECT DISTINCT ON (c.coordinate) c.id,c.source_id,c.coordinate,c.metadata FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 ORDER BY c.coordinate, fs.priority) SELECT o.coordinate,o.source_id::text,v.version FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id AND a.asset_key='podspec.json' WHERE NOT COALESCE(o.metadata->'unlisted' @> to_jsonb(v.version),false) ORDER BY o.coordinate, v.version LIMIT 500001`, p.InstanceID, feed)
+		rows, e := s.db.Query(ctx, `WITH owner AS (SELECT DISTINCT ON (c.coordinate) c.id,c.source_id,c.coordinate,c.metadata FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 ORDER BY c.coordinate, fs.priority) SELECT o.coordinate,o.source_id::text,sk.kind,v.version FROM owner o JOIN sources sk ON sk.id=o.source_id AND sk.instance_id=$1 JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id AND a.asset_key='podspec.json' WHERE NOT COALESCE(o.metadata->'unlisted' @> to_jsonb(v.version),false) ORDER BY o.coordinate, v.version LIMIT 500001`, p.InstanceID, feed)
 		if e != nil {
 			failure(w, e)
 			return
 		}
 		type pod struct {
-			source   string
-			versions []string
+			source, kind string
+			versions     []string
 		}
 		pods := map[string]*pod{}
 		count := 0
 		for rows.Next() {
-			var name, source, version string
-			if e = rows.Scan(&name, &source, &version); e != nil {
+			var name, source, kind, version string
+			if e = rows.Scan(&name, &source, &kind, &version); e != nil {
 				break
 			}
 			count++
@@ -227,7 +240,7 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 				continue
 			}
 			if pods[name] == nil {
-				pods[name] = &pod{source: source}
+				pods[name] = &pod{source: source, kind: kind}
 			}
 			pods[name].versions = append(pods[name].versions, version)
 		}
@@ -243,6 +256,34 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		if e != nil {
 			failure(w, artifact.ErrUnavailable)
 			return
+		}
+		// Merge by package owner: a pod owned by a local source keeps its local
+		// versions; every other name comes from upstream while it is reachable and
+		// from the locally cached versions during an outage.
+		remote, doc, re := s.remoteShard(ctx, p, feed, want)
+		switch {
+		case re == nil:
+			for n, v := range pods {
+				if v.kind == "remote" {
+					delete(pods, n)
+				}
+			}
+			for n, v := range remote {
+				if pods[n] == nil {
+					pods[n] = &pod{source: doc.SourceID, kind: "remote", versions: v}
+				}
+			}
+			if doc.Stale {
+				for k, v := range artifact.StaleHeaders() {
+					w.Header().Set(k, v)
+				}
+			}
+		case errors.Is(re, artifact.ErrUnavailable):
+			if len(pods) == 0 {
+				failure(w, artifact.ErrUnavailable)
+				return
+			}
+			w.Header().Set("X-Kuvryn-Cache", "offline")
 		}
 		names := make([]string, 0, len(pods))
 		for n, v := range pods {
