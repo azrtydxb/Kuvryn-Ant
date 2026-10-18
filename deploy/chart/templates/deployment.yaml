@@ -93,19 +93,22 @@ spec:
               value: /run/ant/s3-ca/ca.crt
             {{- end }}
             {{- end }}
-            {{- if .Values.observability.tracing.enabled }}
+            {{- /* tolerate `helm upgrade --reuse-values` from releases that predate observability.tracing */}}
+            {{- $obs := default dict .Values.observability }}
+            {{- $tr := default dict $obs.tracing }}
+            {{- if $tr.enabled }}
             - name: ANT_OTEL_ENABLED
               value: "true"
-            {{- if .Values.observability.tracing.endpoint }}
+            {{- if $tr.endpoint }}
             - name: ANT_OTEL_ENDPOINT
-              value: {{ .Values.observability.tracing.endpoint | quote }}
+              value: {{ $tr.endpoint | quote }}
             {{- end }}
             - name: ANT_OTEL_PROTOCOL
-              value: {{ .Values.observability.tracing.protocol | quote }}
+              value: {{ default "http/protobuf" $tr.protocol | quote }}
             - name: ANT_OTEL_SERVICE_NAME
-              value: {{ .Values.observability.tracing.serviceName | quote }}
+              value: {{ default "kuvryn-ant" $tr.serviceName | quote }}
             - name: ANT_OTEL_SAMPLE_RATIO
-              value: {{ .Values.observability.tracing.sampleRatio | quote }}
+              value: {{ default 1 $tr.sampleRatio | quote }}
             {{- end }}
             - name: ANT_AUDIT_RETENTION
               value: {{ .Values.auditRetention.retain | quote }}

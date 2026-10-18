@@ -373,7 +373,12 @@ func (s *Service) cacheStream(ctx context.Context, p identity.Principal, r Publi
 	}
 	var upload blob.Upload
 	if store != nil {
-		if upload, err = store.Stage(ctx); err != nil {
+		// The staged upload must not be bound to the request context: clients
+		// that stop reading once they have Content-Length bytes (the go tool)
+		// make the server cancel the request context before the final EOF read
+		// that commits the cache entry. Abort-on-Close and the upstream body
+		// timeouts still bound the staging lifetime.
+		if upload, err = store.Stage(context.WithoutCancel(ctx)); err != nil {
 			upload = nil
 		}
 	}

@@ -635,7 +635,7 @@ func (m *Manager) Fetch(ctx context.Context, r Request) (*Response, error) {
 		return nil, ctx.Err()
 	}
 	headers := http.Header{}
-	for _, key := range []string{"Content-Type", "Content-Length", "ETag", "Last-Modified", "Content-Range", "Accept-Ranges"} {
+	for _, key := range []string{"Content-Type", "Content-Length", "ETag", "Last-Modified", "Content-Range", "Accept-Ranges", "X-Terraform-Get"} {
 		if value := response.Header.Get(key); value != "" {
 			headers.Set(key, value)
 		}
