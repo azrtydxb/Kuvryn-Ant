@@ -13,6 +13,13 @@ import (
 )
 
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, name, version, base string) {
+	served, remoteErr := s.serveRemoteIndex(w, r, p, feed, name, version, base)
+	if served {
+		return
+	}
+	if remoteErr != nil {
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	rows, e := s.db.Query(ctx, `WITH owner AS(SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id WHERE a.asset_key='pubspec' AND ($4='' OR v.version=$4) LIMIT 4097`, p.InstanceID, feed, name, version)
@@ -38,6 +45,11 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		return
 	}
 	if len(entries) == 0 {
+		if remoteErr != nil {
+			w.Header().Del("X-Kuvryn-Cache")
+			failure(w, artifact.ErrUnavailable)
+			return
+		}
 		failure(w, artifact.ErrNotFound)
 		return
 	}
