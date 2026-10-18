@@ -57,7 +57,7 @@ The parent mounts `/console` and `/console/`; no additional Go modules are neede
 
 New administration screens use the existing principal/role/token/binding contract. Webhook administration (create/update/rotate/disable and delivery history) and the package discovery view are included; both use generated operations from the current OpenAPI. Unused generated operations are not advertised as UI capabilities.
 
-Run `python3 web/scripts/qa-fixture.py start` from the repository root to build the real app, initialize a private socket-only PostgreSQL cluster, bootstrap a token into a mode-0600 credential file, and start a loopback app. It prints only the origin, private credential filename, and process ID. Use T3 preview to enter that token without echoing it, then exercise normal UI forms. `python3 web/scripts/qa-fixture.py stop` stops the app/PostgreSQL and removes all private fixture data. The state pointer `web/.qa-fixture.json` is ignored. No fake API is provided by this fixture.
+Run `go run ./cmd/qafixture start` from the repository root to build the real app, initialize a private socket-only PostgreSQL cluster, bootstrap a token into a mode-0600 credential file, and start a loopback app. It prints only the origin, private credential filename, and process ID. Use T3 preview to enter that token without echoing it, then exercise normal UI forms. `go run ./cmd/qafixture stop` stops the app/PostgreSQL and removes all private fixture data. The state pointer `web/.qa-fixture.json` is ignored. No fake API is provided by this fixture.
 
 ### Real backend QA evidence
 

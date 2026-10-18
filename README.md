@@ -18,13 +18,13 @@ Development secrets are generated once in `.local/`, excluded from Git, and neve
 
 To use an existing PostgreSQL 17 or 18 installation, set `ANT_DATABASE_URL` and `ANT_ROOT_KEY_FILE`, then run `go run ./cmd/ant`. The root-key file must contain exactly 32 raw bytes. Keep it outside the database and blob storage; back it up securely. The service uses this key to authenticate pagination cursors. The encrypted-secret library supports an externally supplied versioned keyring; operational keyring configuration and rotation commands remain to be integrated.
 
-| Setting | Default / requirement |
-|---|---|
-| `ANT_DATABASE_URL` | Required PostgreSQL connection string; never logged |
-| `ANT_ROOT_KEY_FILE` | Required path to 32 raw key bytes |
-| `ANT_LISTEN` | `127.0.0.1:8080` |
-| `ANT_MAX_REQUESTS` | 128 active requests; overflow returns 503 with Retry-After |
-| `ANT_SHUTDOWN_TIMEOUT` | 15s; configurable 1s–1m |
+| Setting                | Default / requirement                                      |
+| ---------------------- | ---------------------------------------------------------- |
+| `ANT_DATABASE_URL`     | Required PostgreSQL connection string; never logged        |
+| `ANT_ROOT_KEY_FILE`    | Required path to 32 raw key bytes                          |
+| `ANT_LISTEN`           | `127.0.0.1:8080`                                           |
+| `ANT_MAX_REQUESTS`     | 128 active requests; overflow returns 503 with Retry-After |
+| `ANT_SHUTDOWN_TIMEOUT` | 15s; configurable 1s–1m                                    |
 
 ## Bootstrap and feed API
 
@@ -53,7 +53,7 @@ Without a test DSN, real PostgreSQL tests explicitly skip. To run them against a
 scripts/test-postgres.sh
 ```
 
-The script creates a temporary socket-only cluster and removes it on exit. Alternatively set `ANT_TEST_DATABASE_URL` to a disposable database and `ANT_REQUIRE_INTEGRATION=1` to make a missing fixture fail. Integration tests create schemas and tables; never point them at production. CI runs formatting, generated-contract checks, vet, race tests, and real PostgreSQL17/18 jobs. `scripts/test-oci-client.py` additionally runs an isolated real-crane smoke test when PostgreSQL binaries and crane are installed.
+The script creates a temporary socket-only cluster and removes it on exit. Alternatively set `ANT_TEST_DATABASE_URL` to a disposable database and `ANT_REQUIRE_INTEGRATION=1` to make a missing fixture fail. Integration tests create schemas and tables; never point them at production. CI runs formatting, generated-contract checks, vet, race tests, and real PostgreSQL17/18 jobs. `scripts/ocismoke` additionally runs an isolated real-crane smoke test when PostgreSQL binaries and crane are installed.
 
 Tests cover lifecycle and migrations, concurrent mutation replay and revision conflicts, authorization, token lifecycle, generated-client API contracts, encrypted-secret rotation/rollback, blob integrity, deterministic routing, and metrics privacy. S3 tests use an injected SDK fixture; they do not certify a live vendor deployment. See [implementation evidence](docs/implementation/foundation.md).
 
