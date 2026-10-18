@@ -5,7 +5,13 @@ CLIENTS_USED = ["crane"]
 MIRROR = {"origin": "https://mirror.gcr.io", "redirect": []}
 HUB = {
     "origin": "https://registry-1.docker.io",
-    "redirect": ["https://production.cloudflare.docker.com"],
+    # The token realm (auth.docker.io) must be an allowed origin or the bearer
+    # handshake is refused by policy and the pull fails with 503.
+    "redirect": [
+        "https://auth.docker.io",
+        "https://production.cloudflare.docker.com",
+        "https://production.cloudfront.docker.com",
+    ],
 }
 
 
@@ -64,11 +70,17 @@ def run(c):
         ),
     )
     c.step(
-        "auth denial: /v2/ without or with bad token returns 401",
+        "auth denial: bad token and anonymous private-feed reads return 401",
+        # Anonymous GET /v2/ may be 200 when ANT_OCI_DEFAULT_FEED points at an
+        # anonymous_read mirror feed (dockerd handshake); it must never expose
+        # any other feed, so the private feed is probed explicitly.
         lambda: (
             (
-                c.http("GET", "/v2/", 401, token=None),
+                c.http("GET", "/v2/", [200, 401], token=None),
                 c.http("GET", "/v2/", 401, token="invalid-token"),
+                c.http(
+                    "GET", "/v2/%s/demo-%s/manifests/v1" % (slug, c.run_id), 401, token=None
+                ),
             )
             and None
         ),

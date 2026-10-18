@@ -89,7 +89,7 @@ feed(s). Then `/v2/` and all reads on that feed are served without a `401`
 challenge. Anonymous requests run as the internal `anonymous-reader` principal,
 which is granted `read` on `anonymous_read` feeds only; any write still gets
 `401`. Disable that principal (`principals.disabled`) to turn anonymous reads off
-globally. A feed without `anonymous_read` keeps the Basic challenge, so mirror
+globally. Anonymous `GET /v2/` answers `200 {}` only when the default feed (or the `?ns=` mapped feed) is `anonymous_read`; it carries no content and every other feed still answers `401`. A Docker Hub source whose `redirect_origins` omit `https://auth.docker.io` is refused by policy at the token handshake and surfaces as a 503 with an authentication error in source health. A feed without `anonymous_read` keeps the Basic challenge, so mirror
 clients need credentials for it (buildkit/containerd can supply them, dockerd
 cannot). Anonymous reads are not rate limited by Ant; restrict the listener to
 trusted networks.
