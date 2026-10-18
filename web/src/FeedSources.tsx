@@ -2,13 +2,12 @@ import { useState } from "react";
 import { requireETag, type Client } from "./api";
 import type { Go } from "./App";
 import { useAllSources, sourcesForFormat } from "./data";
-import {
-  isUnavailable,
-  paths,
-  type Resolution,
-  type SourceStats,
-} from "./gaps";
-import type { Feed, SourceAttachmentPage } from "./generated";
+import { isUnavailable, type SourceStats } from "./gaps";
+import type {
+  Feed,
+  ResolveExplanation,
+  SourceAttachmentPage,
+} from "./generated";
 import {
   Alert,
   Badge,
@@ -204,9 +203,10 @@ export function FeedSources({
                   let gone = false;
                   const ok = await save.run(async () => {
                     try {
-                      await client.extra("PUT", paths.reorder(feed.id), {
+                      await client.call("reorderFeedSources", {
+                        params: { id: feed.id },
                         etag: etag(),
-                        body: { source_ids: order },
+                        body: { source_ids: order! },
                       });
                     } catch (e) {
                       if (!isUnavailable(e)) throw e;
@@ -509,7 +509,7 @@ function Detach({
 
 function Resolve({ client, feed }: { client: Client; feed: Feed }) {
   const [coordinate, setCoordinate] = useState("");
-  const [result, setResult] = useState<Resolution>();
+  const [result, setResult] = useState<ResolveExplanation>();
   const [unavailable, setUnavailable] = useState(false);
   const action = useAction();
   return (
@@ -523,11 +523,10 @@ function Resolve({ client, feed }: { client: Client; feed: Feed }) {
           setUnavailable(false);
           await action.run(async () => {
             try {
-              const res = await client.extra<Resolution>(
-                "GET",
-                paths.resolve(feed.id),
-                { query: { coordinate } },
-              );
+              const res = await client.call("resolveFeedCoordinate", {
+                params: { id: feed.id },
+                query: { coordinate },
+              });
               setResult(res.data);
             } catch (err) {
               if (isUnavailable(err)) setUnavailable(true);
@@ -559,21 +558,27 @@ function Resolve({ client, feed }: { client: Client; feed: Feed }) {
       <Failure error={action.error} />
       {result && (
         <Alert
-          tone="info"
-          title={`Served by ${result.source?.name ?? result.source?.id ?? "unknown source"}`}
+          tone={result.status === "not_found" ? "warn" : "info"}
+          title={
+            result.serving
+              ? `Served by ${result.serving.name}`
+              : result.status === "pull_through"
+                ? "Would be pulled through an upstream"
+                : result.status === "namespace_mismatch"
+                  ? "Namespace does not match"
+                  : "Not found in any visible source"
+          }
         >
-          {result.shadowed?.length
-            ? `Shadowed: ${result.shadowed.map((s) => s.name ?? s.id).join(", ")}. `
-            : ""}
-          {result.cache?.fresh != null &&
-            (result.cache.fresh
-              ? "Cached copy is fresh"
-              : "Cached copy is stale")}
-          {result.cache?.ttl_remaining_seconds != null &&
-            ` (${result.cache.ttl_remaining_seconds} s remaining)`}
+          {result.sources
+            .filter((x) => x.role !== "serving")
+            .map((x) => `${x.name}: ${x.role.replace("_", " ")} (${x.reason})`)
+            .join("; ")}
+          {result.hidden_sources > 0 &&
+            ` ${result.hidden_sources} source(s) you cannot read also take part.`}
+          {result.cache.state !== "not_applicable" &&
+            ` Cache: ${result.cache.state.replace("_", " ")}.`}
         </Alert>
       )}
-      <Needs>resolution explain</Needs>
     </Card>
   );
 }

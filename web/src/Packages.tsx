@@ -7,13 +7,8 @@ import {
 } from "react";
 import type { Client } from "./api";
 import { useAllFeeds, useAllSources } from "./data";
-import {
-  paths,
-  useOptional,
-  type PackageSearchItem,
-  type PackageSearchPage,
-} from "./gaps";
-import type { DiscoveredAsset, Feed } from "./generated";
+import { useOptionalCall } from "./gaps";
+import type { DiscoveredAsset, Feed, PackageSearchResult } from "./generated";
 import {
   Alert,
   Badge,
@@ -46,7 +41,14 @@ import {
 
 // A package as the console tracks it: a discovered component plus the feed it
 // was discovered through. Cross-feed search rows carry the feed themselves.
-export type PackageRef = PackageSearchItem;
+export type PackageRef = Partial<PackageSearchResult> & {
+  id: string;
+  coordinate: string;
+  // Optional list-row extras some servers add.
+  latest_version?: string;
+  version_count?: number;
+  updated_at?: string;
+};
 
 function PackageTable({
   rows,
@@ -179,11 +181,7 @@ function CrossFeed({
     ...(origin !== "all" ? { origin } : {}),
     ...(cursor ? { cursor } : {}),
   };
-  const search = useOptional<PackageSearchPage>(
-    client,
-    paths.packageSearch,
-    query,
-  );
+  const search = useOptionalCall(client, "searchPackages", { query });
   if (search.state === "unavailable")
     return (
       <PerFeed client={client} feeds={feeds.items} openPackage={openPackage} />
@@ -221,7 +219,7 @@ function CrossFeed({
           aria-label="Feed"
           options={[
             { value: "", label: "All feeds" },
-            ...feeds.items.map((f) => ({ value: f.slug, label: f.slug })),
+            ...feeds.items.map((f) => ({ value: f.id, label: f.slug })),
           ]}
           value={feed}
           onChange={(e: { target: { value: string } }) => {
@@ -247,7 +245,7 @@ function CrossFeed({
           options={[
             { value: "all", label: "All" },
             { value: "local", label: "Published" },
-            { value: "cached", label: "Cached" },
+            { value: "remote", label: "Cached" },
           ]}
           value={origin}
           onChange={(v: string) => {
@@ -264,7 +262,7 @@ function CrossFeed({
             <PackageTable rows={rows} open={openPackage} showFeed />
             <Pager
               cursor={cursor}
-              next={search.data.page?.next_cursor}
+              next={search.data.page.next_cursor}
               set={setCursor}
             />
           </>
@@ -290,7 +288,6 @@ function CrossFeed({
             }
           />
         ))}
-      <Needs>cross-feed search + total</Needs>
     </>
   );
 }

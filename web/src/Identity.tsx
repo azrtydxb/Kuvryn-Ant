@@ -5,10 +5,11 @@ import {
   isUnavailable,
   paths,
   useOptional,
-  type BindingRecord,
+  useOptionalCall,
   type EffectivePermissions,
 } from "./gaps";
 import type {
+  IdentityBindingRecord,
   CreatePrincipal,
   IdentityPrincipal,
   IdentityRole,
@@ -929,12 +930,10 @@ function ProvidersTab({
       active = false;
     };
   }, []);
-  const bindings = useOptional<{ items: BindingRecord[] }>(
-    client,
-    paths.bindings,
-    { limit: "100" },
-  );
-  const [removing, setRemoving] = useState<BindingRecord>();
+  const bindings = useOptionalCall(client, "listIdentityBindings", {
+    query: { limit: "200" },
+  });
+  const [removing, setRemoving] = useState<IdentityBindingRecord>();
   const name = useMemo(
     () => (id: string) => principals.find((p) => p.id === id)?.subject ?? id,
     [principals],
@@ -995,13 +994,13 @@ function ProvidersTab({
             {
               key: "principal_id",
               label: "Local user",
-              render: (b: BindingRecord) => name(b.principal_id),
+              render: (b: IdentityBindingRecord) => name(b.principal_id),
             },
             {
               key: "x",
               label: "",
               align: "right",
-              render: (b: BindingRecord) => (
+              render: (b: IdentityBindingRecord) => (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -1012,10 +1011,9 @@ function ProvidersTab({
               ),
             },
           ]}
-          rows={bindings.data.items.map((b, i) => ({ ...b, id: i }))}
+          rows={bindings.data.items}
         />
       )}
-      <Needs block>list/delete identity bindings</Needs>
       {removing && (
         <RemoveBinding
           client={client}
@@ -1038,7 +1036,7 @@ function RemoveBinding({
   done,
 }: {
   client: Client;
-  binding: BindingRecord;
+  binding: IdentityBindingRecord;
   onClose: () => void;
   done: () => void;
 }) {
@@ -1062,8 +1060,8 @@ function RemoveBinding({
               let gone = false;
               const ok = await action.run(async () => {
                 try {
-                  await client.extra("DELETE", paths.bindings, {
-                    query: { issuer: binding.issuer, subject: binding.subject },
+                  await client.call("deleteIdentityBinding", {
+                    params: { id: binding.id },
                   });
                 } catch (e) {
                   if (!isUnavailable(e)) throw e;

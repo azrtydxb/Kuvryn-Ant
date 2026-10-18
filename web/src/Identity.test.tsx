@@ -181,8 +181,16 @@ it("lists tokens with row-level revoke and expiry warnings when the server provi
     url.startsWith("/api/v1/tokens?")
       ? json({
           items: [
-            { id: ids.service, principal_id: ids.service, expires_at: soon },
+            {
+              id: ids.service,
+              principal_id: ids.service,
+              scopes: [{ actions: ["read"] }],
+              status: "active",
+              created_at: "2026-01-01T00:00:00Z",
+              expires_at: soon,
+            },
           ],
+          page: { has_more: false },
         })
       : undefined,
   );

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import type { Client } from "./api";
 import { useAllFeeds } from "./data";
-import { paths, useOptional, type TokenRecord } from "./gaps";
+import { useOptionalCall } from "./gaps";
 import type {
+  TokenRecord,
   IdentityPrincipal,
   IssueServiceToken,
   IssuedServiceToken,
@@ -23,7 +24,6 @@ import {
   Failure,
   Loading,
   Mono,
-  Needs,
   useAction,
   useToast,
   uuidPattern,
@@ -331,8 +331,8 @@ export function TokensTab({
   client: Client;
   principals: IdentityPrincipal[];
 }) {
-  const list = useOptional<{ items: TokenRecord[] }>(client, paths.tokens, {
-    limit: "100",
+  const list = useOptionalCall(client, "listServiceTokens", {
+    query: { limit: "200" },
   });
   const [revoking, setRevoking] = useState<TokenRecord>();
   const action = useAction();
@@ -353,13 +353,14 @@ export function TokensTab({
           Until then, revoke by token ID.
         </Alert>
         <RevokeById client={client} />
-        <Needs block>token list (today: revoke by ID only)</Needs>
       </>
     );
   const items = list.data.items;
   const soon = items.filter((t) => {
     const at = t.expires_at ? Date.parse(t.expires_at) : NaN;
-    return !t.revoked && at - Date.now() < 14 * DAY && at > Date.now();
+    return (
+      t.status === "active" && at - Date.now() < 14 * DAY && at > Date.now()
+    );
   });
   return (
     <>
@@ -411,11 +412,11 @@ export function TokensTab({
             key: "state",
             label: "Status",
             render: (t: TokenRecord) =>
-              t.revoked ? (
+              t.status === "revoked" ? (
                 <Badge tone="neutral" dot>
                   Revoked
                 </Badge>
-              ) : t.expires_at && Date.parse(t.expires_at) < Date.now() ? (
+              ) : t.status === "expired" ? (
                 <Badge tone="bad" dot>
                   Expired
                 </Badge>
@@ -434,7 +435,7 @@ export function TokensTab({
             label: "",
             align: "right",
             render: (t: TokenRecord) =>
-              t.revoked ? null : (
+              t.status !== "active" ? null : (
                 <Button
                   size="sm"
                   variant="ghost"

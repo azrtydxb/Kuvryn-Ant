@@ -1,28 +1,18 @@
 // Console features whose backend endpoints are not in api/openapi.yaml yet
-// ("Backend requirements" items 1, 3-21). Everything the console assumes about
-// those endpoints lives here so wiring a real endpoint later means moving one
-// definition into the generated contract. Shapes are assumptions taken from the
-// design brief, so every field is optional and every reader is defensive.
+// (operational visibility: metrics, storage, settings, retention, effective
+// permissions, webhook redeliver, connection test, audit sinks). Everything the
+// console assumes about those endpoints lives here so wiring a real endpoint
+// later means moving one definition into the generated contract. Shapes are
+// assumptions from the design brief, so every field is optional.
 //
 // A feature is "available" only when the server answers; HTTP 404, 405 or 501
 // means "not on this server yet" and renders the Unavailable state instead of an
-// error.
+// error. The same rule covers generated operations on servers that predate them.
 import { APIError, type Client } from "./api";
 import { useResource } from "./ui";
-import type { DiscoveredPackage, PageInfo, PublishRule } from "./generated";
+import type { Operations } from "./generated";
 
 export const paths = {
-  packageSearch: "/api/v1/packages",
-  reorder: (feed: string) =>
-    `/api/v1/feeds/${encodeURIComponent(feed)}/sources`,
-  resolve: (feed: string) =>
-    `/api/v1/feeds/${encodeURIComponent(feed)}/resolve`,
-  policyTest: (feed: string) =>
-    `/api/v1/feeds/${encodeURIComponent(feed)}/publish-policy:test`,
-  feed: (feed: string) => `/api/v1/feeds/${encodeURIComponent(feed)}`,
-  tokens: "/api/v1/tokens",
-  bindings: "/api/v1/identity-bindings",
-  audit: "/api/v1/audit",
   auditSinks: "/api/v1/audit/sinks",
   traffic: "/api/v1/metrics/traffic",
   storage: "/api/v1/storage",
@@ -30,72 +20,12 @@ export const paths = {
   retention: "/api/v1/retention",
   sourceTest: (id: string) =>
     `/api/v1/sources/${encodeURIComponent(id)}/connection-test`,
-  sourcePurge: (id: string) =>
-    `/api/v1/sources/${encodeURIComponent(id)}/cache-purge`,
   redeliver: (hook: string, event: number) =>
     `/api/v1/webhooks/${encodeURIComponent(hook)}/deliveries/${event}/redeliver`,
   effective: (principal: string) =>
     `/api/v1/principals/${encodeURIComponent(principal)}/effective-permissions`,
 };
 
-export type PackageSearchItem = Partial<DiscoveredPackage> & {
-  id: string;
-  coordinate: string;
-  feed_id?: string;
-  feed_slug?: string;
-  format?: string;
-  origin?: "local" | "cached";
-  latest_version?: string;
-  version_count?: number;
-  updated_at?: string;
-  size_bytes?: number;
-};
-export type PackageSearchPage = {
-  items: PackageSearchItem[];
-  page?: PageInfo;
-  total?: number;
-};
-export type Resolution = {
-  source?: { id?: string; name?: string; kind?: string };
-  shadowed?: { id?: string; name?: string }[];
-  cache?: { fresh?: boolean; ttl_remaining_seconds?: number };
-};
-export type PolicyTestResult = {
-  allowed?: boolean;
-  rule_id?: string;
-  target_source_id?: string;
-  reason?: string;
-};
-export type PolicyTestBody = {
-  default_source_id?: string;
-  rules: PublishRule[];
-  coordinate: string;
-  principal_id?: string;
-};
-export type TokenRecord = {
-  id: string;
-  principal_id?: string;
-  scopes?: { feed_id?: string; namespace?: string; actions: string[] }[];
-  created_at?: string;
-  expires_at?: string;
-  last_used_at?: string;
-  revoked?: boolean;
-};
-export type BindingRecord = {
-  issuer: string;
-  subject: string;
-  principal_id: string;
-};
-export type AuditRecord = {
-  id?: string;
-  at?: string;
-  principal_id?: string;
-  principal_subject?: string;
-  principal_kind?: string;
-  action?: string;
-  resource?: string;
-  result?: string;
-};
 export type Traffic = {
   labels?: string[];
   pulls?: number[];
@@ -216,5 +146,35 @@ export function useOptional<T>(
   return { ...state, reload: r.reload, loading: r.loading } as Optional<T> & {
     reload: () => void;
     loading: boolean;
+  };
+}
+
+// Same as useOptional, for operations in the generated contract.
+export function useOptionalCall<K extends keyof Operations>(
+  client: Client,
+  operation: K,
+  options: {
+    params?: Record<string, string>;
+    query?: Record<string, string>;
+  } = {},
+) {
+  const key = JSON.stringify(options);
+  const r = useResource(
+    () => client.call(operation, options),
+    [client, operation, key],
+  );
+  const state: Optional<Operations[K]["response"]> = r.loading
+    ? { state: "loading" }
+    : r.error
+      ? isUnavailable(r.error)
+        ? { state: "unavailable" }
+        : { state: "error", error: r.error }
+      : r.value
+        ? { state: "ready", data: r.value.data }
+        : { state: "unavailable" };
+  return { ...state, reload: r.reload } as Optional<
+    Operations[K]["response"]
+  > & {
+    reload: () => void;
   };
 }

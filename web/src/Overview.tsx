@@ -5,8 +5,7 @@ import { useAllFeeds, useAllSources } from "./data";
 import {
   paths,
   useOptional,
-  type PackageSearchPage,
-  type AuditRecord,
+  useOptionalCall,
   type Readiness,
   type SourceStats,
   type Storage,
@@ -23,6 +22,7 @@ import {
   StatCard,
   Table,
 } from "./ds/bundle";
+import type { AuditEvent } from "./generated";
 import type { PackageRef } from "./Packages";
 import {
   Card,
@@ -58,12 +58,11 @@ export function Overview({
   const [range, setRange] = useState("24h");
   const traffic = useOptional<Traffic>(client, paths.traffic, { range });
   const storage = useOptional<Storage>(client, paths.storage);
-  const recent = useOptional<PackageSearchPage>(client, paths.packageSearch, {
-    limit: "4",
-    origin: "local",
+  const recent = useOptionalCall(client, "searchPackages", {
+    query: { limit: "4", origin: "local" },
   });
-  const audit = useOptional<{ items: AuditRecord[] }>(client, paths.audit, {
-    limit: "4",
+  const audit = useOptionalCall(client, "listAuditEvents", {
+    query: { limit: "4" },
   });
   const readiness = (status.value?.data as Readiness | undefined)?.readiness;
   const failing = sources.items.filter(
@@ -352,18 +351,27 @@ export function Overview({
                 {
                   key: "action",
                   label: "Event",
-                  render: (r: AuditRecord) => (
+                  render: (r: AuditEvent) => (
                     <>
                       <Mono>{r.action}</Mono>
-                      <small>{r.principal_subject ?? r.principal_id}</small>
+                      <small>{r.principal_id ?? "anonymous"}</small>
                     </>
                   ),
                 },
                 {
                   key: "result",
                   label: "Result",
-                  render: (r: AuditRecord) => (
-                    <Badge tone={r.result === "denied" ? "bad" : "good"} dot>
+                  render: (r: AuditEvent) => (
+                    <Badge
+                      tone={
+                        r.result === "success"
+                          ? "good"
+                          : r.result === "denied"
+                            ? "bad"
+                            : "warn"
+                      }
+                      dot
+                    >
                       {r.result}
                     </Badge>
                   ),
@@ -372,7 +380,7 @@ export function Overview({
                   key: "at",
                   label: "Time",
                   align: "right",
-                  render: (r: AuditRecord) => when(r.at),
+                  render: (r: AuditEvent) => when(r.created_at),
                 },
               ]}
               rows={audit.data.items.slice(0, 4)}

@@ -85,8 +85,26 @@ export class Client {
       options.query,
       options.body,
       options.etag,
-      true,
+      "empty",
     );
+  }
+  // Plain-text export (audit CSV / NDJSON). Same session and CSRF handling.
+  async exportText(
+    path: string,
+    query: Record<string, string>,
+  ): Promise<string> {
+    if (!path.startsWith("/api/v1/") || path.includes("{"))
+      throw Error("Invalid resource path.");
+    const { data } = await this.send(
+      "GET",
+      path,
+      false,
+      query,
+      undefined,
+      undefined,
+      "text",
+    );
+    return data as string;
   }
   private async send(
     method: string,
@@ -95,7 +113,7 @@ export class Client {
     queryInput?: Record<string, string>,
     requestBody?: unknown,
     etag?: string,
-    allowEmpty = false,
+    mode: "json" | "empty" | "text" = "json",
   ): Promise<{ data: any; etag: string | null }> {
     if (this.token && !/^[\x21-\x7e]+$/.test(this.token)) {
       throw Error(
@@ -163,7 +181,11 @@ export class Client {
     let data: unknown;
     try {
       data =
-        allowEmpty && response.status === 204 ? null : await response.json();
+        mode === "text"
+          ? await response.text()
+          : mode === "empty" && response.status === 204
+            ? null
+            : await response.json();
     } catch {
       throw Error(
         idempotent

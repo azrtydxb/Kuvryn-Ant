@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Client } from "./api";
-import { paths, useOptional, type AuditRecord } from "./gaps";
+import { useResource } from "./ui";
+import { useOptionalCall, paths, useOptional } from "./gaps";
+import type { AuditEvent } from "./generated";
 import {
   Badge,
   Button,
@@ -9,7 +11,6 @@ import {
   Input,
   Modal,
   SegmentedControl,
-  Select,
   Table,
 } from "./ds/bundle";
 import {
@@ -21,74 +22,71 @@ import {
   Pager,
   Toolbar,
   Unavailable,
+  useAction,
   useDebounced,
+  useToast,
   val,
   when,
 } from "./ui";
 
-const actions = [
-  ["", "All actions"],
-  ["artifact.", "artifact.*"],
-  ["feed.", "feed.*"],
-  ["source.", "source.*"],
-  ["identity.", "identity.*"],
-  ["token.", "token.*"],
-] as const;
-
-function tone(result?: string) {
-  const r = (result ?? "").toLowerCase();
-  if (r.startsWith("denied") || r === "error") return "bad";
-  if (r.startsWith("conflict")) return "warn";
-  return "good";
-}
-function csvCell(v: unknown) {
-  const s = String(v ?? "");
-  // Guard spreadsheet formula injection as well as quoting.
-  const safe = /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
-  return '"' + safe.replaceAll('"', '""') + '"';
+function tone(result: string) {
+  return result === "success" ? "good" : result === "denied" ? "bad" : "warn";
 }
 
 export function AuditPage({ client }: { client: Client }) {
-  const [q, setQ] = useState("");
+  const [principal, setPrincipal] = useState("");
   const [action, setAction] = useState("");
   const [result, setResult] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [after, setAfter] = useState("");
+  const [cursor, setCursor] = useState("");
   const [siem, setSiem] = useState(false);
-  const dq = useDebounced(q);
-  const r = useOptional<{ items: AuditRecord[]; next_after?: string }>(
-    client,
-    paths.audit,
-    {
-      limit: "50",
-      ...(dq ? { principal: dq } : {}),
-      ...(action ? { action } : {}),
-      ...(result !== "all" ? { result } : {}),
-      ...(from ? { from: new Date(from).toISOString() } : {}),
-      ...(to ? { to: new Date(to + "T23:59:59").toISOString() } : {}),
-      ...(after ? { after } : {}),
-    },
+  const dp = useDebounced(principal);
+  const da = useDebounced(action);
+  const filters: Record<string, string> = {
+    ...(dp ? { principal: dp } : {}),
+    ...(da ? { action: da } : {}),
+    ...(result !== "all" ? { result } : {}),
+    ...(from ? { from: new Date(from).toISOString() } : {}),
+    ...(to ? { to: new Date(to + "T23:59:59").toISOString() } : {}),
+  };
+  const r = useOptionalCall(client, "listAuditEvents", {
+    query: { limit: "50", ...filters, ...(cursor ? { cursor } : {}) },
+  });
+  const names = useResource(
+    () => client.call("listPrincipals", { query: { limit: "200" } }),
+    [client],
+  );
+  const who = useMemo(
+    () =>
+      new Map((names.value?.data.items ?? []).map((p) => [p.id, p.subject])),
+    [names.value],
   );
   const rows = r.state === "ready" ? r.data.items : [];
-  function exportCSV() {
-    const head = ["time", "principal", "action", "resource", "result"];
-    const body = rows.map((a) => [
-      a.at,
-      a.principal_subject ?? a.principal_id,
-      a.action,
-      a.resource,
-      a.result,
-    ]);
-    const csv = [head, ...body]
-      .map((l) => l.map(csvCell).join(","))
-      .join("\r\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "audit-log.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const exporter = useAction();
+  const toast = useToast();
+  const reset = (set: (v: string) => void) => (v: string) => {
+    set(v);
+    setCursor("");
+  };
+  async function exportLog(format: "csv" | "ndjson") {
+    const ok = await exporter.run(async () => {
+      const text = await client.exportText("/api/v1/audit/export", {
+        format,
+        ...filters,
+      });
+      const url = URL.createObjectURL(
+        new Blob([text], {
+          type: format === "csv" ? "text/csv" : "application/x-ndjson",
+        }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-log.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    if (ok) toast("Audit export ready", format.toUpperCase());
   }
   return (
     <>
@@ -100,10 +98,18 @@ export function AuditPage({ client }: { client: Client }) {
         <Button
           variant="secondary"
           icon="download"
-          disabled={!rows.length}
-          onClick={exportCSV}
+          disabled={r.state !== "ready" || exporter.busy}
+          onClick={() => exportLog("csv")}
         >
           Export CSV
+        </Button>
+        <Button
+          variant="secondary"
+          icon="download"
+          disabled={r.state !== "ready" || exporter.busy}
+          onClick={() => exportLog("ndjson")}
+        >
+          Export NDJSON
         </Button>
         <Button
           variant="secondary"
@@ -113,11 +119,9 @@ export function AuditPage({ client }: { client: Client }) {
           Stream to SIEM
         </Button>
       </PageHeading>
+      <Failure error={exporter.error} className="spaced" />
       {r.state === "unavailable" ? (
-        <>
-          <Unavailable what="The audit log (list and export)" />
-          <Needs block>audit list + export</Needs>
-        </>
+        <Unavailable what="The audit log (list and export)" />
       ) : (
         <>
           <Toolbar
@@ -130,57 +134,46 @@ export function AuditPage({ client }: { client: Client }) {
             <Input
               icon="search"
               size="sm"
-              aria-label="Principal"
-              placeholder="Principal"
-              value={q}
-              onChange={(e: { target: { value: string } }) => {
-                setQ(e.target.value);
-                setAfter("");
-              }}
+              aria-label="Principal ID"
+              placeholder="Principal ID"
+              mono
+              value={principal}
+              onChange={val(reset(setPrincipal))}
               className="w260"
             />
-            <Select
+            <Input
               size="sm"
-              aria-label="Action"
-              options={actions.map(([value, label]) => ({ value, label }))}
+              aria-label="Exact action"
+              placeholder="Exact action, e.g. feed.create"
+              mono
               value={action}
-              onChange={(e: { target: { value: string } }) => {
-                setAction(e.target.value);
-                setAfter("");
-              }}
+              onChange={val(reset(setAction))}
+              className="w260"
             />
             <SegmentedControl
               aria-label="Result"
               options={[
                 { value: "all", label: "All" },
-                { value: "allowed", label: "Allowed" },
+                { value: "success", label: "Success" },
                 { value: "denied", label: "Denied" },
+                { value: "failure", label: "Failure" },
               ]}
               value={result}
-              onChange={(v: string) => {
-                setResult(v);
-                setAfter("");
-              }}
+              onChange={reset(setResult)}
             />
             <Input
               size="sm"
               type="date"
               aria-label="From date"
               value={from}
-              onChange={val((v) => {
-                setFrom(v);
-                setAfter("");
-              })}
+              onChange={val(reset(setFrom))}
             />
             <Input
               size="sm"
               type="date"
               aria-label="To date"
               value={to}
-              onChange={val((v) => {
-                setTo(v);
-                setAfter("");
-              })}
+              onChange={val(reset(setTo))}
             />
           </Toolbar>
           {r.state === "loading" && <Loading what="audit events" />}
@@ -189,52 +182,55 @@ export function AuditPage({ client }: { client: Client }) {
             (rows.length ? (
               <>
                 <Table
-                  rowKey="id"
                   columns={[
                     {
-                      key: "at",
+                      key: "created_at",
                       label: "Time",
                       mono: true,
-                      render: (a: AuditRecord) => when(a.at),
+                      render: (a: AuditEvent) => when(a.created_at),
                     },
                     {
                       key: "who",
                       label: "Principal",
-                      render: (a: AuditRecord) => (
+                      render: (a: AuditEvent) => (
                         <span className="row tight">
                           <Icon
-                            name={
-                              a.principal_kind === "service"
-                                ? "bot"
-                                : a.principal_kind === "anonymous"
-                                  ? "globe"
-                                  : "user"
-                            }
+                            name={a.principal_id ? "user" : "globe"}
                             size={14}
                           />
                           <Mono>
-                            {a.principal_subject ??
-                              a.principal_id ??
-                              "anonymous"}
+                            {a.principal_id
+                              ? (who.get(a.principal_id) ?? a.principal_id)
+                              : "anonymous"}
                           </Mono>
                         </span>
                       ),
                     },
                     { key: "action", label: "Action", mono: true },
-                    { key: "resource", label: "Resource" },
+                    {
+                      key: "resource_id",
+                      label: "Resource",
+                      render: (a: AuditEvent) => (
+                        <Mono muted>{a.resource_id ?? "—"}</Mono>
+                      ),
+                    },
                     {
                       key: "result",
                       label: "Result",
-                      render: (a: AuditRecord) => (
+                      render: (a: AuditEvent) => (
                         <Badge tone={tone(a.result)} dot>
-                          {a.result ?? "—"}
+                          {a.result}
                         </Badge>
                       ),
                     },
                   ]}
-                  rows={rows.map((a, i) => ({ ...a, id: a.id ?? i }))}
+                  rows={rows}
                 />
-                <Pager cursor={after} next={r.data.next_after} set={setAfter} />
+                <Pager
+                  cursor={cursor}
+                  next={r.data.page.next_cursor}
+                  set={setCursor}
+                />
               </>
             ) : (
               <EmptyState

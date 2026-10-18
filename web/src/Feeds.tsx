@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { APIError, requireETag, type Client } from "./api";
+import { requireETag, type Client } from "./api";
 import type { Go } from "./App";
 import { useAllSources, sourcesForFormat } from "./data";
-import { isUnavailable, paths, type FeedStats } from "./gaps";
+import { isUnavailable, type FeedStats } from "./gaps";
 import { formats, type Feed } from "./generated";
 import {
   Alert,
@@ -284,15 +284,42 @@ function CreateFeed({
       ? target
       : (locals[0]?.id ?? "");
   const steps = ["Basics", "Sources", "Review"];
-  // No batch endpoint yet: create the feed, then attach sources in read order
-  // and set the default publish target. A failure after the feed exists
-  // reports the step and offers to open the feed; nothing is rolled back.
+  // Fallback for servers without the batch endpoint: create the feed, then
+  // attach sources in read order and set the default publish target. A failure
+  // after the feed exists reports the step and offers to open the feed.
   async function submit() {
     let id = made;
     let stage = "create the feed";
     const ok = await action.run(async () => {
       try {
         let revision = 0;
+        if (!id) {
+          // One idempotent call: feed, read order and publish target.
+          try {
+            const batch = await client.call("createFeedBatch", {
+              body: {
+                slug,
+                format,
+                anonymous_read: anon,
+                ...(picked.length ? { source_ids: picked } : {}),
+                ...(writeTarget
+                  ? {
+                      publish_policy: {
+                        default_source_id: writeTarget,
+                        rules: [],
+                      },
+                    }
+                  : {}),
+              },
+            });
+            id = batch.data.feed.id;
+            setMade(id);
+            return;
+          } catch (e) {
+            // Servers without the batch endpoint use the step-by-step flow.
+            if (!isUnavailable(e)) throw e;
+          }
+        }
         if (!id) {
           const feed = await client.call("createFeed", {
             body: { slug, format, anonymous_read: anon },
@@ -519,9 +546,6 @@ function CreateFeed({
             code={pullCommand(format, slug, "<package>", "")}
           />
           <Failure error={action.error} />
-          <Needs block>
-            batch create (feed + attachments + policy in one call)
-          </Needs>
         </>
       )}
     </Modal>
@@ -832,11 +856,12 @@ function DeleteFeed({
               setUnavailable(false);
               const ok = await action.run(async () => {
                 try {
-                  await client.extra("DELETE", paths.feed(feed.id), {
+                  await client.call("deleteFeed", {
+                    params: { id: feed.id },
                     etag: requireETag(etag),
                   });
                 } catch (e) {
-                  if (isUnavailable(e) && e instanceof APIError) {
+                  if (isUnavailable(e)) {
                     setUnavailable(true);
                     return;
                   }

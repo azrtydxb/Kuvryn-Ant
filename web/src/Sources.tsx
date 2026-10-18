@@ -469,12 +469,16 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
   const [purge, setPurge] = useState(false);
   const action = useAction();
   const toast = useToast();
-  async function call(path: string, label: string, done: string) {
+  async function call(
+    run: () => Promise<unknown>,
+    label: string,
+    done: string,
+  ) {
     setUnavailable("");
     setNote(undefined);
     await action.run(async () => {
       try {
-        await client.extra("POST", path, { body: {} });
+        await run();
         setNote({ tone: "good", text: done });
         toast(label, source.name);
       } catch (e) {
@@ -493,7 +497,8 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
           disabled={action.busy}
           onClick={() =>
             call(
-              paths.sourceTest(source.id),
+              () =>
+                client.extra("POST", paths.sourceTest(source.id), { body: {} }),
               "Connection test",
               "Upstream reachable.",
             )
@@ -514,7 +519,7 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
       {unavailable && <Unavailable what={unavailable} compact />}
       {note && <Alert tone={note.tone} title={note.text} />}
       <Failure error={action.error} />
-      <Needs>connection test, cache purge</Needs>
+      <Needs>connection test</Needs>
       {purge && (
         <Modal
           title="Purge cache"
@@ -531,7 +536,10 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
                 onClick={() => {
                   setPurge(false);
                   void call(
-                    paths.sourcePurge(source.id),
+                    () =>
+                      client.call("purgeSourceCache", {
+                        params: { id: source.id },
+                      }),
                     "Cache purged",
                     "Cache purged.",
                   );

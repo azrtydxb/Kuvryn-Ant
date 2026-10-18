@@ -65,6 +65,8 @@ export function mockAPI(
     if (path === "/api/v1/feeds" && method === "GET")
       return json({ items: [feed], page });
     if (path === "/api/v1/feeds" && method === "POST") return json(feed);
+    // Newer endpoints answer 404 unless a test opts in, like an older server.
+    if (path === "/api/v1/feeds/batch") return notFound();
     if (path === `/api/v1/feeds/${ids.feed}` && method !== "DELETE")
       return json(feed);
     if (path === `/api/v1/feeds/${ids.feed}/publish-policy`)

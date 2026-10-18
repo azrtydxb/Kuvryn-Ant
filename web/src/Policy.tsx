@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { requireETag, type Client } from "./api";
-import { isUnavailable, paths, type PolicyTestResult } from "./gaps";
+import { isUnavailable } from "./gaps";
 import type {
   Feed,
   IdentityPrincipal,
   PublishPolicy,
+  PublishPolicyTestResult,
   PublishRule,
   SourceAttachmentPage,
 } from "./generated";
@@ -24,7 +25,6 @@ import {
   Failure,
   Loading,
   Mono,
-  Needs,
   Unavailable,
   useAction,
   useResource,
@@ -494,7 +494,7 @@ function PolicyTest({
 }) {
   const [coordinate, setCoordinate] = useState("");
   const [principal, setPrincipal] = useState("");
-  const [result, setResult] = useState<PolicyTestResult>();
+  const [result, setResult] = useState<PublishPolicyTestResult>();
   const [unavailable, setUnavailable] = useState(false);
   const action = useAction();
   return (
@@ -508,18 +508,14 @@ function PolicyTest({
           setUnavailable(false);
           await action.run(async () => {
             try {
-              const res = await client.extra<PolicyTestResult>(
-                "POST",
-                paths.policyTest(feedId),
-                {
-                  body: {
-                    default_source_id: defaultID || undefined,
-                    rules,
-                    coordinate,
-                    principal_id: principal || undefined,
-                  },
+              const res = await client.call("testPublishPolicy", {
+                params: { id: feedId },
+                body: {
+                  policy: { default_source_id: defaultID || undefined, rules },
+                  coordinate,
+                  principal_id: principal || undefined,
                 },
-              );
+              });
               setResult(res.data);
             } catch (err) {
               if (isUnavailable(err)) setUnavailable(true);
@@ -566,15 +562,19 @@ function PolicyTest({
           tone={result.allowed ? "good" : "bad"}
           title={result.allowed ? "Allowed" : "Rejected"}
         >
-          {result.rule_id && (
+          {result.matched_rule_id && (
             <>
-              Matched <Mono>{result.rule_id}</Mono>.{" "}
+              Matched <Mono>{result.matched_rule_id}</Mono>.{" "}
             </>
           )}
-          {result.reason}
+          {result.target_source_name && (
+            <>
+              Target <Mono>{result.target_source_name}</Mono>.{" "}
+            </>
+          )}
+          {result.reason} {result.denial}
         </Alert>
       )}
-      <Needs>policy dry-run</Needs>
     </Card>
   );
 }
