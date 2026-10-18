@@ -42,6 +42,9 @@ type Reference struct {
 	Info              blob.Info
 }
 type Publication struct {
+	Subject                                                     *Subject
+	ArtifactType                                                string
+	Annotations                                                 map[string]string
 	ExpectedSource                                              string
 	References                                                  []Reference
 	Tag                                                         string
@@ -58,7 +61,7 @@ func bounded(s string, n int) bool {
 	return s != "" && len(s) <= n && utf8.ValidString(s) && !strings.ContainsAny(s, "\x00\r\n")
 }
 func valid(p Publication) bool {
-	if !bounded(p.FeedID, 36) || !bounded(p.Coordinate, 256) || !bounded(p.Version, 256) || !bounded(p.AssetKey, 2048) || !bounded(p.MediaType, 256) || len(p.Namespace) > 256 || !utf8.ValidString(p.Namespace) || !p.Info.Digest.Valid() || p.Info.Size < 0 {
+	if !validSubject(p) || !bounded(p.FeedID, 36) || !bounded(p.Coordinate, 256) || !bounded(p.Version, 256) || !bounded(p.AssetKey, 2048) || !bounded(p.MediaType, 256) || len(p.Namespace) > 256 || !utf8.ValidString(p.Namespace) || !p.Info.Digest.Valid() || p.Info.Size < 0 {
 		return false
 	}
 	if len(p.References) > 4096 || len(p.Tag) > 128 || strings.ContainsAny(p.Tag, "/\x00\r\n") {
@@ -86,6 +89,9 @@ func (s *Service) authorize(ctx context.Context, p identity.Principal, r Publica
 		return ErrUnavailable
 	}
 	if !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: r.FeedID, SourceID: source, Namespace: r.Namespace, Kind: identity.ArtifactResource}, identity.Publish) {
+		return ErrDenied
+	}
+	if r.Subject != nil && !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: r.FeedID, SourceID: source, Namespace: r.Namespace, Kind: identity.ArtifactResource}, identity.Read) {
 		return ErrDenied
 	}
 	return nil
@@ -212,7 +218,10 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 		return Record{}, ErrUnavailable
 	}
 	var component, version string
-	err = tx.QueryRow(commitCtx, `INSERT INTO components(instance_id,source_id,coordinate) VALUES($1,$2,$3) ON CONFLICT(source_id,coordinate) DO UPDATE SET coordinate=excluded.coordinate RETURNING id::text`, p.InstanceID, source, r.Coordinate).Scan(&component)
+	err = tx.QueryRow(commitCtx, `INSERT INTO components(instance_id,source_id,coordinate,namespace) VALUES($1,$2,$3,$4) ON CONFLICT(source_id,coordinate) DO UPDATE SET coordinate=excluded.coordinate WHERE components.namespace=excluded.namespace RETURNING id::text`, p.InstanceID, source, r.Coordinate, r.Namespace).Scan(&component)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Record{}, ErrConflict
+	}
 	if err != nil {
 		return Record{}, ErrUnavailable
 	}
@@ -285,6 +294,9 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, p identity.Principal, r P
 			}
 		}
 
+		if err = commitSubjectTx(commitCtx, tx, r, p.InstanceID, component, result.ID); err != nil {
+			return Record{}, err
+		}
 		result.Replayed = true
 		return result, nil
 	}
@@ -303,6 +315,9 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, p identity.Principal, r P
 	err = tx.QueryRow(commitCtx, `INSERT INTO assets(instance_id,version_id,asset_key,blob_id,media_type,provenance) VALUES($1,$2,$3,$4,$5,jsonb_build_object('source_id',$6::text,'principal_id',$7::text,'feed_id',$8::text)) RETURNING id::text`, p.InstanceID, version, r.AssetKey, blobID, r.MediaType, source, p.PrincipalID, r.FeedID).Scan(&result.ID)
 	if err != nil {
 		return Record{}, ErrUnavailable
+	}
+	if err = commitSubjectTx(commitCtx, tx, r, p.InstanceID, component, result.ID); err != nil {
+		return Record{}, err
 	}
 	if r.Tag != "" {
 		if _, err = tx.Exec(commitCtx, "INSERT INTO tags(component_id,name,version_id) VALUES($1,$2,$3) ON CONFLICT(component_id,name) DO NOTHING", component, r.Tag, version); err != nil {

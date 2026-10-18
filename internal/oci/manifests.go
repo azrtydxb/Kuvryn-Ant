@@ -35,12 +35,14 @@ type descriptor struct {
 	Size      *int64 `json:"size"`
 }
 type manifestDocument struct {
-	SchemaVersion int          `json:"schemaVersion"`
-	MediaType     string       `json:"mediaType"`
-	Config        *descriptor  `json:"config"`
-	Layers        []descriptor `json:"layers"`
-	Manifests     []descriptor `json:"manifests"`
-	Subject       *descriptor  `json:"subject"`
+	SchemaVersion int               `json:"schemaVersion"`
+	MediaType     string            `json:"mediaType"`
+	Config        *descriptor       `json:"config"`
+	Layers        []descriptor      `json:"layers"`
+	Manifests     []descriptor      `json:"manifests"`
+	Subject       *descriptor       `json:"subject"`
+	ArtifactType  string            `json:"artifactType"`
+	Annotations   map[string]string `json:"annotations"`
 }
 
 func validateManifest(body []byte, media string) ([]artifact.Reference, error) {
@@ -124,6 +126,8 @@ func (r *Registry) manifest(w http.ResponseWriter, req *http.Request, p identity
 		failure(w, 400, "MANIFEST_INVALID", "invalid manifest document")
 		return
 	}
+	var document manifestDocument
+	_ = json.Unmarshal(body, &document)
 	sum := sha256.Sum256(body)
 	digest := blob.Digest(hex.EncodeToString(sum[:]))
 	if isDigest && digest != expected {
@@ -135,6 +139,15 @@ func (r *Registry) manifest(w http.ResponseWriter, req *http.Request, p identity
 	publication.Info = blob.Info{Digest: digest, Size: int64(len(body))}
 	publication.MediaType = media
 	publication.References = references
+	if document.Subject != nil {
+		subjectDigest, _ := parseDigest(document.Subject.Digest)
+		publication.Subject = &artifact.Subject{Info: blob.Info{Digest: subjectDigest, Size: *document.Subject.Size}, MediaType: document.Subject.MediaType}
+		publication.ArtifactType = document.ArtifactType
+		if publication.ArtifactType == "" && document.Config != nil {
+			publication.ArtifactType = document.Config.MediaType
+		}
+		publication.Annotations = document.Annotations
+	}
 	if !isDigest {
 		publication.Tag = reference
 	}
@@ -147,6 +160,9 @@ func (r *Registry) manifest(w http.ResponseWriter, req *http.Request, p identity
 		return
 	}
 	w.Header().Set("Location", "/v2/"+rep.full+"/manifests/sha256:"+string(digest))
+	if document.Subject != nil {
+		w.Header().Set("OCI-Subject", document.Subject.Digest)
+	}
 	w.Header().Set("Docker-Content-Digest", "sha256:"+string(digest))
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(201)

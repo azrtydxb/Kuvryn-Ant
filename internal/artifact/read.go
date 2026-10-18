@@ -23,8 +23,8 @@ func (s *Service) Lookup(ctx context.Context, p identity.Principal, r Publicatio
 	// Read ownership and the asset in one statement's snapshot.
 	result := Record{}
 	err := s.DB.QueryRow(ctx, `WITH owner AS (
- SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1
- ) SELECT a.id::text,o.source_id::text,v.id::text,b.dedup_domain_id::text,a.media_type,b.digest,b.size_bytes FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id JOIN blobs b ON b.id=a.blob_id WHERE v.version=$4 AND a.asset_key=$5`, p.InstanceID, r.FeedID, r.Coordinate, r.Version, r.AssetKey).Scan(&result.ID, &result.SourceID, &result.VersionID, &result.DomainID, &result.MediaType, &result.Info.Digest, &result.Info.Size)
+ SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1
+ ) SELECT a.id::text,o.source_id::text,v.id::text,b.dedup_domain_id::text,a.media_type,b.digest,b.size_bytes FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id JOIN blobs b ON b.id=a.blob_id WHERE v.version=$4 AND a.asset_key=$5 AND o.namespace=$6`, p.InstanceID, r.FeedID, r.Coordinate, r.Version, r.AssetKey, r.Namespace).Scan(&result.ID, &result.SourceID, &result.VersionID, &result.DomainID, &result.MediaType, &result.Info.Digest, &result.Info.Size)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Record{}, ErrNotFound
 	}
@@ -78,7 +78,7 @@ func (s *Service) ResolveTag(ctx context.Context, p identity.Principal, r Public
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	var source, version string
-	err := s.DB.QueryRow(ctx, `WITH owner AS(SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN tags t ON t.component_id=o.id JOIN versions v ON v.id=t.version_id WHERE t.name=$4`, p.InstanceID, r.FeedID, r.Coordinate, tag).Scan(&source, &version)
+	err := s.DB.QueryRow(ctx, `WITH owner AS(SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN tags t ON t.component_id=o.id JOIN versions v ON v.id=t.version_id WHERE t.name=$4 AND o.namespace=$5`, p.InstanceID, r.FeedID, r.Coordinate, tag, r.Namespace).Scan(&source, &version)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNotFound
 	}

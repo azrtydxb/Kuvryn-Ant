@@ -160,7 +160,7 @@ func (r *Registry) repository(ctx context.Context, p identity.Principal, name st
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	err := r.db.QueryRow(ctx, `SELECT id FROM feeds WHERE instance_id=$1 AND slug=$2 AND format='oci'`, p.InstanceID, feed).Scan(&result.feed)
+	err := r.db.QueryRow(ctx, `SELECT id FROM feeds WHERE instance_id=$1 AND slug=$2 AND format IN ('oci','oci-artifacts')`, p.InstanceID, feed).Scan(&result.feed)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return repository{}, artifact.ErrNotFound
 	}
@@ -193,12 +193,13 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 	}
 	path := strings.TrimPrefix(req.URL.Path, "/v2/")
 	var name, action, reference string
-	for _, candidate := range []string{"/blobs/uploads/", "/manifests/", "/blobs/", "/tags/list"} {
-		if index := strings.LastIndex(path, candidate); index > 0 {
+	bestIndex := 0
+	for _, candidate := range []string{"/blobs/uploads/", "/manifests/", "/referrers/", "/blobs/", "/tags/list"} {
+		if index := strings.LastIndex(path, candidate); index > bestIndex {
 			name = path[:index]
 			action = candidate
 			reference = path[index+len(candidate):]
-			break
+			bestIndex = index
 		}
 	}
 	if name == "" || strings.Contains(reference, "/") {
@@ -232,6 +233,12 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 			r.manifest(w, req, p, rep, reference)
 		} else if req.Method == "GET" || req.Method == "HEAD" {
 			r.read(w, req, p, rep, reference, "manifest")
+		} else {
+			failure(w, 405, "UNSUPPORTED", "operation unavailable")
+		}
+	case "/referrers/":
+		if req.Method == "GET" || req.Method == "HEAD" {
+			r.referrers(w, req, p, rep, reference)
 		} else {
 			failure(w, 405, "UNSUPPORTED", "operation unavailable")
 		}

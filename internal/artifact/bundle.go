@@ -74,8 +74,10 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 	if prepared != source {
 		return nil, ErrConflict
 	}
-	if err = s.authorize(ctx, p, base, source); err != nil {
-		return nil, err
+	for _, item := range publications {
+		if err = s.authorize(ctx, p, item, source); err != nil {
+			return nil, err
+		}
 	}
 	checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	var domain string
@@ -101,8 +103,10 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 			return nil, err
 		}
 	}
-	if err = s.authorize(ctx, p, base, source); err != nil {
-		return nil, err
+	for _, item := range publications {
+		if err = s.authorize(ctx, p, item, source); err != nil {
+			return nil, err
+		}
 	}
 	commitCtx, stop := context.WithTimeout(ctx, 15*time.Second)
 	defer stop()
@@ -134,7 +138,10 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 		return nil, ErrUnavailable
 	}
 	var component, version string
-	err = tx.QueryRow(commitCtx, `INSERT INTO components(instance_id,source_id,coordinate) VALUES($1,$2,$3) ON CONFLICT(source_id,coordinate) DO UPDATE SET coordinate=excluded.coordinate RETURNING id::text`, p.InstanceID, source, base.Coordinate).Scan(&component)
+	err = tx.QueryRow(commitCtx, `INSERT INTO components(instance_id,source_id,coordinate,namespace) VALUES($1,$2,$3,$4) ON CONFLICT(source_id,coordinate) DO UPDATE SET coordinate=excluded.coordinate WHERE components.namespace=excluded.namespace RETURNING id::text`, p.InstanceID, source, base.Coordinate, base.Namespace).Scan(&component)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrConflict
+	}
 	if err != nil {
 		return nil, ErrUnavailable
 	}

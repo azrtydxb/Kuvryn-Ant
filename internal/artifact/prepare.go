@@ -57,6 +57,13 @@ func (s *Service) Prepare(ctx context.Context, p identity.Principal, feed, names
 	if err != nil {
 		return "", ErrUnavailable
 	}
+	var mismatch bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM components WHERE instance_id=$1 AND source_id=$2 AND coordinate=$3 AND namespace IS DISTINCT FROM $4::text)`, p.InstanceID, id, coordinate, namespace).Scan(&mismatch); err != nil {
+		return "", ErrUnavailable
+	}
+	if mismatch {
+		return "", ErrConflict
+	}
 	if tx.Commit(ctx) != nil {
 		return "", ErrUnavailable
 	}
