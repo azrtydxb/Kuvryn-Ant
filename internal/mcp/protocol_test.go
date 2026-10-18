@@ -101,7 +101,7 @@ func TestInitializeAndListing(t *testing.T) {
 	}
 	for n, m := range names {
 		ann := m["annotations"].(map[string]any)
-		destructive := n == "detach_source" || n == "disable_webhook" || n == "delete_package_version"
+		destructive := map[string]bool{"detach_source": true, "disable_webhook": true, "delete_package_version": true, "start_retention_run": true, "start_storage_job": true, "revoke_service_token": true, "purge_source_cache": true}[n]
 		if got, _ := ann["destructiveHint"].(bool); got != destructive && !ann["readOnlyHint"].(bool) {
 			t.Fatalf("%s destructiveHint=%v", n, got)
 		}

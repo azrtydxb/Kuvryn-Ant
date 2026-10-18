@@ -92,6 +92,8 @@ func newFixture(t *testing.T) *fixture {
 	management.RegisterPackages(mux, pool, codec)
 	management.RegisterIdentities(mux, pool)
 	management.RegisterWebhooks(mux, pool, nil)
+	management.RegisterOperations(mux, management.OpsDeps{Pool: pool, Codec: codec, Background: context.Background()})
+	management.RegisterConsole(mux, pool, codec)
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
 	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
 	Register(mux, pool, nil)

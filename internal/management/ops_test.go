@@ -95,7 +95,7 @@ func TestOperationsAuthorization(t *testing.T) {
 		expectSourceStatus(t, o.requestAs("GET", path, "", "", "", ""), 401)
 	}
 	expectSourceStatus(t, o.requestAs("PUT", "/api/v1/settings", `{}`, "k", `"1"`, o.limited), 403)
-	expectSourceStatus(t, o.requestAs("POST", "/api/v1/retention/runs", `{"dry_run":true}`, "", "", o.limited), 403)
+	expectSourceStatus(t, o.requestAs("POST", "/api/v1/retention/runs", `{"dry_run":true}`, idk(), "", o.limited), 403)
 	expectSourceStatus(t, o.requestAs("PUT", "/api/v1/audit-sink", `{"kind":"http","endpoint":"https://siem.example.test/x"}`, "k", `"1"`, o.limited), 403)
 	// Unprivileged callers see no feeds or sources in stats/health, and cannot inspect others.
 	feed := o.feed("authz-feed", "raw")
@@ -189,7 +189,7 @@ func TestRetentionPolicyAndRuns(t *testing.T) {
 		t.Fatal("delete not audited")
 	}
 	// Maintenance unavailable without a service.
-	expectSourceStatus(t, o.request("POST", "/api/v1/retention/runs", `{"dry_run":true}`, "", ""), 503)
+	expectSourceStatus(t, o.request("POST", "/api/v1/retention/runs", `{"dry_run":true}`, idk(), ""), 503)
 	// Scheduled history is listed, newest first, reports only on the single-run endpoint.
 	rep := retention.Report{DryRun: true, Retention: retention.RetentionReport{Deleted: []retention.Deletion{{SourceID: o.principal, Coordinate: "a", Version: "1", Reason: "keep_last"}}}}
 	RecordRetentionRun(context.Background(), o.db, o.instance, "scheduled", rep, nil, time.Now().Add(-time.Minute))

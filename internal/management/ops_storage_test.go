@@ -50,10 +50,10 @@ func TestStorageMigrationAPI(t *testing.T) {
 		t.Fatalf("%+v", st)
 	}
 	expectSourceStatus(t, o.requestAs("GET", "/api/v1/storage/migration", "", "", "", o.limited), 403)
-	expectSourceStatus(t, o.requestAs("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, "", "", o.limited), 403)
+	expectSourceStatus(t, o.requestAs("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, idk(), "", o.limited), 403)
 	expectSourceStatus(t, o.requestAs("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"disk","dry_run":false}`, "", "", ""), 401)
-	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"disk","dry_run":false}`, "", ""), 400)
-	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"cleanup","dry_run":false}`, "", ""), 409)
+	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"disk","dry_run":false}`, idk(), ""), 400)
+	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"cleanup","dry_run":false}`, idk(), ""), 409)
 
 	wait := func(id string) storage.Job {
 		t.Helper()
@@ -67,13 +67,13 @@ func TestStorageMigrationAPI(t *testing.T) {
 		t.Fatal("job did not finish")
 		return storage.Job{}
 	}
-	w := o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, "", "")
+	w := o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, idk(), "")
 	expectSourceStatus(t, w, 202)
 	dry := wait(decodeJSON[storage.Job](t, w).ID)
 	if dry.State != storage.StateCompleted || dry.Copied != 5 || stores["s3"].Len() != 0 {
 		t.Fatalf("dry run %+v", dry)
 	}
-	w = o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":false,"throttle_bytes_per_second":1000000}`, "", "")
+	w = o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":false,"throttle_bytes_per_second":1000000}`, idk(), "")
 	expectSourceStatus(t, w, 202)
 	done := wait(decodeJSON[storage.Job](t, w).ID)
 	if done.State != storage.StateCompleted || done.Copied != 5 || stores["s3"].Len() != 5 || done.SwitchedAt == nil {
@@ -86,13 +86,13 @@ func TestStorageMigrationAPI(t *testing.T) {
 	if u := decodeJSON[StorageUsage](t, o.get("/api/v1/storage/usage")); u.Backend != "s3" {
 		t.Fatalf("usage reports %q", u.Backend)
 	}
-	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"disk","dry_run":false}`, "", ""), 409)
+	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"disk","dry_run":false}`, idk(), ""), 409)
 	list := decodeJSON[StorageJobPage](t, o.get("/api/v1/storage/migrations"))
 	if len(list.Items) != 2 {
 		t.Fatalf("jobs %d", len(list.Items))
 	}
 
-	w = o.request("POST", "/api/v1/storage/migrations", `{"action":"cleanup","dry_run":false}`, "", "")
+	w = o.request("POST", "/api/v1/storage/migrations", `{"action":"cleanup","dry_run":false}`, idk(), "")
 	expectSourceStatus(t, w, 202)
 	clean := wait(decodeJSON[storage.Job](t, w).ID)
 	if clean.State != storage.StateCompleted || clean.Deleted != 5 || stores["disk"].Len() != 0 {
@@ -103,7 +103,10 @@ func TestStorageMigrationAPI(t *testing.T) {
 	}
 	expectSourceStatus(t, o.get("/api/v1/storage/migrations/00000000-0000-4000-8000-000000000000"), 404)
 	var audits int
-	if err := o.db.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action LIKE 'storage.%'`).Scan(&audits); err != nil || audits != 3 {
+	if err := o.db.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action IN ('storage.migrate','storage.cleanup')`).Scan(&audits); err != nil || audits != 3 {
 		t.Fatalf("audit events %d %v", audits, err)
+	}
+	if n := o.count(`SELECT count(*) FROM outbox_events WHERE topic='storage.migration.completed'`); n != 3 {
+		t.Fatalf("completion events %d", n)
 	}
 }

@@ -3357,6 +3357,16 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -5928,7 +5938,19 @@
           "503": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
       }
     },
     "/api/v1/retention/runs/{id}": {
@@ -7961,7 +7983,19 @@
           "503": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
       }
     },
     "/api/v1/storage/migrations/{id}": {
@@ -8047,6 +8081,16 @@
                 "pause",
                 "resume"
               ]
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -8442,6 +8486,16 @@
               ],
               "default": "delete"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
           }
         ],
         "responses": {
@@ -8536,6 +8590,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -10475,6 +10539,97 @@
             "$ref": "#/components/responses/Error"
           },
           "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{id}/security-results": {
+      "post": {
+        "operationId": "ingestSecurityResult",
+        "description": "Record an external scanner result for an asset. Requires configure on the asset's feed. Stored with the asset and emitted as an asset.security_result webhook event.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityResultInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
             "$ref": "#/components/responses/Error"
           },
           "429": {
@@ -17114,6 +17269,75 @@
           "code": {
             "type": "string",
             "pattern": "^[0-9]{6}$"
+          }
+        }
+      },
+      "SecurityResultInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scanner",
+          "status"
+        ],
+        "properties": {
+          "scanner": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "warning"
+            ]
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Free-form scanner summary, at most 16 KiB."
+          }
+        }
+      },
+      "SecurityResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "asset_id",
+          "scanner",
+          "status",
+          "summary",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scanner": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "passed",
+              "failed",
+              "warning"
+            ]
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

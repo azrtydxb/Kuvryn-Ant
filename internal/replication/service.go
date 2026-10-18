@@ -33,6 +33,9 @@ type Config struct {
 	ContinuousDelay time.Duration // pause between continuous passes (default 2s)
 	LeaseTTL        time.Duration // per-job claim lease (default 60s)
 	MaxBackoff      time.Duration // retry backoff cap (default 5m)
+	// LagAlertThreshold emits replication.job.lag when a job trails its peer by
+	// more than this many changes (0 disables).
+	LagAlertThreshold int64
 
 	// FingerprintKey keys the MAC that fingerprints idempotent requests carrying
 	// a peer token. When empty a random per-process key is used, so such a

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
 	"net/http"
 	"strconv"
 	"time"
@@ -330,7 +331,18 @@ func RecordRetentionRun(ctx context.Context, db *pgxpool.Pool, instance, trigger
 	if runErr != nil {
 		state = "failed"
 	}
-	_, _ = db.Exec(ctx, `INSERT INTO retention_runs(instance_id,trigger,dry_run,state,started_at,finished_at,report) VALUES($1,$2,$3,$4,$5,now(),$6)`, instance, trigger, rep.DryRun, state, started, body)
+	if tx, err := db.Begin(ctx); err == nil {
+		var runID string
+		err = tx.QueryRow(ctx, `INSERT INTO retention_runs(instance_id,trigger,dry_run,state,started_at,finished_at,report) VALUES($1,$2,$3,$4,$5,now(),$6) RETURNING id::text`, instance, trigger, rep.DryRun, state, started, body).Scan(&runID)
+		if err == nil {
+			err = events.Emit(ctx, tx, instance, "", "retention.run.completed", runID, map[string]any{"run_id": runID, "trigger": trigger, "dry_run": rep.DryRun, "state": state})
+		}
+		if err == nil {
+			_ = tx.Commit(ctx)
+		} else {
+			_ = tx.Rollback(context.WithoutCancel(ctx))
+		}
+	}
 	_, _ = db.Exec(ctx, `DELETE FROM retention_runs WHERE instance_id=$1 AND id IN (SELECT id FROM retention_runs WHERE instance_id=$1 AND state<>'running' ORDER BY started_at DESC OFFSET 200)`, instance)
 }
 
@@ -438,36 +450,69 @@ func (h opsHandlers) startRetentionRun(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "maintenance is not available on this instance")
 		return
 	}
+	key, ok := mutationKey(w, r)
+	if !ok {
+		return
+	}
 	ctx, cancel := h.ctx(r)
 	defer cancel()
 	// A crashed process can leave a stale running row; it must not block forever.
 	_, _ = h.db.Exec(ctx, `UPDATE retention_runs SET state='failed',finished_at=now() WHERE instance_id=$1 AND state='running' AND started_at<now()-interval '2 hours'`, p.InstanceID)
-	run, err := scanRun(h.db.QueryRow(ctx, `INSERT INTO retention_runs(instance_id,trigger,dry_run,state,requested_by) VALUES($1,'manual',$2,'running',$3) RETURNING `+runColumns, p.InstanceID, in.DryRun, p.PrincipalID), false)
-	if err != nil {
-		if errors.Is(identityDBError(err), database.ErrConflict) {
+	out, callErr, storeErr := idempotent(r, h.db, p, key, "retention.run.start", "retention/runs", in, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		run, err := scanRun(tx.QueryRow(ctx, `INSERT INTO retention_runs(instance_id,trigger,dry_run,state,requested_by) VALUES($1,'manual',$2,'running',$3) RETURNING `+runColumns, p.InstanceID, in.DryRun, p.PrincipalID), false)
+		if err != nil {
+			if errors.Is(identityDBError(err), database.ErrConflict) {
+				return nil, database.ErrConflict
+			}
+			return nil, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,'retention.run',$3,jsonb_build_object('dry_run',$4::boolean))`, p.InstanceID, p.PrincipalID, run.ID, in.DryRun); err != nil {
+			return nil, err
+		}
+		return run, nil
+	})
+	if callErr != nil {
+		if errors.Is(callErr, database.ErrConflict) {
 			Error(w, r, 409, api.ErrorCodeConflict, "a maintenance run is already in progress")
 			return
 		}
-		identityError(w, r, err)
+		identityError(w, r, callErr)
 		return
 	}
-	_, _ = h.db.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,'retention.run',$3,jsonb_build_object('dry_run',$4::boolean))`, p.InstanceID, p.PrincipalID, run.ID, in.DryRun)
-	go func() {
-		// Cancelled with the server (or on writer-lease loss); the record is then closed as failed.
-		bg, stop := context.WithTimeout(h.d.Background, 2*time.Hour)
-		defer stop()
-		rep, runErr := svc.RunOnce(bg, in.DryRun)
-		body, _ := json.Marshal(ReportFrom(rep))
-		state := "succeeded"
-		if runErr != nil {
-			state = "failed"
-		}
-		fin, done := context.WithTimeout(context.WithoutCancel(h.d.Background), 10*time.Second)
-		defer done()
-		_, _ = h.db.Exec(fin, `UPDATE retention_runs SET state=$2,finished_at=now(),report=$3 WHERE id=$1`, run.ID, state, body)
-	}()
+	if storeErr != nil {
+		storeError(w, r, storeErr)
+		return
+	}
+	var run RetentionRun
+	_ = json.Unmarshal(out.JSON, &run)
+	if !out.Replayed {
+		go func() {
+			// Cancelled with the server (or on writer-lease loss); the record is then closed as failed.
+			bg, stop := context.WithTimeout(h.d.Background, 2*time.Hour)
+			defer stop()
+			rep, runErr := svc.RunOnce(bg, in.DryRun)
+			body, _ := json.Marshal(ReportFrom(rep))
+			state := "succeeded"
+			if runErr != nil {
+				state = "failed"
+			}
+			fin, done := context.WithTimeout(context.WithoutCancel(h.d.Background), 10*time.Second)
+			defer done()
+			if tx, err := h.db.Begin(fin); err == nil {
+				_, err = tx.Exec(fin, `UPDATE retention_runs SET state=$2,finished_at=now(),report=$3 WHERE id=$1`, run.ID, state, body)
+				if err == nil {
+					err = events.Emit(fin, tx, p.InstanceID, p.PrincipalID, "retention.run.completed", run.ID, map[string]any{"run_id": run.ID, "trigger": "manual", "dry_run": in.DryRun, "state": state})
+				}
+				if err == nil {
+					_ = tx.Commit(fin)
+				} else {
+					_ = tx.Rollback(fin)
+				}
+			}
+		}()
+	}
 	w.Header().Set("Location", "/api/v1/retention/runs/"+run.ID)
-	JSON(w, 202, run)
+	JSON(w, 202, out.JSON)
 }
 
 // IntegrityFinding is one unresolved blob integrity mismatch.
