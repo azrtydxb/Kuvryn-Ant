@@ -6,7 +6,15 @@ function type(s) {
   if (Object.keys(s).length === 0) return "unknown";
   if (s.$ref) return s.$ref.split("/").at(-1);
   if (s.enum) return s.enum.map((v) => JSON.stringify(v)).join(" | ");
+  if (s.allOf) return s.allOf.map(type).join(" & ");
   if (s.type === "array") return `Array<${type(s.items)}>`;
+  if (
+    s.type === "object" &&
+    !s.properties &&
+    s.additionalProperties &&
+    s.additionalProperties !== true
+  )
+    return `Record<string, ${type(s.additionalProperties)}>`;
   if (s.type === "object")
     return `{ ${Object.entries(s.properties ?? {})
       .map(

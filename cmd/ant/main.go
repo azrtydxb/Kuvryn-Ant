@@ -27,6 +27,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/transfer"
 )
 
 func run(ctx context.Context, logger *slog.Logger) int { return execute(ctx, logger, nil, os.Stdout) }
@@ -47,13 +48,16 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if len(args) > 0 && args[0] == "admin" {
 		return adminCommand(ctx, logger, args[1:], os.Stdin, output)
 	}
+	if len(args) > 0 && (args[0] == "export" || args[0] == "import" || args[0] == "migrate" || args[0] == "compare") {
+		return transferCommand(ctx, logger, args, output)
+	}
 	mode := "serve"
 	name := "local"
 	if len(args) > 0 {
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" && mode != "gc" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" && mode != "gc" || mode == "gc" && len(args) == 2 && args[1] != "--dry-run" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore | admin break-glass]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore | admin break-glass | export | import | migrate | compare]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -236,6 +240,11 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
 		management.RegisterFederation(mux, pool, fed.service())
+		var transferStores transfer.Stores
+		if artifacts != nil {
+			transferStores = artifacts.stores
+		}
+		management.RegisterTransfer(mux, management.TransferDeps{Pool: pool, Stores: transferStores})
 		replicationRT.Register(mux)
 		artifacts.Register(mux)
 		browser.Register(mux)

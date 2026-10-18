@@ -12,6 +12,7 @@ import { Identity } from "./Identity";
 import { Webhooks } from "./Webhooks";
 import { AuditPage } from "./Audit";
 import { SettingsPage } from "./Settings";
+import { MigrationPage } from "./Migration";
 import { loadAllFeeds } from "./data";
 import {
   Alert,
@@ -37,6 +38,7 @@ export type Page =
   | "identity"
   | "webhooks"
   | "audit"
+  | "migration"
   | "settings";
 export type Go = (
   page: Page,
@@ -52,6 +54,7 @@ const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "identity", label: "Access", icon: "shield" },
   { id: "webhooks", label: "Webhooks", icon: "webhook" },
   { id: "audit", label: "Audit log", icon: "scroll-text" },
+  { id: "migration", label: "Import & migrate", icon: "arrow-down-up" },
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 type Theme = "light" | "dark";
@@ -99,6 +102,7 @@ function Shell({
       ? [
           "identity",
           "webhooks",
+          "migration",
           "settings",
           ...(can("replicate") === false ? (["replication"] as Page[]) : []),
         ]
@@ -224,6 +228,7 @@ function Shell({
   else if (page === "identity") body = <Identity client={client} />;
   else if (page === "webhooks") body = <Webhooks client={client} />;
   else if (page === "audit") body = <AuditPage client={client} />;
+  else if (page === "migration") body = <MigrationPage client={client} />;
   else
     body = <SettingsPage client={client} notes={notes} setNotes={setNotes} />;
   return (

@@ -49,6 +49,7 @@ func newOpsFixture(t *testing.T) *opsFixture {
 	RegisterSources(mux, f.db, codec)
 	RegisterIdentities(mux, f.db)
 	RegisterOperations(mux, deps)
+	RegisterTransfer(mux, TransferDeps{Pool: f.db})
 	EnableStatusDetail(f.db, deps.Readiness)
 	t.Cleanup(func() { statusDetail.Store(nil) })
 	f.handler = WithRequestID(mux)
