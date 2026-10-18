@@ -34,3 +34,6 @@ httpRoute:
   timeouts:
     request: "0s"
     backendRequest: "0s"
+extraEnv:
+  ANT_OCI_DEFAULT_FEED: dockerhub
+  ANT_OCI_MIRROR_MAP: docker.io=dockerhub,ghcr.io=ghcr,quay.io=quay,registry.k8s.io=k8s,gcr.io=gcr,public.ecr.aws=ecr

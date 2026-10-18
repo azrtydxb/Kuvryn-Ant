@@ -52,6 +52,9 @@ auth:
   ldap:
     existingSecret: ""
     configKey: config.json
+# Additional plain (non-secret) environment variables, e.g. ANT_OCI_DEFAULT_FEED,
+# ANT_OCI_MIRROR_MAP or ANT_GC_* settings. Names must start with ANT_.
+extraEnv: {}
 service:
   port: 8080
 ingress:
