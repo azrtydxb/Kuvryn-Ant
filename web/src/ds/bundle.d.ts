@@ -1,0 +1,51 @@
+import type { ReactElement, ReactNode } from "react";
+// Loosely typed on purpose: the design-system bundle is vendored JavaScript.
+type Props = { children?: ReactNode; [key: string]: any };
+type C = (props: Props) => ReactElement | null;
+export const Icon: C;
+export const Button: C;
+export const IconButton: C;
+export const Logo: C;
+export const ProductLogo: C;
+export const Checkbox: C;
+export const Radio: C;
+export const RadioGroup: C;
+export const Switch: C;
+export const ChartLegend: C;
+export const CodeBlock: C;
+export const LineChart: C;
+export const Meter: C;
+export const Sparkline: C;
+export const StatCard: C;
+export const Table: C;
+export const DropdownMenu: C;
+export const Kbd: C;
+export const Alert: C;
+export const Badge: C;
+export const EmptyState: C;
+export const Input: C;
+export const Select: C;
+export const Textarea: C;
+export const Avatar: C;
+export const Skeleton: C;
+export const Spinner: C;
+export const Sidebar: C;
+export const Tabs: C;
+export const Topbar: C;
+export const Toast: C;
+export const ToastStack: C;
+export const Tooltip: C;
+export const Modal: C;
+export const CommandPalette: C;
+export const Drawer: C;
+export const PropertyList: C;
+export const Pagination: C;
+export const SegmentedControl: C;
+export const Stepper: C;
+export const SettingsLayout: (
+  props: Omit<Props, "children"> & {
+    children?: ReactNode | ((tab: string) => ReactNode);
+  },
+) => ReactElement | null;
+export const SettingsSection: C;
+export const SettingsRow: C;

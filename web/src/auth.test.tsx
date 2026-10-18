@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import App from "./App";
 import { Client } from "./api";
@@ -39,17 +40,35 @@ it("resumes a cookie session, adds CSRF to mutations, and signs out server-side"
       if (url === "/auth/providers") return json({ providers: [] });
       if (url.includes("/feeds?"))
         return json({ items: [], page: { has_more: false } });
-      return json({ name: "kuvryn-ant", api_version: "v1" });
+      if (url.includes("/sources?"))
+        return json({ items: [], page: { has_more: false } });
+      if (url === "/api/v1/feeds" && init.method === "POST")
+        return json({
+          id: "feed-1",
+          slug: "release",
+          format: "oci",
+          revision: 1,
+        });
+      if (url === "/api/v1/status")
+        return json({ name: "kuvryn-ant", api_version: "v1" });
+      return json({}, 404);
     }),
   );
   render(<App />);
   await screen.findByText("Browser session");
-  fireEvent.click(screen.getByRole("button", { name: "Feeds" }));
-  fireEvent.click(screen.getByRole("button", { name: "Create feed" }));
-  fireEvent.change(screen.getByLabelText("Feed slug"), {
+  fireEvent.click(
+    within(
+      screen.getByRole("navigation", { name: "Main navigation" }),
+    ).getByRole("button", { name: "Feeds" }),
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "Create feed" }));
+  const dialog = screen.getByRole("dialog", { name: "Create feed" });
+  fireEvent.change(within(dialog).getByLabelText("Feed slug"), {
     target: { value: "release" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Create feed" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Continue" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Continue" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Create feed" }));
   await waitFor(() =>
     expect(calls.some((c) => c.init.method === "POST")).toBe(true),
   );
@@ -58,7 +77,7 @@ it("resumes a cookie session, adds CSRF to mutations, and signs out server-side"
   expect(new Headers(mutation.init.headers).get("X-CSRF-Token")).toBe(csrf);
   expect(new Headers(mutation.init.headers).has("Authorization")).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
-  await screen.findByText("Sign in to administer");
+  await screen.findByRole("heading", { name: "Sign in" });
   const signout = calls.find((c) => c.url === "/auth/logout")!;
   expect(signout.init.method).toBe("POST");
   expect(new Headers(signout.init.headers).get("X-CSRF-Token")).toBe(csrf);
@@ -127,9 +146,6 @@ it("discovers provider links and clears LDAP password before acquiring prelogin 
       .getByRole("link", { name: "Sign in with SAML" })
       .getAttribute("href"),
   ).toBe("/auth/saml/login");
-  fireEvent.click(
-    screen.getByText("Sign in with LDAP", { selector: "summary" }),
-  );
   fireEvent.change(screen.getByLabelText("LDAP username"), {
     target: { value: "operator" },
   });

@@ -1,23 +1,29 @@
-import { useEffect, useState } from "react";
-import { Field, Failure } from "./ui";
+import { useEffect, useState, type ReactNode } from "react";
+import { Failure } from "./ui";
 import {
   getProviders,
   ldapLogin,
   type BrowserSession,
   type Providers,
 } from "./auth";
+import { Button, Input, ProductLogo, Spinner } from "./ds/bundle";
+import emblem from "./ds/assets/brand/ant-emblem.png";
+
 export function SignIn({
   onSession,
   onToken,
+  notice,
 }: {
   onSession: (s: BrowserSession) => void;
   onToken: (t: string) => void;
+  notice?: ReactNode;
 }) {
   const [providers, setProviders] = useState<Providers | null>();
   const [retry, setRetry] = useState(0);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+  const [showToken, setShowToken] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [controller] = useState(() => new AbortController());
@@ -36,44 +42,67 @@ export function SignIn({
       active = false;
     };
   }, [retry, controller]);
+  const none =
+    providers && !providers.oidc && !providers.saml && !providers.ldap;
   return (
-    <section className="card signin">
-      <h2>Sign in to administer</h2>
-      <p>
-        Browser sessions use secure HttpOnly cookies. Credentials and CSRF
-        tokens are never saved to browser storage.
-      </p>
-      {providers === undefined ? (
-        <p role="status">Checking sign-in providers…</p>
-      ) : providers === null ? (
-        <p className="notice">
-          Provider availability could not be determined.{" "}
-          <button onClick={() => setRetry((v) => v + 1)}>
-            Retry provider discovery
-          </button>
+    <div className="az-card signin">
+      <ProductLogo
+        name="Kuvryn"
+        sub="Ant"
+        pillar="operate"
+        layout="horizontal"
+        size={44}
+        emblem={emblem}
+      />
+      <div>
+        <h1 tabIndex={-1}>Sign in</h1>
+        <p className="muted small">
+          Browser sessions use secure HttpOnly cookies. Credentials and CSRF
+          tokens are never saved to browser storage.
         </p>
+      </div>
+      {notice}
+      {providers === undefined ? (
+        <p role="status" className="loading muted">
+          <Spinner size={14} /> Checking sign-in providers…
+        </p>
+      ) : providers === null ? (
+        <div className="stack">
+          <p className="muted small">
+            Provider availability could not be determined.
+          </p>
+          <Button variant="secondary" onClick={() => setRetry((v) => v + 1)}>
+            Retry provider discovery
+          </Button>
+        </div>
       ) : (
         <>
-          <div className="toolbar">
-            {providers.oidc ? (
-              <a className="button" href="/auth/oidc/login">
-                Sign in with OIDC
-              </a>
-            ) : (
-              <span>OIDC not configured</span>
-            )}
-            {providers.saml ? (
-              <a className="button" href="/auth/saml/login">
-                Sign in with SAML
-              </a>
-            ) : (
-              <span>SAML not configured</span>
-            )}
-          </div>
-          {providers.ldap ? (
-            <details>
-              <summary>Sign in with LDAP</summary>
+          {providers.oidc && (
+            <a
+              className="az-btn az-btn--primary signin__sso"
+              href="/auth/oidc/login"
+            >
+              Sign in with OIDC
+            </a>
+          )}
+          {providers.saml && (
+            <a
+              className="az-btn az-btn--secondary signin__sso"
+              href="/auth/saml/login"
+            >
+              Sign in with SAML
+            </a>
+          )}
+          {none && (
+            <p className="muted small">
+              No browser sign-in providers are configured on this server.
+            </p>
+          )}
+          {providers.ldap && (
+            <>
+              <div className="divider">LDAP</div>
               <form
+                className="stack"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (busy) return;
@@ -97,46 +126,49 @@ export function SignIn({
                   }
                 }}
               >
-                <fieldset disabled={busy}>
-                  <Field label="LDAP username">
-                    <input
-                      required
-                      autoComplete="username"
-                      maxLength={256}
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="LDAP password">
-                    <input
-                      required
-                      type="password"
-                      autoComplete="off"
-                      maxLength={4096}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </Field>
-                  <button className="primary">
+                <fieldset disabled={busy} className="plain">
+                  <Input
+                    label="LDAP username"
+                    required
+                    autoComplete="username"
+                    maxLength={256}
+                    value={username}
+                    onChange={(e: { target: { value: string } }) =>
+                      setUsername(e.target.value)
+                    }
+                  />
+                  <Input
+                    label="LDAP password"
+                    required
+                    type="password"
+                    autoComplete="off"
+                    maxLength={4096}
+                    value={password}
+                    onChange={(e: { target: { value: string } }) =>
+                      setPassword(e.target.value)
+                    }
+                  />
+                  <Button type="submit" variant="secondary">
                     {busy ? "Signing in…" : "Sign in with LDAP"}
-                  </button>
+                  </Button>
                 </fieldset>
+                <Failure error={error} />
               </form>
-              <Failure error={error} />
-            </details>
-          ) : (
-            <p className="muted">LDAP not configured</p>
+            </>
           )}
         </>
       )}
-      <details>
-        <summary>Service token fallback · development / administration</summary>
-        <p>
-          Use an already short-lived service token. It stays in memory for at
-          most 15 minutes and is cleared on sign-out or leaving this page. This
-          does not revoke the server token.
-        </p>
+      <button
+        type="button"
+        className="linkbtn"
+        aria-expanded={showToken}
+        onClick={() => setShowToken((v) => !v)}
+      >
+        {showToken ? "Hide service token" : "Use a service token"}
+      </button>
+      {showToken && (
         <form
+          className="stack"
           onSubmit={(e) => {
             e.preventDefault();
             if (token.trim()) {
@@ -145,21 +177,29 @@ export function SignIn({
             }
           }}
         >
-          <Field label="Short-lived bearer token">
-            <input
-              type="password"
-              required
-              autoComplete="off"
-              spellCheck={false}
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-            />
-          </Field>
-          <button className="primary" disabled={busy}>
+          <p className="muted small">
+            Development and administration fallback. Use an already short-lived
+            service token. It stays in memory for at most 15 minutes and is
+            cleared on sign-out or leaving this page. This does not revoke the
+            server token.
+          </p>
+          <Input
+            label="Short-lived bearer token"
+            type="password"
+            mono
+            required
+            autoComplete="off"
+            spellCheck={false}
+            value={token}
+            onChange={(e: { target: { value: string } }) =>
+              setToken(e.target.value)
+            }
+          />
+          <Button type="submit" variant="secondary" disabled={busy}>
             Use token
-          </button>
+          </Button>
         </form>
-      </details>
-    </section>
+      )}
+    </div>
   );
 }
