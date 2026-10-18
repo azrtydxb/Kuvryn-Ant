@@ -3,6 +3,7 @@ package replication
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
@@ -66,5 +67,20 @@ func TestDestinationReadOnlyRejectsPublish(t *testing.T) {
 	job2 := link(t, src, dst2, srv, svc2, src.feed, dst2.feed, JobInput{DestinationReadOnly: ptr(false)})
 	if job2.DestinationReadOnly {
 		t.Fatal("explicit false ignored")
+	}
+}
+
+func TestDestinationReadOnlyRejectsBundlePublish(t *testing.T) {
+	ctx := context.Background()
+	src, dst := newSite(t, "bsrc", "artifacts"), newSite(t, "bdst", "mirror")
+	srv := src.serve(t)
+	svc := dst.service(t, srv, nil)
+	link(t, src, dst, srv, svc, src.feed, dst.feed, JobInput{})
+	body := data("team/bundle")
+	pub := artifact.Publication{FeedID: dst.feed, Namespace: "team", Coordinate: "team/bundle", Version: "1", AssetKey: "f.bin", MediaType: "application/octet-stream", Info: digestOf(body)}
+	_, err := dst.publisher.PublishBundle(ctx, dst.admin, []artifact.Publication{pub}, []io.Reader{strings.NewReader(string(body))})
+	var replica *artifact.ReplicaFeedError
+	if !errors.Is(err, artifact.ErrConflict) || !errors.As(err, &replica) {
+		t.Fatalf("bundle publish to read-only replica feed: %v", err)
 	}
 }

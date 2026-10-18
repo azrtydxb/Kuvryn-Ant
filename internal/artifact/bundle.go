@@ -82,6 +82,21 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 			return nil, err
 		}
 	}
+	// A replica feed rejects bundle publishes too unless an explicit publish rule
+	// routed every item (same contract as publish).
+	for _, item := range publications {
+		if item.MatchedRule != "" {
+			continue
+		}
+		peer, readOnly, rerr := readOnlyReplicaPeer(ctx, s.DB, p.InstanceID, base.FeedID)
+		if rerr != nil {
+			return nil, ErrUnavailable
+		}
+		if readOnly {
+			return nil, &ReplicaFeedError{Peer: peer}
+		}
+		break
+	}
 	checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	var domain string
 	var revision int64
