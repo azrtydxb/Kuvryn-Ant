@@ -28,7 +28,9 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Formatting
-        run: test -z "$(gofmt -l cmd internal)"
+        run: test -z "$(gofmt -l api cmd internal)"
+      - name: Generated API contract
+        run: ./scripts/check-generated.sh
       - run: go vet ./...
       - name: Unit and PostgreSQL integration tests
         env:

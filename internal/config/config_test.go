@@ -52,3 +52,40 @@ func TestLoad(t *testing.T) {
 		t.Fatal("accepted short key")
 	}
 }
+
+func TestProjectedRootKeyAndInvalidFiles(t *testing.T) {
+	dir := t.TempDir()
+	key := filepath.Join(dir, "key")
+	if err := os.WriteFile(key, make([]byte, 32), 0600); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(dir, "projected-key")
+	if err := os.Symlink(key, link); err != nil {
+		t.Fatal(err)
+	}
+	load := func(path string) (Config, error) {
+		return Load(func(k string) string {
+			switch k {
+			case "ANT_DATABASE_URL":
+				return "postgres://ant:secret@localhost/ant"
+			case "ANT_ROOT_KEY_FILE":
+				return path
+			}
+			return ""
+		})
+	}
+	cfg, err := load(link)
+	if err != nil || len(cfg.RootKey) != 32 {
+		t.Fatalf("projected secret rejected: %v", err)
+	}
+	clear(cfg.RootKey)
+	if _, err := load(dir); err == nil {
+		t.Fatal("accepted directory as key")
+	}
+	if err := os.WriteFile(key, make([]byte, 33), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := load(link); err == nil {
+		t.Fatal("accepted oversized key")
+	}
+}

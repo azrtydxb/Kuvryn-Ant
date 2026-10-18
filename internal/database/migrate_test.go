@@ -67,8 +67,12 @@ func TestMigrationsConcurrentRestartAndIntegrity(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	definitions, err := loadMigrations(migrations)
+	if err != nil {
+		t.Fatal(err)
+	}
 	var count int
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != 1 {
+	if err := pool.QueryRow(ctx, "SELECT count(*) FROM schema_migrations").Scan(&count); err != nil || count != len(definitions) {
 		t.Fatalf("migration count %d: %v", count, err)
 	}
 	// A fresh pool models process restart against the existing schema.
@@ -97,7 +101,7 @@ func TestMigrationsRollbackAndFutureVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	broken := append(definitions, migration{2, "002_test.sql", "CREATE TABLE rollback_probe(id integer); SELECT definitely_missing_function();", "test"})
+	broken := append(definitions, migration{len(definitions) + 1, "future_test.sql", "CREATE TABLE rollback_probe(id integer); SELECT definitely_missing_function();", "test"})
 	if err := applyMigrations(ctx, pool, broken); err == nil {
 		t.Fatal("expected migration failure")
 	}
@@ -108,7 +112,7 @@ func TestMigrationsRollbackAndFutureVersion(t *testing.T) {
 	if err := Migrate(ctx, pool); err != nil {
 		t.Fatal("previous schema no longer usable", err)
 	}
-	if _, err := pool.Exec(ctx, "INSERT INTO schema_migrations(version,name,checksum) VALUES(2,'future','unknown')"); err != nil {
+	if _, err := pool.Exec(ctx, "INSERT INTO schema_migrations(version,name,checksum) VALUES($1,'future','unknown')", len(definitions)+1); err != nil {
 		t.Fatal(err)
 	}
 	if err := Migrate(ctx, pool); err == nil || !strings.Contains(err.Error(), "unsupported") {

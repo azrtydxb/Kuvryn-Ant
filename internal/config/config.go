@@ -3,6 +3,7 @@ package config
 
 import (
 	"errors"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -43,18 +44,6 @@ func Load(getenv func(string) string) (Config, error) {
 	c.Database.MaxConns = 16
 	c.Database.MinConns = 0
 	c.Database.ConnConfig.ConnectTimeout = 5 * time.Second
-	keyPath := getenv("ANT_ROOT_KEY_FILE")
-	if keyPath == "" {
-		return Config{}, errors.New("ANT_ROOT_KEY_FILE is required")
-	}
-	info, err := os.Stat(keyPath)
-	if err != nil || !info.Mode().IsRegular() || info.Size() != 32 {
-		return Config{}, errors.New("ANT_ROOT_KEY_FILE must be a readable regular file containing exactly 32 raw bytes")
-	}
-	c.RootKey, err = os.ReadFile(keyPath)
-	if err != nil || len(c.RootKey) != 32 {
-		return Config{}, errors.New("ANT_ROOT_KEY_FILE must contain exactly 32 raw bytes")
-	}
 	if v := getenv("ANT_SHUTDOWN_TIMEOUT"); v != "" {
 		c.ShutdownTimeout, err = time.ParseDuration(v)
 		if err != nil || c.ShutdownTimeout < time.Second || c.ShutdownTimeout > time.Minute {
@@ -66,6 +55,31 @@ func Load(getenv func(string) string) (Config, error) {
 		if err != nil || c.MaxRequests < 1 || c.MaxRequests > 4096 {
 			return Config{}, errors.New("ANT_MAX_REQUESTS must be between 1 and 4096")
 		}
+	}
+	keyPath := getenv("ANT_ROOT_KEY_FILE")
+	if keyPath == "" {
+		return Config{}, errors.New("ANT_ROOT_KEY_FILE is required")
+	}
+	// Reject special files before opening (a FIFO could block startup).
+	info, err := os.Stat(keyPath)
+	if err != nil || !info.Mode().IsRegular() || info.Size() != 32 {
+		return Config{}, errors.New("ANT_ROOT_KEY_FILE must be a readable regular file containing exactly 32 raw bytes")
+	}
+	key, err := os.Open(keyPath)
+	if err != nil {
+		return Config{}, errors.New("ANT_ROOT_KEY_FILE must be a readable regular file containing exactly 32 raw bytes")
+	}
+	defer key.Close()
+	// Inspect and read the same descriptor; projected Kubernetes secrets may use
+	// symlinks that rotate between calls. Bound the read even if the file grows.
+	info, err = key.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() != 32 {
+		return Config{}, errors.New("ANT_ROOT_KEY_FILE must be a readable regular file containing exactly 32 raw bytes")
+	}
+	c.RootKey, err = io.ReadAll(io.LimitReader(key, 33))
+	if err != nil || len(c.RootKey) != 32 {
+		clear(c.RootKey)
+		return Config{}, errors.New("ANT_ROOT_KEY_FILE must contain exactly 32 raw bytes")
 	}
 	return c, nil
 }

@@ -66,7 +66,11 @@ func applyMigrations(ctx context.Context, pool *pgxpool.Pool, definitions []migr
 	if err != nil {
 		return errors.New("cannot start schema transaction")
 	}
-	defer tx.Rollback(context.Background())
+	defer func() {
+		rollback, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rollback)
+	}()
 	// Transaction-scoped lock also covers first-time schema table creation.
 	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(741812093)"); err != nil {
 		return errors.New("cannot acquire schema migration lock")

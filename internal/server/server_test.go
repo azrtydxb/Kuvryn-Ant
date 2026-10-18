@@ -1,14 +1,20 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/api"
 )
 
 type pingFunc func(context.Context) error
@@ -94,8 +100,22 @@ func TestConcurrencyAndGracefulDrain(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("request did not start")
 	}
-	if got := getCode(t, url+"/health/live"); got != 503 {
+	if got := getCode(t, url+"/health/live"); got != 200 {
+		t.Fatalf("liveness must remain available during overload, got %d", got)
+	}
+	if got := getCode(t, url+"/health/ready"); got != 503 {
 		t.Fatalf("expected overload rejection, got %d", got)
+	}
+	client := http.Client{Timeout: time.Second}
+	busy, err := client.Get(url + "/api/v1/status")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var body api.Error
+	err = json.NewDecoder(busy.Body).Decode(&body)
+	busy.Body.Close()
+	if err != nil || busy.StatusCode != http.StatusServiceUnavailable || body.Code != api.ErrorCodeUnavailable || body.RequestId == "" || body.RequestId != busy.Header.Get("X-Request-ID") || busy.Header.Get("Retry-After") != "1" {
+		t.Fatalf("invalid overload response: status=%d body=%+v error=%v", busy.StatusCode, body, err)
 	}
 	cancel()
 	select {
@@ -134,5 +154,58 @@ func TestShutdownDeadlineCancelsRequests(t *testing.T) {
 	case <-exited:
 	case <-time.After(time.Second):
 		t.Fatal("handler not cancelled")
+	}
+}
+
+func TestMetricsIntegrationAndRedaction(t *testing.T) {
+	var logs bytes.Buffer
+	svc := New(pingFunc(func(context.Context) error { return errors.New("private-db-detail") }), 2, time.Second, slog.New(slog.NewJSONHandler(&logs, nil)))
+	for _, path := range []string{"/health/ready", "/health/live", "/api/v1/missing-secret-id?token=query-secret"} {
+		r := httptest.NewRequest("GET", path, nil)
+		r.Header.Set("Authorization", "Bearer bearer-secret")
+		r.Header.Set("X-Request-ID", "caller-secret")
+		svc.http.Handler.ServeHTTP(httptest.NewRecorder(), r)
+	}
+	w := httptest.NewRecorder()
+	svc.http.Handler.ServeHTTP(w, httptest.NewRequest("GET", "/metrics", nil))
+	if w.Code != 200 || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/plain; version=0.0.4") {
+		t.Fatalf("metrics response %d", w.Code)
+	}
+	for _, secret := range []string{"private-db-detail", "missing-secret-id", "query-secret", "bearer-secret", "caller-secret"} {
+		if strings.Contains(w.Body.String(), secret) || strings.Contains(logs.String(), secret) {
+			t.Fatalf("leaked %s", secret)
+		}
+	}
+	if !strings.Contains(w.Body.String(), "ant_database_readiness_failures_total 1") || !strings.Contains(w.Body.String(), `route="/health/ready",method="GET",status_class="5xx"} 1`) {
+		t.Fatalf("missing readiness telemetry %s", w.Body.String())
+	}
+}
+
+func TestMetricsAdmissionAndSaturation(t *testing.T) {
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	svc := New(pingFunc(func(context.Context) error { close(entered); <-release; return nil }), 1, time.Second, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		svc.http.Handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/health/ready", nil))
+	}()
+	<-entered
+	live := httptest.NewRecorder()
+	svc.http.Handler.ServeHTTP(live, httptest.NewRequest("GET", "/health/live", nil))
+	if live.Code != 200 {
+		t.Error("liveness limited during saturation")
+	}
+	blocked := httptest.NewRecorder()
+	svc.http.Handler.ServeHTTP(blocked, httptest.NewRequest("GET", "/metrics", nil))
+	if blocked.Code != 503 {
+		t.Errorf("metrics bypassed request admission: %d", blocked.Code)
+	}
+	close(release)
+	<-done
+	metrics := httptest.NewRecorder()
+	svc.http.Handler.ServeHTTP(metrics, httptest.NewRequest("GET", "/metrics", nil))
+	if metrics.Code != 200 || !strings.Contains(metrics.Body.String(), "ant_http_saturation_total 1") {
+		t.Fatalf("missing saturation counter: %d %s", metrics.Code, metrics.Body.String())
 	}
 }

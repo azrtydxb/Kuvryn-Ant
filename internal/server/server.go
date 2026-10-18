@@ -7,8 +7,13 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/api"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 )
 
 type Pinger interface{ Ping(context.Context) error }
@@ -19,9 +24,15 @@ type Server struct {
 	shutdownTimeout time.Duration
 }
 
-func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog.Logger) *Server {
+func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog.Logger, register ...func(*http.ServeMux)) *Server {
 	s := &Server{shutdownTimeout: shutdownTimeout}
 	mux := http.NewServeMux()
+	telemetry := observability.NewHTTP()
+	mux.Handle("GET /metrics", telemetry)
+	management.Register(mux)
+	for _, routes := range register {
+		routes(mux)
+	}
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) { status(w, http.StatusOK, "alive") })
 	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) {
 		if s.stopping.Load() {
@@ -31,6 +42,7 @@ func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 		if err := db.Ping(ctx); err != nil {
+			telemetry.ReadinessFailed()
 			status(w, http.StatusServiceUnavailable, "not_ready")
 			return
 		}
@@ -39,20 +51,35 @@ func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog
 	slots := make(chan struct{}, maxRequests)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.stopping.Load() {
-			status(w, http.StatusServiceUnavailable, "stopping")
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				management.Error(w, r, http.StatusServiceUnavailable, api.ErrorCodeUnavailable, "service stopping")
+			} else {
+				status(w, http.StatusServiceUnavailable, "stopping")
+			}
+			return
+		}
+		// Liveness measures process health, not traffic capacity. Keeping this
+		// probe available prevents Kubernetes from restarting a busy service.
+		if r.URL.Path == "/health/live" && (r.Method == http.MethodGet || r.Method == http.MethodHead) {
+			mux.ServeHTTP(w, r)
 			return
 		}
 		select {
 		case slots <- struct{}{}:
 			defer func() { <-slots }()
 		default:
+			telemetry.Saturated()
 			w.Header().Set("Retry-After", "1")
-			status(w, http.StatusServiceUnavailable, "busy")
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				management.Error(w, r, http.StatusServiceUnavailable, api.ErrorCodeUnavailable, "request capacity exhausted")
+			} else {
+				status(w, http.StatusServiceUnavailable, "busy")
+			}
 			return
 		}
 		mux.ServeHTTP(w, r)
 	})
-	s.http = &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError)}
+	s.http = &http.Server{Handler: management.WithRequestID(telemetry.Wrap(logger, func(r *http.Request) string { _, pattern := mux.Handler(r); return pattern }, handler)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError)}
 	return s
 }
 

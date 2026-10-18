@@ -1,12 +1,21 @@
-# C01 service foundation evidence
+# Service and storage foundation evidence
 
-Implemented on branch `feat/service-foundation`:
+Branch: `feat/service-foundation`; draft PR: https://github.com/azrtydxb/Kuvryn-Ant/pull/223.
 
-- C01-T1: validated configuration and required 32-byte root-key file; PostgreSQL-only startup; live/readiness endpoints; bounded requests and HTTP deadlines; graceful drain with forced cancellation at deadline; local development scripts and CI.
-- C01-T2: embedded, checksummed, serialized transactional migrations; instance/principal/feed/source/component/version/blob/asset/tag/provenance schema; audit/outbox foundations; uniqueness and cross-instance foreign-key constraints.
+Implemented increments:
 
-Local validation: Go 1.27.1 on macOS arm64 and temporary PostgreSQL 17.11. `scripts/test-postgres.sh` passed with the race detector, including real service startup/restart, query cancellation and recovery, concurrent migrations, failed-DDL rollback, checksum/future-schema rejection, and domain integrity. `go test -race -count=10 ./internal/server` passed after correcting response consumption in the test client. `go vet ./...` and build passed. GitHub CI runs PostgreSQL 17 and 18; remote results are recorded on the PR and are not implied by local evidence.
+- C01: validated configuration, PostgreSQL-only lifecycle, bounded admission and graceful shutdown, checksummed transactional migrations and domain constraints.
+- C02: OpenAPI contract/generated Go client; structured errors and request IDs; authenticated feed CRUD subset (create/read/list/update), signed keyset cursors, optimistic revisions, scoped idempotent mutation replay and atomic audit/outbox events.
+- C03: SHA-256 service-token verifiers, expiration/revocation, restrictive token scopes, persisted roles with explicit-deny precedence, bounded bearer failure throttling, privileged local bootstrap/recovery commands. External identity and full account/token management APIs remain outstanding.
+- C05: bounded-label HTTP metrics and structured completion logs; no request secrets, raw paths or resource identifiers in labels. Healthy probes are silent. Metrics shares admission limits; liveness bypasses overload. Storage/transfer/tracing metrics remain outstanding.
+- S01/S02: streaming disk and S3 SDK storage libraries with digest/length verification, conditional publication, dedup verification, bounded memory and range reads. No artifact endpoint, durable resume, orphan collector or live-provider qualification yet.
+- S03: immutable local-write routing policy compiler; deny precedence, overlap rejection, safe path normalization and deterministic explanations. Protocol extraction and persistence remain outstanding.
+- I03: authenticated envelope encryption with external versioned root keys; persisted instance/record/purpose-bound secrets, optimistic updates and transactional audit/outbox; resumable bounded key-rewrap batches. Operational keyring/rotation configuration and emergency login remain outstanding.
 
-Only local temporary PostgreSQL fixtures were run. No OKE, MinIO, AWS or other provider environment was provisioned. PostgreSQL 18 Compose configuration is supplied for development; its deployment is not claimed by the local 17.11 test run.
+The combined `scripts/test-postgres.sh` suite passed across all 11 packages, including real database tests for token lifecycle, feed API contract conformance, concurrent mutation replay, secret CAS/rotation/rollback and bootstrap recovery. `scripts/check-generated.sh` and `go vet ./...` passed.
 
-The HTTP server currently exposes health endpoints only. API authorization, artifact transfer, format support, external identity, replication, UI and release qualification remain subsequent tasks. The root key is validated now and will be consumed by the later encrypted-secret store. Application-level single-writer fencing precedes artifact mutations; the migration lock alone is not an instance ownership lease.
+Validation uses Go 1.27.1 on macOS arm64 and a temporary socket-only PostgreSQL 17.11 cluster. The combined test script runs the race detector and requires PostgreSQL integration fixtures. GitHub CI runs PostgreSQL 17 and 18; the PR records results for each commit. SDK fixtures exercise S3 behavior without provisioning a provider environment. Live OKE/MinIO compatibility and load measurements remain release gates, not claimed results.
+
+No OKE, MinIO, AWS or other provider environment was provisioned. PostgreSQL 18 Compose configuration is supplied for development; local PostgreSQL 17.11 tests do not imply it was deployed.
+
+Application-level single-writer fencing must precede artifact publication; migration locks are not an ownership lease. Artifact transfer, all 26 format adapters, external identity, replication, UI and release qualification remain planned work. The feed API and supporting libraries are an implementation increment, not a general release.
