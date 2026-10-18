@@ -149,7 +149,11 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	tail := a[6:]
 	if a[4] == "flatcontainer" {
 		if len(tail) == 1 && tail[0] == "index.json" {
-			s.index(w, r, p, feed, id, base, false)
+			served, rerr := s.remoteVersions(w, r, p, feed, id)
+			if served {
+				return
+			}
+			s.index(w, r, p, feed, id, base, false, rerr)
 			return
 		}
 		if len(tail) == 2 {
@@ -171,13 +175,21 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if a[4] == "registration" && len(tail) == 1 {
 		if tail[0] == "index.json" {
-			s.index(w, r, p, feed, id, base, true)
+			served, rerr := s.serveRemoteRegistration(w, r, p, feed, id, "", base)
+			if served {
+				return
+			}
+			s.index(w, r, p, feed, id, base, true, rerr)
 			return
 		}
 		if strings.HasSuffix(tail[0], ".json") {
 			v, e := normalizeVersion(strings.TrimSuffix(tail[0], ".json"))
 			if e == nil {
-				s.leaf(w, r, p, feed, id, v, base)
+				served, rerr := s.serveRemoteRegistration(w, r, p, feed, id, v, base)
+				if served {
+					return
+				}
+				s.leaf(w, r, p, feed, id, v, base, rerr)
 				return
 			}
 		}
@@ -270,6 +282,20 @@ func (s *Repository) push(w http.ResponseWriter, r *http.Request, p identity.Pri
 }
 func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		retry, served, pe := s.pullThrough(w, r, p, pub)
+		switch {
+		case served:
+			return
+		case pe != nil:
+			if !errors.Is(pe, artifact.ErrNotFound) {
+				failure(w, pe)
+				return
+			}
+		case retry:
+			record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+		}
+	}
 	if e != nil {
 		failure(w, e)
 		return
