@@ -13,8 +13,25 @@ import (
 )
 
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, base string, dev bool) {
+	// Remote-owned (or unowned) packages are answered from upstream; a local
+	// owner falls through to the local composition. During an upstream outage
+	// only the versions cached earlier are listed.
+	served, remoteErr := s.serveRemoteIndex(w, r, p, feed, id, base, dev)
+	if served {
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	if remoteErr != nil {
+		items, e := s.offlineIndex(ctx, p, feed, id, base, dev)
+		if e != nil || len(items) == 0 {
+			failure(w, artifact.ErrUnavailable)
+			return
+		}
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+		writeJSON(w, r, map[string]any{"packages": map[string]any{id: items}})
+		return
+	}
 	rows, e := s.db.Query(ctx, `WITH owner AS (SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id WHERE a.asset_key='metadata' AND o.namespace=$4 ORDER BY v.version LIMIT 1025`, p.InstanceID, feed, id, strings.Split(id, "/")[0])
 	if e != nil {
 		failure(w, e)
