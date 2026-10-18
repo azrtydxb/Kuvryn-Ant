@@ -27,6 +27,7 @@ type Config struct {
 	ShutdownTimeout time.Duration
 	MaxRequests     int
 	Retention       Retention
+	OCIMirror       OCIMirror
 }
 
 func Load(getenv func(string) string) (Config, error) {
@@ -64,6 +65,10 @@ func Load(getenv func(string) string) (Config, error) {
 		if err != nil || c.MaxRequests < 1 || c.MaxRequests > 4096 {
 			return Config{}, errors.New("ANT_MAX_REQUESTS must be between 1 and 4096")
 		}
+	}
+	c.OCIMirror, err = loadOCIMirror(getenv)
+	if err != nil {
+		return Config{}, err
 	}
 	c.Retention, err = loadRetention(getenv)
 	if err != nil {

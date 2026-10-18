@@ -47,6 +47,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteruntime"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/upstream"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -99,6 +100,14 @@ type Materialized struct {
 	Committed bool
 }
 
+// RateLimitedError reports that the upstream registry throttled the request.
+// It satisfies errors.Is(err, ErrUnavailable) so existing handling still
+// applies; adapters that can express 429 use errors.As to surface it.
+type RateLimitedError struct{ RetryAfter time.Duration }
+
+func (*RateLimitedError) Error() string        { return "upstream rate limited" }
+func (*RateLimitedError) Is(target error) bool { return target == ErrUnavailable }
+
 func mapRemoteError(err error) error {
 	switch {
 	case err == nil:
@@ -107,6 +116,10 @@ func mapRemoteError(err error) error {
 		return err
 	case errors.Is(err, remoteruntime.ErrInput):
 		return ErrInput
+	case errors.As(err, new(*upstream.RateLimitError)):
+		var rl *upstream.RateLimitError
+		errors.As(err, &rl)
+		return &RateLimitedError{RetryAfter: rl.RetryAfter}
 	default:
 		return ErrUnavailable
 	}

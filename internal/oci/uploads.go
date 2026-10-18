@@ -111,11 +111,20 @@ func (r *Registry) upload(w http.ResponseWriter, req *http.Request, p identity.P
 		return
 	}
 	if id == "" {
-		if req.URL.Query().Get("mount") != "" {
-			r.mount(w, req, p, rep, source)
+		// A mount that cannot be satisfied (unknown or foreign source
+		// repository, missing blob) falls back to a regular upload session
+		// (202), as the distribution spec requires; clients then push the bytes.
+		if req.URL.Query().Get("mount") != "" && r.mount(w, req, p, rep, source) {
 			return
 		}
-		id, err = r.createUpload(req.Context(), p, rep, source)
+		for attempt := 0; ; attempt++ {
+			id, err = r.createUpload(req.Context(), p, rep, source)
+			var pg *pgconn.PgError
+			if err == nil || attempt >= 4 || !errors.As(err, &pg) || (pg.Code != "40P01" && pg.Code != "40001") {
+				break
+			}
+			time.Sleep(time.Duration(20*(attempt+1)) * time.Millisecond)
+		}
 		if err != nil {
 			failure(w, 503, "UNKNOWN", "cannot create upload")
 			return
@@ -353,21 +362,18 @@ func (p *progressReader) Read(data []byte) (int, error) {
 	}
 	return p.reader.Read(data)
 }
-func (r *Registry) mount(w http.ResponseWriter, req *http.Request, p identity.Principal, destination repository, source string) {
+func (r *Registry) mount(w http.ResponseWriter, req *http.Request, p identity.Principal, destination repository, source string) bool {
 	digest, ok := parseDigest(req.URL.Query().Get("mount"))
 	if !ok {
-		failure(w, 400, "DIGEST_INVALID", "invalid mount digest")
-		return
+		return false
 	}
 	origin, err := r.repository(req.Context(), p, req.URL.Query().Get("from"))
 	if err != nil {
-		failService(w, err)
-		return
+		return false
 	}
 	record, reader, err := r.service.Open(req.Context(), p, origin.publication(string(digest), "blob"), 0, -1)
 	if err != nil {
-		failService(w, err)
-		return
+		return false
 	}
 	defer reader.Close()
 	publication := destination.publication(string(digest), "blob")
@@ -375,10 +381,10 @@ func (r *Registry) mount(w http.ResponseWriter, req *http.Request, p identity.Pr
 	publication.Info = record.Info
 	publication.MediaType = "application/octet-stream"
 	if _, err = r.service.Publish(req.Context(), p, publication, reader); err != nil {
-		failService(w, err)
-		return
+		return false
 	}
 	blobCreated(w, destination, string(digest))
+	return true
 }
 
 // ReapExpired removes expired upload staging in bounded batches. It must run

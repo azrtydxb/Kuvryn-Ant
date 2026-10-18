@@ -41,6 +41,11 @@ type Principal struct {
 	PrincipalID string
 	TokenID     string
 	Scopes      []Scope
+	// Anonymous marks the instance's internal anonymous-reader principal. It is
+	// only ever set by server code for an unauthenticated read of a feed with
+	// anonymous_read enabled, never derived from a request or token, and
+	// Roles.Resolve grants it Read on those feeds only.
+	Anonymous bool
 }
 type IssuedToken struct {
 	ID, Secret string

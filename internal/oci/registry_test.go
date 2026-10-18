@@ -277,7 +277,7 @@ func TestUploadAuthorizationIsolationAndCancellation(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.token = onlyPublish.Secret
-	assertCode(t, f.request("POST", "/v2/images/team/denied/blobs/uploads/?mount="+blobDigest+"&from=images/team/source", nil, nil), 404)
+	assertCode(t, f.request("POST", "/v2/images/team/denied/blobs/uploads/?mount="+blobDigest+"&from=images/team/source", nil, nil), 202) // unreadable source: fall back to a regular upload session
 }
 
 func TestDuplicateManifestMembersAndAcceptQuality(t *testing.T) {

@@ -43,6 +43,7 @@ type Fetcher struct {
 	failures int
 	until    time.Time
 	probe    bool
+	tokens   tokenState
 }
 type CircuitState struct {
 	Failures  int
@@ -263,6 +264,10 @@ func (f *Fetcher) Fetch(ctx context.Context, method, target string, headers http
 	if e != nil {
 		return nil, e
 	}
+	if origin(u) == origin(f.origin) {
+		u.Path = libraryPath(u.Hostname(), u.Path)
+		u.RawPath = ""
+	}
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
 	e = f.permitted(bounded, u)
 	cancel()
@@ -274,8 +279,33 @@ func (f *Fetcher) Fetch(ctx context.Context, method, target string, headers http
 	}
 	outcome := 0
 	defer func() { f.finish(outcome) }()
+	sameOrigin := origin(u) == origin(f.origin)
 	for attempt := 0; attempt < 3; attempt++ {
-		response, e := f.once(ctx, method, u, headers)
+		auth, usedKey := "", ""
+		if sameOrigin {
+			if t, key := f.cachedToken(u); key != "" {
+				auth, usedKey = "Bearer "+t.value, key
+			}
+		}
+		response, e := f.once(ctx, method, u, headers, auth)
+		if e == nil && response.StatusCode == http.StatusUnauthorized && sameOrigin {
+			response, e = f.bearerRetry(ctx, method, u, headers, response, usedKey)
+			if e != nil {
+				var rl *RateLimitError
+				if errors.As(e, &rl) {
+					return nil, e
+				}
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
+			}
+		}
+		if e == nil && response.StatusCode == http.StatusTooManyRequests {
+			// Retrying a rate limit only burns more of the quota: surface it.
+			rl := rateLimit(response)
+			response.Body.Close()
+			return nil, rl
+		}
 		if e == nil && !retryable(response.StatusCode) {
 			outcome = -1
 			return response, nil
@@ -303,7 +333,7 @@ func (f *Fetcher) Fetch(ctx context.Context, method, target string, headers http
 	outcome = 1
 	return nil, ErrUnavailable
 }
-func (f *Fetcher) once(ctx context.Context, method string, start *url.URL, headers http.Header) (*http.Response, error) {
+func (f *Fetcher) once(ctx context.Context, method string, start *url.URL, headers http.Header, bearer string) (*http.Response, error) {
 	u := start
 	for redirects := 0; redirects <= 5; redirects++ {
 		check, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -330,6 +360,9 @@ func (f *Fetcher) once(ctx context.Context, method string, start *url.URL, heade
 		if origin(u) == origin(f.origin) {
 			for k, v := range f.cfg.Credentials {
 				req.Header[k] = append([]string(nil), v...)
+			}
+			if bearer != "" {
+				req.Header.Set("Authorization", bearer)
 			}
 		}
 		headerTimer := time.AfterFunc(30*time.Second, cancelRequest)
@@ -385,4 +418,32 @@ func (b *responseBody) Close() error {
 		return ErrUnavailable
 	}
 	return nil
+}
+
+// libraryPath adds Docker Hub's implicit "library/" namespace to a
+// single-segment repository path (/v2/alpine/... -> /v2/library/alpine/...).
+func libraryPath(host, path string) string {
+	switch strings.ToLower(host) {
+	case "registry-1.docker.io", "index.docker.io", "registry.hub.docker.com":
+	default:
+		return path
+	}
+	rest, ok := strings.CutPrefix(path, "/v2/")
+	if !ok {
+		return path
+	}
+	name, tail, ok := strings.Cut(rest, "/")
+	if !ok || name == "" {
+		return path
+	}
+	switch name {
+	case "library", "_catalog":
+		return path
+	}
+	for _, kind := range []string{"manifests/", "blobs/", "tags/", "referrers/"} {
+		if strings.HasPrefix(tail, kind) {
+			return "/v2/library/" + rest
+		}
+	}
+	return path
 }

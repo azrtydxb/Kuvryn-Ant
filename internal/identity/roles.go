@@ -25,6 +25,9 @@ func (r Roles) Resolve(ctx context.Context, p Principal) (Policy, error) {
 	if p.InstanceID == "" || p.PrincipalID == "" {
 		return Policy{}, ErrUnauthenticated
 	}
+	if p.Anonymous {
+		return r.resolveAnonymous(ctx, p)
+	}
 	// Long artifact transfers re-resolve policy before metadata commit. Recheck
 	// machine-token lifetime here so revocation during staging cannot publish.
 	if p.TokenID != "" {
@@ -163,4 +166,49 @@ func LoadBootstrapIdentity(ctx context.Context, pool *pgxpool.Pool) (BootstrapId
 		return BootstrapIdentity{}, ErrUnavailable
 	}
 	return result, nil
+}
+
+// AnonymousSubject and AnonymousIssuer name the per-instance internal principal
+// that anonymous reads run as (it owns audit rows and provenance only).
+const (
+	AnonymousSubject = "anonymous-reader"
+	AnonymousIssuer  = "ant-internal"
+)
+
+// EnsureAnonymous returns the instance's anonymous-reader principal, creating
+// it on first use. Disabling that principal turns anonymous reads off.
+func (r Roles) EnsureAnonymous(ctx context.Context, instanceID string) (Principal, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var id string
+	err := r.DB.QueryRow(ctx, `INSERT INTO principals(instance_id,kind,subject,issuer) VALUES($1,'service',$2,$3) ON CONFLICT(instance_id,issuer,subject) DO UPDATE SET subject=excluded.subject RETURNING id::text`, instanceID, AnonymousSubject, AnonymousIssuer).Scan(&id)
+	if err != nil {
+		return Principal{}, ErrUnavailable
+	}
+	return Principal{InstanceID: instanceID, PrincipalID: id, Anonymous: true}, nil
+}
+
+// resolveAnonymous grants Read on every feed marked anonymous_read, and nothing
+// else, while the anonymous-reader principal is enabled.
+func (r Roles) resolveAnonymous(ctx context.Context, p Principal) (Policy, error) {
+	if p.TokenID != "" || len(p.Scopes) != 0 {
+		return Policy{}, ErrUnauthenticated
+	}
+	rows, err := r.DB.Query(ctx, `SELECT f.id::text FROM feeds f JOIN principals p ON p.instance_id=f.instance_id AND p.id=$2 AND p.subject=$3 AND p.issuer=$4 WHERE f.instance_id=$1 AND f.anonymous_read AND NOT p.disabled`, p.InstanceID, p.PrincipalID, AnonymousSubject, AnonymousIssuer)
+	if err != nil {
+		return Policy{}, ErrUnavailable
+	}
+	defer rows.Close()
+	role := Role{Name: "anonymous-read", PrincipalIDs: []string{p.PrincipalID}}
+	for rows.Next() {
+		var feed string
+		if rows.Scan(&feed) != nil {
+			return Policy{}, ErrUnavailable
+		}
+		role.Grants = append(role.Grants, Grant{InstanceID: p.InstanceID, Kind: ArtifactResource, Effect: Allow, FeedID: feed, Actions: []Action{Read}})
+	}
+	if rows.Err() != nil {
+		return Policy{}, ErrUnavailable
+	}
+	return Policy{Roles: []Role{role}}, nil
 }
