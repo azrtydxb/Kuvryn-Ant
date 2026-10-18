@@ -1,0 +1,66 @@
+name: Conformance
+
+# Manual only: never runs on pull requests or pushes (CI capacity is limited).
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Target: local (starts a throwaway instance on the runner), oke, or kw"
+        required: true
+        default: local
+        type: choice
+        options: [local, oke, kw]
+      formats:
+        description: "Space-separated formats (empty = all implemented scenarios)"
+        required: false
+        default: ""
+      base_url:
+        description: "Override base URL (defaults: oke=https://ant.azrty.com, kw=https://ant.kw.watteel.lab)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    # The repository's existing workflows use GitHub-hosted runners (no self-hosted ARC label is defined in the repo).
+    # Set the repository variable CONFORMANCE_RUNNER to the ARC runner scale-set name to run inside the cluster
+    # (required for kw, which is only reachable from the lab network).
+    runs-on: ${{ vars.CONFORMANCE_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        if: inputs.target == 'local'
+        with:
+          go-version-file: go.mod
+      - name: Install PostgreSQL (local target)
+        if: inputs.target == 'local'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql
+          find /usr/lib/postgresql -maxdepth 2 -name bin | sort | tail -1 >> "$GITHUB_PATH"
+      - name: Private CA bundle
+        if: inputs.target == 'kw'
+        env:
+          ANT_CA_BUNDLE_PEM: ${{ secrets.ANT_CA_BUNDLE_PEM }}
+        run: |
+          printf '%s\n' "$ANT_CA_BUNDLE_PEM" > "$RUNNER_TEMP/ant-ca.pem"
+          echo "ANT_CA_BUNDLE=$RUNNER_TEMP/ant-ca.pem" >> "$GITHUB_ENV"
+      - name: Run conformance
+        env:
+          ANT_TOKEN: ${{ inputs.target != 'local' && secrets.ANT_TOKEN || '' }}
+          ANT_BASE_URL: ${{ inputs.base_url }}
+          TARGET: ${{ inputs.target }}
+          FORMATS: ${{ inputs.formats }}
+        run: |
+          # shellcheck disable=SC2086
+          conformance/run.sh "$TARGET" $FORMATS
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-${{ inputs.target }}
+          path: conformance/results/${{ inputs.target }}/
+          if-no-files-found: warn

@@ -1,0 +1,119 @@
+{
+  "format": "docker",
+  "target": "local",
+  "run_id": "11fc38",
+  "started": "2026-10-18T17:17:43.523878+00:00",
+  "ant": {
+    "api_version": "v1",
+    "version": "git:5ad3f59",
+    "target_base_url": "http://127.0.0.1:61647"
+  },
+  "clients": {
+    "crane": {
+      "image": "gcr.io/go-containerregistry/crane:debug",
+      "reported_version": "8a72a424fdecb4caa14f2d525e5d2503331442b5",
+      "pinned_ref": "crane (F08/F16 client)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 22581,
+      "detail": "8a72a424fdecb4caa14f2d525e5d2503331442b5",
+      "output_tail": "8a72a424fdecb4caa14f2d525e5d2503331442b5\n"
+    },
+    {
+      "name": "publish: crane append (login + push image)",
+      "status": "pass",
+      "duration_ms": 826,
+      "detail": "127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38@sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\n\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/18 17:18:06 logged in via /work/home/.docker/config.json\n2026/10/18 17:18:06 base unspecified, using empty image\n2026/10/18 17:18:06 pushed blob: sha256:628eb2adf7b681274d50a917f",
+      "output_tail": "127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38@sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\n\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/18 17:18:06 logged in via /work/home/.docker/config.json\n2026/10/18 17:18:06 base unspecified, using empty image\n2026/10/18 17:18:06 pushed blob: sha256:628eb2adf7b681274d50a917f7280e43b6b003471eeb24a75e88fb7a64bd93ed\n2026/10/18 17:18:06 pushed blob: sha256:56e5749e6a0392d5956ca902e719b35fcb52c8ba2aaef61c2e45519801142215\n2026/10/18 17:18:06 127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38:v1: digest: sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c size: 401\n"
+    },
+    {
+      "name": "consume: crane digest/manifest/pull/ls same endpoint",
+      "status": "pass",
+      "duration_ms": 893,
+      "detail": "sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\nsha256:628eb2adf7b681274d50a917f7280e43b6b003471eeb24a75e88fb7a64bd93ed\n56e5749e6a0392d5956ca902e719b35fcb52c8ba2aaef61c2e45519801142215.tar.gz\nmanifest.json\nv1\n2026/10/18 17:18:07 logged in via /work/home/.docker/config.json\n",
+      "output_tail": "sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\nsha256:628eb2adf7b681274d50a917f7280e43b6b003471eeb24a75e88fb7a64bd93ed\n56e5749e6a0392d5956ca902e719b35fcb52c8ba2aaef61c2e45519801142215.tar.gz\nmanifest.json\nv1\n2026/10/18 17:18:07 logged in via /work/home/.docker/config.json\n"
+    },
+    {
+      "name": "same-endpoint write then read: retag, platform mutate, multi-arch index",
+      "status": "pass",
+      "duration_ms": 903,
+      "detail": "127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38@sha256:96dd011184bf20e12d91571323a1e46752b2143f8bf6ef118471c739a699195f\n127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38@sha256:f570a2a63a086fbe01a1c8e04a19b646280164fd64f8651f07a0502860c36975\n2026/10/18 17:18:08 logged in via /work/home/.docker/config.json\n2026/10/18 17:18:08 127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38:v2: digest: sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c size: 401\n2026/10/18 17:18:08 exis",
+      "output_tail": "127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38@sha256:96dd011184bf20e12d91571323a1e46752b2143f8bf6ef118471c739a699195f\n127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38@sha256:f570a2a63a086fbe01a1c8e04a19b646280164fd64f8651f07a0502860c36975\n2026/10/18 17:18:08 logged in via /work/home/.docker/config.json\n2026/10/18 17:18:08 127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38:v2: digest: sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c size: 401\n2026/10/18 17:18:08 existing blob: sha256:56e5749e6a0392d5956ca902e719b35fcb52c8ba2aaef61c2e45519801142215\n2026/10/18 17:18:08 pushed blob: sha256:a9eb54842f221ad2ecaf5fe61b3fa9b29fc57d6758bd9d00e41fcccf979ec953\n2026/10/18 17:18:08 127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38:arm: digest: sha256:96dd011184bf20e12d91571323a1e46752b2143f8bf6ef118471c739a699195f size: 401\n2026/10/18 17:18:08 base unspecified, using empty index\n2026/10/18 17:18:08 existing manifest: sha256:96dd011184bf20e12d91571323a1e46752b2143f8bf6ef118471c739a699195f\n2026/10/18 17:18:08 existing manifest: sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\n2026/10/18 17:18:08 127.0.0.1:61647/cf-docker-local-11fc38/demo-11fc38:multi: digest: sha256:f570a2a63a086fbe01a1c8e04a19b646280164fd64f8651f07a0502860c36975 size: 558\n"
+    },
+    {
+      "name": "auth denial: invalid token rejected by crane",
+      "status": "pass",
+      "duration_ms": 805,
+      "detail": "2026/10/18 17:18:09 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:61647/v2/cf-docker-local-11fc38/demo-11fc38/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET http://127.0.0.1:61647/v2/cf-docker-local-11fc38/demo-11fc38/manifests/v1: UNAUTHORIZED: registry authentication required\n",
+      "output_tail": "2026/10/18 17:18:09 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:61647/v2/cf-docker-local-11fc38/demo-11fc38/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET http://127.0.0.1:61647/v2/cf-docker-local-11fc38/demo-11fc38/manifests/v1: UNAUTHORIZED: registry authentication required\n"
+    },
+    {
+      "name": "auth denial: /v2/ without or with bad token returns 401",
+      "status": "pass",
+      "duration_ms": 1,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: crane delete manifest by tag",
+      "status": "unsupported",
+      "duration_ms": 998,
+      "detail": "documented limitation (README: unsupported lifecycle operations fail explicitly): exit 1: sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\n2026/10/18 17:18:10 logged in via /work/home/.docker/config.json\nError: DELETE http://127.0.0.1:61647/v2/cf-docker-local-11fc38/demo-11fc38/manifests/v2: UNSUPPORTED: operation unavailable\n",
+      "output_tail": "sha256:9a205c3fdcca82823b703bd04c78b23f57c06b18ba73c8be2ef5460080bf8e2c\n2026/10/18 17:18:10 logged in via /work/home/.docker/config.json\nError: DELETE http://127.0.0.1:61647/v2/cf-docker-local-11fc38/demo-11fc38/manifests/v2: UNSUPPORTED: operation unavailable\n"
+    },
+    {
+      "name": "remote pull-through miss via mirror.gcr.io: crane digest+pull of library/hello-world",
+      "status": "pass",
+      "duration_ms": 2426,
+      "detail": "2026/10/18 17:18:11 logged in via /work/home/.docker/config.json",
+      "output_tail": "sha256:628eb2adf7b681274d50a917f7280e43b6b003471eeb24a75e88fb7a64bd93ed\n56e5749e6a0392d5956ca902e719b35fcb52c8ba2aaef61c2e45519801142215.tar.gz\nmanifest.json\n2026/10/18 17:18:12 logged in via /work/home/.docker/config.json\nError: parsing reference \"127.0.0.1:61647/cf-docker-remote-11fc38/library/hello-world@2026/10/18\": could not parse reference: 127.0.0.1:61647/cf-docker-remote-11fc38/library/hello-world@2026/10/18\n"
+    },
+    {
+      "name": "remote pull-through hit via mirror.gcr.io: pull by digest with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 584,
+      "detail": "served with upstream origin unreachable",
+      "output_tail": "2026/10/18 17:18:13 logged in via /work/home/.docker/config.json\nError: parsing reference \"127.0.0.1:61647/cf-docker-remote-11fc38/library/hello-world@2026/10/18\": could not parse reference: 127.0.0.1:61647/cf-docker-remote-11fc38/library/hello-world@2026/10/18\ntar: can't open 'out2.tar': No such file or directory\n"
+    },
+    {
+      "name": "auth denial on remote feed: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world",
+      "status": "fail",
+      "duration_ms": 10962,
+      "detail": "exit 1: 2026/10/18 17:18:14 logged in via /work/home/.docker/config.json\n2026/10/18 17:18:14 retrying HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:16 retrying HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:19 retrying HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:19 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:19 retrying GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 17:18:20 retrying GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 17:18:23 retrying GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n",
+      "output_tail": "2026/10/18 17:18:14 logged in via /work/home/.docker/config.json\n2026/10/18 17:18:14 retrying HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:16 retrying HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:19 retrying HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:19 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 17:18:19 retrying GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 17:18:20 retrying GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 17:18:23 retrying GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET http://127.0.0.1:61647/v2/cf-docker-hub-11fc38/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n"
+    },
+    {
+      "name": "remote pull-through hit via registry-1.docker.io: pull by digest with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "miss step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial on hub feed: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 1,
+      "detail": "",
+      "output_tail": ""
+    }
+  ],
+  "duration_ms": 41075,
+  "summary": {
+    "pass": 10,
+    "fail": 1,
+    "skip": 1,
+    "unsupported": 1
+  },
+  "result": "fail"
+}
