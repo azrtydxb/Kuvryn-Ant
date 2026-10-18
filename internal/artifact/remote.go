@@ -76,6 +76,10 @@ type Origin struct {
 	// manifest). The object is fully staged, Verify reads it from the start,
 	// and an error aborts the cache entry; the client never sees the bytes.
 	Verify func(io.ReadSeeker) error
+	// StreamVerified keeps Digest but streams the bytes to the client while they
+	// are staged (for objects too large to hold back): the digest is checked at
+	// EOF, a mismatch aborts the client connection and is never cached.
+	StreamVerified bool
 }
 
 // Document is an upstream metadata response. Stale is true when it was served
@@ -374,7 +378,7 @@ func (s *Service) cacheStream(ctx context.Context, p identity.Principal, r Publi
 		}
 	}
 	t := &teeReader{want: o.Digest, svc: s, ctx: ctx, principal: p, pub: r, source: source, domain: domain, body: response.Body, upload: upload, hash: sha256.New(), expected: size, limit: s.materializeLimit(), release: release}
-	if o.Digest.Valid() || o.Verify != nil {
+	if (o.Digest.Valid() && !o.StreamVerified) || o.Verify != nil {
 		// Verify before serving: stage everything, check, commit, then serve
 		// from the store. The client never sees unverified bytes.
 		defer release()
@@ -458,8 +462,8 @@ func (t *teeReader) Read(p []byte) (int, error) {
 			t.finish()
 			return n, t.err
 		}
+		t.hash.Write(p[:n])
 		if t.upload != nil {
-			t.hash.Write(p[:n])
 			if _, werr := t.upload.Write(p[:n]); werr != nil {
 				t.abort()
 			}
