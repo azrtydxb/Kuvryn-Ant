@@ -18,6 +18,9 @@ type Value struct {
 	Body                          []byte
 	ETag, LastModified, MediaType string
 	SignedExpiry                  time.Time
+	// Stale is set only on a copy returned because revalidation failed and the
+	// entry was still inside its stale-if-error window. It is never stored.
+	Stale bool
 }
 type Config struct {
 	MaxEntries                         int
@@ -162,7 +165,9 @@ func (c *Cache) Revalidate(ctx context.Context, k Key, o GetOptions, loader func
 		return Value{}, err
 	}
 	if f.err != nil && o.AllowStale && exists && c.canStale(k, old) {
-		return clone(old.value), nil
+		stale := clone(old.value)
+		stale.Stale = true
+		return stale, nil
 	}
 	return clone(f.value), f.err
 }

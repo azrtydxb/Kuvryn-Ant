@@ -39,6 +39,10 @@ formats and remote/replica resolution remain release gates. The remote-source
 runtime (`internal/remoteruntime`) materializes authorized remote config and
 credentials, applies CAs and redirect policy, and streams/caches metadata and
 archives with per-source quotas under `scripts/test-postgres.sh` fixtures.
+Pull-through reads (remote materialization into the artifact store, coalesced
+misses, negative caching, stale-if-error) are wired for raw, npm, pypi, maven, go
+and OCI; see [pull-through.md](pull-through.md) for semantics, limits and how to
+enable the remaining adapters. Replica resolution remains a release gate.
 
 These actual versions differ from some planned release-matrix pins. Remote/replica behavior, deployment-scale workloads, mutable lifecycle policies and full format certification remain separate gates. Inspect each adapter's README for its exact supported operations and explicit limits.
 

@@ -109,6 +109,48 @@ func (r route) publication(feed, kind string) artifact.Publication {
 	ns := path.Dir(r.module)
 	return artifact.Publication{FeedID: feed, Namespace: ns, Coordinate: r.module, Version: r.version, AssetKey: "module." + kind}
 }
+
+// upstreamFile maps a stored asset identity back to its GOPROXY request path.
+func upstreamFile(pub artifact.Publication) (artifact.Origin, bool) {
+	kind := strings.TrimPrefix(pub.AssetKey, "module.")
+	if kind == pub.AssetKey || (kind != "info" && kind != "mod" && kind != "zip") {
+		return artifact.Origin{}, false
+	}
+	module, err := moduleEscape(pub.Coordinate, pub.Version)
+	if err != nil {
+		return artifact.Origin{}, false
+	}
+	return artifact.Origin{Path: module.path + "/@v/" + module.version + "." + kind}, true
+}
+
+// withMediaType gives a cached asset the same media type local ingestion uses.
+func withMediaType(pub artifact.Publication) artifact.Publication {
+	switch pub.AssetKey {
+	case "module.info":
+		pub.MediaType = "application/json"
+	case "module.mod":
+		pub.MediaType = "text/plain; charset=utf-8"
+	case "module.zip":
+		pub.MediaType = "application/zip"
+	}
+	return pub
+}
+
+type escapedModule struct{ path, version string }
+
+func moduleEscape(path, version string) (escapedModule, error) {
+	p, err := module.EscapePath(path)
+	if err != nil {
+		return escapedModule{}, err
+	}
+	v := ""
+	if version != "" {
+		if v, err = module.EscapeVersion(version); err != nil {
+			return escapedModule{}, err
+		}
+	}
+	return escapedModule{p, v}, nil
+}
 func (s *Proxy) serve(w http.ResponseWriter, r *http.Request) {
 	p, _ := identity.PrincipalFromContext(r.Context())
 	if p.InstanceID != s.instance {
@@ -151,6 +193,26 @@ func (s *Proxy) serve(w http.ResponseWriter, r *http.Request) {
 func (s *Proxy) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication, source string) {
 	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(30 * time.Second))
 	record, err := s.service.Lookup(r.Context(), p, pub)
+	if errors.Is(err, artifact.ErrNotFound) {
+		// Pull-through of an immutable module file. The GOPROXY layout is the
+		// same upstream; the version is already canonical (see parseRoute).
+		origin, ok := upstreamFile(pub)
+		if ok {
+			if source != "" {
+				origin.SourceID = source
+			}
+			stream, retry, through := s.service.PullThrough(r.Context(), p, withMediaType(pub), origin)
+			switch {
+			case through != nil:
+				err = through
+			case retry:
+				record, err = s.service.Lookup(r.Context(), p, pub)
+			default:
+				stream.ServeStream(w, r.Method)
+				return
+			}
+		}
+	}
 	if err != nil {
 		fail(w, err)
 		return

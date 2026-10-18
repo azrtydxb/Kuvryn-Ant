@@ -46,8 +46,16 @@ type Options struct {
 // Request intentionally has no arbitrary headers, absolute URL or query string.
 // AuthorizationDomain must identify the already-authorized caller and its scope
 // generation. Reuse across authorization changes can expose caller-specific data.
+//
+// Exactly one of Path or URL names the resource. URL is an absolute https URL
+// for a resource the source's own metadata referenced on a different host (for
+// example a PyPI file CDN). It is honoured only when its origin is the source
+// origin or one of the source's configured redirect origins, and credentials are
+// attached solely for the source origin, so a URL can never carry a secret to
+// another origin.
 type Request struct {
 	SourceID, AuthorizationDomain, Path, Representation string
+	URL                                                 string
 	AllowStale                                          bool
 }
 type Response struct {
@@ -67,7 +75,49 @@ type entry struct {
 	retired                      bool
 	drained                      chan struct{}
 	used                         uint64
+	negMu                        sync.Mutex
+	negative                     map[negativeKey]time.Time
 }
+type negativeKey struct{ domain, identity, representation string }
+
+const maxNegativeEntries = 1024
+
+// negativeHit reports whether an identical resource recently answered 404/410
+// for this authorization domain. Entries live no longer than the source's
+// configured negative TTL and are dropped with the entry on any reload.
+func (e *entry) negativeHit(k negativeKey) bool {
+	e.negMu.Lock()
+	defer e.negMu.Unlock()
+	until, ok := e.negative[k]
+	if !ok {
+		return false
+	}
+	if time.Now().After(until) {
+		delete(e.negative, k)
+		return false
+	}
+	return true
+}
+func (e *entry) negativeStore(k negativeKey) {
+	e.negMu.Lock()
+	defer e.negMu.Unlock()
+	if e.negative == nil {
+		e.negative = map[negativeKey]time.Time{}
+	}
+	now := time.Now()
+	if len(e.negative) >= maxNegativeEntries {
+		for key, until := range e.negative {
+			if now.After(until) {
+				delete(e.negative, key)
+			}
+		}
+		if len(e.negative) >= maxNegativeEntries {
+			return
+		}
+	}
+	e.negative[k] = now.Add(time.Duration(e.cfg.Cache.NegativeTTLSeconds) * time.Second)
+}
+
 type Manager struct {
 	mu                sync.Mutex
 	db                *pgxpool.Pool
@@ -143,19 +193,47 @@ func safeError(err error) error {
 	}
 }
 func validate(r Request) error {
-	if remoteconfig.CredentialPurpose(r.SourceID) == "" || len(r.AuthorizationDomain) == 0 || len(r.AuthorizationDomain) > 8192 || len(r.Representation) > 256 || strings.ContainsFunc(r.Representation, unicode.IsControl) || !utf8.ValidString(r.Representation) || len(r.Path) == 0 || len(r.Path) > 4096 || !utf8.ValidString(r.Path) || strings.ContainsFunc(r.Path, unicode.IsControl) || strings.Contains(r.Path, "\\") {
+	if remoteconfig.CredentialPurpose(r.SourceID) == "" || len(r.AuthorizationDomain) == 0 || len(r.AuthorizationDomain) > 8192 || len(r.Representation) > 256 || strings.ContainsFunc(r.Representation, unicode.IsControl) || !utf8.ValidString(r.Representation) {
+		return ErrInput
+	}
+	if (r.Path == "") == (r.URL == "") {
+		return ErrInput
+	}
+	if r.URL != "" {
+		return validateURL(r.URL)
+	}
+	if len(r.Path) > 4096 || !utf8.ValidString(r.Path) || strings.ContainsFunc(r.Path, unicode.IsControl) || strings.Contains(r.Path, "\\") {
 		return ErrInput
 	}
 	u, err := url.Parse(r.Path)
 	if err != nil || u.IsAbs() || u.Host != "" || u.User != nil || u.Opaque != "" || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.HasPrefix(u.Path, "/") {
 		return ErrInput
 	}
-	for _, part := range strings.Split(u.Path, "/") {
+	// One trailing slash is meaningful for some protocols (PEP 503 project pages).
+	for _, part := range strings.Split(strings.TrimSuffix(u.Path, "/"), "/") {
 		if part == "" || part == "." || part == ".." {
 			return ErrInput
 		}
 	}
 	return nil
+}
+func validateURL(raw string) error {
+	if len(raw) > 4096 || !utf8.ValidString(raw) || strings.ContainsFunc(raw, unicode.IsControl) || strings.Contains(raw, "\\") {
+		return ErrInput
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Opaque != "" || u.Fragment != "" {
+		return ErrInput
+	}
+	return nil
+}
+
+// identity is the stable resource name used for cache and negative-cache keys.
+func (r Request) identity() string {
+	if r.URL != "" {
+		return r.URL
+	}
+	return r.Path
 }
 func (m *Manager) admission(ctx context.Context) (func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -409,7 +487,12 @@ func requestHeaders(r Request, previous *cache.Value) http.Header {
 	}
 	return h
 }
-func target(e *entry, r Request) string { return strings.TrimRight(e.cfg.Origin, "/") + "/" + r.Path }
+func target(e *entry, r Request) string {
+	if r.URL != "" {
+		return r.URL
+	}
+	return strings.TrimRight(e.cfg.Origin, "/") + "/" + r.Path
+}
 func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) {
 	if err := validate(r); err != nil {
 		return cache.Value{}, err
@@ -430,7 +513,7 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 	if representation == "" {
 		representation = "*/*"
 	}
-	value, err := e.cache.Revalidate(ctx, cache.Key{Source: r.SourceID, Identity: r.Path, Representation: representation, AuthorizationDomain: r.AuthorizationDomain}, cache.GetOptions{AllowStale: r.AllowStale}, func(ctx context.Context, previous *cache.Value) (cache.Value, error) {
+	value, err := e.cache.Revalidate(ctx, cache.Key{Source: r.SourceID, Identity: r.identity(), Representation: representation, AuthorizationDomain: r.AuthorizationDomain}, cache.GetOptions{AllowStale: r.AllowStale}, func(ctx context.Context, previous *cache.Value) (cache.Value, error) {
 		if err := m.loadStart(e); err != nil {
 			return cache.Value{}, err
 		}
@@ -502,7 +585,19 @@ func (m *Manager) Fetch(ctx context.Context, r Request) (*Response, error) {
 		admit()
 		return nil, err
 	}
-	ctx, cancel := operationContext(ctx, e)
+	negative := negativeKey{r.AuthorizationDomain, r.identity(), r.Representation}
+	if e.negativeHit(negative) {
+		m.release(e)
+		admit()
+		return &Response{StatusCode: http.StatusNotFound, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(""))}, nil
+	}
+	// The configured timeout bounds connecting and receiving response headers.
+	// Once streaming starts, progress is bounded by the upstream idle timeouts so
+	// that large artifacts are not cut off by a total-duration limit.
+	ctx, cancelCtx := context.WithCancel(ctx)
+	stopLife := context.AfterFunc(e.ctx, cancelCtx)
+	headerTimer := time.AfterFunc(time.Duration(e.cfg.TimeoutSeconds)*time.Second, cancelCtx)
+	cancel := func() { stopLife(); headerTimer.Stop(); cancelCtx() }
 	if err = m.networkSlot(ctx); err != nil {
 		cancel()
 		m.release(e)
@@ -511,9 +606,13 @@ func (m *Manager) Fetch(ctx context.Context, r Request) (*Response, error) {
 	}
 	finish := func() { cancel(); <-m.network; m.release(e); admit() }
 	response, err := e.fetcher.Fetch(ctx, http.MethodGet, target(e, r), requestHeaders(r, nil))
+	headerTimer.Stop()
 	if err != nil {
 		finish()
 		return nil, safeError(err)
+	}
+	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
+		e.negativeStore(negative)
 	}
 	body := &streamBody{body: response.Body, ctx: ctx, release: finish, cancel: cancel}
 	context.AfterFunc(ctx, func() { _ = body.Close() })

@@ -266,6 +266,17 @@ func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity
 		return
 	}
 	record, body, e := s.service.Open(r.Context(), p, artifact.Publication{FeedID: feed, Coordinate: name, Version: versionKey(original), AssetKey: file}, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		retry, handled, through := s.pullThroughFile(w, r, p, feed, name, source, digest, file)
+		switch {
+		case through != nil:
+			e = through
+		case handled:
+			return
+		case retry:
+			record, body, e = s.service.Open(r.Context(), p, artifact.Publication{FeedID: feed, Coordinate: name, Version: versionKey(original), AssetKey: file}, 0, -1)
+		}
+	}
 	if e != nil {
 		fail(w, e)
 		return
@@ -304,6 +315,14 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 	if representation == "" {
 		failure(w, 406)
 		return
+	}
+	// Remote-owned (or unowned) projects come from the remote sources, rewritten
+	// to this feed. Locally published projects fall through to the local index.
+	var upstreamErr error
+	if name != "" {
+		if upstreamErr = s.remoteIndex(w, r, p, feed, base, name, representation); upstreamErr == errServed {
+			return
+		}
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
@@ -408,6 +427,10 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		}
 	}
 	if name != "" && len(files) == 0 {
+		if upstreamErr != nil {
+			fail(w, upstreamErr)
+			return
+		}
 		failure(w, 404)
 		return
 	}

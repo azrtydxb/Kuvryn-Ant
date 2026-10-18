@@ -31,6 +31,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/pubrepo"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/pypi"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/rawrepo"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteruntime"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/rpmrepo"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/rubygems"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
@@ -73,6 +74,7 @@ type artifactRuntime struct {
 	cargo       *cargo.Registry
 	helm        *helmrepo.Repository
 	raw         *rawrepo.Repository
+	remote      *remoteruntime.Manager
 }
 
 func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (*artifactRuntime, error) {
@@ -295,7 +297,23 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 			return nil, err
 		}
 	}
-	return &artifactRuntime{apk: apkRepository, apt: aptRepository, rpm: rpmRepository, terraform: terraformRepository, swift: swiftRepository, cocoapods: cocoapodsRepository, huggingface: huggingfaceRepository, p2: p2Repository, conan: conanRepository, conda: condaRepository, ansible: ansibleRepository, cran: cranRepository, rubygems: rubygemsRepository, gitlfs: gitlfsRepository, composer: composerRepository, pubrepo: pubrepoRepository, instanceID: instance, nuget: nugetRepository, maven: mavenRepository, pypi: pypiRepository, manager: manager, stores: stores, registry: registry, goProxy: goProxy, service: service, cargo: cargoRegistry, helm: helmrepo.New(pool, service), raw: rawRepository, npm: npmRegistry}, nil
+	// Pull-through reads: the runtime resolves per-source configuration, the
+	// source-bound credential and the operator CA map (IDs only; paths come from
+	// ANT_UPSTREAM_CA_MAP_FILE, never from requests) on demand. Without the
+	// secret keyring no remote source can authenticate, so pull-through stays off
+	// and feeds serve local content only.
+	var remote *remoteruntime.Manager
+	if cfg.SecretKeys != nil {
+		remote, err = remoteruntime.New(pool, instance, cfg.SecretKeys, remoteruntime.Options{CAFiles: cfg.UpstreamCAs, MaxMetadataBytes: 4 << 20})
+		if err != nil {
+			registry.Close()
+			stores.Close()
+			manager.Close()
+			return nil, err
+		}
+		service.Remote = remote
+	}
+	return &artifactRuntime{remote: remote, apk: apkRepository, apt: aptRepository, rpm: rpmRepository, terraform: terraformRepository, swift: swiftRepository, cocoapods: cocoapodsRepository, huggingface: huggingfaceRepository, p2: p2Repository, conan: conanRepository, conda: condaRepository, ansible: ansibleRepository, cran: cranRepository, rubygems: rubygemsRepository, gitlfs: gitlfsRepository, composer: composerRepository, pubrepo: pubrepoRepository, instanceID: instance, nuget: nugetRepository, maven: mavenRepository, pypi: pypiRepository, manager: manager, stores: stores, registry: registry, goProxy: goProxy, service: service, cargo: cargoRegistry, helm: helmrepo.New(pool, service), raw: rawRepository, npm: npmRegistry}, nil
 }
 func (r *artifactRuntime) Register(mux *http.ServeMux) {
 	if r != nil {
@@ -328,6 +346,9 @@ func (r *artifactRuntime) Register(mux *http.ServeMux) {
 }
 func (r *artifactRuntime) Close() {
 	if r != nil {
+		if r.remote != nil {
+			_ = r.remote.Close() // cancel in-flight upstream streams before storage closes
+		}
 		r.pubrepo.Close()
 		r.registry.Close()
 		r.stores.Close()
