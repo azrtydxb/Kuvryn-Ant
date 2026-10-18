@@ -192,6 +192,8 @@ export type MappingPreview = { "identity": MappingSubject; "signature_verified":
 export type IdentityPolicy = { "sso_mandatory": boolean };
 export type TotpEnrollment = { "otpauth_uri": string };
 export type TotpConfirm = { "code": string };
+export type SecurityResultInput = { "scanner": string; "status": "passed" | "failed" | "warning"; "summary"?: {  } };
+export type SecurityResult = { "id": string; "asset_id": string; "scanner": string; "status": "passed" | "failed" | "warning"; "summary": {  }; "created_at": string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -326,6 +328,7 @@ unlockLocalAccount: { body: undefined; response: undefined };
 beginLocalTotp: { body: undefined; response: TotpEnrollment };
 disableLocalTotp: { body: undefined; response: undefined };
 confirmLocalTotp: { body: TotpConfirm; response: undefined };
+ingestSecurityResult: { body: SecurityResultInput; response: SecurityResult };
 }
 export const routes = {
   "getStatus": {
@@ -516,7 +519,7 @@ export const routes = {
   "deletePackageAsset": {
     "path": "/api/v1/feeds/{id}/assets/{asset}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "getRemoteSourceConfig": {
     "path": "/api/v1/sources/{id}/remote-config",
@@ -661,7 +664,7 @@ export const routes = {
   "startRetentionRun": {
     "path": "/api/v1/retention/runs",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "getRetentionRun": {
     "path": "/api/v1/retention/runs/{id}",
@@ -796,7 +799,7 @@ export const routes = {
   "startStorageJob": {
     "path": "/api/v1/storage/migrations",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "getStorageJob": {
     "path": "/api/v1/storage/migrations/{id}",
@@ -806,7 +809,7 @@ export const routes = {
   "storageJobAction": {
     "path": "/api/v1/storage/migrations/{id}/{action}",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "getDiagnostics": {
     "path": "/api/v1/diagnostics",
@@ -831,7 +834,7 @@ export const routes = {
   "deletePackageVersion": {
     "path": "/api/v1/feeds/{id}/packages/{component}/versions/{version}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "getDeletePolicy": {
     "path": "/api/v1/feeds/{id}/delete-policy",
@@ -841,7 +844,7 @@ export const routes = {
   "setDeletePolicy": {
     "path": "/api/v1/feeds/{id}/delete-policy",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "getLimits": {
     "path": "/api/v1/limits",
@@ -987,5 +990,10 @@ export const routes = {
     "path": "/api/v1/local-account/totp/confirm",
     "method": "POST",
     "idempotent": false
+  },
+  "ingestSecurityResult": {
+    "path": "/api/v1/assets/{id}/security-results",
+    "method": "POST",
+    "idempotent": true
   }
 } as const;

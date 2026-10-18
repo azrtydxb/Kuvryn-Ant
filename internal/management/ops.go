@@ -126,6 +126,7 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"POST /api/v1/storage/migrations/{id}/{action}": h.storageJobAction,
 		"GET /api/v1/metrics/traffic":                   h.traffic,
 		"GET /api/v1/assets/{id}/provenance":            h.provenance,
+		"POST /api/v1/assets/{id}/security-results":     h.ingestSecurityResult,
 		"GET /api/v1/webhooks/stats":                    h.webhookStats,
 		"POST /api/v1/webhooks/{id}/deliveries/{event}": h.redeliver,
 		"GET /api/v1/settings":                          h.getSettings,

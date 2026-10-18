@@ -59,30 +59,25 @@ func pkgMutationError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-// run executes one mutation in a transaction and renders the outcome.
-func (h packageHandlers) run(w http.ResponseWriter, r *http.Request, p identity.Principal, policy identity.Policy, action artifact.Action, t artifact.Target) {
-	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
-	defer cancel()
-	tx, err := h.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		pkgMutationError(w, r, err)
+// run executes one mutation in a transaction under the idempotency store and
+// renders the outcome. key is the validated Idempotency-Key.
+func (h packageHandlers) run(w http.ResponseWriter, r *http.Request, p identity.Principal, policy identity.Policy, action artifact.Action, t artifact.Target, key string) {
+	out, callErr, storeErr := idempotent(r, h.db, p, key, "package."+string(action), t.FeedID+"/"+t.Namespace+"/"+t.Coordinate+"/"+t.Version+"/"+t.AssetKey, t, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		o, err := artifact.MutateTx(ctx, tx, p, policy, action, t)
+		if err != nil {
+			return nil, err
+		}
+		return PackageMutation{Action: string(action), VersionRemoved: o.VersionRemoved, ComponentRemoved: o.ComponentRemoved, AssetsRemoved: o.AssetsRemoved, TagsRemoved: o.TagsRemoved, Unchanged: o.Unchanged}, nil
+	})
+	if callErr != nil {
+		pkgMutationError(w, r, callErr)
 		return
 	}
-	defer func() {
-		c, cn := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cn()
-		_ = tx.Rollback(c)
-	}()
-	out, err := artifact.MutateTx(ctx, tx, p, policy, action, t)
-	if err != nil {
-		pkgMutationError(w, r, err)
+	if storeErr != nil {
+		storeError(w, r, storeErr)
 		return
 	}
-	if err = tx.Commit(ctx); err != nil {
-		pkgMutationError(w, r, err)
-		return
-	}
-	JSON(w, 200, PackageMutation{Action: string(action), VersionRemoved: out.VersionRemoved, ComponentRemoved: out.ComponentRemoved, AssetsRemoved: out.AssetsRemoved, TagsRemoved: out.TagsRemoved, Unchanged: out.Unchanged})
+	JSON(w, 200, out.JSON)
 }
 
 func (h packageHandlers) deleteVersion(w http.ResponseWriter, r *http.Request) {
@@ -109,6 +104,10 @@ func (h packageHandlers) deleteVersion(w http.ResponseWriter, r *http.Request) {
 		packageInput(w, r)
 		return
 	}
+	key, ok := mutationKey(w, r)
+	if !ok {
+		return
+	}
 	p, policy, ok := h.policy(w, r)
 	if !ok {
 		return
@@ -121,7 +120,7 @@ func (h packageHandlers) deleteVersion(w http.ResponseWriter, r *http.Request) {
 		pkgMutationError(w, r, err)
 		return
 	}
-	h.run(w, r, p, policy, action, artifact.Target{FeedID: feed, Namespace: namespace, Coordinate: coordinate, Version: version})
+	h.run(w, r, p, policy, action, artifact.Target{FeedID: feed, Namespace: namespace, Coordinate: coordinate, Version: version}, key)
 }
 
 func (h packageHandlers) deleteAsset(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +129,10 @@ func (h packageHandlers) deleteAsset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	asset, ok := packagePathID(w, r, "asset")
+	if !ok {
+		return
+	}
+	key, ok := mutationKey(w, r)
 	if !ok {
 		return
 	}
@@ -146,7 +149,7 @@ func (h packageHandlers) deleteAsset(w http.ResponseWriter, r *http.Request) {
 		pkgMutationError(w, r, err)
 		return
 	}
-	h.run(w, r, p, policy, artifact.ActionDelete, t)
+	h.run(w, r, p, policy, artifact.ActionDelete, t, key)
 }
 
 func (h packageHandlers) getDeletePolicy(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +185,10 @@ func (h packageHandlers) putDeletePolicy(w http.ResponseWriter, r *http.Request)
 		packageInput(w, r)
 		return
 	}
+	key, ok := mutationKey(w, r)
+	if !ok {
+		return
+	}
 	p, policy, ok := h.policy(w, r)
 	if !ok {
 		return
@@ -190,28 +197,24 @@ func (h packageHandlers) putDeletePolicy(w http.ResponseWriter, r *http.Request)
 		Error(w, r, 404, api.ErrorCodeNotFound, "feed not found")
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-	tx, err := h.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		pkgMutationError(w, r, err)
+	out, callErr, storeErr := idempotent(r, h.db, p, key, "feed.delete_policy.set", feed+"/"+body.Namespace, body, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		b := body
+		err := tx.QueryRow(ctx, `INSERT INTO delete_policies(instance_id,feed_id,namespace,mode,immutable_releases) SELECT $1,f.id,$3,$4,$5 FROM feeds f WHERE f.instance_id=$1 AND f.id=$2 ON CONFLICT(feed_id,namespace) DO UPDATE SET mode=excluded.mode,immutable_releases=excluded.immutable_releases,revision=delete_policies.revision+1,updated_at=now() RETURNING revision`, p.InstanceID, feed, b.Namespace, b.Mode, b.ImmutableReleases).Scan(&b.Revision)
+		if err != nil {
+			return nil, err
+		}
+		if err = auditTx(ctx, tx, p, "feed.delete_policy.set", feed, b, map[string]any{"feed_id": feed, "namespace": b.Namespace, "mode": b.Mode, "immutable_releases": b.ImmutableReleases}); err != nil {
+			return nil, err
+		}
+		return b, nil
+	})
+	if callErr != nil {
+		pkgMutationError(w, r, callErr)
 		return
 	}
-	defer func() {
-		c, cn := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cn()
-		_ = tx.Rollback(c)
-	}()
-	err = tx.QueryRow(ctx, `INSERT INTO delete_policies(instance_id,feed_id,namespace,mode,immutable_releases) SELECT $1,f.id,$3,$4,$5 FROM feeds f WHERE f.instance_id=$1 AND f.id=$2 ON CONFLICT(feed_id,namespace) DO UPDATE SET mode=excluded.mode,immutable_releases=excluded.immutable_releases,revision=delete_policies.revision+1,updated_at=now() RETURNING revision`, p.InstanceID, feed, body.Namespace, body.Mode, body.ImmutableReleases).Scan(&body.Revision)
-	if err == nil {
-		err = auditTx(ctx, tx, p, "feed.delete_policy.set", feed, body, map[string]any{"feed_id": feed, "namespace": body.Namespace, "mode": body.Mode, "immutable_releases": body.ImmutableReleases})
-	}
-	if err == nil {
-		err = tx.Commit(ctx)
-	}
-	if err != nil {
-		pkgMutationError(w, r, err)
+	if storeErr != nil {
+		storeError(w, r, storeErr)
 		return
 	}
-	JSON(w, 200, body)
+	JSON(w, 200, out.JSON)
 }

@@ -764,11 +764,42 @@ func TestReplicationMetricsAndStatus(t *testing.T) {
 	if err := svc.RunNow(ctx, job.ID); err != nil {
 		t.Fatal(err)
 	}
+	// One failure streak and its recovery are each reported once.
+	if n := dst.count(`SELECT count(*) FROM outbox_events WHERE topic='replication.job.failed'`); n != 1 {
+		t.Fatalf("failed events %d", n)
+	}
+	if n := dst.count(`SELECT count(*) FROM outbox_events WHERE topic='replication.job.succeeded' AND payload->>'recovered'='true'`); n != 1 {
+		t.Fatalf("recovered events %d", n)
+	}
 	src.publish(src.publisher, src.feed, "n", "n/late", "1", "f.bin", "", data("late"))
 	time.Sleep(20 * time.Millisecond)
 	// Refresh the head without applying: the job is now behind.
 	dst.exec(`UPDATE replication_jobs SET remote_head=remote_head+1,remote_head_at=clock_timestamp() WHERE id=$1`, job.ID)
 
+	// Lag alert fires once per excursion above the threshold.
+	svc.cfg.LagAlertThreshold = 0
+	alert := func() {
+		tx, err := dst.pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = svc.lagAlert(ctx, tx, job.ID); err != nil {
+			t.Fatal(err)
+		}
+		if err = tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	alert() // lag is 1, threshold 0: over, alerts
+	alert() // still over: no second event
+	if n := dst.count(`SELECT count(*) FROM outbox_events WHERE topic='replication.job.lag'`); n != 1 {
+		t.Fatalf("lag events %d", n)
+	}
+	svc.cfg.LagAlertThreshold = 100
+	alert() // back under: rearms silently
+	if dst.count(`SELECT count(*) FROM replication_jobs WHERE id=$1 AND lag_alerted`, job.ID) != 0 {
+		t.Fatal("lag alert not rearmed")
+	}
 	st := status(t, svc, dst, job.ID)
 	if st.FailuresTotal != 1 || st.BytesTransferred == 0 || st.ChangesBehind == nil || *st.ChangesBehind != 1 || st.LagSeconds == nil {
 		t.Fatalf("status endpoint values: %+v", st)

@@ -1,12 +1,15 @@
 package management
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
+	"github.com/jackc/pgx/v5"
 )
 
 // StorageMigrationStatus is the storage configuration plus the latest job.
@@ -142,21 +145,42 @@ func (h opsHandlers) startStorageJob(w http.ResponseWriter, r *http.Request) {
 		identityInput(w, r)
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	job, _, err := m.Start(ctx, opts)
-	if err != nil {
-		h.storageError(w, r, err)
+	key, ok := mutationKey(w, r)
+	if !ok {
 		return
 	}
-	_, _ = h.db.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,'storage.'||$3::text,$4,jsonb_build_object('dry_run',$5::boolean,'from',$6::text,'to',$7::text))`, principal.InstanceID, principal.PrincipalID, in.Action, job.ID, in.DryRun, job.From, job.To)
-	h.runStorageJob(m, job.ID)
+	// The migrator persists its job row on its own connection; the idempotency
+	// record commits afterwards, so a crash in between surfaces as ErrBusy on
+	// retry rather than a duplicate job.
+	out, callErr, storeErr := idempotent(r, h.db, principal, key, "storage."+in.Action, "storage/migrations", in, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		job, _, err := m.Start(ctx, opts)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,'storage.'||$3::text,$4,jsonb_build_object('dry_run',$5::boolean,'from',$6::text,'to',$7::text))`, principal.InstanceID, principal.PrincipalID, in.Action, job.ID, in.DryRun, job.From, job.To); err != nil {
+			return nil, err
+		}
+		return job, nil
+	})
+	if callErr != nil {
+		h.storageError(w, r, callErr)
+		return
+	}
+	if storeErr != nil {
+		storeError(w, r, storeErr)
+		return
+	}
+	var job storage.Job
+	_ = json.Unmarshal(out.JSON, &job)
+	if !out.Replayed {
+		h.runStorageJob(m, job.ID)
+	}
 	w.Header().Set("Location", "/api/v1/storage/migrations/"+job.ID)
-	JSON(w, 202, job)
+	JSON(w, 202, out.JSON)
 }
 
 func (h opsHandlers) storageJobAction(w http.ResponseWriter, r *http.Request) {
-	m, _, ok := h.storageMigrator(w, r)
+	m, principal, ok := h.storageMigrator(w, r)
 	if !ok {
 		return
 	}
@@ -165,25 +189,35 @@ func (h opsHandlers) storageJobAction(w http.ResponseWriter, r *http.Request) {
 		identityInput(w, r)
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	switch r.PathValue("action") {
-	case "pause":
-		j, err := m.Pause(ctx, id)
-		if err != nil {
-			h.storageError(w, r, err)
-			return
-		}
-		JSON(w, 200, j)
-	case "resume":
-		j, err := m.Resume(ctx, id)
-		if err != nil {
-			h.storageError(w, r, err)
-			return
-		}
-		h.runStorageJob(m, j.ID)
-		JSON(w, 202, j)
-	default:
+	action := r.PathValue("action")
+	if action != "pause" && action != "resume" {
 		Error(w, r, 404, api.ErrorCodeNotFound, "unknown action")
+		return
 	}
+	key, ok := mutationKey(w, r)
+	if !ok {
+		return
+	}
+	out, callErr, storeErr := idempotent(r, h.db, principal, key, "storage.job."+action, id, map[string]string{"id": id, "action": action}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		if action == "pause" {
+			return m.Pause(ctx, id)
+		}
+		return m.Resume(ctx, id)
+	})
+	if callErr != nil {
+		h.storageError(w, r, callErr)
+		return
+	}
+	if storeErr != nil {
+		storeError(w, r, storeErr)
+		return
+	}
+	if action == "resume" {
+		if !out.Replayed {
+			h.runStorageJob(m, id)
+		}
+		JSON(w, 202, out.JSON)
+		return
+	}
+	JSON(w, 200, out.JSON)
 }

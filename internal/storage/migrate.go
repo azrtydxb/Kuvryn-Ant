@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
 	"io"
 	"slices"
 	"sync"
@@ -482,6 +483,9 @@ func (m *Migrator) finish(ctx context.Context, j *Job, switchActive bool) error 
 		if _, err = tx.Exec(ctx, `UPDATE storage_active SET previous_backend=NULL WHERE instance_id=$1 AND previous_backend=$2`, m.InstanceID, j.From); err != nil {
 			return err
 		}
+	}
+	if err = events.Emit(ctx, tx, m.InstanceID, j.RequestedBy, "storage.migration.completed", j.ID, map[string]any{"job_id": j.ID, "kind": j.Kind, "from": j.From, "to": j.To, "dry_run": j.DryRun, "switched": switchActive, "failed_blobs": j.Failed}); err != nil {
+		return err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return err

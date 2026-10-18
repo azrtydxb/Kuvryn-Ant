@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
 	"io"
 	"strings"
 
@@ -158,8 +159,22 @@ func (s *Service) recordFinding(ctx context.Context, domain, digest, kind string
 		_, err := s.DB.Exec(ctx, `UPDATE blob_integrity_findings SET resolved_at=now() WHERE dedup_domain_id=$1 AND digest=$2 AND resolved_at IS NULL`, domain, digest)
 		return err
 	}
-	_, err := s.DB.Exec(ctx, `INSERT INTO blob_integrity_findings(instance_id,dedup_domain_id,digest,kind) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, s.InstanceID, domain, digest, kind)
-	return err
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	tag, err := tx.Exec(ctx, `INSERT INTO blob_integrity_findings(instance_id,dedup_domain_id,digest,kind) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, s.InstanceID, domain, digest, kind)
+	if err != nil {
+		return err
+	}
+	// Only a newly opened finding is an event; a re-detected one is not.
+	if tag.RowsAffected() > 0 {
+		if err = events.Emit(ctx, tx, s.InstanceID, "", "retention.integrity.finding", "", map[string]any{"domain_id": domain, "digest": digest, "kind": kind}); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
 }
 
 // OpenFindings lists unresolved integrity mismatches.

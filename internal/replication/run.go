@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
@@ -108,23 +109,69 @@ func (s *Service) execute(ctx context.Context, id string) error {
 func (s *Service) finish(id string, runErr error, shuttingDown bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if runErr == nil {
-		_, _ = s.cfg.DB.Exec(ctx, `UPDATE replication_jobs SET lease_owner=NULL,lease_until=NULL,last_success_at=clock_timestamp(),last_error=NULL,consecutive_failures=0,
+	tx, err := s.cfg.DB.Begin(ctx)
+	if err != nil {
+		return
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	var prevFailures int64
+	var mode string
+	if err = tx.QueryRow(ctx, `SELECT consecutive_failures,mode FROM replication_jobs WHERE id=$1 AND lease_owner=$2 FOR UPDATE`, id, s.owner).Scan(&prevFailures, &mode); err != nil {
+		return
+	}
+	cancelled := shuttingDown || errors.Is(runErr, context.Canceled)
+	switch {
+	case runErr == nil:
+		_, err = tx.Exec(ctx, `UPDATE replication_jobs SET lease_owner=NULL,lease_until=NULL,last_success_at=clock_timestamp(),last_error=NULL,consecutive_failures=0,
  next_run_at=CASE WHEN NOT enabled THEN NULL WHEN run_requested THEN clock_timestamp() WHEN mode='manual' THEN NULL WHEN mode='scheduled' THEN clock_timestamp()+interval_seconds*interval '1 second' ELSE clock_timestamp()+$3::bigint*interval '1 millisecond' END
  WHERE id=$1 AND lease_owner=$2`, id, s.owner, s.cfg.ContinuousDelay.Milliseconds())
-		return
-	}
-	if shuttingDown || errors.Is(runErr, context.Canceled) {
-		_, _ = s.cfg.DB.Exec(ctx, `UPDATE replication_jobs SET lease_owner=NULL,lease_until=NULL,next_run_at=clock_timestamp() WHERE id=$1 AND lease_owner=$2`, id, s.owner)
-		return
-	}
-	msg := runErr.Error()
-	if len(msg) > 500 {
-		msg = msg[:500]
-	}
-	_, _ = s.cfg.DB.Exec(ctx, `UPDATE replication_jobs SET lease_owner=NULL,lease_until=NULL,last_error=$3,consecutive_failures=consecutive_failures+1,failures_total=failures_total+1,
+		// Continuous jobs succeed every pass; report only manual/scheduled
+		// completions and recovery from a failure streak.
+		if err == nil && (mode != "continuous" || prevFailures > 0) {
+			err = events.Emit(ctx, tx, s.cfg.InstanceID, "", "replication.job.succeeded", id, map[string]any{"job_id": id, "mode": mode, "recovered": prevFailures > 0})
+		}
+	case cancelled:
+		_, err = tx.Exec(ctx, `UPDATE replication_jobs SET lease_owner=NULL,lease_until=NULL,next_run_at=clock_timestamp() WHERE id=$1 AND lease_owner=$2`, id, s.owner)
+	default:
+		msg := runErr.Error()
+		if len(msg) > 500 {
+			msg = msg[:500]
+		}
+		_, err = tx.Exec(ctx, `UPDATE replication_jobs SET lease_owner=NULL,lease_until=NULL,last_error=$3,consecutive_failures=consecutive_failures+1,failures_total=failures_total+1,
  next_run_at=CASE WHEN NOT enabled THEN NULL ELSE clock_timestamp()+LEAST($4::bigint,2000*power(2,LEAST(consecutive_failures,20)))*interval '1 millisecond' END
  WHERE id=$1 AND lease_owner=$2`, id, s.owner, msg, s.cfg.MaxBackoff.Milliseconds())
+		// One event per failure streak, not per retry.
+		if err == nil && prevFailures == 0 {
+			err = events.Emit(ctx, tx, s.cfg.InstanceID, "", "replication.job.failed", id, map[string]any{"job_id": id, "mode": mode, "error": msg})
+		}
+	}
+	if err == nil && !cancelled && s.cfg.LagAlertThreshold > 0 {
+		err = s.lagAlert(ctx, tx, id)
+	}
+	if err == nil {
+		_ = tx.Commit(ctx)
+	}
+}
+
+// lagAlert emits replication.job.lag when the destination falls more than the
+// configured number of changes behind the peer head, once per excursion.
+func (s *Service) lagAlert(ctx context.Context, tx pgx.Tx, id string) error {
+	var lag int64
+	var alerted bool
+	if err := tx.QueryRow(ctx, `SELECT GREATEST(COALESCE(remote_head,0)-COALESCE(checkpoint,0),0),lag_alerted FROM replication_jobs WHERE id=$1`, id).Scan(&lag, &alerted); err != nil {
+		return err
+	}
+	over := lag > s.cfg.LagAlertThreshold
+	if over == alerted {
+		return nil
+	}
+	if _, err := tx.Exec(ctx, `UPDATE replication_jobs SET lag_alerted=$2 WHERE id=$1`, id, over); err != nil {
+		return err
+	}
+	if !over {
+		return nil
+	}
+	return events.Emit(ctx, tx, s.cfg.InstanceID, "", "replication.job.lag", id, map[string]any{"job_id": id, "lag_changes": lag, "threshold": s.cfg.LagAlertThreshold})
 }
 
 // run holds per-execution state.

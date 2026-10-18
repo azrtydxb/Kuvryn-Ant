@@ -17,7 +17,7 @@ func TestPackageDeleteUnlistAndPolicyAPI(t *testing.T) {
 	versionPath := func(v string) string { return f.packages("/" + one.Component + "/versions/" + v) }
 
 	// Read-only credential: not authorized to delete.
-	if w := f.request("DELETE", versionPath("1"), "", "", ""); w.Code != 403 {
+	if w := f.request("DELETE", versionPath("1"), "", idk(), ""); w.Code != 403 {
 		t.Fatalf("read-only delete %d %s", w.Code, w.Body)
 	}
 	tok, err := (identity.Tokens{DB: f.db}).Issue(ctx, f.instance, f.principal, f.principal, []identity.Scope{{Actions: []identity.Action{identity.Read, identity.Delete, identity.Configure}}}, time.Now().Add(time.Hour))
@@ -27,35 +27,35 @@ func TestPackageDeleteUnlistAndPolicyAPI(t *testing.T) {
 	f.credential = tok.Secret
 
 	// Policy API round trip, then enforcement.
-	put := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"allowed","immutable_releases":true}`, "", "")
+	put := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"allowed","immutable_releases":true}`, idk(), "")
 	if put.Code != 200 {
 		t.Fatalf("set policy %d %s", put.Code, put.Body)
 	}
-	if w := f.request("DELETE", versionPath("1"), "", "", ""); w.Code != 409 {
+	if w := f.request("DELETE", versionPath("1"), "", idk(), ""); w.Code != 409 {
 		t.Fatalf("immutable %d %s", w.Code, w.Body)
 	}
-	if w := f.request("DELETE", versionPath("1")+"?action=unlist", "", "", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"unchanged":false`) {
+	if w := f.request("DELETE", versionPath("1")+"?action=unlist", "", idk(), ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"unchanged":false`) {
 		t.Fatalf("unlist %d %s", w.Code, w.Body)
 	}
-	if w := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"denied","immutable_releases":false}`, "", ""); w.Code != 200 {
+	if w := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"denied","immutable_releases":false}`, idk(), ""); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
-	if w := f.request("DELETE", versionPath("1"), "", "", ""); w.Code != 403 {
+	if w := f.request("DELETE", versionPath("1"), "", idk(), ""); w.Code != 403 {
 		t.Fatalf("denied %d", w.Code)
 	}
-	if w := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"bogus","immutable_releases":false}`, "", ""); w.Code != 400 {
+	if w := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"bogus","immutable_releases":false}`, idk(), ""); w.Code != 400 {
 		t.Fatalf("bad mode %d", w.Code)
 	}
-	if w := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"allowed","immutable_releases":false}`, "", ""); w.Code != 200 {
+	if w := f.request("PUT", "/api/v1/feeds/"+f.feed+"/delete-policy", `{"mode":"allowed","immutable_releases":false}`, idk(), ""); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
-	if w := f.request("DELETE", "/api/v1/feeds/"+f.feed+"/assets/"+two.Asset, "", "", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"version_removed":true`) {
+	if w := f.request("DELETE", "/api/v1/feeds/"+f.feed+"/assets/"+two.Asset, "", idk(), ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"version_removed":true`) {
 		t.Fatalf("asset delete %d %s", w.Code, w.Body)
 	}
-	if w := f.request("DELETE", versionPath("1"), "", "", ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"component_removed":true`) {
+	if w := f.request("DELETE", versionPath("1"), "", idk(), ""); w.Code != 200 || !strings.Contains(w.Body.String(), `"component_removed":true`) {
 		t.Fatalf("version delete %d %s", w.Code, w.Body)
 	}
-	if w := f.request("DELETE", versionPath("1"), "", "", ""); w.Code != 404 {
+	if w := f.request("DELETE", versionPath("1"), "", idk(), ""); w.Code != 404 {
 		t.Fatalf("repeat %d", w.Code)
 	}
 	var audits, tombstones int

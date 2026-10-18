@@ -180,7 +180,7 @@ func catalog() []*tool {
 		c.resourceID = c.str("feed_id")
 		return "/api/v1/feeds/" + c.str("feed_id") + suffix
 	}
-	return []*tool{
+	return append(opsCatalog(), []*tool{
 		{name: "list_feeds", title: "List feeds", desc: "List feeds visible to the caller.", readOnly: true,
 			params: with(pageParams, prefixParam),
 			run: func(c *call) *toolResult {
@@ -329,7 +329,7 @@ func catalog() []*tool {
 					q.Set("action", a)
 				}
 				c.resourceID = c.str("feed_id")
-				return c.api(http.MethodDelete, "/api/v1/feeds/"+c.str("feed_id")+"/packages/"+c.str("package_id")+"/versions/"+url.PathEscape(c.str("version")), q, nil, nil).result()
+				return c.api(http.MethodDelete, "/api/v1/feeds/"+c.str("feed_id")+"/packages/"+c.str("package_id")+"/versions/"+url.PathEscape(c.str("version")), q, nil, map[string]string{"Idempotency-Key": c.idempotencyKey()}).result()
 			}},
 		{name: "disable_webhook", title: "Disable webhook", desc: "DESTRUCTIVE: stop delivering events to a webhook. Requires confirm: true.", destructive: true, idempotent: true,
 			params: []param{{name: "webhook_id", typ: "uuid", required: true, desc: "Webhook ID."},
@@ -344,7 +344,7 @@ func catalog() []*tool {
 				return c.api(http.MethodPatch, "/api/v1/webhooks/"+id, nil, map[string]any{"enabled": false},
 					map[string]string{"Idempotency-Key": c.idempotencyKey(), "If-Match": etag(rev)}).result()
 			}},
-	}
+	}...)
 }
 
 var healthMetrics = map[string]bool{"ant_http_active_requests": true, "ant_http_saturation_total": true, "ant_database_readiness_failures_total": true}

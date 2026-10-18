@@ -4,6 +4,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
@@ -42,7 +44,7 @@ func openReplication(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) 
 	}
 	service, err := replication.New(replication.Config{
 		DB: pool, Keys: cfg.SecretKeys, InstanceID: r.instanceID, Lease: r.manager.Lease,
-		Storage: r.stores.Resolve, CAs: cfg.UpstreamCAs, FingerprintKey: replicationFingerprintKey(cfg.RootKey),
+		Storage: r.stores.Resolve, CAs: cfg.UpstreamCAs, FingerprintKey: replicationFingerprintKey(cfg.RootKey), LagAlertThreshold: lagAlertThreshold(),
 	})
 	if err != nil {
 		return nil, err
@@ -58,4 +60,16 @@ func (rr *replicationRuntime) Register(mux *http.ServeMux) {
 		replication.RegisterExport(mux, rr.pool, rr.exporter)
 		rr.service.Register(mux, identity.Tokens{DB: rr.pool})
 	}
+}
+
+// lagAlertThreshold is the number of changes a job may trail its peer before a
+// replication.job.lag event is raised (ANT_REPLICATION_LAG_ALERT_CHANGES, 0
+// disables, default 10000).
+func lagAlertThreshold() int64 {
+	if v := os.Getenv("ANT_REPLICATION_LAG_ALERT_CHANGES"); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n >= 0 {
+			return n
+		}
+	}
+	return 10000
 }
