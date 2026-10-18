@@ -31,18 +31,18 @@ Planning research and documentation are allowed before this gate. Prototypes tha
 
 ## Decisions and planning assumptions
 
-| ID | Decision | Proposed direction / consequence |
-|---|---|---|
-| Q01 | Ecosystem delivery order | Confirmed: OCI/Docker, Go modules, Helm, Rust/Cargo, Raw, then remaining formats. Shared OCI artifact work accompanies the OCI platform. Core storage tests use protocol-neutral fixtures, not early Raw format delivery. |
-| Q02 | Enterprise identity release boundary | Confirmed: OIDC, SAML, and LDAP are all required in the first general release. SCIM is later, as allowed by the spec. |
-| Q03 | Scale and capacity | Workload-based engineering targets W1–W6; no calendar or staffing promises. See release-workloads.md. |
-| Q04 | Deployment | OKE plus existing MinIO on TrueNAS SCALE is primary validation. Compose/Helm, disk, AWS and other S3-compatible providers remain in product scope. Reuse one suite; do not build a vendor environment fleet. |
-| Q05 | Adapters | Built-in Go modules; versioned internal capability contract. See architecture A01. |
-| Q06 | Write routing | Priority rules with bounded namespace/package/path/principal selectors; reject ambiguous equal-priority targets; one local destination. A04. |
-| Q07 | Resolution | Explicit package/path/object/snapshot ownership, source priority and separate error/not-found policies. No unsafe signed index unions. A04 and per-format contracts. |
-| Q08 | Secrets | Envelope encryption with externally mounted versioned root keys and rotation. No required cloud KMS. A07. |
-| Q09 | API | `/api/v1`, bounded cursor pagination, structured errors, conditional mutation and 24-hour idempotency. Current/preceding product minor upgrade policy. A05. |
-| Q10 | Release evidence | Numerical workload targets and reproducible measurement procedure selected; passing results remain implementation work. |
+| ID  | Decision                             | Proposed direction / consequence                                                                                                                                                                                          |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q01 | Ecosystem delivery order             | Confirmed: OCI/Docker, Go modules, Helm, Rust/Cargo, Raw, then remaining formats. Shared OCI artifact work accompanies the OCI platform. Core storage tests use protocol-neutral fixtures, not early Raw format delivery. |
+| Q02 | Enterprise identity release boundary | Confirmed: OIDC, SAML, and LDAP are all required in the first general release. SCIM is later, as allowed by the spec.                                                                                                     |
+| Q03 | Scale and capacity                   | Workload-based engineering targets W1–W6; no calendar or staffing promises. See release-workloads.md.                                                                                                                     |
+| Q04 | Deployment                           | OKE plus existing MinIO on TrueNAS SCALE is primary validation. Compose/Helm, disk, AWS and other S3-compatible providers remain in product scope. Reuse one suite; do not build a vendor environment fleet.              |
+| Q05 | Adapters                             | Built-in Go modules; versioned internal capability contract. See architecture A01.                                                                                                                                        |
+| Q06 | Write routing                        | Priority rules with bounded namespace/package/path/principal selectors; reject ambiguous equal-priority targets; one local destination. A04.                                                                              |
+| Q07 | Resolution                           | Explicit package/path/object/snapshot ownership, source priority and separate error/not-found policies. No unsafe signed index unions. A04 and per-format contracts.                                                      |
+| Q08 | Secrets                              | Envelope encryption with externally mounted versioned root keys and rotation. No required cloud KMS. A07.                                                                                                                 |
+| Q09 | API                                  | `/api/v1`, bounded cursor pagination, structured errors, conditional mutation and 24-hour idempotency. Current/preceding product minor upgrade policy. A05.                                                               |
+| Q10 | Release evidence                     | Numerical workload targets and reproducible measurement procedure selected; passing results remain implementation work.                                                                                                   |
 
 Q01–Q04 reflect owner responses and specification requirements. Q05–Q10 are documented engineering decisions under the owner's instruction to proceed with planning. Exact installed versions, credentials and endpoints are deployment inventory, collected when needed; they do not block core development. No product support or measured performance is claimed by planning completion.
 
@@ -171,6 +171,8 @@ Scope: shared identity/policy, discovery, cross-site search, placement/routing, 
 
 Exit: a new approved scope, threat model, consistency model, migration strategy, and acceptance criteria. No Phase 1 task depends on federation services.
 
+Design: [phase-2-federation.md](phase-2-federation.md) (draft; owner decisions D1–D6 pending).
+
 ## Architecture scope (resolved in architecture-baseline.md)
 
 - Artifact domain: separate feeds, sources, namespaces, components/versions, assets, immutable blobs, tags, format metadata, and provenance. Specify IDs, uniqueness, ownership, and lifecycle invariants.
@@ -230,33 +232,33 @@ Cross-cutting suites include:
 
 ## Spec traceability
 
-| Specification | Planned coverage |
-|---|---|
-| §1–4 vision, goals, boundaries, personas | M00 scope and all story personas; Phase 2 separation |
-| §5 ecosystem breadth and adapter contract | M00 capability ledger, M04–M05, M09 conformance |
-| §6.1 local publishing | M02, each format story |
-| §6.2 remote caching | M03, each format story |
-| §6.3 feed resolution/routing | M01 policy contracts, M02–M03 behavior, format-specific validation |
-| §6.4 metadata/artifacts | M01 data model, M02 lifecycle/search, M08 maintenance |
-| §6.5 build acceleration | M03 caching/prewarm/metrics/quotas, M08 runner/adoption guidance |
-| §6.6 storage | M01 PostgreSQL, M02 disk/S3, M08 migration/repair |
-| §6.7 replication | M07, M09 two-instance evidence |
-| §6.8 federation | M10 only |
-| §6.9 identity | M01 machine identity, M06 providers/recovery, Q02/Q08 |
-| §6.10 governance | M01 authorization/audit, M06 integrations/events, M08 retention/export |
-| §6.11 API/OpenAPI/MCP | M01 API, M06 MCP/parity, domain milestones and M09 validation |
-| §6.12 UI | M06 and incremental domain screens |
-| §6.13 operations | M01 diagnostics, M08 deployments/lifecycle, M09 rehearsals |
-| §7 architecture | M00 decisions, M01–M03 contracts, M07 replication |
-| §8 performance/reliability | M03 baseline, M09 numeric release gates |
-| §9 import/export/adoption | M08 |
-| §10 delivery phases | M00 = Phase 0; M01–M09 = Phase 1; M10 = Phase 2 |
-| §11 acceptance 1–2 | M04–M05 format workflows and M09 evidence |
-| §11 acceptance 3–4 | M01/M06 identity, permission, and audit parity |
-| §11 acceptance 5–6 | M07 replication and M02 backend contracts |
-| §11 acceptance 7–9 | M08 adoption/recovery, M03/M09 performance |
-| §11 acceptance 10 | M00 ledger and M09 evidence gate |
-| §12 open decisions/risks | Decision register below and capability records |
+| Specification                             | Planned coverage                                                       |
+| ----------------------------------------- | ---------------------------------------------------------------------- |
+| §1–4 vision, goals, boundaries, personas  | M00 scope and all story personas; Phase 2 separation                   |
+| §5 ecosystem breadth and adapter contract | M00 capability ledger, M04–M05, M09 conformance                        |
+| §6.1 local publishing                     | M02, each format story                                                 |
+| §6.2 remote caching                       | M03, each format story                                                 |
+| §6.3 feed resolution/routing              | M01 policy contracts, M02–M03 behavior, format-specific validation     |
+| §6.4 metadata/artifacts                   | M01 data model, M02 lifecycle/search, M08 maintenance                  |
+| §6.5 build acceleration                   | M03 caching/prewarm/metrics/quotas, M08 runner/adoption guidance       |
+| §6.6 storage                              | M01 PostgreSQL, M02 disk/S3, M08 migration/repair                      |
+| §6.7 replication                          | M07, M09 two-instance evidence                                         |
+| §6.8 federation                           | M10 only                                                               |
+| §6.9 identity                             | M01 machine identity, M06 providers/recovery, Q02/Q08                  |
+| §6.10 governance                          | M01 authorization/audit, M06 integrations/events, M08 retention/export |
+| §6.11 API/OpenAPI/MCP                     | M01 API, M06 MCP/parity, domain milestones and M09 validation          |
+| §6.12 UI                                  | M06 and incremental domain screens                                     |
+| §6.13 operations                          | M01 diagnostics, M08 deployments/lifecycle, M09 rehearsals             |
+| §7 architecture                           | M00 decisions, M01–M03 contracts, M07 replication                      |
+| §8 performance/reliability                | M03 baseline, M09 numeric release gates                                |
+| §9 import/export/adoption                 | M08                                                                    |
+| §10 delivery phases                       | M00 = Phase 0; M01–M09 = Phase 1; M10 = Phase 2                        |
+| §11 acceptance 1–2                        | M04–M05 format workflows and M09 evidence                              |
+| §11 acceptance 3–4                        | M01/M06 identity, permission, and audit parity                         |
+| §11 acceptance 5–6                        | M07 replication and M02 backend contracts                              |
+| §11 acceptance 7–9                        | M08 adoption/recovery, M03/M09 performance                             |
+| §11 acceptance 10                         | M00 ledger and M09 evidence gate                                       |
+| §12 open decisions/risks                  | Decision register below and capability records                         |
 
 ## Confirmed decision log
 
