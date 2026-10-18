@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,7 +48,7 @@ func (h *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
  WHERE fs.instance_id=$1 AND fs.feed_id=$2 ORDER BY c.coordinate,fs.priority
  ) SELECT o.coordinate,v.version,o.source_id::text,b.digest,v.created_at
  FROM owners o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id
- JOIN blobs b ON b.id=a.blob_id WHERE a.asset_key=o.coordinate||'-'||v.version||'.tgz'
+ JOIN blobs b ON b.id=a.blob_id JOIN sources so ON so.id=o.source_id AND so.instance_id=$1 AND so.kind='local' WHERE a.asset_key=o.coordinate||'-'||v.version||'.tgz'
  ORDER BY o.coordinate,v.version LIMIT $3`, p.InstanceID, feed, h.Limits.IndexEntries+1)
 	if err != nil {
 		fail(w, err)
@@ -116,6 +117,25 @@ func (h *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 			idx.Generated = c.created.UTC()
 		}
 	}
+	// Remote sources contribute the upstream index (URLs rewritten to this
+	// feed). Charts owned by a local source are never taken from upstream; if
+	// upstream is down with nothing cached the local view is served as degraded.
+	doc, remoteErr := h.mergeRemote(r.Context(), p, feed, &idx)
+	if remoteErr != nil && !errors.Is(remoteErr, artifact.ErrNotFound) && !errors.Is(remoteErr, artifact.ErrUnavailable) {
+		fail(w, remoteErr)
+		return
+	}
+	if errors.Is(remoteErr, artifact.ErrUnavailable) {
+		if len(idx.Entries) == 0 {
+			fail(w, artifact.ErrUnavailable)
+			return
+		}
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	} else if remoteErr == nil && doc.Stale {
+		for k, v := range artifact.StaleHeaders() {
+			w.Header().Set(k, v)
+		}
+	}
 	// Empty repositories still require an effective read grant.
 	if len(idx.Entries) == 0 && !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: feed, Kind: identity.ArtifactResource}, identity.Read) {
 		fail(w, artifact.ErrNotFound)
@@ -177,6 +197,18 @@ func parseRange(raw string, size int64) (int64, int64, bool) {
 func (h *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication, filename, source, digest string) {
 	// Provenance has the same pinned chart URL plus .prov, as Helm requires.
 	chart, err := h.service.Lookup(r.Context(), p, pub)
+	if errors.Is(err, artifact.ErrNotFound) {
+		retry, served, e := h.pullThrough(w, r, p, pub, filename, source, digest)
+		switch {
+		case served:
+			return
+		case e != nil:
+			fail(w, e)
+			return
+		case retry:
+			chart, err = h.service.Lookup(r.Context(), p, pub)
+		}
+	}
 	if err != nil {
 		fail(w, err)
 		return
@@ -187,6 +219,18 @@ func (h *Repository) download(w http.ResponseWriter, r *http.Request, p identity
 	}
 	pub.AssetKey = filename
 	record, err := h.service.Lookup(r.Context(), p, pub)
+	if errors.Is(err, artifact.ErrNotFound) && filename != pub.Coordinate+"-"+pub.Version+".tgz" {
+		retry, served, e := h.pullThrough(w, r, p, pub, filename, source, digest)
+		switch {
+		case served:
+			return
+		case e != nil:
+			fail(w, e)
+			return
+		case retry:
+			record, err = h.service.Lookup(r.Context(), p, pub)
+		}
+	}
 	if err != nil {
 		fail(w, err)
 		return
