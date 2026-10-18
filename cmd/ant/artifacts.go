@@ -120,6 +120,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 		manager.Close()
 		return nil, err
 	}
+	registry.SetMirror(oci.Mirror{DefaultFeed: cfg.OCIMirror.DefaultFeed, Namespaces: cfg.OCIMirror.Namespaces})
 	if err := ctx.Err(); err != nil {
 		registry.Close()
 		stores.Close()
