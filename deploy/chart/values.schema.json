@@ -120,6 +120,70 @@
           "minLength": 1
         }
       }
+    },
+    "httpRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "annotations": {
+          "type": "object"
+        },
+        "parentRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "namespace": {
+                "type": "string"
+              },
+              "sectionName": {
+                "type": "string"
+              },
+              "group": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "timeouts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "request": {
+              "type": "string"
+            },
+            "backendRequest": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {

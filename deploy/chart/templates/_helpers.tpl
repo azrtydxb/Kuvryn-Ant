@@ -27,6 +27,10 @@ app.kubernetes.io/instance: {{ .Release.Name | quote }}
 {{- if ne .Values.publicURL (printf "https://%s" .Values.ingress.host) }}{{ fail "ingress.host must exactly match publicURL" }}{{ end -}}
 {{- if not .Values.ingress.tlsSecret }}{{ fail "ingress.tlsSecret is required for HTTPS ingress" }}{{ end -}}
 {{- end -}}
+{{- if .Values.httpRoute.enabled -}}
+{{- if not .Values.httpRoute.parentRefs }}{{ fail "httpRoute.parentRefs is required" }}{{ end -}}
+{{- if not (has (trimPrefix "https://" .Values.publicURL) .Values.httpRoute.hostnames) }}{{ fail "httpRoute.hostnames must include the publicURL host" }}{{ end -}}
+{{- end -}}
 {{- if eq .Values.storage.backend "s3" -}}
 {{- if or (not .Values.storage.s3.region) (not .Values.storage.s3.bucket) (not .Values.storage.s3.credentialsExistingSecret) }}{{ fail "S3 requires region, bucket and credentialsExistingSecret" }}{{ end -}}
 {{- if and .Values.storage.s3.endpoint (not (hasPrefix "https://" .Values.storage.s3.endpoint)) }}{{ fail "S3 endpoint must use HTTPS" }}{{ end -}}

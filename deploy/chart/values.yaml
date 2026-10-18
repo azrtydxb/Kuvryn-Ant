@@ -59,6 +59,14 @@ ingress:
   host: ant.example.invalid
   tlsSecret: ""
   annotations: {} # Configure controller upload/time limits explicitly.
+httpRoute: # Gateway API alternative to ingress; TLS is terminated by the Gateway.
+  enabled: false
+  annotations: {}
+  parentRefs: [] # e.g. [{name: edge, namespace: envoy-gateway-system, sectionName: ant-https}]
+  hostnames: [] # Must include the host of publicURL.
+  filters: []
+  # Large uploads: "0s" disables the timeout on implementations that support it.
+  timeouts: {}
 metrics:
   headlessService: false # Same port; restrict scrape access with NetworkPolicy.
 networkPolicy:
