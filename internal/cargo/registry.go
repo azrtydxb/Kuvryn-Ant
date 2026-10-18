@@ -97,7 +97,11 @@ func (s *Registry) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if status == 401 {
 			w.Header().Set("WWW-Authenticate", `Cargo`)
 		}
-		failure(w, status, "Cargo authentication required")
+		message := "Cargo authentication required"
+		if status == http.StatusTooManyRequests {
+			message = "authentication attempts limited"
+		}
+		failure(w, status, message)
 	}
 }
 func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {

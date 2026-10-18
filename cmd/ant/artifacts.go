@@ -299,6 +299,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 			return nil, err
 		}
 	}
+	// 24 MiB metadata documents: web-sys crates.io index (4.4 MiB) and the typescript packument (8.7 MiB abbreviated, 16 MiB full) exceed the old limits.
 	// Pull-through reads: the runtime resolves per-source configuration, the
 	// source-bound credential and the operator CA map (IDs only; paths come from
 	// ANT_UPSTREAM_CA_MAP_FILE, never from requests) on demand. Without the
@@ -306,7 +307,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 	// and feeds serve local content only.
 	var remote *remoteruntime.Manager
 	if cfg.SecretKeys != nil {
-		remote, err = remoteruntime.New(pool, instance, cfg.SecretKeys, remoteruntime.Options{CAFiles: cfg.UpstreamCAs, MaxMetadataBytes: 4 << 20})
+		remote, err = remoteruntime.New(pool, instance, cfg.SecretKeys, remoteruntime.Options{CAFiles: cfg.UpstreamCAs, MaxMetadataBytes: 24 << 20, MaxCacheBytes: 256 << 20})
 		if err != nil {
 			registry.Close()
 			stores.Close()

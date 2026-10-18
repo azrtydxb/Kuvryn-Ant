@@ -92,6 +92,7 @@ func TestBearerConcurrentReservationAndHeaderValidation(t *testing.T) {
 		return Principal{}, nil
 	}))
 	b.maxFailures = 1
+	b.maxInflight = 1
 	b.maxEntries = 1
 	e, ok := b.reserve("one")
 	if !ok {
@@ -152,5 +153,14 @@ func TestTrustedBrowserPrincipalCannotOverrideAuthorization(t *testing.T) {
 				t.Fatalf("got %d want %d", w.Code, tc.want)
 			}
 		})
+	}
+}
+
+func TestBearerParallelAuthenticatedRequestsAreNotThrottled(t *testing.T) {
+	b := NewBearer(authFunc(func(context.Context, string) (Principal, error) { return Principal{}, ErrUnavailable }))
+	for i := 0; i < 100; i++ {
+		if _, ok := b.reserve("ingress"); !ok {
+			t.Fatalf("reservation %d denied: parallel valid clients must not be limited by the failure budget", i)
+		}
 	}
 }
