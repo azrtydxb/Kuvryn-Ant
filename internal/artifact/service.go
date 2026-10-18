@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -36,6 +37,13 @@ type Service struct {
 	Lease   func() ownership.Lease
 	Router  func(context.Context, string) (*routing.Router, error)
 	Storage func(context.Context, string) (blob.Store, error)
+	// Remote enables pull-through reads (see remote.go). Nil disables them.
+	Remote RemoteBackend
+	// MaxMaterializeBytes bounds one cached upstream artifact; zero means 8 GiB.
+	MaxMaterializeBytes int64
+
+	flightMu sync.Mutex
+	flights  map[string]*flight
 }
 type Reference struct {
 	Version, AssetKey string
