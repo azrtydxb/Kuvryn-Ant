@@ -1,0 +1,135 @@
+/* Azrty pillar palettes — Operate (teal), Build (violet), Solve (amber-orange).
+   Every product belongs to one pillar. Set data-pillar="operate|build|solve" on <html> (or an app root)
+   and the ROLE tokens — primary action, selection, focus/indicator — take the pillar colour.
+   Unchanged in every pillar: logo, neutrals, status colours (healthy stays mint, warn amber, bad rose),
+   links/AI accent (sky), chart order. Operate equals the default (no attribute) look.
+   Each pillar: fill (buttons, badges, bars; fixed), -hover, -ink (text on fill), -strong (text on light),
+   -line (thin lines on light, ≥3:1), -tint-dark / -tint-light (selected backgrounds). */
+:root {
+  --az-operate: oklch(0.84 0.11 170);
+  --az-operate-hover: oklch(0.89 0.1 170);
+  --az-operate-ink: #0d2620;
+  --az-operate-strong: oklch(0.45 0.09 170);
+  --az-operate-line: oklch(0.55 0.1 170);
+  --az-operate-tint-dark: oklch(0.3 0.05 170);
+  --az-operate-tint-light: oklch(0.94 0.045 170);
+
+  --az-build: oklch(0.76 0.12 290);
+  --az-build-hover: oklch(0.82 0.09 290);
+  --az-build-ink: #1f1640;
+  --az-build-strong: oklch(0.47 0.16 290);
+  --az-build-line: oklch(0.58 0.15 290);
+  --az-build-tint-dark: oklch(0.3 0.07 290);
+  --az-build-tint-light: oklch(0.95 0.025 290);
+
+  --az-solve: oklch(0.83 0.13 70);
+  --az-solve-hover: oklch(0.87 0.11 72);
+  --az-solve-ink: #3a2404;
+  --az-solve-strong: oklch(0.52 0.12 62);
+  --az-solve-line: oklch(0.64 0.14 65);
+  --az-solve-tint-dark: oklch(0.3 0.055 70);
+  --az-solve-tint-light: oklch(0.96 0.04 78);
+}
+
+/* Default (no data-pillar) = Operate */
+:root, [data-theme="dark"] { --az-pillar: var(--az-operate); --az-pillar-ink: var(--az-operate-ink); --az-pillar-text: var(--az-operate); }
+[data-theme="light"] { --az-pillar: var(--az-operate); --az-pillar-ink: var(--az-operate-ink); --az-pillar-text: var(--az-operate-strong); }
+
+/* Operate — dark */
+[data-pillar="operate"],
+[data-theme="dark"][data-pillar="operate"],
+[data-theme="dark"] [data-pillar="operate"],
+[data-pillar="operate"] [data-theme="dark"] {
+  --az-pillar: var(--az-operate);
+  --az-pillar-ink: var(--az-operate-ink);
+  --az-primary-bg: var(--az-operate);
+  --az-primary-fg: var(--az-operate-ink);
+  --az-primary-hover: var(--az-operate-hover);
+  --az-pillar-text: var(--az-operate);
+  --az-primary-edge: none; /* @kind shadow */
+  --az-indicator: var(--az-operate);
+  --az-selected-bg: var(--az-operate-tint-dark);
+  --az-selected-text: var(--az-operate);
+}
+
+/* Operate — light */
+[data-theme="light"][data-pillar="operate"],
+[data-theme="light"] [data-pillar="operate"],
+[data-pillar="operate"] [data-theme="light"] {
+  --az-pillar: var(--az-operate);
+  --az-pillar-ink: var(--az-operate-ink);
+  --az-primary-bg: var(--az-operate);
+  --az-primary-fg: var(--az-operate-ink);
+  --az-primary-hover: var(--az-operate-hover);
+  --az-pillar-text: var(--az-operate-strong);
+  --az-primary-edge: inset 0 0 0 1px rgba(13, 38, 32, 0.14); /* @kind shadow */
+  --az-indicator: var(--az-operate-line);
+  --az-selected-bg: var(--az-operate-tint-light);
+  --az-selected-text: var(--az-operate-ink);
+}
+
+/* Build — dark */
+[data-pillar="build"],
+[data-theme="dark"][data-pillar="build"],
+[data-theme="dark"] [data-pillar="build"],
+[data-pillar="build"] [data-theme="dark"] {
+  --az-pillar: var(--az-build);
+  --az-pillar-ink: var(--az-build-ink);
+  --az-primary-bg: var(--az-build);
+  --az-primary-fg: var(--az-build-ink);
+  --az-primary-hover: var(--az-build-hover);
+  --az-pillar-text: var(--az-build);
+  --az-primary-edge: none; /* @kind shadow */
+  --az-indicator: var(--az-build);
+  --az-selected-bg: var(--az-build-tint-dark);
+  --az-selected-text: var(--az-build);
+}
+
+/* Build — light */
+[data-theme="light"][data-pillar="build"],
+[data-theme="light"] [data-pillar="build"],
+[data-pillar="build"] [data-theme="light"] {
+  --az-pillar: var(--az-build);
+  --az-pillar-ink: var(--az-build-ink);
+  --az-primary-bg: var(--az-build);
+  --az-primary-fg: var(--az-build-ink);
+  --az-primary-hover: var(--az-build-hover);
+  --az-pillar-text: var(--az-build-strong);
+  --az-primary-edge: inset 0 0 0 1px rgba(31, 22, 64, 0.16); /* @kind shadow */
+  --az-indicator: var(--az-build-line);
+  --az-selected-bg: var(--az-build-tint-light);
+  --az-selected-text: var(--az-build-ink);
+}
+
+/* Solve — dark */
+[data-pillar="solve"],
+[data-theme="dark"][data-pillar="solve"],
+[data-theme="dark"] [data-pillar="solve"],
+[data-pillar="solve"] [data-theme="dark"] {
+  --az-pillar: var(--az-solve);
+  --az-pillar-ink: var(--az-solve-ink);
+  --az-primary-bg: var(--az-solve);
+  --az-primary-fg: var(--az-solve-ink);
+  --az-primary-hover: var(--az-solve-hover);
+  --az-pillar-text: var(--az-solve);
+  --az-primary-edge: none; /* @kind shadow */
+  --az-indicator: var(--az-solve);
+  --az-selected-bg: var(--az-solve-tint-dark);
+  --az-selected-text: var(--az-solve);
+}
+
+/* Solve — light */
+[data-theme="light"][data-pillar="solve"],
+[data-theme="light"] [data-pillar="solve"],
+[data-pillar="solve"] [data-theme="light"] {
+  --az-pillar: var(--az-solve);
+  --az-pillar-ink: var(--az-solve-ink);
+  --az-primary-bg: var(--az-solve);
+  --az-primary-fg: var(--az-solve-ink);
+  --az-primary-hover: var(--az-solve-hover);
+  --az-pillar-text: var(--az-solve-strong);
+  --az-primary-edge: inset 0 0 0 1px rgba(58, 36, 4, 0.16); /* @kind shadow */
+  --az-indicator: var(--az-solve-line);
+  --az-selected-bg: var(--az-solve-tint-light);
+  --az-selected-text: var(--az-solve-ink);
+}

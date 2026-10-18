@@ -1,11 +1,31 @@
-import { useState } from "react";
-import { Client, APIError, requireETag } from "./api";
+import { useState, type FormEvent } from "react";
+import { APIError, requireETag, type Client } from "./api";
 import type {
-  Source,
   RemoteSourceConfig,
   RemoteSourceRecord,
+  Source,
 } from "./generated";
-import { Field, Failure, Mutation, Reload, useResource } from "./ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  Input,
+  SettingsRow,
+  SettingsSection,
+  Switch,
+  Textarea,
+} from "./ds/bundle";
+import {
+  Failure,
+  Loading,
+  Mono,
+  chk,
+  useAction,
+  useResource,
+  useToast,
+  val,
+} from "./ui";
+
 const initial: RemoteSourceConfig = {
   origin: "",
   redirect_origins: [],
@@ -19,14 +39,20 @@ const initial: RemoteSourceConfig = {
     max_bytes: 67108864,
   },
 };
+const cacheFields = [
+  ["metadata_ttl_seconds", "Metadata TTL (seconds)", 1, 86400],
+  ["negative_ttl_seconds", "Negative TTL (seconds)", 1, 300],
+  ["stale_if_error_seconds", "Stale on error (seconds)", 0, 86400],
+  ["max_entries", "Maximum entries", 1, 100000],
+  ["max_bytes", "Maximum bytes", 1024, 1073741824],
+] as const;
+
 export function RemoteSource({
   client,
   source,
-  close,
 }: {
   client: Client;
   source: Source;
-  close: () => void;
 }) {
   const r = useResource(
     () => client.call("getRemoteSourceConfig", { params: { id: source.id } }),
@@ -37,28 +63,20 @@ export function RemoteSource({
     [client, source.id],
   );
   const missing = r.error instanceof APIError && r.error.status === 404;
+  const reload = () => {
+    r.reload();
+    base.reload();
+  };
   return (
-    <section className="card">
-      <div className="heading">
-        <h2>Remote source: {source.name}</h2>
-        <button onClick={close}>Close remote configuration</button>
-      </div>
-      <Reload
-        loading={r.loading || base.loading}
-        reload={() => {
-          r.reload();
-          base.reload();
-        }}
-      />
+    <>
       {!missing && <Failure error={r.error} />}
       <Failure error={base.error} />
-      {r.loading && <p role="status">Loading remote configuration…</p>}
+      {(r.loading || base.loading) && <Loading what="remote configuration" />}
       {missing && (
-        <p>
-          No accessible remote configuration was found. Configure access is
-          required; a new configuration can be submitted using the current
-          source revision.
-        </p>
+        <Alert tone="info" title="No remote configuration yet">
+          No accessible remote configuration was found. Submit one using the
+          current source revision. Configure access is required.
+        </Alert>
       )}
       {(r.value || (missing && base.value)) && (
         <RemoteEditor
@@ -67,15 +85,13 @@ export function RemoteSource({
           source={source.id}
           record={r.value?.data}
           etag={r.value?.etag ?? base.value?.etag ?? null}
-          reload={() => {
-            r.reload();
-            base.reload();
-          }}
+          reload={reload}
         />
       )}
-    </section>
+    </>
   );
 }
+
 function RemoteEditor({
   client,
   source,
@@ -97,175 +113,198 @@ function RemoteEditor({
   );
   const [authorization, setAuthorization] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const save = useAction();
+  const creds = useAction();
+  const toast = useToast();
+  async function saveConfig(e: FormEvent) {
+    e.preventDefault();
+    const ok = await save.run(async () => {
+      const origins = redirects
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (origins.length > 16)
+        throw Error("At most 16 redirect origins are supported.");
+      await client.call("setRemoteSourceConfig", {
+        params: { id: source },
+        etag: requireETag(etag),
+        body: { ...config, redirect_origins: origins },
+      });
+    });
+    if (ok) {
+      toast("Remote configuration saved");
+      reload();
+    }
+  }
+  async function saveCredentials(e: FormEvent) {
+    e.preventDefault();
+    const body = { authorization, api_key: apiKey };
+    // Secrets never stay in state after submission, even when it fails.
+    setAuthorization("");
+    setApiKey("");
+    const ok = await creds.run(async () => {
+      if (!body.authorization.trim() && !body.api_key.trim())
+        throw Error("Enter at least one credential value.");
+      await client.call("setRemoteSourceCredential", {
+        params: { id: source },
+        etag: requireETag(etag),
+        body,
+      });
+    });
+    if (ok) {
+      toast(
+        "Upstream credentials saved",
+        "Stored encrypted; never shown again",
+      );
+      reload();
+    }
+  }
   return (
     <>
-      <Mutation
-        label="Save remote configuration"
-        run={async () => {
-          const origins = redirects
-            .split(/\r?\n/)
-            .map((s) => s.trim())
-            .filter(Boolean);
-          if (origins.length > 16)
-            throw Error("At most 16 redirect origins are supported.");
-          await client.call("setRemoteSourceConfig", {
-            params: { id: source },
-            etag: requireETag(etag),
-            body: { ...config, redirect_origins: origins },
-          });
-          reload();
-        }}
-      >
-        <Field
-          label="Upstream HTTPS base URL"
-          hint="No credentials, query, fragment, or dot path segments."
+      <form onSubmit={saveConfig}>
+        <SettingsSection
+          title="Upstream"
+          form
+          footer={
+            <Button type="submit" disabled={save.busy}>
+              {save.busy ? "Saving…" : "Save remote configuration"}
+            </Button>
+          }
+          footerNote="Saving does not verify upstream connectivity or protocol support."
         >
-          <input
+          <Input
+            label="Upstream HTTPS base URL"
+            mono
             required
             type="url"
             pattern="https://.*"
             maxLength={4096}
             value={config.origin}
-            onChange={(e) => setConfig({ ...config, origin: e.target.value })}
+            onChange={val((origin) => setConfig({ ...config, origin }))}
+            hint="No credentials, query, fragment, or dot path segments."
           />
-        </Field>
-        <Field
-          label="Allowed redirect origins"
-          hint="One HTTPS origin per line, at most 16. Empty denies cross-origin redirects."
-        >
-          <textarea
+          <Textarea
+            label="Allowed redirect origins"
+            mono
+            rows={3}
             value={redirects}
-            onChange={(e) => setRedirects(e.target.value)}
+            onChange={val(setRedirects)}
+            hint="One HTTPS origin per line, at most 16. Empty denies cross-origin redirects."
           />
-        </Field>
-        <Field
-          label="Operator CA ID"
-          hint="An ID configured by the operator, never a filesystem path. Empty uses system trust."
-        >
-          <input
-            pattern="[A-Za-z0-9][A-Za-z0-9_.\-]{0,63}"
-            maxLength={64}
-            value={config.ca_ref ?? ""}
-            onChange={(e) => setConfig({ ...config, ca_ref: e.target.value })}
-          />
-        </Field>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={config.allow_private}
-            onChange={(e) =>
-              setConfig({ ...config, allow_private: e.target.checked })
-            }
-          />
-          Allow private upstream addresses
-        </label>
-        <Field label="Request timeout (seconds)">
-          <input
-            type="number"
-            min={1}
-            max={300}
-            required
-            value={config.timeout_seconds}
-            onChange={(e) =>
-              setConfig({ ...config, timeout_seconds: Number(e.target.value) })
-            }
-          />
-        </Field>
-        <h3>Cache bounds</h3>
-        <div className="grid">
-          {(
-            [
-              ["metadata_ttl_seconds", "Metadata TTL (seconds)", 1, 86400],
-              ["negative_ttl_seconds", "Negative TTL (seconds)", 1, 300],
-              ["stale_if_error_seconds", "Stale on error (seconds)", 0, 86400],
-              ["max_entries", "Maximum entries", 1, 100000],
-              ["max_bytes", "Maximum bytes", 1024, 1073741824],
-            ] as const
-          ).map(([key, label, min, max]) => (
-            <Field label={label} key={key}>
-              <input
+          <div className="cols">
+            <Input
+              label="Request timeout (seconds)"
+              type="number"
+              mono
+              required
+              min={1}
+              max={300}
+              value={config.timeout_seconds}
+              onChange={val((v) =>
+                setConfig({ ...config, timeout_seconds: Number(v) }),
+              )}
+            />
+            <Input
+              label="Operator CA ID"
+              mono
+              pattern="[A-Za-z0-9][A-Za-z0-9_.\-]{0,63}"
+              maxLength={64}
+              placeholder="System trust store"
+              value={config.ca_ref ?? ""}
+              onChange={val((ca_ref) => setConfig({ ...config, ca_ref }))}
+              hint="An ID configured by the operator, never a path."
+            />
+          </div>
+          <SettingsRow
+            label="Allow private upstream addresses"
+            description="Permits origins that resolve to private or loopback ranges."
+          >
+            <Switch
+              aria-label="Allow private upstream addresses"
+              checked={config.allow_private}
+              onChange={chk((allow_private) =>
+                setConfig({ ...config, allow_private }),
+              )}
+            />
+          </SettingsRow>
+          <h4 className="h4">Cache bounds</h4>
+          <div className="cols">
+            {cacheFields.map(([key, label, min, max]) => (
+              <Input
+                key={key}
+                label={label}
                 type="number"
+                mono
                 required
                 min={min}
                 max={max}
                 value={config.cache[key]}
-                onChange={(e) =>
+                onChange={val((v) =>
                   setConfig({
                     ...config,
-                    cache: { ...config.cache, [key]: Number(e.target.value) },
-                  })
-                }
+                    cache: { ...config.cache, [key]: Number(v) },
+                  }),
+                )}
               />
-            </Field>
-          ))}
-        </div>
-        {config.credential_id && (
-          <>
-            <p>
-              Attached credential reference: <code>{config.credential_id}</code>
-            </p>
-            <button
-              type="button"
-              onClick={() => setConfig({ ...config, credential_id: "" })}
+            ))}
+          </div>
+          {config.credential_id && (
+            <SettingsRow
+              label="Attached credential reference"
+              description="Stored encrypted. Never shown again after saving."
             >
-              Detach credential on save
-            </button>
-          </>
-        )}
-        <p>
-          Saving configuration does not verify upstream connectivity or protocol
-          support.
-        </p>
-      </Mutation>
+              <Badge tone="good" icon="key-round">
+                Set · <Mono>{config.credential_id}</Mono>
+              </Badge>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setConfig({ ...config, credential_id: "" })}
+              >
+                Detach credential on save
+              </Button>
+            </SettingsRow>
+          )}
+          <Failure error={save.error} />
+        </SettingsSection>
+      </form>
       {record && (
-        <details>
-          <summary>Set or replace upstream credentials</summary>
-          <Mutation
-            label="Save upstream credentials"
-            run={async () => {
-              const body = { authorization, api_key: apiKey };
-              setAuthorization("");
-              setApiKey("");
-              if (!body.authorization.trim() && !body.api_key.trim())
-                throw Error("Enter at least one credential value.");
-              await client.call("setRemoteSourceCredential", {
-                params: { id: source },
-                etag: requireETag(etag),
-                body,
-              });
-              reload();
-            }}
+        <form onSubmit={saveCredentials} autoComplete="off">
+          <SettingsSection
+            title="Upstream credentials"
+            description="Set or replace. Values are cleared on submission, stored encrypted per source, and never returned. Re-enter after a failed request; refresh the revision before changing an uncertain result."
+            form
+            footer={
+              <Button type="submit" variant="secondary" disabled={creds.busy}>
+                {creds.busy ? "Saving…" : "Save upstream credentials"}
+              </Button>
+            }
           >
-            <Field
+            <Input
               label="Authorization header"
+              mono
+              type="password"
+              autoComplete="new-password"
+              maxLength={8192}
+              pattern="[ -~]*"
+              value={authorization}
+              onChange={val(setAuthorization)}
               hint="Complete header value, for example Bearer followed by the upstream token."
-            >
-              <input
-                type="password"
-                autoComplete="new-password"
-                maxLength={8192}
-                pattern="[ -~]*"
-                value={authorization}
-                onChange={(e) => setAuthorization(e.target.value)}
-              />
-            </Field>
-            <Field label="X-Api-Key header">
-              <input
-                type="password"
-                autoComplete="new-password"
-                maxLength={8192}
-                pattern="[ -~]*"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </Field>
-            <p>
-              Values are cleared on submission, stored encrypted per source, and
-              never returned. Re-enter after a failed request; refresh the
-              revision before changing an uncertain result.
-            </p>
-          </Mutation>
-        </details>
+            />
+            <Input
+              label="X-Api-Key header"
+              mono
+              type="password"
+              autoComplete="new-password"
+              maxLength={8192}
+              pattern="[ -~]*"
+              value={apiKey}
+              onChange={val(setApiKey)}
+            />
+            <Failure error={creds.error} />
+          </SettingsSection>
+        </form>
       )}
     </>
   );

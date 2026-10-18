@@ -1,545 +1,69 @@
-import { useEffect, useState } from "react";
-import { Client, requireETag } from "./api";
-import { Field, Failure, Mutation, Reload, useResource } from "./ui";
+import { useEffect, useMemo, useState } from "react";
+import { requireETag, type Client } from "./api";
+import { getProviders, type Providers } from "./auth";
+import {
+  isUnavailable,
+  paths,
+  useOptional,
+  type BindingRecord,
+  type EffectivePermissions,
+} from "./gaps";
 import type {
   CreatePrincipal,
   IdentityPrincipal,
   IdentityRole,
   IdentityRoleGrant,
-  IssueServiceToken,
-  IssuedServiceToken,
 } from "./generated";
-const uuid =
-  "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
-const actions: IdentityRoleGrant["actions"] = [
-  "read",
-  "publish",
-  "delete",
-  "configure",
-  "replicate",
-  "admin",
-];
+import { GrantEditor } from "./Grants";
+import { TokenIssuer, TokensTab } from "./Tokens";
+import {
+  Alert,
+  Avatar,
+  Badge,
+  Button,
+  Checkbox,
+  Drawer,
+  DropdownMenu,
+  EmptyState,
+  Icon,
+  IconButton,
+  Input,
+  Modal,
+  Select,
+  Table,
+  Tabs,
+} from "./ds/bundle";
+import {
+  Card,
+  Copyable,
+  Failure,
+  Loading,
+  Mono,
+  Needs,
+  PageHeading,
+  Pager,
+  Toolbar,
+  Unavailable,
+  chk,
+  useAction,
+  useResource,
+  useToast,
+  val,
+} from "./ui";
+
 function revision(n: number) {
   if (!Number.isSafeInteger(n) || n < 1)
     throw Error("Invalid revision. Refresh the list.");
   return requireETag(`"${n}"`);
 }
-function Next({
-  after,
-  next,
-  setAfter,
-}: {
-  after: string;
-  next?: string;
-  setAfter: (s: string) => void;
-}) {
-  return (
-    <div className="pager">
-      <button disabled={!after} onClick={() => setAfter("")}>
-        First page
-      </button>
-      <button disabled={!next} onClick={() => setAfter(next!)}>
-        Next page
-      </button>
-    </div>
-  );
-}
-function Actions({
-  value,
-  onChange,
-}: {
-  value: IdentityRoleGrant["actions"];
-  onChange: (v: IdentityRoleGrant["actions"]) => void;
-}) {
-  return (
-    <fieldset className="actions">
-      <legend>Actions (select at least one)</legend>
-      {actions.map((a) => (
-        <label className="check" key={a}>
-          <input
-            type="checkbox"
-            checked={value.includes(a)}
-            onChange={(e) =>
-              onChange(
-                e.target.checked ? [...value, a] : value.filter((x) => x !== a),
-              )
-            }
-          />
-          {a}
-        </label>
-      ))}
-    </fieldset>
-  );
-}
-function GrantEditor({
-  grants,
-  onChange,
-}: {
-  grants: IdentityRoleGrant[];
-  onChange: (g: IdentityRoleGrant[]) => void;
-}) {
-  const update = (i: number, g: IdentityRoleGrant) =>
-    onChange(grants.map((v, n) => (n === i ? g : v)));
-  return (
-    <>
-      {grants.map((g, i) => (
-        <fieldset className="rule" key={i}>
-          <legend>Grant {i + 1}</legend>
-          <div className="grid">
-            <Field label="Resource kind">
-              <select
-                value={g.kind}
-                onChange={(e) =>
-                  update(i, {
-                    kind: e.target.value as IdentityRoleGrant["kind"],
-                    effect: g.effect,
-                    actions: g.actions,
-                  })
-                }
-              >
-                {["artifact", "feed", "source", "instance"].map((k) => (
-                  <option key={k}>{k}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Effect">
-              <select
-                value={g.effect}
-                onChange={(e) =>
-                  update(i, {
-                    ...g,
-                    effect: e.target.value as "allow" | "deny",
-                  })
-                }
-              >
-                <option>allow</option>
-                <option>deny</option>
-              </select>
-            </Field>
-          </div>
-          {g.kind !== "instance" && (
-            <>
-              {(g.kind === "artifact" || g.kind === "feed") && (
-                <Field label="Feed UUID (optional)">
-                  <input
-                    pattern={uuid}
-                    value={g.feed_id ?? ""}
-                    onChange={(e) =>
-                      update(i, {
-                        ...g,
-                        feed_id: e.target.value || undefined,
-                        source_id: undefined,
-                      })
-                    }
-                  />
-                </Field>
-              )}
-              {(g.kind === "source" || g.kind === "artifact") && (
-                <Field label="Source UUID (optional)">
-                  <input
-                    pattern={uuid}
-                    value={g.source_id ?? ""}
-                    onChange={(e) =>
-                      update(i, {
-                        ...g,
-                        source_id: e.target.value || undefined,
-                        feed_id: undefined,
-                      })
-                    }
-                  />
-                </Field>
-              )}
-              {g.kind === "artifact" && (
-                <Field label="Namespace (optional)">
-                  <input
-                    maxLength={200}
-                    value={g.namespace ?? ""}
-                    onChange={(e) =>
-                      update(i, {
-                        ...g,
-                        namespace: e.target.value || undefined,
-                      })
-                    }
-                  />
-                </Field>
-              )}
-            </>
-          )}
-          <Actions
-            value={g.actions}
-            onChange={(a) => update(i, { ...g, actions: a })}
-          />
-          <button
-            type="button"
-            onClick={() => onChange(grants.filter((_, n) => n !== i))}
-          >
-            Remove grant {i + 1}
-          </button>
-        </fieldset>
-      ))}
-      <button
-        type="button"
-        disabled={grants.length >= 256}
-        onClick={() =>
-          onChange([
-            ...grants,
-            { kind: "artifact", effect: "allow", actions: ["read"] },
-          ])
-        }
-      >
-        Add grant
-      </button>
-      <p className="notice">
-        Empty scope fields broaden a grant. Deny wins over allow. Instance admin
-        grants enable identity administration; review changes before saving.
-      </p>
-    </>
-  );
-}
-function RoleEditor({
-  client,
-  role,
-  done,
-}: {
-  client: Client;
-  role: IdentityRole;
-  done: () => void;
-}) {
-  const [grants, setGrants] = useState(role.grants);
-  return (
-    <Mutation
-      label="Replace role grants"
-      run={async () => {
-        if (grants.some((g) => !g.actions.length))
-          throw Error("Every grant needs at least one action.");
-        await client.call("setRoleGrants", {
-          params: { id: role.id },
-          etag: revision(role.revision),
-          body: { grants },
-        });
-        done();
-      }}
-    >
-      <GrantEditor grants={grants} onChange={setGrants} />
-      <p>
-        Saving replaces all grants for <strong>{role.name}</strong> at revision{" "}
-        {role.revision}.
-      </p>
-    </Mutation>
-  );
-}
-function Memberships({
-  client,
-  principal,
-  done,
-}: {
-  client: Client;
-  principal: IdentityPrincipal;
-  done: () => void;
-}) {
-  const [ids, setIDs] = useState(principal.role_ids.join("\n"));
-  return (
-    <Mutation
-      label="Replace role memberships"
-      run={async () => {
-        const role_ids = ids.split(/[\s,]+/).filter(Boolean);
-        if (
-          role_ids.length > 256 ||
-          role_ids.some((s) => !new RegExp("^" + uuid + "$").test(s)) ||
-          new Set(role_ids).size !== role_ids.length
-        )
-          throw Error("Enter up to 256 unique role UUIDs.");
-        await client.call("setPrincipalRoles", {
-          params: { id: principal.id },
-          etag: revision(principal.revision),
-          body: { role_ids },
-        });
-        done();
-      }}
-    >
-      <Field
-        label="Role UUIDs"
-        hint="One per line. Copy IDs from Roles. Empty removes all memberships."
-      >
-        <textarea
-          rows={4}
-          value={ids}
-          onChange={(e) => setIDs(e.target.value)}
-        />
-      </Field>
-      <p>
-        Saving replaces every role membership for{" "}
-        <strong>{principal.subject}</strong> at revision {principal.revision}.
-      </p>
-    </Mutation>
-  );
-}
-function Binding({
-  client,
-  principal,
-}: {
-  client: Client;
-  principal: IdentityPrincipal;
-}) {
-  const [issuer, setIssuer] = useState("");
-  const [subject, setSubject] = useState("");
-  return (
-    <Mutation
-      label="Create identity binding"
-      run={async () => {
-        await client.call("createIdentityBinding", {
-          body: { issuer, subject, principal_id: principal.id },
-        });
-        setIssuer("");
-        setSubject("");
-      }}
-    >
-      <p>
-        Bind a verified provider identity to this explicit local user:{" "}
-        <strong>{principal.subject}</strong> (<code>{principal.id}</code>). This
-        does not create a user or assign roles.
-      </p>
-      <Field label="Provider issuer / identifier">
-        <input
-          required
-          maxLength={2048}
-          value={issuer}
-          onChange={(e) => setIssuer(e.target.value)}
-        />
-      </Field>
-      <Field label="Immutable provider subject">
-        <input
-          required
-          maxLength={2048}
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-        />
-      </Field>
-      <p className="muted">
-        Use exact issuer and immutable subject values from the trusted provider,
-        not an inferred email. Existing bindings cannot be silently reassigned.
-        This API does not list bindings.
-      </p>
-    </Mutation>
-  );
-}
-function TokenIssuer({
-  client,
-  principal,
-}: {
-  client: Client;
-  principal: IdentityPrincipal;
-}) {
-  const [expires, setExpires] = useState("");
-  const [scopes, setScopes] = useState<IssueServiceToken["scopes"]>([
-    { actions: ["read"] },
-  ]);
-  const [issued, setIssued] = useState<IssuedServiceToken>();
-  const [attempted, setAttempted] = useState(false);
-  const [issuing, setIssuing] = useState(false);
-  const [issueError, setIssueError] = useState<unknown>();
-  useEffect(() => {
-    if (!issued) return;
-    const timer = setTimeout(() => setIssued(undefined), 60000);
-    return () => clearTimeout(timer);
-  }, [issued]);
-  return (
-    <>
-      <p>
-        Issue a scoped token for <strong>{principal.subject}</strong>. The
-        server restricts effective permissions. The secret is displayed once and
-        cleared from this view after one minute or on navigation.
-      </p>
-      <Failure error={issueError} />
-      {issuing && <p role="status">Issuing token…</p>}
-      {issued && (
-        <div className="notice">
-          <p>
-            Token ID: <code>{issued.id}</code>
-          </p>
-          <Field label="New token secret — copy now">
-            <input
-              type="password"
-              autoComplete="off"
-              readOnly
-              value={issued.secret}
-              onFocus={(e) => e.currentTarget.select()}
-            />
-          </Field>
-          <p>Expires {new Date(issued.expires_at).toLocaleString()}</p>
-          <button onClick={() => setIssued(undefined)}>
-            Clear displayed secret
-          </button>
-        </div>
-      )}
-      {attempted ? (
-        <p className="notice">
-          An issuance request was attempted. Its secret cannot be replayed, even
-          if the response was lost.{" "}
-          <button
-            disabled={issuing}
-            onClick={() => {
-              setAttempted(false);
-              setIssued(undefined);
-              setIssueError(undefined);
-            }}
-          >
-            Start a separate token issuance
-          </button>
-        </p>
-      ) : (
-        <Mutation
-          label="Issue token once"
-          run={async () => {
-            const date = new Date(expires);
-            if (
-              !Number.isFinite(date.getTime()) ||
-              date.getTime() <= Date.now() ||
-              date.getTime() > Date.now() + 365 * 86400000
-            )
-              throw Error("Choose a future expiry within one year.");
-            if (scopes.some((s) => !s.actions.length))
-              throw Error("Each token scope needs at least one action.");
-            setAttempted(true);
-            setIssuing(true);
-            setIssueError(undefined);
-            try {
-              const result = await client.call("issueServiceToken", {
-                params: { id: principal.id },
-                body: { scopes, expires_at: date.toISOString() },
-              });
-              setIssued(result.data);
-            } catch (e) {
-              setIssueError(e);
-            } finally {
-              setIssuing(false);
-            }
-          }}
-        >
-          <Field label="Token expiry (local time)">
-            <input
-              type="datetime-local"
-              required
-              value={expires}
-              onChange={(e) => setExpires(e.target.value)}
-            />
-          </Field>
-          {scopes.map((s, i) => (
-            <fieldset className="rule" key={i}>
-              <legend>Token scope {i + 1}</legend>
-              <Field label="Feed UUID (optional)">
-                <input
-                  pattern={uuid}
-                  value={s.feed_id ?? ""}
-                  onChange={(e) =>
-                    setScopes(
-                      scopes.map((v, n) =>
-                        n === i
-                          ? { ...v, feed_id: e.target.value || undefined }
-                          : v,
-                      ),
-                    )
-                  }
-                />
-              </Field>
-              <Field label="Namespace (optional)">
-                <input
-                  maxLength={200}
-                  value={s.namespace ?? ""}
-                  onChange={(e) =>
-                    setScopes(
-                      scopes.map((v, n) =>
-                        n === i
-                          ? { ...v, namespace: e.target.value || undefined }
-                          : v,
-                      ),
-                    )
-                  }
-                />
-              </Field>
-              <Actions
-                value={s.actions}
-                onChange={(a) =>
-                  setScopes(
-                    scopes.map((v, n) => (n === i ? { ...v, actions: a } : v)),
-                  )
-                }
-              />
-              <button
-                type="button"
-                disabled={scopes.length === 1}
-                onClick={() => setScopes(scopes.filter((_, n) => n !== i))}
-              >
-                Remove scope {i + 1}
-              </button>
-            </fieldset>
-          ))}
-          <button
-            type="button"
-            disabled={scopes.length >= 64}
-            onClick={() => setScopes([...scopes, { actions: ["read"] }])}
-          >
-            Add token scope
-          </button>
-          <p className="notice">
-            Empty scope fields apply broadly. Token issuance is not replayable
-            and is never automatically retried.
-          </p>
-        </Mutation>
-      )}
-    </>
-  );
-}
-function Revoke({ client }: { client: Client }) {
-  const [id, setID] = useState("");
-  const [confirm, setConfirm] = useState(false);
-  return (
-    <section className="card">
-      <h2>Revoke a service token</h2>
-      <p>
-        Token listing is not exposed by this contract. Enter the token ID
-        recorded at issuance.
-      </p>
-      <Mutation
-        label="Revoke token"
-        run={async () => {
-          await client.call("revokeServiceToken", { params: { id } });
-          setID("");
-          setConfirm(false);
-        }}
-      >
-        <Field label="Token ID to revoke">
-          <input
-            required
-            pattern={uuid}
-            value={id}
-            onChange={(e) => {
-              setID(e.target.value);
-              setConfirm(false);
-            }}
-          />
-        </Field>
-        <label className="check">
-          <input
-            type="checkbox"
-            required
-            checked={confirm}
-            onChange={(e) => setConfirm(e.target.checked)}
-          />
-          Revoke this token immediately
-        </label>
-      </Mutation>
-    </section>
-  );
-}
+
 export function Identity({ client }: { client: Client }) {
-  const [section, setSection] = useState<"principals" | "roles" | "tokens">(
-    "principals",
-  );
+  const [tab, setTab] = useState("users");
   const [after, setAfter] = useState("");
-  const [subject, setSubject] = useState("");
-  const [kind, setKind] = useState<CreatePrincipal["kind"]>("user");
-  const [name, setName] = useState("");
+  const [creating, setCreating] = useState<CreatePrincipal["kind"]>();
+  const [creatingRole, setCreatingRole] = useState(false);
+  const [issuing, setIssuing] = useState(false);
+  const [binding, setBinding] = useState(false);
   const principals = useResource(
     () =>
       client.call("listPrincipals", {
@@ -550,166 +74,1019 @@ export function Identity({ client }: { client: Client }) {
   const roles = useResource(
     () =>
       client.call("listRoles", {
-        query: { limit: "50", ...(after ? { after } : {}) },
+        query: { limit: "200" },
       }),
-    [client, after],
+    [client],
   );
+  const [roleAfter, setRoleAfter] = useState("");
+  const roleList = useResource(
+    () =>
+      client.call("listRoles", {
+        query: { limit: "50", ...(roleAfter ? { after: roleAfter } : {}) },
+      }),
+    [client, roleAfter],
+  );
+  const items = principals.value?.data.items ?? [];
+  const users = items.filter((p) => p.kind !== "service");
+  const services = items.filter((p) => p.kind === "service");
+  const allRoles = roles.value?.data.items ?? [];
+  const changeTab = (t: string) => {
+    setTab(t);
+    setAfter("");
+  };
   return (
     <>
-      <p className="eyebrow">ACCESS CONTROL</p>
-      <h1>Identity administration</h1>
-      <p>
-        These operations require instance admin permission. User identity
-        bindings and role memberships are explicit; signing in does not
-        provision access.
+      <PageHeading
+        eyebrow="Identity & access"
+        title="Access"
+        text="People, service principals, roles and tokens. Explicit deny wins; token scopes intersect role grants. Signing in never provisions access."
+      >
+        {tab === "users" && (
+          <Button icon="user-plus" onClick={() => setCreating("user")}>
+            Add user
+          </Button>
+        )}
+        {tab === "services" && (
+          <Button icon="bot" onClick={() => setCreating("service")}>
+            Add service principal
+          </Button>
+        )}
+        {tab === "roles" && (
+          <Button icon="plus" onClick={() => setCreatingRole(true)}>
+            Create role
+          </Button>
+        )}
+        {tab === "tokens" && (
+          <Button icon="key-round" onClick={() => setIssuing(true)}>
+            Issue token
+          </Button>
+        )}
+        {tab === "providers" && (
+          <Button icon="link" onClick={() => setBinding(true)}>
+            Bind identity
+          </Button>
+        )}
+      </PageHeading>
+      <Tabs
+        value={tab}
+        onChange={changeTab}
+        className="spaced-tabs"
+        items={[
+          { id: "users", label: "Users", count: users.length },
+          {
+            id: "services",
+            label: "Service principals",
+            count: services.length,
+          },
+          { id: "roles", label: "Roles" },
+          { id: "tokens", label: "Tokens" },
+          { id: "providers", label: "Sign-in providers" },
+        ]}
+      />
+      <p className="muted small">
+        These operations require instance admin permission.
       </p>
-      <nav className="tabs" aria-label="Identity sections">
-        {(["principals", "roles", "tokens"] as const).map((s) => (
-          <button
-            key={s}
-            aria-current={section === s ? "page" : undefined}
-            onClick={() => {
-              setAfter("");
-              setSection(s);
-            }}
-          >
-            {s[0].toUpperCase() + s.slice(1)}
-          </button>
-        ))}
-      </nav>
-      {section === "principals" ? (
-        <>
-          <section className="card">
-            <h2>Create principal</h2>
-            <Mutation
-              label="Create principal"
-              run={async () => {
-                await client.call("createPrincipal", {
-                  body: { subject, kind },
-                });
-                setSubject("");
-                principals.reload();
-              }}
-            >
-              <Field label="Local principal subject">
-                <input
-                  required
-                  maxLength={200}
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                />
-              </Field>
-              <Field label="Principal kind">
-                <select
-                  value={kind}
-                  onChange={(e) =>
-                    setKind(e.target.value as CreatePrincipal["kind"])
-                  }
-                >
-                  <option>user</option>
-                  <option>service</option>
-                </select>
-              </Field>
-            </Mutation>
-          </section>
-          <Reload {...principals} />
-          <Failure error={principals.error} />
-          {principals.loading && <p role="status">Loading principals…</p>}
-          {principals.value && (
-            <>
-              {!principals.value.data.items.length && (
-                <p>No principals found.</p>
-              )}
-              {principals.value.data.items.map((p) => (
-                <section className="card" key={p.id + ":" + p.revision}>
-                  <h2>{p.subject}</h2>
-                  <p>
-                    {p.kind} · {p.disabled ? "Disabled" : "Enabled"} · Revision{" "}
-                    {p.revision}
-                  </p>
-                  <code>{p.id}</code>
-                  <details>
-                    <summary>Role memberships</summary>
-                    <Memberships
-                      client={client}
-                      principal={p}
-                      done={principals.reload}
-                    />
-                  </details>
-                  {p.kind === "user" && !p.disabled && (
-                    <details>
-                      <summary>Bind provider identity</summary>
-                      <Binding client={client} principal={p} />
-                    </details>
-                  )}
-                  {p.kind === "service" && !p.disabled && (
-                    <details>
-                      <summary>Issue scoped service token</summary>
-                      <TokenIssuer client={client} principal={p} />
-                    </details>
-                  )}
-                </section>
-              ))}
-              <Next
-                after={after}
-                next={principals.value.data.next_after}
-                setAfter={setAfter}
-              />
-            </>
-          )}
-        </>
-      ) : section === "roles" ? (
-        <>
-          <section className="card">
-            <h2>Create role</h2>
-            <Mutation
-              label="Create role"
-              run={async () => {
-                await client.call("createRole", { body: { name } });
-                setName("");
-                roles.reload();
-              }}
-            >
-              <Field label="Role name">
-                <input
-                  required
-                  maxLength={128}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </Field>
-            </Mutation>
-          </section>
-          <Reload {...roles} />
-          <Failure error={roles.error} />
-          {roles.loading && <p role="status">Loading roles…</p>}
-          {roles.value && (
-            <>
-              {!roles.value.data.items.length && <p>No roles found.</p>}
-              {roles.value.data.items.map((r) => (
-                <section className="card" key={r.id + ":" + r.revision}>
-                  <h2>{r.name}</h2>
-                  <code>{r.id}</code>
-                  <p>
-                    Revision {r.revision} · {r.grants.length} grants
-                  </p>
-                  <details>
-                    <summary>Display and edit grants</summary>
-                    <RoleEditor client={client} role={r} done={roles.reload} />
-                  </details>
-                </section>
-              ))}
-              <Next
-                after={after}
-                next={roles.value.data.next_after}
-                setAfter={setAfter}
-              />
-            </>
-          )}
-        </>
-      ) : (
-        <Revoke client={client} />
+      {(tab === "users" || tab === "services") && (
+        <PrincipalsTab
+          client={client}
+          kind={tab === "users" ? "user" : "service"}
+          rows={tab === "users" ? users : services}
+          roles={allRoles}
+          state={principals}
+          after={after}
+          setAfter={setAfter}
+        />
+      )}
+      {tab === "roles" && (
+        <RolesTab
+          client={client}
+          state={roleList}
+          after={roleAfter}
+          setAfter={setRoleAfter}
+        />
+      )}
+      {tab === "tokens" && <TokensTab client={client} principals={items} />}
+      {tab === "providers" && (
+        <ProvidersTab client={client} principals={items} />
+      )}
+      {creating && (
+        <CreatePrincipalModal
+          client={client}
+          kind={creating}
+          onClose={() => setCreating(undefined)}
+          done={() => {
+            setCreating(undefined);
+            principals.reload();
+          }}
+        />
+      )}
+      {creatingRole && (
+        <CreateRoleModal
+          client={client}
+          onClose={() => setCreatingRole(false)}
+          done={() => {
+            setCreatingRole(false);
+            roleList.reload();
+            roles.reload();
+          }}
+        />
+      )}
+      {issuing && (
+        <TokenIssuer
+          client={client}
+          principals={items}
+          onClose={() => setIssuing(false)}
+        />
+      )}
+      {binding && (
+        <BindModal
+          client={client}
+          principals={users}
+          onClose={() => setBinding(false)}
+        />
       )}
     </>
+  );
+}
+
+function PrincipalsTab({
+  client,
+  kind,
+  rows,
+  roles,
+  state,
+  after,
+  setAfter,
+}: {
+  client: Client;
+  kind: "user" | "service";
+  rows: IdentityPrincipal[];
+  roles: IdentityRole[];
+  state: ReturnType<
+    typeof useResource<{ items: IdentityPrincipal[]; next_after?: string }>
+  >;
+  after: string;
+  setAfter: (s: string) => void;
+}) {
+  const [filter, setFilter] = useState("");
+  const [editing, setEditing] = useState<IdentityPrincipal>();
+  const [binding, setBinding] = useState<IdentityPrincipal>();
+  const [effective, setEffective] = useState<IdentityPrincipal>();
+  const [token, setToken] = useState<IdentityPrincipal>();
+  const shown = rows.filter((p) =>
+    (p.subject + p.id).toLowerCase().includes(filter.trim().toLowerCase()),
+  );
+  const roleName = (id: string) => roles.find((r) => r.id === id)?.name ?? id;
+  return (
+    <>
+      <Toolbar right={<Needs>effective permissions view</Needs>}>
+        <Input
+          icon="search"
+          size="sm"
+          aria-label="Filter by name or ID"
+          placeholder="Name or ID"
+          value={filter}
+          onChange={val(setFilter)}
+          className="w240"
+        />
+        <Button
+          size="sm"
+          variant="secondary"
+          icon="refresh-cw"
+          disabled={state.loading}
+          onClick={state.reload}
+        >
+          Refresh
+        </Button>
+      </Toolbar>
+      <Failure error={state.error} />
+      {state.loading && (
+        <Loading what={kind === "user" ? "users" : "service principals"} />
+      )}
+      {state.value &&
+        (shown.length ? (
+          <Table
+            columns={[
+              {
+                key: "subject",
+                label: kind === "user" ? "User" : "Service principal",
+                render: (p: IdentityPrincipal) => (
+                  <span className="row">
+                    {kind === "user" ? (
+                      <Avatar name={p.subject} size={28} />
+                    ) : (
+                      <Icon name="bot" size={16} />
+                    )}
+                    <span>
+                      {p.subject}
+                      <small>{p.id}</small>
+                    </span>
+                  </span>
+                ),
+              },
+              {
+                key: "roles",
+                label: "Roles",
+                render: (p: IdentityPrincipal) =>
+                  p.role_ids.length ? (
+                    <span className="row tight wrap">
+                      {p.role_ids.map((id) => (
+                        <Badge key={id} tone="neutral">
+                          {roleName(id)}
+                        </Badge>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="muted">None</span>
+                  ),
+              },
+              {
+                key: "kind",
+                label: "Kind",
+                render: (p: IdentityPrincipal) =>
+                  p.kind === "emergency" ? (
+                    <Badge tone="warn">emergency</Badge>
+                  ) : (
+                    p.kind
+                  ),
+              },
+              { key: "revision", label: "Revision", align: "right" },
+              {
+                key: "disabled",
+                label: "Status",
+                render: (p: IdentityPrincipal) => (
+                  <Badge tone={p.disabled ? "neutral" : "good"} dot>
+                    {p.disabled ? "Disabled" : "Enabled"}
+                  </Badge>
+                ),
+              },
+              {
+                key: "x",
+                label: "",
+                align: "right",
+                render: (p: IdentityPrincipal) => (
+                  <DropdownMenu
+                    align="end"
+                    trigger={
+                      <IconButton
+                        icon="ellipsis"
+                        label={`Actions for ${p.subject}`}
+                      />
+                    }
+                    items={[
+                      {
+                        label: "Edit roles",
+                        icon: "shield",
+                        onSelect: () => setEditing(p),
+                      },
+                      {
+                        label: "Effective permissions",
+                        icon: "list-checks",
+                        onSelect: () => setEffective(p),
+                      },
+                      ...(p.kind === "user" && !p.disabled
+                        ? [
+                            {
+                              label: "Bind provider identity",
+                              icon: "link",
+                              onSelect: () => setBinding(p),
+                            },
+                          ]
+                        : []),
+                      ...(p.kind === "service" && !p.disabled
+                        ? [
+                            {
+                              label: "Issue token",
+                              icon: "key-round",
+                              onSelect: () => setToken(p),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+                ),
+              },
+            ]}
+            rows={shown}
+          />
+        ) : (
+          <EmptyState
+            icon={kind === "user" ? "users" : "bot"}
+            title={`No ${kind === "user" ? "users" : "service principals"} found`}
+            description="Create one to grant access explicitly."
+          />
+        ))}
+      {state.value && (
+        <Pager
+          cursor={after}
+          next={state.value.data.next_after}
+          set={setAfter}
+        />
+      )}
+      {editing && (
+        <MembershipsModal
+          client={client}
+          principal={editing}
+          roles={roles}
+          onClose={() => setEditing(undefined)}
+          done={() => {
+            setEditing(undefined);
+            state.reload();
+          }}
+        />
+      )}
+      {binding && (
+        <BindModal
+          client={client}
+          principals={[binding]}
+          onClose={() => setBinding(undefined)}
+        />
+      )}
+      {token && (
+        <TokenIssuer
+          client={client}
+          principals={[token]}
+          initial={token.id}
+          onClose={() => setToken(undefined)}
+        />
+      )}
+      {effective && (
+        <EffectiveDrawer
+          client={client}
+          principal={effective}
+          onClose={() => setEffective(undefined)}
+        />
+      )}
+    </>
+  );
+}
+
+function CreatePrincipalModal({
+  client,
+  kind,
+  onClose,
+  done,
+}: {
+  client: Client;
+  kind: CreatePrincipal["kind"];
+  onClose: () => void;
+  done: () => void;
+}) {
+  const [subject, setSubject] = useState("");
+  const action = useAction();
+  const toast = useToast();
+  return (
+    <Modal
+      title={kind === "user" ? "Add user" : "Add service principal"}
+      description="Creates a local principal with no roles. Bind a provider identity or issue tokens afterwards."
+      onClose={onClose}
+      actions={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            form="create-principal"
+            type="submit"
+            disabled={action.busy || !subject.trim()}
+          >
+            {action.busy ? "Creating…" : "Create principal"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="create-principal"
+        className="stack"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const ok = await action.run(() =>
+            client.call("createPrincipal", { body: { subject, kind } }),
+          );
+          if (ok) {
+            toast("Principal created", subject);
+            done();
+          }
+        }}
+      >
+        <Input
+          label="Local principal subject"
+          mono
+          required
+          maxLength={200}
+          value={subject}
+          onChange={val(setSubject)}
+        />
+        <Failure error={action.error} />
+      </form>
+    </Modal>
+  );
+}
+
+function MembershipsModal({
+  client,
+  principal,
+  roles,
+  onClose,
+  done,
+}: {
+  client: Client;
+  principal: IdentityPrincipal;
+  roles: IdentityRole[];
+  onClose: () => void;
+  done: () => void;
+}) {
+  const [ids, setIDs] = useState(principal.role_ids);
+  const action = useAction();
+  const toast = useToast();
+  const unknown = ids.filter((id) => !roles.some((r) => r.id === id));
+  return (
+    <Modal
+      title={`Roles for ${principal.subject}`}
+      description={`Saving replaces every role membership at revision ${principal.revision}.`}
+      onClose={onClose}
+      actions={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            disabled={action.busy}
+            onClick={async () => {
+              const ok = await action.run(() =>
+                client.call("setPrincipalRoles", {
+                  params: { id: principal.id },
+                  etag: revision(principal.revision),
+                  body: { role_ids: ids },
+                }),
+              );
+              if (ok) {
+                toast("Role memberships replaced", principal.subject);
+                done();
+              }
+            }}
+          >
+            {action.busy ? "Saving…" : "Replace role memberships"}
+          </Button>
+        </>
+      }
+    >
+      {roles.length ? (
+        roles.map((r) => (
+          <Checkbox
+            key={r.id}
+            label={r.name}
+            hint={`${r.grants.length} grant${r.grants.length === 1 ? "" : "s"}`}
+            checked={ids.includes(r.id)}
+            onChange={chk((on) =>
+              setIDs(on ? [...ids, r.id] : ids.filter((x) => x !== r.id)),
+            )}
+          />
+        ))
+      ) : (
+        <p className="muted">
+          No roles exist yet. Create one on the Roles tab.
+        </p>
+      )}
+      {unknown.length > 0 && (
+        <p className="muted small">
+          {unknown.length} membership(s) refer to roles not listed here and are
+          kept unless you remove them below.
+        </p>
+      )}
+      {unknown.map((id) => (
+        <Checkbox
+          key={id}
+          label={<Mono>{id}</Mono>}
+          checked
+          onChange={() => setIDs(ids.filter((x) => x !== id))}
+        />
+      ))}
+      <Failure error={action.error} />
+    </Modal>
+  );
+}
+
+function BindModal({
+  client,
+  principals,
+  onClose,
+}: {
+  client: Client;
+  principals: IdentityPrincipal[];
+  onClose: () => void;
+}) {
+  const eligible = principals.filter((p) => p.kind === "user" && !p.disabled);
+  const [principal, setPrincipal] = useState(eligible[0]?.id ?? "");
+  const [issuer, setIssuer] = useState("");
+  const [subject, setSubject] = useState("");
+  const action = useAction();
+  const toast = useToast();
+  const target = eligible.find((p) => p.id === principal);
+  return (
+    <Modal
+      title="Bind identity"
+      description="Bind a verified provider identity to an explicit local user. This does not create a user or assign roles."
+      onClose={onClose}
+      actions={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            form="bind-identity"
+            type="submit"
+            disabled={action.busy || !principal}
+          >
+            {action.busy ? "Binding…" : "Create identity binding"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="bind-identity"
+        className="stack"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const ok = await action.run(() =>
+            client.call("createIdentityBinding", {
+              body: { issuer, subject, principal_id: principal },
+            }),
+          );
+          if (ok) {
+            toast("Identity bound", target?.subject);
+            setIssuer("");
+            setSubject("");
+            onClose();
+          }
+        }}
+      >
+        <Select
+          label="Local user"
+          options={
+            eligible.length
+              ? eligible.map((p) => ({ value: p.id, label: p.subject }))
+              : [{ value: "", label: "No enabled users" }]
+          }
+          value={principal}
+          onChange={val(setPrincipal)}
+        />
+        <Input
+          label="Provider issuer / identifier"
+          mono
+          required
+          maxLength={2048}
+          value={issuer}
+          onChange={val(setIssuer)}
+        />
+        <Input
+          label="Immutable provider subject"
+          mono
+          required
+          maxLength={2048}
+          value={subject}
+          onChange={val(setSubject)}
+          hint="Use exact issuer and immutable subject values from the trusted provider, not an inferred email. Existing bindings cannot be silently reassigned."
+        />
+        <Failure error={action.error} />
+      </form>
+    </Modal>
+  );
+}
+
+function EffectiveDrawer({
+  client,
+  principal,
+  onClose,
+}: {
+  client: Client;
+  principal: IdentityPrincipal;
+  onClose: () => void;
+}) {
+  const r = useOptional<EffectivePermissions>(
+    client,
+    paths.effective(principal.id),
+  );
+  return (
+    <Drawer
+      open
+      title={`Effective permissions · ${principal.subject}`}
+      onClose={onClose}
+      width={520}
+      footer={<Button onClick={onClose}>Done</Button>}
+    >
+      {r.state === "loading" && <Loading what="effective permissions" />}
+      {r.state === "unavailable" && (
+        <Unavailable what="Effective permissions" />
+      )}
+      {r.state === "error" && <Failure error={r.error} />}
+      {r.state === "ready" && (
+        <Table
+          columns={[
+            { key: "kind", label: "Kind" },
+            {
+              key: "scope",
+              label: "Scope",
+              render: (
+                g: NonNullable<EffectivePermissions["items"]>[number],
+              ) => (
+                <Mono muted>
+                  {g.namespace ?? g.feed_id ?? g.source_id ?? "all"}
+                </Mono>
+              ),
+            },
+            { key: "effect", label: "Effect" },
+            {
+              key: "actions",
+              label: "Actions",
+              render: (g: NonNullable<EffectivePermissions["items"]>[number]) =>
+                (g.actions ?? []).join(", "),
+            },
+          ]}
+          rows={(r.data.items ?? []).map((g, i) => ({ ...g, id: i }))}
+        />
+      )}
+      <Needs block>effective permissions</Needs>
+    </Drawer>
+  );
+}
+
+function RolesTab({
+  client,
+  state,
+  after,
+  setAfter,
+}: {
+  client: Client;
+  state: ReturnType<
+    typeof useResource<{ items: IdentityRole[]; next_after?: string }>
+  >;
+  after: string;
+  setAfter: (s: string) => void;
+}) {
+  const [editing, setEditing] = useState<IdentityRole>();
+  return (
+    <>
+      <Failure error={state.error} />
+      {state.loading && <Loading what="roles" />}
+      {state.value &&
+        (state.value.data.items.length ? (
+          <Table
+            onRowClick={(r: IdentityRole) => setEditing(r)}
+            columns={[
+              {
+                key: "name",
+                label: "Role",
+                render: (r: IdentityRole) => (
+                  <>
+                    {r.name}
+                    <small>{r.id}</small>
+                  </>
+                ),
+              },
+              {
+                key: "grants",
+                label: "Grants",
+                render: (r: IdentityRole) => <Mono>{summarize(r.grants)}</Mono>,
+              },
+              { key: "revision", label: "Revision", align: "right" },
+            ]}
+            rows={state.value.data.items}
+          />
+        ) : (
+          <EmptyState
+            icon="shield"
+            title="No roles found"
+            description="Create a role, then add structured grants to it."
+          />
+        ))}
+      {state.value && (
+        <Pager
+          cursor={after}
+          next={state.value.data.next_after}
+          set={setAfter}
+        />
+      )}
+      {editing && (
+        <RoleDrawer
+          key={editing.id + ":" + editing.revision}
+          client={client}
+          role={editing}
+          onClose={() => setEditing(undefined)}
+          done={() => {
+            setEditing(undefined);
+            state.reload();
+          }}
+        />
+      )}
+    </>
+  );
+}
+function summarize(grants: IdentityRoleGrant[]) {
+  if (!grants.length) return "No grants";
+  return grants
+    .slice(0, 3)
+    .map(
+      (g) =>
+        `${g.effect === "deny" ? "deny " : ""}${g.actions.join(",")} · ${g.kind}`,
+    )
+    .join("; ")
+    .concat(grants.length > 3 ? ` +${grants.length - 3} more` : "");
+}
+
+function RoleDrawer({
+  client,
+  role,
+  onClose,
+  done,
+}: {
+  client: Client;
+  role: IdentityRole;
+  onClose: () => void;
+  done: () => void;
+}) {
+  const [grants, setGrants] = useState(role.grants);
+  const action = useAction();
+  const toast = useToast();
+  return (
+    <Drawer
+      open
+      title={role.name}
+      description={<Copyable text={role.id} />}
+      onClose={onClose}
+      width={620}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            disabled={action.busy}
+            onClick={async () => {
+              const ok = await action.run(async () => {
+                if (grants.some((g) => !g.actions.length))
+                  throw Error("Every grant needs at least one action.");
+                await client.call("setRoleGrants", {
+                  params: { id: role.id },
+                  etag: revision(role.revision),
+                  body: { grants },
+                });
+              });
+              if (ok) {
+                toast("Role grants replaced", role.name);
+                done();
+              }
+            }}
+          >
+            {action.busy ? "Saving…" : "Replace role grants"}
+          </Button>
+        </>
+      }
+    >
+      <p className="muted small">
+        Saving replaces all grants for <strong>{role.name}</strong> at revision{" "}
+        {role.revision}.
+      </p>
+      <GrantEditor client={client} grants={grants} onChange={setGrants} />
+      <Failure error={action.error} />
+    </Drawer>
+  );
+}
+
+function CreateRoleModal({
+  client,
+  onClose,
+  done,
+}: {
+  client: Client;
+  onClose: () => void;
+  done: () => void;
+}) {
+  const [name, setName] = useState("");
+  const action = useAction();
+  const toast = useToast();
+  return (
+    <Modal
+      title="Create role"
+      description="A new role has no grants. Add structured grants after creating it."
+      onClose={onClose}
+      actions={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            form="create-role"
+            type="submit"
+            disabled={action.busy || !name.trim()}
+          >
+            {action.busy ? "Creating…" : "Create role"}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="create-role"
+        className="stack"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const ok = await action.run(() =>
+            client.call("createRole", { body: { name } }),
+          );
+          if (ok) {
+            toast("Role created", name);
+            done();
+          }
+        }}
+      >
+        <Input
+          label="Role name"
+          required
+          maxLength={128}
+          value={name}
+          onChange={val(setName)}
+        />
+        <Failure error={action.error} />
+      </form>
+    </Modal>
+  );
+}
+
+function ProvidersTab({
+  client,
+  principals,
+}: {
+  client: Client;
+  principals: IdentityPrincipal[];
+}) {
+  const [providers, setProviders] = useState<Providers | null>();
+  useEffect(() => {
+    let active = true;
+    getProviders()
+      .then((p) => active && setProviders(p))
+      .catch(() => active && setProviders(null));
+    return () => {
+      active = false;
+    };
+  }, []);
+  const bindings = useOptional<{ items: BindingRecord[] }>(
+    client,
+    paths.bindings,
+    { limit: "100" },
+  );
+  const [removing, setRemoving] = useState<BindingRecord>();
+  const name = useMemo(
+    () => (id: string) => principals.find((p) => p.id === id)?.subject ?? id,
+    [principals],
+  );
+  const cards: [string, keyof Providers][] = [
+    ["OIDC", "oidc"],
+    ["SAML", "saml"],
+    ["LDAP", "ldap"],
+  ];
+  return (
+    <>
+      {providers === undefined && <Loading what="sign-in providers" />}
+      {providers === null && (
+        <Alert
+          tone="warn"
+          title="Provider availability could not be determined"
+        >
+          Configured providers are discovered from the authentication service.
+        </Alert>
+      )}
+      {providers && (
+        <div className="grid-auto grid-auto--280">
+          {cards.map(([label, key]) => (
+            <Card
+              key={key}
+              title={label}
+              actions={
+                <Badge tone={providers[key] ? "good" : "neutral"} dot>
+                  {providers[key] ? "Configured" : "Not configured"}
+                </Badge>
+              }
+            >
+              <p className="muted small">
+                Configured by mounted file. Login never creates administrators;
+                bind subjects to existing users.
+              </p>
+            </Card>
+          ))}
+        </div>
+      )}
+      <h2 className="h3 spaced-top">Identity bindings</h2>
+      {bindings.state === "loading" && <Loading what="bindings" />}
+      {bindings.state === "error" && <Failure error={bindings.error} />}
+      {bindings.state === "unavailable" && (
+        <>
+          <Unavailable what="Listing and removing identity bindings" compact />
+          <p className="muted small">
+            You can still create bindings with Bind identity. Existing bindings
+            cannot be listed or deleted yet.
+          </p>
+        </>
+      )}
+      {bindings.state === "ready" && (
+        <Table
+          columns={[
+            { key: "issuer", label: "Issuer", mono: true },
+            { key: "subject", label: "Subject", mono: true },
+            {
+              key: "principal_id",
+              label: "Local user",
+              render: (b: BindingRecord) => name(b.principal_id),
+            },
+            {
+              key: "x",
+              label: "",
+              align: "right",
+              render: (b: BindingRecord) => (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setRemoving(b)}
+                >
+                  Remove
+                </Button>
+              ),
+            },
+          ]}
+          rows={bindings.data.items.map((b, i) => ({ ...b, id: i }))}
+        />
+      )}
+      <Needs block>list/delete identity bindings</Needs>
+      {removing && (
+        <RemoveBinding
+          client={client}
+          binding={removing}
+          onClose={() => setRemoving(undefined)}
+          done={() => {
+            setRemoving(undefined);
+            bindings.reload();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function RemoveBinding({
+  client,
+  binding,
+  onClose,
+  done,
+}: {
+  client: Client;
+  binding: BindingRecord;
+  onClose: () => void;
+  done: () => void;
+}) {
+  const action = useAction();
+  const toast = useToast();
+  const [unavailable, setUnavailable] = useState(false);
+  return (
+    <Modal
+      title="Remove identity binding"
+      description="The provider identity can no longer sign in as this user."
+      onClose={onClose}
+      actions={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            disabled={action.busy || unavailable}
+            onClick={async () => {
+              let gone = false;
+              const ok = await action.run(async () => {
+                try {
+                  await client.extra("DELETE", paths.bindings, {
+                    query: { issuer: binding.issuer, subject: binding.subject },
+                  });
+                } catch (e) {
+                  if (!isUnavailable(e)) throw e;
+                  gone = true;
+                  setUnavailable(true);
+                }
+              });
+              if (ok && !gone) {
+                toast("Binding removed");
+                done();
+              }
+            }}
+          >
+            Remove binding
+          </Button>
+        </>
+      }
+    >
+      <p>
+        <Mono>{binding.issuer}</Mono> · <Mono>{binding.subject}</Mono>
+      </p>
+      {unavailable && <Unavailable what="Removing identity bindings" compact />}
+      <Failure error={action.error} />
+    </Modal>
   );
 }

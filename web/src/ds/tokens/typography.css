@@ -1,0 +1,33 @@
+/* Azrty typography. Geist = UI, Geist Mono = data/code/eyebrows, Instrument Sans = display (marketing, slides, logo). */
+:root {
+  --az-font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --az-font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
+  --az-font-display: "Instrument Sans", "Geist", ui-sans-serif, sans-serif;
+
+  --az-text-2xs: 9px;
+  --az-text-xs: 10px;
+  --az-text-sm: 11px;
+  --az-text-md: 12px;
+  --az-text-base: 14px;
+  --az-text-lg: 16px;
+  --az-text-xl: 20px;
+  --az-text-2xl: 30px;
+  --az-text-3xl: 44px;
+  --az-text-4xl: 56px;
+  --az-text-5xl: 72px;
+
+  --az-leading-tight: 1.05;
+  --az-leading-snug: 1.4;
+  --az-leading-body: 1.65;
+  --az-leading-code: 1.8;
+
+  --az-tracking-display: -0.035em;
+  --az-tracking-heading: -0.03em;
+  --az-tracking-eyebrow: 0.12em;
+  --az-tracking-logo: 0.03em;
+
+  --az-weight-regular: 400;
+  --az-weight-medium: 500;
+  --az-weight-semibold: 600;
+  --az-weight-bold: 700;
+}

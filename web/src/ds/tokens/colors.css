@@ -1,0 +1,140 @@
+/* Azrty color tokens.
+   Brand + status fills are FIXED across themes (logo 3b rule: one mint, one deep sky, never re-tinted).
+   Neutrals and text-level accents switch with [data-theme]. Dark is the default. */
+:root {
+  /* Brand — fixed */
+  --az-brand-mint: oklch(0.84 0.11 170);
+  --az-brand-sky: oklch(0.42 0.1 250);
+  --az-brand-ink: #0d2620;
+  --az-sky-light: oklch(0.84 0.11 235);
+
+  /* Status fills — fixed; always paired with their -ink text */
+  --az-good: var(--az-brand-mint);
+  --az-good-ink: #0d2620;
+  --az-warn: oklch(0.86 0.11 85);
+  --az-warn-ink: #3a2c05;
+  --az-bad: oklch(0.8 0.1 22);
+  --az-bad-ink: #3d1210;
+  --az-info: var(--az-brand-sky);
+  --az-info-ink: #ffffff;
+
+  /* Chart series — fixed order */
+  --az-chart-1: var(--az-brand-mint);
+  --az-chart-2: var(--az-brand-sky);
+  --az-chart-3: var(--az-sky-light);
+  --az-chart-4: oklch(0.8 0.11 85);
+  --az-chart-5: oklch(0.74 0.11 22);
+  --az-chart-6: oklch(0.72 0.11 300);
+
+  --az-focus-ring: var(--az-indicator);
+
+  color-scheme: dark;
+  --az-bg: #090d14;
+  --az-surface: #0f1520;
+  --az-raised: #151c29;
+  --az-hover: #1b2433;
+  --az-input-bg: #0b1018;
+  --az-code-bg: #0b1017;
+  --az-border: #232d3d;
+  --az-border-strong: #2a3a52;
+  --az-text: #e3e8f0;
+  --az-text-2: #b0bed0;
+  --az-muted: #8494ab;
+  --az-faint: #576477;
+  --az-accent-text: var(--az-sky-light);
+  --az-accent-border: #2a3a52;
+  --az-selected-bg: oklch(0.3 0.05 170);
+  --az-selected-text: var(--az-brand-mint);
+  --az-good-tint: oklch(0.28 0.045 170);
+  --az-warn-tint: oklch(0.28 0.045 85);
+  --az-bad-tint: oklch(0.28 0.045 22);
+  --az-info-tint: oklch(0.28 0.045 250);
+  --az-good-strong: var(--az-brand-mint);
+  --az-warn-strong: oklch(0.86 0.11 85);
+  --az-bad-strong: oklch(0.8 0.1 22);
+  --az-info-strong: var(--az-sky-light);
+  --az-primary-bg: var(--az-brand-mint);
+  --az-primary-fg: var(--az-brand-ink);
+  --az-primary-hover: oklch(0.89 0.1 170);
+  --az-primary-edge: none; /* @kind shadow */
+  --az-indicator: var(--az-brand-mint);
+  --az-track: #232d3d;
+  --az-backdrop: rgba(3, 6, 9, 0.79);
+  --az-shadow-card: none;
+  --az-shadow-overlay: 0 30px 100px rgba(0, 0, 0, 0.53);
+}
+
+[data-theme="dark"] {
+
+  color-scheme: dark;
+  --az-bg: #090d14;
+  --az-surface: #0f1520;
+  --az-raised: #151c29;
+  --az-hover: #1b2433;
+  --az-input-bg: #0b1018;
+  --az-code-bg: #0b1017;
+  --az-border: #232d3d;
+  --az-border-strong: #2a3a52;
+  --az-text: #e3e8f0;
+  --az-text-2: #b0bed0;
+  --az-muted: #8494ab;
+  --az-faint: #576477;
+  --az-accent-text: var(--az-sky-light);
+  --az-accent-border: #2a3a52;
+  --az-selected-bg: oklch(0.3 0.05 170);
+  --az-selected-text: var(--az-brand-mint);
+  --az-good-tint: oklch(0.28 0.045 170);
+  --az-warn-tint: oklch(0.28 0.045 85);
+  --az-bad-tint: oklch(0.28 0.045 22);
+  --az-info-tint: oklch(0.28 0.045 250);
+  --az-good-strong: var(--az-brand-mint);
+  --az-warn-strong: oklch(0.86 0.11 85);
+  --az-bad-strong: oklch(0.8 0.1 22);
+  --az-info-strong: var(--az-sky-light);
+  --az-primary-bg: var(--az-brand-mint);
+  --az-primary-fg: var(--az-brand-ink);
+  --az-primary-hover: oklch(0.89 0.1 170);
+  --az-primary-edge: none; /* @kind shadow */
+  --az-indicator: var(--az-brand-mint);
+  --az-track: #232d3d;
+  --az-backdrop: rgba(3, 6, 9, 0.79);
+  --az-shadow-card: none;
+  --az-shadow-overlay: 0 30px 100px rgba(0, 0, 0, 0.53);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --az-bg: #f5f7f9;
+  --az-surface: #ffffff;
+  --az-raised: #eef1f5;
+  --az-hover: #e6eaf0;
+  --az-input-bg: #ffffff;
+  --az-code-bg: #f0f3f7;
+  --az-border: #dde3ea;
+  --az-border-strong: #cfd8e3;
+  --az-text: #141b25;
+  --az-text-2: #3a4555;
+  --az-muted: #5d6a7c;
+  --az-faint: #8a95a5;
+  --az-accent-text: var(--az-brand-sky);
+  --az-accent-border: #cfd8e3;
+  --az-selected-bg: oklch(0.94 0.045 170);
+  --az-selected-text: #0d2620;
+  --az-good-tint: oklch(0.95 0.035 170);
+  --az-warn-tint: oklch(0.96 0.045 85);
+  --az-bad-tint: oklch(0.95 0.03 22);
+  --az-info-tint: oklch(0.95 0.03 250);
+  --az-good-strong: oklch(0.45 0.09 170);
+  --az-warn-strong: oklch(0.5 0.1 70);
+  --az-bad-strong: oklch(0.5 0.14 25);
+  --az-info-strong: var(--az-brand-sky);
+  --az-primary-bg: var(--az-brand-mint);
+  --az-primary-fg: var(--az-brand-ink);
+  --az-primary-hover: oklch(0.88 0.1 170);
+  --az-primary-edge: inset 0 0 0 1px rgba(13, 38, 32, 0.14); /* @kind shadow */
+  --az-indicator: oklch(0.55 0.1 170); /* mint deepened to 3:1+ on white for focus rings, tab underlines, input focus */
+  --az-track: #e6eaf0;
+  --az-backdrop: rgba(20, 27, 37, 0.35);
+  --az-shadow-card: 0 1px 2px rgba(20, 27, 37, 0.05);
+  --az-shadow-overlay: 0 24px 64px rgba(20, 27, 37, 0.18);
+}

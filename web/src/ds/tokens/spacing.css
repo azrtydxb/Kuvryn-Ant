@@ -1,0 +1,31 @@
+/* Azrty spacing, radius, motion, layout. */
+:root {
+  --az-space-1: 4px;
+  --az-space-2: 8px;
+  --az-space-3: 12px;
+  --az-space-4: 16px;
+  --az-space-5: 20px;
+  --az-space-6: 24px;
+  --az-space-7: 32px;
+  --az-space-8: 36px;
+  --az-space-9: 48px;
+  --az-space-10: 64px;
+
+  --az-radius-xs: 3px;
+  --az-radius-sm: 5px;
+  --az-radius-md: 6px;
+  --az-radius-lg: 8px;
+  --az-radius-xl: 12px;
+  --az-radius-full: 999px;
+
+  --az-ease-out: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
+  --az-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --az-dur-fast: 120ms; /* @kind other */
+  --az-dur: 180ms; /* @kind other */
+  --az-dur-slow: 260ms; /* @kind other */
+
+  --az-sidebar-w: 240px;
+  --az-topbar-h: 65px;
+  --az-content-pad: 36px;
+  --az-content-max: 1650px;
+}
