@@ -21,11 +21,8 @@ func TestRewritePackumentStreams(t *testing.T) {
 		t.Fatal(err)
 	}
 	var doc struct {
-		Name, ID string `json:"name"`
 		Tags     map[string]string
 		Versions map[string]struct{ Dist map[string]string }
-		Time     map[string]string
-		Rev      *string `json:"_rev"`
 		Readme   string
 	}
 	var raw map[string]json.RawMessage
