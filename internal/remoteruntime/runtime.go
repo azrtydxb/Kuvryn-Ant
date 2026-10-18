@@ -209,7 +209,8 @@ func validate(r Request) error {
 	if err != nil || u.IsAbs() || u.Host != "" || u.User != nil || u.Opaque != "" || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || strings.HasPrefix(u.Path, "/") {
 		return ErrInput
 	}
-	for _, part := range strings.Split(u.Path, "/") {
+	// One trailing slash is meaningful for some protocols (PEP 503 project pages).
+	for _, part := range strings.Split(strings.TrimSuffix(u.Path, "/"), "/") {
 		if part == "" || part == "." || part == ".." {
 			return ErrInput
 		}
