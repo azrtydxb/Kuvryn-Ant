@@ -17,6 +17,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/console"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/denyaudit"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
@@ -43,13 +44,16 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if len(args) > 0 && args[0] == "storage" {
 		return storageCommand(ctx, logger, args, output)
 	}
+	if len(args) > 0 && args[0] == "admin" {
+		return adminCommand(ctx, logger, args[1:], os.Stdin, output)
+	}
 	mode := "serve"
 	name := "local"
 	if len(args) > 0 {
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" && mode != "gc" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" && mode != "gc" || mode == "gc" && len(args) == 2 && args[1] != "--dry-run" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore | admin break-glass]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -203,6 +207,8 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	// rejected at configuration time (feed resolution loops).
 	feedgraph.SetSelfOrigins(publicURL, "http://"+listener.Addr().String())
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
+	// Loopback development: let the login runtime learn its own origin.
+	browser.SetDefaultOrigin(serveCtx, publicURL)
 	logger.Info("service listening", "address", listener.Addr().String())
 	svc := server.New(pool, cfg.MaxRequests, cfg.ShutdownTimeout, logger, func(mux *http.ServeMux) {
 		management.RegisterFeeds(mux, pool, management.NewCursorCodec(cfg.RootKey))
@@ -216,6 +222,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		}
 		management.RegisterRemoteSources(mux, pool, cfg.SecretKeys, caRefs, cfg.RootKey)
 		management.RegisterIdentities(mux, pool)
+		management.RegisterIdentityProviders(mux, management.IdentityAdminDeps{Pool: pool, Keys: cfg.SecretKeys, Origin: browser.Origin(), Reload: browser.Reload, Active: browser.Active, FileProviders: browser.FileProviders()})
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
 		replicationRT.Register(mux)
@@ -230,6 +237,10 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	svc.WrapHTTP(ops.limiter.Middleware)
 	svc.WrapHTTP(browser.Middleware)
 	svc.WrapHTTP(ops.traffic.Middleware)
+	if servingInstance != "" {
+		// Outermost: records 401/403 outcomes (rate limited) for management, MCP and package protocols.
+		svc.WrapHTTP((&denyaudit.Recorder{DB: pool, InstanceID: servingInstance}).Middleware)
+	}
 	if err := svc.Serve(serveCtx, listener); err != nil {
 		logger.Error("HTTP service failed to drain or serve")
 		return 1

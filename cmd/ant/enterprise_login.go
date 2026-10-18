@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/directory"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/oidclogin"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/samllogin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -39,6 +40,7 @@ type enterpriseLogin struct {
 	ldap                   ldapBrowserProvider
 	samlIssuer, ldapIssuer string
 	throttle               loginThrottle
+	summaries              []management.FileProvider
 }
 type samlBrowserConfig struct {
 	Origin          string `json:"origin"`
@@ -166,6 +168,7 @@ func openEnterprise(pool *pgxpool.Pool, instance, origin, samlPath, ldapPath str
 		}
 		e.saml = p
 		e.samlIssuer = c.IDPEntityID
+		e.summaries = append(e.summaries, management.FileProvider{Kind: "saml", Label: c.IDPEntityID, Detail: "SP entity " + c.EntityID + "; certificate expires " + cert.NotAfter.UTC().Format("2006-01-02")})
 	}
 	if ldapPath != "" {
 		var c ldapBrowserConfig
@@ -209,6 +212,7 @@ func openEnterprise(pool *pgxpool.Pool, instance, origin, samlPath, ldapPath str
 		}
 		e.ldap = p
 		e.ldapIssuer = c.ProviderID
+		e.summaries = append(e.summaries, management.FileProvider{Kind: "ldap", Label: c.ProviderID, Detail: c.URL})
 	}
 	return e, origin, nil
 }
@@ -220,19 +224,20 @@ func (e *enterpriseLogin) Register(mux *http.ServeMux) {
 	if e.saml != nil {
 		mux.HandleFunc("/auth/saml/login", e.samlLogin)
 		mux.HandleFunc("/auth/saml/callback", e.samlCallback)
-		mux.HandleFunc("GET /auth/saml/metadata", func(w http.ResponseWriter, r *http.Request) {
-			b, err := e.saml.Metadata()
-			if err != nil {
-				e.fail(w, r, "saml")
-				return
-			}
-			w.Header().Set("Content-Type", "application/samlmetadata+xml")
-			w.Write(b)
-		})
+		mux.HandleFunc("GET /auth/saml/metadata", e.samlMetadata)
 	}
 	if e.ldap != nil {
 		mux.HandleFunc("/auth/ldap/login", e.ldapLogin)
 	}
+}
+func (e *enterpriseLogin) samlMetadata(w http.ResponseWriter, r *http.Request) {
+	b, err := e.saml.Metadata()
+	if err != nil {
+		e.fail(w, r, "saml")
+		return
+	}
+	w.Header().Set("Content-Type", "application/samlmetadata+xml")
+	w.Write(b)
 }
 func browserNonce() string {
 	var b [32]byte
@@ -269,6 +274,9 @@ func browserNoStore(w http.ResponseWriter) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 }
 func (e *enterpriseLogin) audit(ctx context.Context, kind string, success bool) error {
+	if kind == "local" && success {
+		return nil // the local administrator service already audited this sign-in
+	}
 	action := "auth." + kind + ".failure"
 	if success {
 		action = "auth." + kind + ".success"

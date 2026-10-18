@@ -216,8 +216,8 @@ func DBAuditor(pool *pgxpool.Pool) Auditor {
 		})
 		ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
-		_, err := pool.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,$3,NULLIF($4::text,'')::uuid,$5::jsonb)`,
-			p.InstanceID, p.PrincipalID, e.Action, e.ResourceID, string(details))
+		_, err := pool.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details,result) VALUES($1,$2,$3,NULLIF($4::text,'')::uuid,$5::jsonb,CASE WHEN $6::int IN (401,403) THEN 'denied' ELSE 'success' END)`,
+			p.InstanceID, p.PrincipalID, e.Action, e.ResourceID, string(details), e.Status)
 		return err
 	}
 }

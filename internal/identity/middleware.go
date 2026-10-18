@@ -61,6 +61,7 @@ func (b *Bearer) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if len(r.Header.Values("Authorization")) == 0 {
 			if p, ok := PrincipalFromContext(r.Context()); ok && p.PrincipalID != "" && p.InstanceID != "" && p.TokenID == "" && p.Scopes == nil {
+				NoteAuthenticated(r.Context(), p)
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -102,6 +103,7 @@ func (b *Bearer) Wrap(next http.Handler) http.Handler {
 		// Release the admission reservation before running application work.
 		b.finish(entry, true)
 		entry = nil
+		NoteAuthenticated(r.Context(), p)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), principalKey{}, p)))
 	})
 }

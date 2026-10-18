@@ -4,7 +4,14 @@ export type BrowserSession = {
   csrf_token: string;
   session: { PrincipalID: string; InstanceID: string; ExpiresAt: string };
 };
-export type Providers = { oidc: boolean; saml: boolean; ldap: boolean };
+export type Providers = {
+  oidc: boolean;
+  saml: boolean;
+  ldap: boolean;
+  // Emergency (break-glass) local sign-in is always offered when present.
+  local?: boolean;
+  ssoMandatory?: boolean;
+};
 export async function authRequest(path: string, options: RequestInit = {}) {
   let response: Response;
   try {
@@ -64,7 +71,50 @@ export async function getProviders(
     oidc: p.providers.includes("oidc"),
     saml: p.providers.includes("saml"),
     ldap: p.providers.includes("ldap"),
+    local: p.local === true,
+    ssoMandatory: p.sso_mandatory === true,
   };
+}
+export class MfaRequired extends Error {
+  constructor() {
+    super("Enter the 6-digit code from your authenticator app.");
+  }
+}
+// Emergency sign-in for the break-glass administrator. The server answers every
+// failure (wrong password, lockout, policy) identically; only a correct password
+// reveals that a second factor is needed.
+export async function localLogin(
+  username: string,
+  password: string,
+  totpCode: string,
+  signal?: AbortSignal,
+) {
+  const request = authRequest("/auth/local/login", {
+    method: "POST",
+    signal,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username,
+      password,
+      ...(totpCode ? { totp_code: totpCode } : {}),
+    }),
+  });
+  password = "";
+  const result = await request;
+  if (result.status === 401) {
+    const body = await result.json().catch(() => null);
+    if (body?.mfa_required === true) throw new MfaRequired();
+  }
+  if (!result.ok)
+    throw Error(
+      result.status === 429
+        ? "Too many sign-in attempts. Wait before retrying."
+        : "Sign-in failed. Check the credentials; repeated failures lock the account.",
+    );
+  const session = await getSession(signal);
+  if (!session)
+    throw Error("Sign-in completed without an active browser session.");
+  return session;
 }
 export async function ldapLogin(
   username: string,

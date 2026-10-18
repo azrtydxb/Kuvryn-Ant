@@ -22,6 +22,45 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ActiveIdentityProviderKind.
+const (
+	ActiveIdentityProviderKindLdap ActiveIdentityProviderKind = "ldap"
+	ActiveIdentityProviderKindOidc ActiveIdentityProviderKind = "oidc"
+	ActiveIdentityProviderKindSaml ActiveIdentityProviderKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the ActiveIdentityProviderKind enum.
+func (e ActiveIdentityProviderKind) Valid() bool {
+	switch e {
+	case ActiveIdentityProviderKindLdap:
+		return true
+	case ActiveIdentityProviderKindOidc:
+		return true
+	case ActiveIdentityProviderKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActiveIdentityProviderSource.
+const (
+	Database ActiveIdentityProviderSource = "database"
+	File     ActiveIdentityProviderSource = "file"
+)
+
+// Valid indicates whether the value is a known member of the ActiveIdentityProviderSource enum.
+func (e ActiveIdentityProviderSource) Valid() bool {
+	switch e {
+	case Database:
+		return true
+	case File:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuditEventResult.
 const (
 	AuditEventResultDenied  AuditEventResult = "denied"
@@ -55,6 +94,30 @@ func (e AuditSinkKind) Valid() bool {
 	case AuditSinkKindHttp:
 		return true
 	case AuditSinkKindSyslog:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateStatusStatus.
+const (
+	CertificateStatusStatusExpired     CertificateStatusStatus = "expired"
+	CertificateStatusStatusExpiring    CertificateStatusStatus = "expiring"
+	CertificateStatusStatusNotYetValid CertificateStatusStatus = "not_yet_valid"
+	CertificateStatusStatusOk          CertificateStatusStatus = "ok"
+)
+
+// Valid indicates whether the value is a known member of the CertificateStatusStatus enum.
+func (e CertificateStatusStatus) Valid() bool {
+	switch e {
+	case CertificateStatusStatusExpired:
+		return true
+	case CertificateStatusStatusExpiring:
+		return true
+	case CertificateStatusStatusNotYetValid:
+		return true
+	case CertificateStatusStatusOk:
 		return true
 	default:
 		return false
@@ -598,6 +661,27 @@ func (e FeedFormat) Valid() bool {
 	}
 }
 
+// Defines values for FileIdentityProviderKind.
+const (
+	FileIdentityProviderKindLdap FileIdentityProviderKind = "ldap"
+	FileIdentityProviderKindOidc FileIdentityProviderKind = "oidc"
+	FileIdentityProviderKindSaml FileIdentityProviderKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the FileIdentityProviderKind enum.
+func (e FileIdentityProviderKind) Valid() bool {
+	switch e {
+	case FileIdentityProviderKindLdap:
+		return true
+	case FileIdentityProviderKindOidc:
+		return true
+	case FileIdentityProviderKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityPrincipalKind.
 const (
 	IdentityPrincipalKindEmergency IdentityPrincipalKind = "emergency"
@@ -613,6 +697,108 @@ func (e IdentityPrincipalKind) Valid() bool {
 	case IdentityPrincipalKindService:
 		return true
 	case IdentityPrincipalKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityProviderKind.
+const (
+	IdentityProviderKindLdap IdentityProviderKind = "ldap"
+	IdentityProviderKindOidc IdentityProviderKind = "oidc"
+	IdentityProviderKindSaml IdentityProviderKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the IdentityProviderKind enum.
+func (e IdentityProviderKind) Valid() bool {
+	switch e {
+	case IdentityProviderKindLdap:
+		return true
+	case IdentityProviderKindOidc:
+		return true
+	case IdentityProviderKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityProviderInputKind.
+const (
+	IdentityProviderInputKindLdap IdentityProviderInputKind = "ldap"
+	IdentityProviderInputKindOidc IdentityProviderInputKind = "oidc"
+	IdentityProviderInputKindSaml IdentityProviderInputKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the IdentityProviderInputKind enum.
+func (e IdentityProviderInputKind) Valid() bool {
+	switch e {
+	case IdentityProviderInputKindLdap:
+		return true
+	case IdentityProviderInputKindOidc:
+		return true
+	case IdentityProviderInputKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityProviderTestKind.
+const (
+	IdentityProviderTestKindLdap IdentityProviderTestKind = "ldap"
+	IdentityProviderTestKindOidc IdentityProviderTestKind = "oidc"
+	IdentityProviderTestKindSaml IdentityProviderTestKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the IdentityProviderTestKind enum.
+func (e IdentityProviderTestKind) Valid() bool {
+	switch e {
+	case IdentityProviderTestKindLdap:
+		return true
+	case IdentityProviderTestKindOidc:
+		return true
+	case IdentityProviderTestKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityProviderTestTlsMode.
+const (
+	Ldaps    IdentityProviderTestTlsMode = "ldaps"
+	Starttls IdentityProviderTestTlsMode = "starttls"
+)
+
+// Valid indicates whether the value is a known member of the IdentityProviderTestTlsMode enum.
+func (e IdentityProviderTestTlsMode) Valid() bool {
+	switch e {
+	case Ldaps:
+		return true
+	case Starttls:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IdentityProviderTestRequestKind.
+const (
+	IdentityProviderTestRequestKindLdap IdentityProviderTestRequestKind = "ldap"
+	IdentityProviderTestRequestKindOidc IdentityProviderTestRequestKind = "oidc"
+	IdentityProviderTestRequestKindSaml IdentityProviderTestRequestKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the IdentityProviderTestRequestKind enum.
+func (e IdentityProviderTestRequestKind) Valid() bool {
+	switch e {
+	case IdentityProviderTestRequestKindLdap:
+		return true
+	case IdentityProviderTestRequestKindOidc:
+		return true
+	case IdentityProviderTestRequestKindSaml:
 		return true
 	default:
 		return false
@@ -1870,6 +2056,27 @@ func (e TrafficSeriesScope) Valid() bool {
 	}
 }
 
+// Defines values for UpdateIdentityProviderKind.
+const (
+	UpdateIdentityProviderKindLdap UpdateIdentityProviderKind = "ldap"
+	UpdateIdentityProviderKindOidc UpdateIdentityProviderKind = "oidc"
+	UpdateIdentityProviderKindSaml UpdateIdentityProviderKind = "saml"
+)
+
+// Valid indicates whether the value is a known member of the UpdateIdentityProviderKind enum.
+func (e UpdateIdentityProviderKind) Valid() bool {
+	switch e {
+	case UpdateIdentityProviderKindLdap:
+		return true
+	case UpdateIdentityProviderKindOidc:
+		return true
+	case UpdateIdentityProviderKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WebhookDeliveryLastFailure.
 const (
 	AttemptsExhausted  WebhookDeliveryLastFailure = "attempts_exhausted"
@@ -2287,6 +2494,19 @@ func (e ListWebhookFailuresParamsState) Valid() bool {
 	}
 }
 
+// ActiveIdentityProvider defines model for ActiveIdentityProvider.
+type ActiveIdentityProvider struct {
+	Kind       ActiveIdentityProviderKind   `json:"kind"`
+	ProviderId *openapi_types.UUID          `json:"provider_id,omitempty"`
+	Source     ActiveIdentityProviderSource `json:"source"`
+}
+
+// ActiveIdentityProviderKind defines model for ActiveIdentityProvider.Kind.
+type ActiveIdentityProviderKind string
+
+// ActiveIdentityProviderSource defines model for ActiveIdentityProvider.Source.
+type ActiveIdentityProviderSource string
+
 // AttachSource defines model for AttachSource.
 type AttachSource struct {
 	Priority int32 `json:"priority"`
@@ -2341,6 +2561,20 @@ type CachePurge struct {
 	SourceId          openapi_types.UUID `json:"source_id"`
 	VersionsRemoved   int64              `json:"versions_removed"`
 }
+
+// CertificateStatus defines model for CertificateStatus.
+type CertificateStatus struct {
+	DaysLeft  int32                   `json:"days_left"`
+	NotAfter  time.Time               `json:"not_after"`
+	NotBefore time.Time               `json:"not_before"`
+	Sha256    string                  `json:"sha256"`
+	Status    CertificateStatusStatus `json:"status"`
+	Subject   string                  `json:"subject"`
+	Use       *string                 `json:"use,omitempty"`
+}
+
+// CertificateStatusStatus defines model for CertificateStatus.Status.
+type CertificateStatusStatus string
 
 // ComponentStatus defines model for ComponentStatus.
 type ComponentStatus struct {
@@ -2659,6 +2893,22 @@ type FeedStatsPage struct {
 	Page  PageInfo    `json:"page"`
 }
 
+// FileIdentityProvider A provider configured from a mounted file. Read-only; secrets and paths are never shown.
+type FileIdentityProvider struct {
+	Detail string                   `json:"detail"`
+	Kind   FileIdentityProviderKind `json:"kind"`
+	Label  string                   `json:"label"`
+}
+
+// FileIdentityProviderKind defines model for FileIdentityProvider.Kind.
+type FileIdentityProviderKind string
+
+// GroupRoleMapping Maps a base64url-encoded immutable LDAP group ID to proposed role IDs. Proposals are informational; effective roles come from identity bindings.
+type GroupRoleMapping struct {
+	GroupId string   `json:"group_id"`
+	RoleIds []string `json:"role_ids"`
+}
+
 // IdentityBinding defines model for IdentityBinding.
 type IdentityBinding struct {
 	Issuer      string             `json:"issuer"`
@@ -2686,6 +2936,11 @@ type IdentityBindingRecord struct {
 	Subject     string             `json:"subject"`
 }
 
+// IdentityPolicy When true, local password sign-in is disabled for every account except the break-glass administrator.
+type IdentityPolicy struct {
+	SsoMandatory bool `json:"sso_mandatory"`
+}
+
 // IdentityPrincipal defines model for IdentityPrincipal.
 type IdentityPrincipal struct {
 	Disabled bool                  `json:"disabled"`
@@ -2704,6 +2959,120 @@ type IdentityPrincipalPage struct {
 	Items     []IdentityPrincipal `json:"items"`
 	NextAfter *openapi_types.UUID `json:"next_after,omitempty"`
 }
+
+// IdentityProvider defines model for IdentityProvider.
+type IdentityProvider struct {
+	// Active True when the login runtime is serving this provider right now.
+	Active       bool                `json:"active"`
+	Certificates []CertificateStatus `json:"certificates"`
+
+	// Config Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML.
+	Config    IdentityProviderConfig `json:"config"`
+	CreatedAt time.Time              `json:"created_at"`
+	Enabled   bool                   `json:"enabled"`
+	HasSecret bool                   `json:"has_secret"`
+	Id        openapi_types.UUID     `json:"id"`
+	Kind      IdentityProviderKind   `json:"kind"`
+	LastError *string                `json:"last_error,omitempty"`
+	Name      string                 `json:"name"`
+	Revision  int64                  `json:"revision"`
+
+	// ShadowedByFile True when a file-configured provider of the same protocol takes precedence.
+	ShadowedByFile bool      `json:"shadowed_by_file"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// IdentityProviderKind defines model for IdentityProvider.Kind.
+type IdentityProviderKind string
+
+// IdentityProviderConfig Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML.
+type IdentityProviderConfig struct {
+	AllowedEndpoints *[]string           `json:"allowed_endpoints,omitempty"`
+	BindDn           *string             `json:"bind_dn,omitempty"`
+	CaPem            *string             `json:"ca_pem,omitempty"`
+	ClientId         *string             `json:"client_id,omitempty"`
+	EmailAttribute   *string             `json:"email_attribute,omitempty"`
+	EntityId         *string             `json:"entity_id,omitempty"`
+	GroupBaseDn      *string             `json:"group_base_dn,omitempty"`
+	GroupClass       *string             `json:"group_class,omitempty"`
+	GroupIdAttribute *string             `json:"group_id_attribute,omitempty"`
+	GroupRoles       *[]GroupRoleMapping `json:"group_roles,omitempty"`
+	GroupsAttribute  *string             `json:"groups_attribute,omitempty"`
+	GroupsClaim      *string             `json:"groups_claim,omitempty"`
+	IdpEntityId      *string             `json:"idp_entity_id,omitempty"`
+	IdpMetadataXml   *string             `json:"idp_metadata_xml,omitempty"`
+	Issuer           *string             `json:"issuer,omitempty"`
+	LoginAttribute   *string             `json:"login_attribute,omitempty"`
+	MemberAttribute  *string             `json:"member_attribute,omitempty"`
+	ProviderId       *string             `json:"provider_id,omitempty"`
+	SpCertificatePem *string             `json:"sp_certificate_pem,omitempty"`
+	Url              *string             `json:"url,omitempty"`
+	UserBaseDn       *string             `json:"user_base_dn,omitempty"`
+	UserClass        *string             `json:"user_class,omitempty"`
+	UserIdAttribute  *string             `json:"user_id_attribute,omitempty"`
+}
+
+// IdentityProviderInput defines model for IdentityProviderInput.
+type IdentityProviderInput struct {
+	// Config Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML.
+	Config  IdentityProviderConfig    `json:"config"`
+	Enabled bool                      `json:"enabled"`
+	Kind    IdentityProviderInputKind `json:"kind"`
+	Name    string                    `json:"name"`
+
+	// RotateSpCertificate SAML only: regenerate the service provider key pair.
+	RotateSpCertificate *bool `json:"rotate_sp_certificate,omitempty"`
+
+	// Secret OIDC client secret or LDAP bind password. Write-only; omit on update to keep the stored value.
+	Secret *string `json:"secret,omitempty"`
+}
+
+// IdentityProviderInputKind defines model for IdentityProviderInput.Kind.
+type IdentityProviderInputKind string
+
+// IdentityProviderList defines model for IdentityProviderList.
+type IdentityProviderList struct {
+	Active    []ActiveIdentityProvider `json:"active"`
+	FileItems []FileIdentityProvider   `json:"file_items"`
+	Items     []IdentityProvider       `json:"items"`
+
+	// LocalAccount The emergency (break-glass) local administrator.
+	LocalAccount LocalAccount `json:"local_account"`
+	Origin       string       `json:"origin"`
+	SsoMandatory bool         `json:"sso_mandatory"`
+}
+
+// IdentityProviderTest defines model for IdentityProviderTest.
+type IdentityProviderTest struct {
+	Certificates              []CertificateStatus          `json:"certificates"`
+	Checks                    []IdentityTestCheck          `json:"checks"`
+	ClockSkewSeconds          *int64                       `json:"clock_skew_seconds,omitempty"`
+	Kind                      IdentityProviderTestKind     `json:"kind"`
+	Ok                        bool                         `json:"ok"`
+	SuggestedAllowedEndpoints *[]string                    `json:"suggested_allowed_endpoints,omitempty"`
+	TlsMode                   *IdentityProviderTestTlsMode `json:"tls_mode,omitempty"`
+	Warnings                  []string                     `json:"warnings"`
+}
+
+// IdentityProviderTestKind defines model for IdentityProviderTest.Kind.
+type IdentityProviderTestKind string
+
+// IdentityProviderTestTlsMode defines model for IdentityProviderTest.TlsMode.
+type IdentityProviderTestTlsMode string
+
+// IdentityProviderTestRequest defines model for IdentityProviderTestRequest.
+type IdentityProviderTestRequest struct {
+	// Config Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML.
+	Config IdentityProviderConfig `json:"config"`
+
+	// Id Use the stored secret of this provider when secret is omitted.
+	Id     *openapi_types.UUID             `json:"id,omitempty"`
+	Kind   IdentityProviderTestRequestKind `json:"kind"`
+	Secret *string                         `json:"secret,omitempty"`
+}
+
+// IdentityProviderTestRequestKind defines model for IdentityProviderTestRequest.Kind.
+type IdentityProviderTestRequestKind string
 
 // IdentityRole defines model for IdentityRole.
 type IdentityRole struct {
@@ -2736,6 +3105,13 @@ type IdentityRoleGrantKind string
 type IdentityRolePage struct {
 	Items     []IdentityRole      `json:"items"`
 	NextAfter *openapi_types.UUID `json:"next_after,omitempty"`
+}
+
+// IdentityTestCheck defines model for IdentityTestCheck.
+type IdentityTestCheck struct {
+	Detail string `json:"detail"`
+	Name   string `json:"name"`
+	Ok     bool   `json:"ok"`
 }
 
 // InstanceSettings defines model for InstanceSettings.
@@ -2796,6 +3172,53 @@ type LimitsUsage struct {
 	MeasuredAt time.Time      `json:"measured_at"`
 	Quotas     []QuotaUsage   `json:"quotas"`
 	Throttled  ThrottleCounts `json:"throttled"`
+}
+
+// LocalAccount The emergency (break-glass) local administrator.
+type LocalAccount struct {
+	Exists      bool       `json:"exists"`
+	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
+	LockedUntil *time.Time `json:"locked_until,omitempty"`
+	TotpEnabled bool       `json:"totp_enabled"`
+	Username    *string    `json:"username,omitempty"`
+}
+
+// MappingBinding defines model for MappingBinding.
+type MappingBinding struct {
+	Disabled    *bool               `json:"disabled,omitempty"`
+	Found       bool                `json:"found"`
+	PrincipalId *openapi_types.UUID `json:"principal_id,omitempty"`
+	Roles       []string            `json:"roles"`
+}
+
+// MappingPreview What a sign-in with the sample would do. Access comes only from an existing identity binding.
+type MappingPreview struct {
+	Binding           MappingBinding `json:"binding"`
+	ClockSkewSeconds  *int64         `json:"clock_skew_seconds,omitempty"`
+	Identity          MappingSubject `json:"identity"`
+	Problems          []string       `json:"problems"`
+	ProposedRoles     []string       `json:"proposed_roles"`
+	SignatureVerified bool           `json:"signature_verified"`
+	Warnings          []string       `json:"warnings"`
+	WouldSignIn       bool           `json:"would_sign_in"`
+}
+
+// MappingPreviewRequest defines model for MappingPreviewRequest.
+type MappingPreviewRequest struct {
+	// Login LDAP login to look up (no password).
+	Login *string `json:"login,omitempty"`
+
+	// Sample OIDC ID token (JWT) or SAML response (base64 or XML). Decoded, never signature-verified, never stored.
+	Sample *string `json:"sample,omitempty"`
+}
+
+// MappingSubject defines model for MappingSubject.
+type MappingSubject struct {
+	Audience *[]string `json:"audience,omitempty"`
+	Email    *string   `json:"email,omitempty"`
+	Groups   []string  `json:"groups"`
+	Issuer   string    `json:"issuer"`
+	Subject  string    `json:"subject"`
 }
 
 // PackageMutation defines model for PackageMutation.
@@ -3694,6 +4117,29 @@ type RunReport struct {
 	VersionsDeleted     int32          `json:"versions_deleted"`
 }
 
+// SamlEndpoint defines model for SamlEndpoint.
+type SamlEndpoint struct {
+	Binding  string `json:"binding"`
+	Location string `json:"location"`
+}
+
+// SamlMetadataImport defines model for SamlMetadataImport.
+type SamlMetadataImport struct {
+	Certificates []CertificateStatus `json:"certificates"`
+	EntityId     string              `json:"entity_id"`
+	Errors       []string            `json:"errors"`
+	Ok           bool                `json:"ok"`
+	SloEndpoints []SamlEndpoint      `json:"slo_endpoints"`
+	SsoEndpoints []SamlEndpoint      `json:"sso_endpoints"`
+	ValidUntil   *time.Time          `json:"valid_until,omitempty"`
+	Warnings     []string            `json:"warnings"`
+}
+
+// SamlMetadataImportRequest defines model for SamlMetadataImportRequest.
+type SamlMetadataImportRequest struct {
+	Xml string `json:"xml"`
+}
+
 // ServiceStatus The readiness property is present only when the request carries a bearer token with instance admin permission.
 type ServiceStatus struct {
 	ApiVersion ServiceStatusApiVersion `json:"api_version"`
@@ -3987,6 +4433,16 @@ type TokenRecordScopesActions string
 // TokenRecordStatus defines model for TokenRecord.Status.
 type TokenRecordStatus string
 
+// TotpConfirm defines model for TotpConfirm.
+type TotpConfirm struct {
+	Code string `json:"code"`
+}
+
+// TotpEnrollment defines model for TotpEnrollment.
+type TotpEnrollment struct {
+	OtpauthUri string `json:"otpauth_uri"`
+}
+
 // TrafficPoint defines model for TrafficPoint.
 type TrafficPoint struct {
 	Bucket        time.Time `json:"bucket"`
@@ -4013,6 +4469,20 @@ type TrafficSeries struct {
 
 // TrafficSeriesScope defines model for TrafficSeries.Scope.
 type TrafficSeriesScope string
+
+// UpdateIdentityProvider defines model for UpdateIdentityProvider.
+type UpdateIdentityProvider struct {
+	// Config Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML.
+	Config              IdentityProviderConfig      `json:"config"`
+	Enabled             bool                        `json:"enabled"`
+	Kind                *UpdateIdentityProviderKind `json:"kind,omitempty"`
+	Name                string                      `json:"name"`
+	RotateSpCertificate *bool                       `json:"rotate_sp_certificate,omitempty"`
+	Secret              *string                     `json:"secret,omitempty"`
+}
+
+// UpdateIdentityProviderKind defines model for UpdateIdentityProvider.Kind.
+type UpdateIdentityProviderKind string
 
 // Webhook defines model for Webhook.
 type Webhook struct {
@@ -4278,6 +4748,26 @@ type CreateIdentityBindingParams struct {
 // DeleteIdentityBindingParams defines parameters for DeleteIdentityBinding.
 type DeleteIdentityBindingParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// DeleteIdentityProviderParams defines parameters for DeleteIdentityProvider.
+type DeleteIdentityProviderParams struct {
+	IfMatch string `json:"If-Match"`
+}
+
+// UpdateIdentityProviderParams defines parameters for UpdateIdentityProvider.
+type UpdateIdentityProviderParams struct {
+	IfMatch string `json:"If-Match"`
+}
+
+// DisableIdentityProviderParams defines parameters for DisableIdentityProvider.
+type DisableIdentityProviderParams struct {
+	IfMatch string `json:"If-Match"`
+}
+
+// EnableIdentityProviderParams defines parameters for EnableIdentityProvider.
+type EnableIdentityProviderParams struct {
+	IfMatch string `json:"If-Match"`
 }
 
 // PutLimitsParams defines parameters for PutLimits.
@@ -4651,8 +5141,29 @@ type AttachFeedSourceJSONRequestBody = AttachSource
 // CreateIdentityBindingJSONRequestBody defines body for CreateIdentityBinding for application/json ContentType.
 type CreateIdentityBindingJSONRequestBody = IdentityBinding
 
+// PutIdentityPolicyJSONRequestBody defines body for PutIdentityPolicy for application/json ContentType.
+type PutIdentityPolicyJSONRequestBody = IdentityPolicy
+
+// CreateIdentityProviderJSONRequestBody defines body for CreateIdentityProvider for application/json ContentType.
+type CreateIdentityProviderJSONRequestBody = IdentityProviderInput
+
+// ImportSamlMetadataJSONRequestBody defines body for ImportSamlMetadata for application/json ContentType.
+type ImportSamlMetadataJSONRequestBody = SamlMetadataImportRequest
+
+// TestIdentityProviderJSONRequestBody defines body for TestIdentityProvider for application/json ContentType.
+type TestIdentityProviderJSONRequestBody = IdentityProviderTestRequest
+
+// UpdateIdentityProviderJSONRequestBody defines body for UpdateIdentityProvider for application/json ContentType.
+type UpdateIdentityProviderJSONRequestBody = UpdateIdentityProvider
+
+// PreviewIdentityMappingJSONRequestBody defines body for PreviewIdentityMapping for application/json ContentType.
+type PreviewIdentityMappingJSONRequestBody = MappingPreviewRequest
+
 // PutLimitsJSONRequestBody defines body for PutLimits for application/json ContentType.
 type PutLimitsJSONRequestBody = PutLimits
+
+// ConfirmLocalTotpJSONRequestBody defines body for ConfirmLocalTotp for application/json ContentType.
+type ConfirmLocalTotpJSONRequestBody = TotpConfirm
 
 // CreatePolicyTemplateJSONRequestBody defines body for CreatePolicyTemplate for application/json ContentType.
 type CreatePolicyTemplateJSONRequestBody = PolicyTemplateInput
@@ -5048,6 +5559,113 @@ type ClientInterface interface {
 	// Remove a binding and, by cascade, browser sessions that depend on it. Requires instance admin.
 	DeleteIdentityBinding(ctx context.Context, id string, params *DeleteIdentityBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetIdentityPolicy performs a GET /api/v1/identity-policy (the `GetIdentityPolicy` operationId) request.
+	//
+	// Requires instance admin.
+	GetIdentityPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutIdentityPolicyWithBody performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+	PutIdentityPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutIdentityPolicy performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+	PutIdentityPolicy(ctx context.Context, body PutIdentityPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListIdentityProviders performs a GET /api/v1/identity-providers (the `ListIdentityProviders` operationId) request.
+	//
+	// Requires instance admin. Lists database-stored providers (secrets never returned), read-only file-configured providers, what the login runtime is serving, the SSO-mandatory policy and the break-glass account status.
+	ListIdentityProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateIdentityProviderWithBody performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+	CreateIdentityProviderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateIdentityProvider performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+	CreateIdentityProvider(ctx context.Context, body CreateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportSamlMetadataWithBody performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+	ImportSamlMetadataWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportSamlMetadata performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+	ImportSamlMetadata(ctx context.Context, body ImportSamlMetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TestIdentityProviderWithBody performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+	TestIdentityProviderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TestIdentityProvider performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+	TestIdentityProvider(ctx context.Context, body TestIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteIdentityProvider performs a DELETE /api/v1/identity-providers/{id} (the `DeleteIdentityProvider` operationId) request.
+	//
+	// Requires instance admin. Deletes a provider and its secret. Refused while SSO is mandatory and it is the last enabled provider.
+	DeleteIdentityProvider(ctx context.Context, id openapi_types.UUID, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIdentityProvider performs a GET /api/v1/identity-providers/{id} (the `GetIdentityProvider` operationId) request.
+	//
+	// Requires instance admin.
+	GetIdentityProvider(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateIdentityProviderWithBody performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+	UpdateIdentityProviderWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateIdentityProvider performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+	UpdateIdentityProvider(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, body UpdateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DisableIdentityProvider performs a POST /api/v1/identity-providers/{id}/disable (the `DisableIdentityProvider` operationId) request.
+	//
+	// Requires instance admin. Disables a provider. Refused while SSO is mandatory and it is the last enabled provider.
+	DisableIdentityProvider(ctx context.Context, id openapi_types.UUID, params *DisableIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EnableIdentityProvider performs a POST /api/v1/identity-providers/{id}/enable (the `EnableIdentityProvider` operationId) request.
+	//
+	// Requires instance admin. Builds and enables a provider, replacing any other of the same protocol, without restart.
+	EnableIdentityProvider(ctx context.Context, id openapi_types.UUID, params *EnableIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSamlSpMetadata performs a GET /api/v1/identity-providers/{id}/metadata (the `GetSamlSpMetadata` operationId) request.
+	//
+	// Requires instance admin. Exports the SAML service provider metadata for the IdP administrator.
+	GetSamlSpMetadata(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewIdentityMappingWithBody performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+	PreviewIdentityMappingWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewIdentityMapping performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+	PreviewIdentityMapping(ctx context.Context, id openapi_types.UUID, body PreviewIdentityMappingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLimits performs a GET /api/v1/limits (the `GetLimits` operationId) request.
 	//
 	// Rate limits and storage quotas. Requires instance admin.
@@ -5069,6 +5687,38 @@ type ClientInterface interface {
 	//
 	// Current quota usage and throttle counters. Requires instance admin.
 	GetLimitsUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLocalAccount performs a GET /api/v1/local-account (the `GetLocalAccount` operationId) request.
+	//
+	// Requires instance admin. Status of the break-glass local administrator (create or reset it with `ant admin break-glass`).
+	GetLocalAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DisableLocalTotp performs a DELETE /api/v1/local-account/totp (the `DisableLocalTotp` operationId) request.
+	//
+	// Only the signed-in break-glass account may call this. Removes the second factor.
+	DisableLocalTotp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BeginLocalTotp performs a POST /api/v1/local-account/totp (the `BeginLocalTotp` operationId) request.
+	//
+	// Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.
+	BeginLocalTotp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConfirmLocalTotpWithBody performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+	ConfirmLocalTotpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConfirmLocalTotp performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+	ConfirmLocalTotp(ctx context.Context, body ConfirmLocalTotpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlockLocalAccount performs a POST /api/v1/local-account/unlock (the `UnlockLocalAccount` operationId) request.
+	//
+	// Requires instance admin. Clears the login lockout.
+	UnlockLocalAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTrafficMetrics performs a GET /api/v1/metrics/traffic (the `GetTrafficMetrics` operationId) request.
 	//
@@ -6329,6 +6979,303 @@ func (c *Client) DeleteIdentityBinding(ctx context.Context, id string, params *D
 	return c.Client.Do(req)
 }
 
+// GetIdentityPolicy performs a GET /api/v1/identity-policy (the `GetIdentityPolicy` operationId) request.
+//
+// Requires instance admin.
+func (c *Client) GetIdentityPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIdentityPolicyRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutIdentityPolicyWithBody performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+func (c *Client) PutIdentityPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutIdentityPolicyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutIdentityPolicy performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+func (c *Client) PutIdentityPolicy(ctx context.Context, body PutIdentityPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutIdentityPolicyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListIdentityProviders performs a GET /api/v1/identity-providers (the `ListIdentityProviders` operationId) request.
+//
+// Requires instance admin. Lists database-stored providers (secrets never returned), read-only file-configured providers, what the login runtime is serving, the SSO-mandatory policy and the break-glass account status.
+func (c *Client) ListIdentityProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIdentityProvidersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateIdentityProviderWithBody performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+func (c *Client) CreateIdentityProviderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateIdentityProviderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateIdentityProvider performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+func (c *Client) CreateIdentityProvider(ctx context.Context, body CreateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateIdentityProviderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportSamlMetadataWithBody performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+func (c *Client) ImportSamlMetadataWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportSamlMetadataRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportSamlMetadata performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+func (c *Client) ImportSamlMetadata(ctx context.Context, body ImportSamlMetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportSamlMetadataRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TestIdentityProviderWithBody performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+func (c *Client) TestIdentityProviderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTestIdentityProviderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TestIdentityProvider performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+func (c *Client) TestIdentityProvider(ctx context.Context, body TestIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTestIdentityProviderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteIdentityProvider performs a DELETE /api/v1/identity-providers/{id} (the `DeleteIdentityProvider` operationId) request.
+//
+// Requires instance admin. Deletes a provider and its secret. Refused while SSO is mandatory and it is the last enabled provider.
+func (c *Client) DeleteIdentityProvider(ctx context.Context, id openapi_types.UUID, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteIdentityProviderRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetIdentityProvider performs a GET /api/v1/identity-providers/{id} (the `GetIdentityProvider` operationId) request.
+//
+// Requires instance admin.
+func (c *Client) GetIdentityProvider(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIdentityProviderRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateIdentityProviderWithBody performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+func (c *Client) UpdateIdentityProviderWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateIdentityProviderRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateIdentityProvider performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+func (c *Client) UpdateIdentityProvider(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, body UpdateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateIdentityProviderRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DisableIdentityProvider performs a POST /api/v1/identity-providers/{id}/disable (the `DisableIdentityProvider` operationId) request.
+//
+// Requires instance admin. Disables a provider. Refused while SSO is mandatory and it is the last enabled provider.
+func (c *Client) DisableIdentityProvider(ctx context.Context, id openapi_types.UUID, params *DisableIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisableIdentityProviderRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EnableIdentityProvider performs a POST /api/v1/identity-providers/{id}/enable (the `EnableIdentityProvider` operationId) request.
+//
+// Requires instance admin. Builds and enables a provider, replacing any other of the same protocol, without restart.
+func (c *Client) EnableIdentityProvider(ctx context.Context, id openapi_types.UUID, params *EnableIdentityProviderParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEnableIdentityProviderRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetSamlSpMetadata performs a GET /api/v1/identity-providers/{id}/metadata (the `GetSamlSpMetadata` operationId) request.
+//
+// Requires instance admin. Exports the SAML service provider metadata for the IdP administrator.
+func (c *Client) GetSamlSpMetadata(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSamlSpMetadataRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewIdentityMappingWithBody performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+func (c *Client) PreviewIdentityMappingWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewIdentityMappingRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewIdentityMapping performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+func (c *Client) PreviewIdentityMapping(ctx context.Context, id openapi_types.UUID, body PreviewIdentityMappingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewIdentityMappingRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetLimits performs a GET /api/v1/limits (the `GetLimits` operationId) request.
 //
 // Rate limits and storage quotas. Requires instance admin.
@@ -6381,6 +7328,98 @@ func (c *Client) PutLimits(ctx context.Context, params *PutLimitsParams, body Pu
 // Current quota usage and throttle counters. Requires instance admin.
 func (c *Client) GetLimitsUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLimitsUsageRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetLocalAccount performs a GET /api/v1/local-account (the `GetLocalAccount` operationId) request.
+//
+// Requires instance admin. Status of the break-glass local administrator (create or reset it with `ant admin break-glass`).
+func (c *Client) GetLocalAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLocalAccountRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DisableLocalTotp performs a DELETE /api/v1/local-account/totp (the `DisableLocalTotp` operationId) request.
+//
+// Only the signed-in break-glass account may call this. Removes the second factor.
+func (c *Client) DisableLocalTotp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisableLocalTotpRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BeginLocalTotp performs a POST /api/v1/local-account/totp (the `BeginLocalTotp` operationId) request.
+//
+// Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.
+func (c *Client) BeginLocalTotp(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBeginLocalTotpRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ConfirmLocalTotpWithBody performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request,
+// with any type of body and a specified content type.
+//
+// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+func (c *Client) ConfirmLocalTotpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmLocalTotpRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ConfirmLocalTotp performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+func (c *Client) ConfirmLocalTotp(ctx context.Context, body ConfirmLocalTotpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmLocalTotpRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UnlockLocalAccount performs a POST /api/v1/local-account/unlock (the `UnlockLocalAccount` operationId) request.
+//
+// Requires instance admin. Clears the login lockout.
+func (c *Client) UnlockLocalAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlockLocalAccountRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -10210,6 +11249,536 @@ func NewDeleteIdentityBindingRequest(server string, id string, params *DeleteIde
 	return req, nil
 }
 
+// NewGetIdentityPolicyRequest constructs an http.Request for the GetIdentityPolicy method
+func NewGetIdentityPolicyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-policy")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutIdentityPolicyRequest calls the generic PutIdentityPolicy builder with application/json body
+func NewPutIdentityPolicyRequest(server string, body PutIdentityPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutIdentityPolicyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutIdentityPolicyRequestWithBody constructs an http.Request for the PutIdentityPolicy method, with any body, and a specified content type
+func NewPutIdentityPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-policy")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListIdentityProvidersRequest constructs an http.Request for the ListIdentityProviders method
+func NewListIdentityProvidersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateIdentityProviderRequest calls the generic CreateIdentityProvider builder with application/json body
+func NewCreateIdentityProviderRequest(server string, body CreateIdentityProviderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateIdentityProviderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateIdentityProviderRequestWithBody constructs an http.Request for the CreateIdentityProvider method, with any body, and a specified content type
+func NewCreateIdentityProviderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewImportSamlMetadataRequest calls the generic ImportSamlMetadata builder with application/json body
+func NewImportSamlMetadataRequest(server string, body ImportSamlMetadataJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewImportSamlMetadataRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewImportSamlMetadataRequestWithBody constructs an http.Request for the ImportSamlMetadata method, with any body, and a specified content type
+func NewImportSamlMetadataRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/saml/import-metadata")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewTestIdentityProviderRequest calls the generic TestIdentityProvider builder with application/json body
+func NewTestIdentityProviderRequest(server string, body TestIdentityProviderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTestIdentityProviderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewTestIdentityProviderRequestWithBody constructs an http.Request for the TestIdentityProvider method, with any body, and a specified content type
+func NewTestIdentityProviderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/test")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteIdentityProviderRequest constructs an http.Request for the DeleteIdentityProvider method
+func NewDeleteIdentityProviderRequest(server string, id openapi_types.UUID, params *DeleteIdentityProviderParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetIdentityProviderRequest constructs an http.Request for the GetIdentityProvider method
+func NewGetIdentityProviderRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateIdentityProviderRequest calls the generic UpdateIdentityProvider builder with application/json body
+func NewUpdateIdentityProviderRequest(server string, id openapi_types.UUID, params *UpdateIdentityProviderParams, body UpdateIdentityProviderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateIdentityProviderRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewUpdateIdentityProviderRequestWithBody constructs an http.Request for the UpdateIdentityProvider method, with any body, and a specified content type
+func NewUpdateIdentityProviderRequestWithBody(server string, id openapi_types.UUID, params *UpdateIdentityProviderParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewDisableIdentityProviderRequest constructs an http.Request for the DisableIdentityProvider method
+func NewDisableIdentityProviderRequest(server string, id openapi_types.UUID, params *DisableIdentityProviderParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s/disable", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewEnableIdentityProviderRequest constructs an http.Request for the EnableIdentityProvider method
+func NewEnableIdentityProviderRequest(server string, id openapi_types.UUID, params *EnableIdentityProviderParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s/enable", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetSamlSpMetadataRequest constructs an http.Request for the GetSamlSpMetadata method
+func NewGetSamlSpMetadataRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s/metadata", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPreviewIdentityMappingRequest calls the generic PreviewIdentityMapping builder with application/json body
+func NewPreviewIdentityMappingRequest(server string, id openapi_types.UUID, body PreviewIdentityMappingJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPreviewIdentityMappingRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPreviewIdentityMappingRequestWithBody constructs an http.Request for the PreviewIdentityMapping method, with any body, and a specified content type
+func NewPreviewIdentityMappingRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-providers/%s/preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetLimitsRequest constructs an http.Request for the GetLimits method
 func NewGetLimitsRequest(server string) (*http.Request, error) {
 	var err error
@@ -10319,6 +11888,154 @@ func NewGetLimitsUsageRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLocalAccountRequest constructs an http.Request for the GetLocalAccount method
+func NewGetLocalAccountRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/local-account")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDisableLocalTotpRequest constructs an http.Request for the DisableLocalTotp method
+func NewDisableLocalTotpRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/local-account/totp")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewBeginLocalTotpRequest constructs an http.Request for the BeginLocalTotp method
+func NewBeginLocalTotpRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/local-account/totp")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewConfirmLocalTotpRequest calls the generic ConfirmLocalTotp builder with application/json body
+func NewConfirmLocalTotpRequest(server string, body ConfirmLocalTotpJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConfirmLocalTotpRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewConfirmLocalTotpRequestWithBody constructs an http.Request for the ConfirmLocalTotp method, with any body, and a specified content type
+func NewConfirmLocalTotpRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/local-account/totp/confirm")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewUnlockLocalAccountRequest constructs an http.Request for the UnlockLocalAccount method
+func NewUnlockLocalAccountRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/local-account/unlock")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -14935,6 +16652,139 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	DeleteIdentityBindingWithResponse(ctx context.Context, id string, params *DeleteIdentityBindingParams, reqEditors ...RequestEditorFn) (*DeleteIdentityBindingResponse, error)
 
+	// GetIdentityPolicyWithResponse performs a GET /api/v1/identity-policy (the `GetIdentityPolicy` operationId) request.
+	//
+	// Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetIdentityPolicyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIdentityPolicyResponse, error)
+
+	// PutIdentityPolicyWithBodyWithResponse performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PutIdentityPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutIdentityPolicyResponse, error)
+
+	// PutIdentityPolicyWithResponse performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+	PutIdentityPolicyWithResponse(ctx context.Context, body PutIdentityPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*PutIdentityPolicyResponse, error)
+
+	// ListIdentityProvidersWithResponse performs a GET /api/v1/identity-providers (the `ListIdentityProviders` operationId) request.
+	//
+	// Requires instance admin. Lists database-stored providers (secrets never returned), read-only file-configured providers, what the login runtime is serving, the SSO-mandatory policy and the break-glass account status.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListIdentityProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIdentityProvidersResponse, error)
+
+	// CreateIdentityProviderWithBodyWithResponse performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateIdentityProviderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIdentityProviderResponse, error)
+
+	// CreateIdentityProviderWithResponse performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+	CreateIdentityProviderWithResponse(ctx context.Context, body CreateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIdentityProviderResponse, error)
+
+	// ImportSamlMetadataWithBodyWithResponse performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ImportSamlMetadataWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportSamlMetadataResponse, error)
+
+	// ImportSamlMetadataWithResponse performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+	ImportSamlMetadataWithResponse(ctx context.Context, body ImportSamlMetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportSamlMetadataResponse, error)
+
+	// TestIdentityProviderWithBodyWithResponse performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	TestIdentityProviderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TestIdentityProviderResponse, error)
+
+	// TestIdentityProviderWithResponse performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+	TestIdentityProviderWithResponse(ctx context.Context, body TestIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*TestIdentityProviderResponse, error)
+
+	// DeleteIdentityProviderWithResponse performs a DELETE /api/v1/identity-providers/{id} (the `DeleteIdentityProvider` operationId) request.
+	//
+	// Requires instance admin. Deletes a provider and its secret. Refused while SSO is mandatory and it is the last enabled provider.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*DeleteIdentityProviderResponse, error)
+
+	// GetIdentityProviderWithResponse performs a GET /api/v1/identity-providers/{id} (the `GetIdentityProvider` operationId) request.
+	//
+	// Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetIdentityProviderResponse, error)
+
+	// UpdateIdentityProviderWithBodyWithResponse performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateIdentityProviderWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIdentityProviderResponse, error)
+
+	// UpdateIdentityProviderWithResponse performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+	UpdateIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, body UpdateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIdentityProviderResponse, error)
+
+	// DisableIdentityProviderWithResponse performs a POST /api/v1/identity-providers/{id}/disable (the `DisableIdentityProvider` operationId) request.
+	//
+	// Requires instance admin. Disables a provider. Refused while SSO is mandatory and it is the last enabled provider.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DisableIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *DisableIdentityProviderParams, reqEditors ...RequestEditorFn) (*DisableIdentityProviderResponse, error)
+
+	// EnableIdentityProviderWithResponse performs a POST /api/v1/identity-providers/{id}/enable (the `EnableIdentityProvider` operationId) request.
+	//
+	// Requires instance admin. Builds and enables a provider, replacing any other of the same protocol, without restart.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	EnableIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *EnableIdentityProviderParams, reqEditors ...RequestEditorFn) (*EnableIdentityProviderResponse, error)
+
+	// GetSamlSpMetadataWithResponse performs a GET /api/v1/identity-providers/{id}/metadata (the `GetSamlSpMetadata` operationId) request.
+	//
+	// Requires instance admin. Exports the SAML service provider metadata for the IdP administrator.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetSamlSpMetadataWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSamlSpMetadataResponse, error)
+
+	// PreviewIdentityMappingWithBodyWithResponse performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PreviewIdentityMappingWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewIdentityMappingResponse, error)
+
+	// PreviewIdentityMappingWithResponse performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+	PreviewIdentityMappingWithResponse(ctx context.Context, id openapi_types.UUID, body PreviewIdentityMappingJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewIdentityMappingResponse, error)
+
 	// GetLimitsWithResponse performs a GET /api/v1/limits (the `GetLimits` operationId) request.
 	//
 	// Rate limits and storage quotas. Requires instance admin.
@@ -14962,6 +16812,48 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetLimitsUsageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLimitsUsageResponse, error)
+
+	// GetLocalAccountWithResponse performs a GET /api/v1/local-account (the `GetLocalAccount` operationId) request.
+	//
+	// Requires instance admin. Status of the break-glass local administrator (create or reset it with `ant admin break-glass`).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetLocalAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLocalAccountResponse, error)
+
+	// DisableLocalTotpWithResponse performs a DELETE /api/v1/local-account/totp (the `DisableLocalTotp` operationId) request.
+	//
+	// Only the signed-in break-glass account may call this. Removes the second factor.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DisableLocalTotpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DisableLocalTotpResponse, error)
+
+	// BeginLocalTotpWithResponse performs a POST /api/v1/local-account/totp (the `BeginLocalTotp` operationId) request.
+	//
+	// Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	BeginLocalTotpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*BeginLocalTotpResponse, error)
+
+	// ConfirmLocalTotpWithBodyWithResponse performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ConfirmLocalTotpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmLocalTotpResponse, error)
+
+	// ConfirmLocalTotpWithResponse performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+	ConfirmLocalTotpWithResponse(ctx context.Context, body ConfirmLocalTotpJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmLocalTotpResponse, error)
+
+	// UnlockLocalAccountWithResponse performs a POST /api/v1/local-account/unlock (the `UnlockLocalAccount` operationId) request.
+	//
+	// Requires instance admin. Clears the login lockout.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UnlockLocalAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UnlockLocalAccountResponse, error)
 
 	// GetTrafficMetricsWithResponse performs a GET /api/v1/metrics/traffic (the `GetTrafficMetrics` operationId) request.
 	//
@@ -21716,6 +23608,2259 @@ func (r DeleteIdentityBindingResponse) ContentType() string {
 	return ""
 }
 
+// GetIdentityPolicyResponse200Headers the declared response headers of an HTTP 200 response for GetIdentityPolicy
+type GetIdentityPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityPolicyResponse400Headers the declared response headers of an HTTP 400 response for GetIdentityPolicy
+type GetIdentityPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityPolicyResponse401Headers the declared response headers of an HTTP 401 response for GetIdentityPolicy
+type GetIdentityPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityPolicyResponse403Headers the declared response headers of an HTTP 403 response for GetIdentityPolicy
+type GetIdentityPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityPolicyResponse429Headers the declared response headers of an HTTP 429 response for GetIdentityPolicy
+type GetIdentityPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityPolicyResponse500Headers the declared response headers of an HTTP 500 response for GetIdentityPolicy
+type GetIdentityPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityPolicyResponse503Headers the declared response headers of an HTTP 503 response for GetIdentityPolicy
+type GetIdentityPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetIdentityPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityPolicy
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetIdentityPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetIdentityPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetIdentityPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetIdentityPolicyResponse403Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetIdentityPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetIdentityPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetIdentityPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON200() *IdentityPolicy {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetIdentityPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetIdentityPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIdentityPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIdentityPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetIdentityPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PutIdentityPolicyResponse200Headers the declared response headers of an HTTP 200 response for PutIdentityPolicy
+type PutIdentityPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse400Headers the declared response headers of an HTTP 400 response for PutIdentityPolicy
+type PutIdentityPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse401Headers the declared response headers of an HTTP 401 response for PutIdentityPolicy
+type PutIdentityPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse403Headers the declared response headers of an HTTP 403 response for PutIdentityPolicy
+type PutIdentityPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse409Headers the declared response headers of an HTTP 409 response for PutIdentityPolicy
+type PutIdentityPolicyResponse409Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse413Headers the declared response headers of an HTTP 413 response for PutIdentityPolicy
+type PutIdentityPolicyResponse413Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse415Headers the declared response headers of an HTTP 415 response for PutIdentityPolicy
+type PutIdentityPolicyResponse415Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse429Headers the declared response headers of an HTTP 429 response for PutIdentityPolicy
+type PutIdentityPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse500Headers the declared response headers of an HTTP 500 response for PutIdentityPolicy
+type PutIdentityPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// PutIdentityPolicyResponse503Headers the declared response headers of an HTTP 503 response for PutIdentityPolicy
+type PutIdentityPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type PutIdentityPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityPolicy
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PutIdentityPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PutIdentityPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PutIdentityPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PutIdentityPolicyResponse403Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PutIdentityPolicyResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PutIdentityPolicyResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PutIdentityPolicyResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PutIdentityPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PutIdentityPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PutIdentityPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON200() *IdentityPolicy {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PutIdentityPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PutIdentityPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutIdentityPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutIdentityPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutIdentityPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListIdentityProvidersResponse200Headers the declared response headers of an HTTP 200 response for ListIdentityProviders
+type ListIdentityProvidersResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityProvidersResponse400Headers the declared response headers of an HTTP 400 response for ListIdentityProviders
+type ListIdentityProvidersResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityProvidersResponse401Headers the declared response headers of an HTTP 401 response for ListIdentityProviders
+type ListIdentityProvidersResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityProvidersResponse403Headers the declared response headers of an HTTP 403 response for ListIdentityProviders
+type ListIdentityProvidersResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityProvidersResponse429Headers the declared response headers of an HTTP 429 response for ListIdentityProviders
+type ListIdentityProvidersResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityProvidersResponse500Headers the declared response headers of an HTTP 500 response for ListIdentityProviders
+type ListIdentityProvidersResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityProvidersResponse503Headers the declared response headers of an HTTP 503 response for ListIdentityProviders
+type ListIdentityProvidersResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListIdentityProvidersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityProviderList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListIdentityProvidersResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListIdentityProvidersResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListIdentityProvidersResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListIdentityProvidersResponse403Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListIdentityProvidersResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListIdentityProvidersResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListIdentityProvidersResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON200() *IdentityProviderList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListIdentityProvidersResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListIdentityProvidersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIdentityProvidersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIdentityProvidersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListIdentityProvidersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateIdentityProviderResponse201Headers the declared response headers of an HTTP 201 response for CreateIdentityProvider
+type CreateIdentityProviderResponse201Headers struct {
+	ETag       *string
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for CreateIdentityProvider
+type CreateIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for CreateIdentityProvider
+type CreateIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for CreateIdentityProvider
+type CreateIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse409Headers the declared response headers of an HTTP 409 response for CreateIdentityProvider
+type CreateIdentityProviderResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse413Headers the declared response headers of an HTTP 413 response for CreateIdentityProvider
+type CreateIdentityProviderResponse413Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse415Headers the declared response headers of an HTTP 415 response for CreateIdentityProvider
+type CreateIdentityProviderResponse415Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse422Headers the declared response headers of an HTTP 422 response for CreateIdentityProvider
+type CreateIdentityProviderResponse422Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for CreateIdentityProvider
+type CreateIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for CreateIdentityProvider
+type CreateIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for CreateIdentityProvider
+type CreateIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *IdentityProvider
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateIdentityProviderResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateIdentityProviderResponse403Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateIdentityProviderResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *CreateIdentityProviderResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *CreateIdentityProviderResponse415Headers
+	// Headers422 the parsed response headers for an HTTP 422 response
+	Headers422 *CreateIdentityProviderResponse422Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateIdentityProviderResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON201() *IdentityProvider {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON422() *Error {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ImportSamlMetadataResponse200Headers the declared response headers of an HTTP 200 response for ImportSamlMetadata
+type ImportSamlMetadataResponse200Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse400Headers the declared response headers of an HTTP 400 response for ImportSamlMetadata
+type ImportSamlMetadataResponse400Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse401Headers the declared response headers of an HTTP 401 response for ImportSamlMetadata
+type ImportSamlMetadataResponse401Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse403Headers the declared response headers of an HTTP 403 response for ImportSamlMetadata
+type ImportSamlMetadataResponse403Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse413Headers the declared response headers of an HTTP 413 response for ImportSamlMetadata
+type ImportSamlMetadataResponse413Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse415Headers the declared response headers of an HTTP 415 response for ImportSamlMetadata
+type ImportSamlMetadataResponse415Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse429Headers the declared response headers of an HTTP 429 response for ImportSamlMetadata
+type ImportSamlMetadataResponse429Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse500Headers the declared response headers of an HTTP 500 response for ImportSamlMetadata
+type ImportSamlMetadataResponse500Headers struct {
+	XRequestID *string
+}
+
+// ImportSamlMetadataResponse503Headers the declared response headers of an HTTP 503 response for ImportSamlMetadata
+type ImportSamlMetadataResponse503Headers struct {
+	XRequestID *string
+}
+
+type ImportSamlMetadataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SamlMetadataImport
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ImportSamlMetadataResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ImportSamlMetadataResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ImportSamlMetadataResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ImportSamlMetadataResponse403Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *ImportSamlMetadataResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *ImportSamlMetadataResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ImportSamlMetadataResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ImportSamlMetadataResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ImportSamlMetadataResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON200() *SamlMetadataImport {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ImportSamlMetadataResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ImportSamlMetadataResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportSamlMetadataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportSamlMetadataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ImportSamlMetadataResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// TestIdentityProviderResponse200Headers the declared response headers of an HTTP 200 response for TestIdentityProvider
+type TestIdentityProviderResponse200Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for TestIdentityProvider
+type TestIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for TestIdentityProvider
+type TestIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for TestIdentityProvider
+type TestIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse404Headers the declared response headers of an HTTP 404 response for TestIdentityProvider
+type TestIdentityProviderResponse404Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse413Headers the declared response headers of an HTTP 413 response for TestIdentityProvider
+type TestIdentityProviderResponse413Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse415Headers the declared response headers of an HTTP 415 response for TestIdentityProvider
+type TestIdentityProviderResponse415Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for TestIdentityProvider
+type TestIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for TestIdentityProvider
+type TestIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// TestIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for TestIdentityProvider
+type TestIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type TestIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityProviderTest
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *TestIdentityProviderResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *TestIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *TestIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *TestIdentityProviderResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *TestIdentityProviderResponse404Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *TestIdentityProviderResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *TestIdentityProviderResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *TestIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *TestIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *TestIdentityProviderResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON200() *IdentityProviderTest {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r TestIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r TestIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TestIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TestIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TestIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteIdentityProviderResponse204Headers the declared response headers of an HTTP 204 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse204Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse404Headers the declared response headers of an HTTP 404 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse409Headers the declared response headers of an HTTP 409 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse409Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse412Headers the declared response headers of an HTTP 412 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse412Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse428Headers the declared response headers of an HTTP 428 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse428Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for DeleteIdentityProvider
+type DeleteIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DeleteIdentityProviderResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteIdentityProviderResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteIdentityProviderResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteIdentityProviderResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *DeleteIdentityProviderResponse412Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *DeleteIdentityProviderResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteIdentityProviderResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetIdentityProviderResponse200Headers the declared response headers of an HTTP 200 response for GetIdentityProvider
+type GetIdentityProviderResponse200Headers struct {
+	ETag       *string
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for GetIdentityProvider
+type GetIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for GetIdentityProvider
+type GetIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for GetIdentityProvider
+type GetIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse404Headers the declared response headers of an HTTP 404 response for GetIdentityProvider
+type GetIdentityProviderResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for GetIdentityProvider
+type GetIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for GetIdentityProvider
+type GetIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for GetIdentityProvider
+type GetIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityProvider
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetIdentityProviderResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetIdentityProviderResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetIdentityProviderResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetIdentityProviderResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON200() *IdentityProvider {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UpdateIdentityProviderResponse200Headers the declared response headers of an HTTP 200 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse200Headers struct {
+	ETag       *string
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse404Headers the declared response headers of an HTTP 404 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse404Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse409Headers the declared response headers of an HTTP 409 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse409Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse412Headers the declared response headers of an HTTP 412 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse412Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse413Headers the declared response headers of an HTTP 413 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse413Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse415Headers the declared response headers of an HTTP 415 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse415Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse422Headers the declared response headers of an HTTP 422 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse422Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse428Headers the declared response headers of an HTTP 428 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse428Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// UpdateIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for UpdateIdentityProvider
+type UpdateIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type UpdateIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityProvider
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *UpdateIdentityProviderResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *UpdateIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *UpdateIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *UpdateIdentityProviderResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *UpdateIdentityProviderResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *UpdateIdentityProviderResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *UpdateIdentityProviderResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *UpdateIdentityProviderResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *UpdateIdentityProviderResponse415Headers
+	// Headers422 the parsed response headers for an HTTP 422 response
+	Headers422 *UpdateIdentityProviderResponse422Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *UpdateIdentityProviderResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UpdateIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *UpdateIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UpdateIdentityProviderResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON200() *IdentityProvider {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON422() *Error {
+	return r.JSON422
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UpdateIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DisableIdentityProviderResponse200Headers the declared response headers of an HTTP 200 response for DisableIdentityProvider
+type DisableIdentityProviderResponse200Headers struct {
+	ETag       *string
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for DisableIdentityProvider
+type DisableIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for DisableIdentityProvider
+type DisableIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for DisableIdentityProvider
+type DisableIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse404Headers the declared response headers of an HTTP 404 response for DisableIdentityProvider
+type DisableIdentityProviderResponse404Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse409Headers the declared response headers of an HTTP 409 response for DisableIdentityProvider
+type DisableIdentityProviderResponse409Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse412Headers the declared response headers of an HTTP 412 response for DisableIdentityProvider
+type DisableIdentityProviderResponse412Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse428Headers the declared response headers of an HTTP 428 response for DisableIdentityProvider
+type DisableIdentityProviderResponse428Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for DisableIdentityProvider
+type DisableIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for DisableIdentityProvider
+type DisableIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// DisableIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for DisableIdentityProvider
+type DisableIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type DisableIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityProvider
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *DisableIdentityProviderResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DisableIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DisableIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DisableIdentityProviderResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DisableIdentityProviderResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DisableIdentityProviderResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *DisableIdentityProviderResponse412Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *DisableIdentityProviderResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DisableIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DisableIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DisableIdentityProviderResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON200() *IdentityProvider {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DisableIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DisableIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DisableIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DisableIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DisableIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// EnableIdentityProviderResponse200Headers the declared response headers of an HTTP 200 response for EnableIdentityProvider
+type EnableIdentityProviderResponse200Headers struct {
+	ETag       *string
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse400Headers the declared response headers of an HTTP 400 response for EnableIdentityProvider
+type EnableIdentityProviderResponse400Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse401Headers the declared response headers of an HTTP 401 response for EnableIdentityProvider
+type EnableIdentityProviderResponse401Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse403Headers the declared response headers of an HTTP 403 response for EnableIdentityProvider
+type EnableIdentityProviderResponse403Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse404Headers the declared response headers of an HTTP 404 response for EnableIdentityProvider
+type EnableIdentityProviderResponse404Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse409Headers the declared response headers of an HTTP 409 response for EnableIdentityProvider
+type EnableIdentityProviderResponse409Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse412Headers the declared response headers of an HTTP 412 response for EnableIdentityProvider
+type EnableIdentityProviderResponse412Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse422Headers the declared response headers of an HTTP 422 response for EnableIdentityProvider
+type EnableIdentityProviderResponse422Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse428Headers the declared response headers of an HTTP 428 response for EnableIdentityProvider
+type EnableIdentityProviderResponse428Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse429Headers the declared response headers of an HTTP 429 response for EnableIdentityProvider
+type EnableIdentityProviderResponse429Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse500Headers the declared response headers of an HTTP 500 response for EnableIdentityProvider
+type EnableIdentityProviderResponse500Headers struct {
+	XRequestID *string
+}
+
+// EnableIdentityProviderResponse503Headers the declared response headers of an HTTP 503 response for EnableIdentityProvider
+type EnableIdentityProviderResponse503Headers struct {
+	XRequestID *string
+}
+
+type EnableIdentityProviderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityProvider
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *EnableIdentityProviderResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *EnableIdentityProviderResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *EnableIdentityProviderResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *EnableIdentityProviderResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *EnableIdentityProviderResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *EnableIdentityProviderResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *EnableIdentityProviderResponse412Headers
+	// Headers422 the parsed response headers for an HTTP 422 response
+	Headers422 *EnableIdentityProviderResponse422Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *EnableIdentityProviderResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *EnableIdentityProviderResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *EnableIdentityProviderResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *EnableIdentityProviderResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON200() *IdentityProvider {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON422() *Error {
+	return r.JSON422
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r EnableIdentityProviderResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r EnableIdentityProviderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EnableIdentityProviderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EnableIdentityProviderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EnableIdentityProviderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetSamlSpMetadataResponse200Headers the declared response headers of an HTTP 200 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse400Headers the declared response headers of an HTTP 400 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse401Headers the declared response headers of an HTTP 401 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse403Headers the declared response headers of an HTTP 403 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse404Headers the declared response headers of an HTTP 404 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse409Headers the declared response headers of an HTTP 409 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse429Headers the declared response headers of an HTTP 429 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse500Headers the declared response headers of an HTTP 500 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetSamlSpMetadataResponse503Headers the declared response headers of an HTTP 503 response for GetSamlSpMetadata
+type GetSamlSpMetadataResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetSamlSpMetadataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetSamlSpMetadataResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetSamlSpMetadataResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetSamlSpMetadataResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetSamlSpMetadataResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetSamlSpMetadataResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetSamlSpMetadataResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetSamlSpMetadataResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetSamlSpMetadataResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetSamlSpMetadataResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetSamlSpMetadataResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSamlSpMetadataResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSamlSpMetadataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSamlSpMetadataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSamlSpMetadataResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PreviewIdentityMappingResponse200Headers the declared response headers of an HTTP 200 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse200Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse400Headers the declared response headers of an HTTP 400 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse400Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse401Headers the declared response headers of an HTTP 401 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse401Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse403Headers the declared response headers of an HTTP 403 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse403Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse404Headers the declared response headers of an HTTP 404 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse404Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse413Headers the declared response headers of an HTTP 413 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse413Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse415Headers the declared response headers of an HTTP 415 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse415Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse422Headers the declared response headers of an HTTP 422 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse422Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse429Headers the declared response headers of an HTTP 429 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse429Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse500Headers the declared response headers of an HTTP 500 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse500Headers struct {
+	XRequestID *string
+}
+
+// PreviewIdentityMappingResponse503Headers the declared response headers of an HTTP 503 response for PreviewIdentityMapping
+type PreviewIdentityMappingResponse503Headers struct {
+	XRequestID *string
+}
+
+type PreviewIdentityMappingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *MappingPreview
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PreviewIdentityMappingResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PreviewIdentityMappingResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PreviewIdentityMappingResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PreviewIdentityMappingResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PreviewIdentityMappingResponse404Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PreviewIdentityMappingResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PreviewIdentityMappingResponse415Headers
+	// Headers422 the parsed response headers for an HTTP 422 response
+	Headers422 *PreviewIdentityMappingResponse422Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PreviewIdentityMappingResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PreviewIdentityMappingResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PreviewIdentityMappingResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON200() *MappingPreview {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON422() *Error {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PreviewIdentityMappingResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PreviewIdentityMappingResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewIdentityMappingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewIdentityMappingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PreviewIdentityMappingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetLimitsResponse200Headers the declared response headers of an HTTP 200 response for GetLimits
 type GetLimitsResponse200Headers struct {
 	ETag       *string
@@ -22178,6 +26323,687 @@ func (r GetLimitsUsageResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetLimitsUsageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetLocalAccountResponse200Headers the declared response headers of an HTTP 200 response for GetLocalAccount
+type GetLocalAccountResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetLocalAccountResponse400Headers the declared response headers of an HTTP 400 response for GetLocalAccount
+type GetLocalAccountResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetLocalAccountResponse401Headers the declared response headers of an HTTP 401 response for GetLocalAccount
+type GetLocalAccountResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetLocalAccountResponse403Headers the declared response headers of an HTTP 403 response for GetLocalAccount
+type GetLocalAccountResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetLocalAccountResponse429Headers the declared response headers of an HTTP 429 response for GetLocalAccount
+type GetLocalAccountResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetLocalAccountResponse500Headers the declared response headers of an HTTP 500 response for GetLocalAccount
+type GetLocalAccountResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetLocalAccountResponse503Headers the declared response headers of an HTTP 503 response for GetLocalAccount
+type GetLocalAccountResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetLocalAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LocalAccount
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetLocalAccountResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetLocalAccountResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetLocalAccountResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetLocalAccountResponse403Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetLocalAccountResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetLocalAccountResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetLocalAccountResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetLocalAccountResponse) GetJSON200() *LocalAccount {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetLocalAccountResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetLocalAccountResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetLocalAccountResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetLocalAccountResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetLocalAccountResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetLocalAccountResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetLocalAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLocalAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLocalAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetLocalAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DisableLocalTotpResponse204Headers the declared response headers of an HTTP 204 response for DisableLocalTotp
+type DisableLocalTotpResponse204Headers struct {
+	XRequestID *string
+}
+
+// DisableLocalTotpResponse400Headers the declared response headers of an HTTP 400 response for DisableLocalTotp
+type DisableLocalTotpResponse400Headers struct {
+	XRequestID *string
+}
+
+// DisableLocalTotpResponse401Headers the declared response headers of an HTTP 401 response for DisableLocalTotp
+type DisableLocalTotpResponse401Headers struct {
+	XRequestID *string
+}
+
+// DisableLocalTotpResponse403Headers the declared response headers of an HTTP 403 response for DisableLocalTotp
+type DisableLocalTotpResponse403Headers struct {
+	XRequestID *string
+}
+
+// DisableLocalTotpResponse429Headers the declared response headers of an HTTP 429 response for DisableLocalTotp
+type DisableLocalTotpResponse429Headers struct {
+	XRequestID *string
+}
+
+// DisableLocalTotpResponse500Headers the declared response headers of an HTTP 500 response for DisableLocalTotp
+type DisableLocalTotpResponse500Headers struct {
+	XRequestID *string
+}
+
+// DisableLocalTotpResponse503Headers the declared response headers of an HTTP 503 response for DisableLocalTotp
+type DisableLocalTotpResponse503Headers struct {
+	XRequestID *string
+}
+
+type DisableLocalTotpResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DisableLocalTotpResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DisableLocalTotpResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DisableLocalTotpResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DisableLocalTotpResponse403Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DisableLocalTotpResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DisableLocalTotpResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DisableLocalTotpResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DisableLocalTotpResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DisableLocalTotpResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DisableLocalTotpResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DisableLocalTotpResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DisableLocalTotpResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DisableLocalTotpResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DisableLocalTotpResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DisableLocalTotpResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DisableLocalTotpResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DisableLocalTotpResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// BeginLocalTotpResponse200Headers the declared response headers of an HTTP 200 response for BeginLocalTotp
+type BeginLocalTotpResponse200Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse400Headers the declared response headers of an HTTP 400 response for BeginLocalTotp
+type BeginLocalTotpResponse400Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse401Headers the declared response headers of an HTTP 401 response for BeginLocalTotp
+type BeginLocalTotpResponse401Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse403Headers the declared response headers of an HTTP 403 response for BeginLocalTotp
+type BeginLocalTotpResponse403Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse409Headers the declared response headers of an HTTP 409 response for BeginLocalTotp
+type BeginLocalTotpResponse409Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse429Headers the declared response headers of an HTTP 429 response for BeginLocalTotp
+type BeginLocalTotpResponse429Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse500Headers the declared response headers of an HTTP 500 response for BeginLocalTotp
+type BeginLocalTotpResponse500Headers struct {
+	XRequestID *string
+}
+
+// BeginLocalTotpResponse503Headers the declared response headers of an HTTP 503 response for BeginLocalTotp
+type BeginLocalTotpResponse503Headers struct {
+	XRequestID *string
+}
+
+type BeginLocalTotpResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TotpEnrollment
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *BeginLocalTotpResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *BeginLocalTotpResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *BeginLocalTotpResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *BeginLocalTotpResponse403Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *BeginLocalTotpResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *BeginLocalTotpResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *BeginLocalTotpResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *BeginLocalTotpResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON200() *TotpEnrollment {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r BeginLocalTotpResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r BeginLocalTotpResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BeginLocalTotpResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BeginLocalTotpResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BeginLocalTotpResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ConfirmLocalTotpResponse204Headers the declared response headers of an HTTP 204 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse204Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse400Headers the declared response headers of an HTTP 400 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse400Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse401Headers the declared response headers of an HTTP 401 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse401Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse403Headers the declared response headers of an HTTP 403 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse403Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse413Headers the declared response headers of an HTTP 413 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse413Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse415Headers the declared response headers of an HTTP 415 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse415Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse429Headers the declared response headers of an HTTP 429 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse429Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse500Headers the declared response headers of an HTTP 500 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse500Headers struct {
+	XRequestID *string
+}
+
+// ConfirmLocalTotpResponse503Headers the declared response headers of an HTTP 503 response for ConfirmLocalTotp
+type ConfirmLocalTotpResponse503Headers struct {
+	XRequestID *string
+}
+
+type ConfirmLocalTotpResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *ConfirmLocalTotpResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ConfirmLocalTotpResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ConfirmLocalTotpResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ConfirmLocalTotpResponse403Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *ConfirmLocalTotpResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *ConfirmLocalTotpResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ConfirmLocalTotpResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ConfirmLocalTotpResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ConfirmLocalTotpResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ConfirmLocalTotpResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ConfirmLocalTotpResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ConfirmLocalTotpResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConfirmLocalTotpResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ConfirmLocalTotpResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UnlockLocalAccountResponse204Headers the declared response headers of an HTTP 204 response for UnlockLocalAccount
+type UnlockLocalAccountResponse204Headers struct {
+	XRequestID *string
+}
+
+// UnlockLocalAccountResponse400Headers the declared response headers of an HTTP 400 response for UnlockLocalAccount
+type UnlockLocalAccountResponse400Headers struct {
+	XRequestID *string
+}
+
+// UnlockLocalAccountResponse401Headers the declared response headers of an HTTP 401 response for UnlockLocalAccount
+type UnlockLocalAccountResponse401Headers struct {
+	XRequestID *string
+}
+
+// UnlockLocalAccountResponse403Headers the declared response headers of an HTTP 403 response for UnlockLocalAccount
+type UnlockLocalAccountResponse403Headers struct {
+	XRequestID *string
+}
+
+// UnlockLocalAccountResponse429Headers the declared response headers of an HTTP 429 response for UnlockLocalAccount
+type UnlockLocalAccountResponse429Headers struct {
+	XRequestID *string
+}
+
+// UnlockLocalAccountResponse500Headers the declared response headers of an HTTP 500 response for UnlockLocalAccount
+type UnlockLocalAccountResponse500Headers struct {
+	XRequestID *string
+}
+
+// UnlockLocalAccountResponse503Headers the declared response headers of an HTTP 503 response for UnlockLocalAccount
+type UnlockLocalAccountResponse503Headers struct {
+	XRequestID *string
+}
+
+type UnlockLocalAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *UnlockLocalAccountResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *UnlockLocalAccountResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *UnlockLocalAccountResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *UnlockLocalAccountResponse403Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UnlockLocalAccountResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *UnlockLocalAccountResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UnlockLocalAccountResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UnlockLocalAccountResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UnlockLocalAccountResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UnlockLocalAccountResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UnlockLocalAccountResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r UnlockLocalAccountResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UnlockLocalAccountResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UnlockLocalAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlockLocalAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlockLocalAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnlockLocalAccountResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36293,6 +41119,253 @@ func (c *ClientWithResponses) DeleteIdentityBindingWithResponse(ctx context.Cont
 	return ParseDeleteIdentityBindingResponse(rsp)
 }
 
+// GetIdentityPolicyWithResponse performs a GET /api/v1/identity-policy (the `GetIdentityPolicy` operationId) request.
+//
+// Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetIdentityPolicyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIdentityPolicyResponse, error) {
+	rsp, err := c.GetIdentityPolicy(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIdentityPolicyResponse(rsp)
+}
+
+// PutIdentityPolicyWithBodyWithResponse performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PutIdentityPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutIdentityPolicyResponse, error) {
+	rsp, err := c.PutIdentityPolicyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutIdentityPolicyResponse(rsp)
+}
+
+// PutIdentityPolicyWithResponse performs a PUT /api/v1/identity-policy (the `PutIdentityPolicy` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.
+func (c *ClientWithResponses) PutIdentityPolicyWithResponse(ctx context.Context, body PutIdentityPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*PutIdentityPolicyResponse, error) {
+	rsp, err := c.PutIdentityPolicy(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutIdentityPolicyResponse(rsp)
+}
+
+// ListIdentityProvidersWithResponse performs a GET /api/v1/identity-providers (the `ListIdentityProviders` operationId) request.
+//
+// Requires instance admin. Lists database-stored providers (secrets never returned), read-only file-configured providers, what the login runtime is serving, the SSO-mandatory policy and the break-glass account status.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListIdentityProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListIdentityProvidersResponse, error) {
+	rsp, err := c.ListIdentityProviders(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIdentityProvidersResponse(rsp)
+}
+
+// CreateIdentityProviderWithBodyWithResponse performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateIdentityProviderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIdentityProviderResponse, error) {
+	rsp, err := c.CreateIdentityProviderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateIdentityProviderResponse(rsp)
+}
+
+// CreateIdentityProviderWithResponse performs a POST /api/v1/identity-providers (the `CreateIdentityProvider` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.
+func (c *ClientWithResponses) CreateIdentityProviderWithResponse(ctx context.Context, body CreateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIdentityProviderResponse, error) {
+	rsp, err := c.CreateIdentityProvider(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateIdentityProviderResponse(rsp)
+}
+
+// ImportSamlMetadataWithBodyWithResponse performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ImportSamlMetadataWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportSamlMetadataResponse, error) {
+	rsp, err := c.ImportSamlMetadataWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportSamlMetadataResponse(rsp)
+}
+
+// ImportSamlMetadataWithResponse performs a POST /api/v1/identity-providers/saml/import-metadata (the `ImportSamlMetadata` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.
+func (c *ClientWithResponses) ImportSamlMetadataWithResponse(ctx context.Context, body ImportSamlMetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportSamlMetadataResponse, error) {
+	rsp, err := c.ImportSamlMetadata(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportSamlMetadataResponse(rsp)
+}
+
+// TestIdentityProviderWithBodyWithResponse performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) TestIdentityProviderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TestIdentityProviderResponse, error) {
+	rsp, err := c.TestIdentityProviderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTestIdentityProviderResponse(rsp)
+}
+
+// TestIdentityProviderWithResponse performs a POST /api/v1/identity-providers/test (the `TestIdentityProvider` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.
+func (c *ClientWithResponses) TestIdentityProviderWithResponse(ctx context.Context, body TestIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*TestIdentityProviderResponse, error) {
+	rsp, err := c.TestIdentityProvider(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTestIdentityProviderResponse(rsp)
+}
+
+// DeleteIdentityProviderWithResponse performs a DELETE /api/v1/identity-providers/{id} (the `DeleteIdentityProvider` operationId) request.
+//
+// Requires instance admin. Deletes a provider and its secret. Refused while SSO is mandatory and it is the last enabled provider.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteIdentityProviderParams, reqEditors ...RequestEditorFn) (*DeleteIdentityProviderResponse, error) {
+	rsp, err := c.DeleteIdentityProvider(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteIdentityProviderResponse(rsp)
+}
+
+// GetIdentityProviderWithResponse performs a GET /api/v1/identity-providers/{id} (the `GetIdentityProvider` operationId) request.
+//
+// Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetIdentityProviderResponse, error) {
+	rsp, err := c.GetIdentityProvider(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIdentityProviderResponse(rsp)
+}
+
+// UpdateIdentityProviderWithBodyWithResponse performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateIdentityProviderWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIdentityProviderResponse, error) {
+	rsp, err := c.UpdateIdentityProviderWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateIdentityProviderResponse(rsp)
+}
+
+// UpdateIdentityProviderWithResponse performs a PUT /api/v1/identity-providers/{id} (the `UpdateIdentityProvider` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.
+func (c *ClientWithResponses) UpdateIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateIdentityProviderParams, body UpdateIdentityProviderJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIdentityProviderResponse, error) {
+	rsp, err := c.UpdateIdentityProvider(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateIdentityProviderResponse(rsp)
+}
+
+// DisableIdentityProviderWithResponse performs a POST /api/v1/identity-providers/{id}/disable (the `DisableIdentityProvider` operationId) request.
+//
+// Requires instance admin. Disables a provider. Refused while SSO is mandatory and it is the last enabled provider.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DisableIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *DisableIdentityProviderParams, reqEditors ...RequestEditorFn) (*DisableIdentityProviderResponse, error) {
+	rsp, err := c.DisableIdentityProvider(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDisableIdentityProviderResponse(rsp)
+}
+
+// EnableIdentityProviderWithResponse performs a POST /api/v1/identity-providers/{id}/enable (the `EnableIdentityProvider` operationId) request.
+//
+// Requires instance admin. Builds and enables a provider, replacing any other of the same protocol, without restart.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) EnableIdentityProviderWithResponse(ctx context.Context, id openapi_types.UUID, params *EnableIdentityProviderParams, reqEditors ...RequestEditorFn) (*EnableIdentityProviderResponse, error) {
+	rsp, err := c.EnableIdentityProvider(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEnableIdentityProviderResponse(rsp)
+}
+
+// GetSamlSpMetadataWithResponse performs a GET /api/v1/identity-providers/{id}/metadata (the `GetSamlSpMetadata` operationId) request.
+//
+// Requires instance admin. Exports the SAML service provider metadata for the IdP administrator.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetSamlSpMetadataWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSamlSpMetadataResponse, error) {
+	rsp, err := c.GetSamlSpMetadata(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSamlSpMetadataResponse(rsp)
+}
+
+// PreviewIdentityMappingWithBodyWithResponse performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request,
+// with any type of body and a specified content type.
+//
+// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PreviewIdentityMappingWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewIdentityMappingResponse, error) {
+	rsp, err := c.PreviewIdentityMappingWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewIdentityMappingResponse(rsp)
+}
+
+// PreviewIdentityMappingWithResponse performs a POST /api/v1/identity-providers/{id}/preview (the `PreviewIdentityMapping` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.
+func (c *ClientWithResponses) PreviewIdentityMappingWithResponse(ctx context.Context, id openapi_types.UUID, body PreviewIdentityMappingJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewIdentityMappingResponse, error) {
+	rsp, err := c.PreviewIdentityMapping(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewIdentityMappingResponse(rsp)
+}
+
 // GetLimitsWithResponse performs a GET /api/v1/limits (the `GetLimits` operationId) request.
 //
 // Rate limits and storage quotas. Requires instance admin.
@@ -36343,6 +41416,84 @@ func (c *ClientWithResponses) GetLimitsUsageWithResponse(ctx context.Context, re
 		return nil, err
 	}
 	return ParseGetLimitsUsageResponse(rsp)
+}
+
+// GetLocalAccountWithResponse performs a GET /api/v1/local-account (the `GetLocalAccount` operationId) request.
+//
+// Requires instance admin. Status of the break-glass local administrator (create or reset it with `ant admin break-glass`).
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetLocalAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLocalAccountResponse, error) {
+	rsp, err := c.GetLocalAccount(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLocalAccountResponse(rsp)
+}
+
+// DisableLocalTotpWithResponse performs a DELETE /api/v1/local-account/totp (the `DisableLocalTotp` operationId) request.
+//
+// Only the signed-in break-glass account may call this. Removes the second factor.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DisableLocalTotpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DisableLocalTotpResponse, error) {
+	rsp, err := c.DisableLocalTotp(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDisableLocalTotpResponse(rsp)
+}
+
+// BeginLocalTotpWithResponse performs a POST /api/v1/local-account/totp (the `BeginLocalTotp` operationId) request.
+//
+// Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) BeginLocalTotpWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*BeginLocalTotpResponse, error) {
+	rsp, err := c.BeginLocalTotp(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBeginLocalTotpResponse(rsp)
+}
+
+// ConfirmLocalTotpWithBodyWithResponse performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request,
+// with any type of body and a specified content type.
+//
+// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ConfirmLocalTotpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmLocalTotpResponse, error) {
+	rsp, err := c.ConfirmLocalTotpWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmLocalTotpResponse(rsp)
+}
+
+// ConfirmLocalTotpWithResponse performs a POST /api/v1/local-account/totp/confirm (the `ConfirmLocalTotp` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.
+func (c *ClientWithResponses) ConfirmLocalTotpWithResponse(ctx context.Context, body ConfirmLocalTotpJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmLocalTotpResponse, error) {
+	rsp, err := c.ConfirmLocalTotp(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmLocalTotpResponse(rsp)
+}
+
+// UnlockLocalAccountWithResponse performs a POST /api/v1/local-account/unlock (the `UnlockLocalAccount` operationId) request.
+//
+// Requires instance admin. Clears the login lockout.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UnlockLocalAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*UnlockLocalAccountResponse, error) {
+	rsp, err := c.UnlockLocalAccount(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlockLocalAccountResponse(rsp)
 }
 
 // GetTrafficMetricsWithResponse performs a GET /api/v1/metrics/traffic (the `GetTrafficMetrics` operationId) request.
@@ -44402,6 +49553,2526 @@ func ParseDeleteIdentityBindingResponse(rsp *http.Response) (*DeleteIdentityBind
 	return response, nil
 }
 
+// ParseGetIdentityPolicyResponse parses an HTTP response from a GetIdentityPolicyWithResponse call
+func ParseGetIdentityPolicyResponse(rsp *http.Response) (*GetIdentityPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIdentityPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityPolicy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetIdentityPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetIdentityPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetIdentityPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetIdentityPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetIdentityPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetIdentityPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetIdentityPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePutIdentityPolicyResponse parses an HTTP response from a PutIdentityPolicyWithResponse call
+func ParsePutIdentityPolicyResponse(rsp *http.Response) (*PutIdentityPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutIdentityPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityPolicy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PutIdentityPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PutIdentityPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PutIdentityPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PutIdentityPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 409:
+		var headers PutIdentityPolicyResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers PutIdentityPolicyResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PutIdentityPolicyResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PutIdentityPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PutIdentityPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PutIdentityPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListIdentityProvidersResponse parses an HTTP response from a ListIdentityProvidersWithResponse call
+func ParseListIdentityProvidersResponse(rsp *http.Response) (*ListIdentityProvidersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIdentityProvidersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityProviderList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListIdentityProvidersResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListIdentityProvidersResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListIdentityProvidersResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListIdentityProvidersResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListIdentityProvidersResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListIdentityProvidersResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListIdentityProvidersResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateIdentityProviderResponse parses an HTTP response from a CreateIdentityProviderWithResponse call
+func ParseCreateIdentityProviderResponse(rsp *http.Response) (*CreateIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest IdentityProvider
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateIdentityProviderResponse201Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateIdentityProviderResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers CreateIdentityProviderResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers CreateIdentityProviderResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 422:
+		var headers CreateIdentityProviderResponse422Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers422 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseImportSamlMetadataResponse parses an HTTP response from a ImportSamlMetadataWithResponse call
+func ParseImportSamlMetadataResponse(rsp *http.Response) (*ImportSamlMetadataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportSamlMetadataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SamlMetadataImport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ImportSamlMetadataResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ImportSamlMetadataResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ImportSamlMetadataResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ImportSamlMetadataResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 413:
+		var headers ImportSamlMetadataResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers ImportSamlMetadataResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers ImportSamlMetadataResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ImportSamlMetadataResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ImportSamlMetadataResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseTestIdentityProviderResponse parses an HTTP response from a TestIdentityProviderWithResponse call
+func ParseTestIdentityProviderResponse(rsp *http.Response) (*TestIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TestIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityProviderTest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers TestIdentityProviderResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers TestIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers TestIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers TestIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers TestIdentityProviderResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 413:
+		var headers TestIdentityProviderResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers TestIdentityProviderResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers TestIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers TestIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers TestIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteIdentityProviderResponse parses an HTTP response from a DeleteIdentityProviderWithResponse call
+func ParseDeleteIdentityProviderResponse(rsp *http.Response) (*DeleteIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DeleteIdentityProviderResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteIdentityProviderResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteIdentityProviderResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers DeleteIdentityProviderResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 428:
+		var headers DeleteIdentityProviderResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetIdentityProviderResponse parses an HTTP response from a GetIdentityProviderWithResponse call
+func ParseGetIdentityProviderResponse(rsp *http.Response) (*GetIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityProvider
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetIdentityProviderResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetIdentityProviderResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUpdateIdentityProviderResponse parses an HTTP response from a UpdateIdentityProviderWithResponse call
+func ParseUpdateIdentityProviderResponse(rsp *http.Response) (*UpdateIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityProvider
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers UpdateIdentityProviderResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers UpdateIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers UpdateIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers UpdateIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers UpdateIdentityProviderResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers UpdateIdentityProviderResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers UpdateIdentityProviderResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers UpdateIdentityProviderResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers UpdateIdentityProviderResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 422:
+		var headers UpdateIdentityProviderResponse422Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers422 = &headers
+	case rsp.StatusCode == 428:
+		var headers UpdateIdentityProviderResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers UpdateIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers UpdateIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers UpdateIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDisableIdentityProviderResponse parses an HTTP response from a DisableIdentityProviderWithResponse call
+func ParseDisableIdentityProviderResponse(rsp *http.Response) (*DisableIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DisableIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityProvider
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers DisableIdentityProviderResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers DisableIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DisableIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DisableIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DisableIdentityProviderResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DisableIdentityProviderResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers DisableIdentityProviderResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 428:
+		var headers DisableIdentityProviderResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers DisableIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DisableIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DisableIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseEnableIdentityProviderResponse parses an HTTP response from a EnableIdentityProviderWithResponse call
+func ParseEnableIdentityProviderResponse(rsp *http.Response) (*EnableIdentityProviderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EnableIdentityProviderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityProvider
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers EnableIdentityProviderResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers EnableIdentityProviderResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers EnableIdentityProviderResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers EnableIdentityProviderResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers EnableIdentityProviderResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers EnableIdentityProviderResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers EnableIdentityProviderResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 422:
+		var headers EnableIdentityProviderResponse422Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers422 = &headers
+	case rsp.StatusCode == 428:
+		var headers EnableIdentityProviderResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers EnableIdentityProviderResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers EnableIdentityProviderResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers EnableIdentityProviderResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetSamlSpMetadataResponse parses an HTTP response from a GetSamlSpMetadataWithResponse call
+func ParseGetSamlSpMetadataResponse(rsp *http.Response) (*GetSamlSpMetadataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSamlSpMetadataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetSamlSpMetadataResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetSamlSpMetadataResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetSamlSpMetadataResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetSamlSpMetadataResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetSamlSpMetadataResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetSamlSpMetadataResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetSamlSpMetadataResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetSamlSpMetadataResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetSamlSpMetadataResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePreviewIdentityMappingResponse parses an HTTP response from a PreviewIdentityMappingWithResponse call
+func ParsePreviewIdentityMappingResponse(rsp *http.Response) (*PreviewIdentityMappingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewIdentityMappingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MappingPreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PreviewIdentityMappingResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PreviewIdentityMappingResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PreviewIdentityMappingResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PreviewIdentityMappingResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PreviewIdentityMappingResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 413:
+		var headers PreviewIdentityMappingResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PreviewIdentityMappingResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 422:
+		var headers PreviewIdentityMappingResponse422Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers422 = &headers
+	case rsp.StatusCode == 429:
+		var headers PreviewIdentityMappingResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PreviewIdentityMappingResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PreviewIdentityMappingResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetLimitsResponse parses an HTTP response from a GetLimitsWithResponse call
 func ParseGetLimitsResponse(rsp *http.Response) (*GetLimitsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -44911,6 +52582,750 @@ func ParseGetLimitsUsageResponse(rsp *http.Response) (*GetLimitsUsageResponse, e
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetLimitsUsageResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetLocalAccountResponse parses an HTTP response from a GetLocalAccountWithResponse call
+func ParseGetLocalAccountResponse(rsp *http.Response) (*GetLocalAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLocalAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LocalAccount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetLocalAccountResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetLocalAccountResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetLocalAccountResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetLocalAccountResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetLocalAccountResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetLocalAccountResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetLocalAccountResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDisableLocalTotpResponse parses an HTTP response from a DisableLocalTotpWithResponse call
+func ParseDisableLocalTotpResponse(rsp *http.Response) (*DisableLocalTotpResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DisableLocalTotpResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DisableLocalTotpResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DisableLocalTotpResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DisableLocalTotpResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DisableLocalTotpResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 429:
+		var headers DisableLocalTotpResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DisableLocalTotpResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DisableLocalTotpResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseBeginLocalTotpResponse parses an HTTP response from a BeginLocalTotpWithResponse call
+func ParseBeginLocalTotpResponse(rsp *http.Response) (*BeginLocalTotpResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BeginLocalTotpResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TotpEnrollment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers BeginLocalTotpResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers BeginLocalTotpResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers BeginLocalTotpResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers BeginLocalTotpResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 409:
+		var headers BeginLocalTotpResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers BeginLocalTotpResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers BeginLocalTotpResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers BeginLocalTotpResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseConfirmLocalTotpResponse parses an HTTP response from a ConfirmLocalTotpWithResponse call
+func ParseConfirmLocalTotpResponse(rsp *http.Response) (*ConfirmLocalTotpResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConfirmLocalTotpResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers ConfirmLocalTotpResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers ConfirmLocalTotpResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ConfirmLocalTotpResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ConfirmLocalTotpResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 413:
+		var headers ConfirmLocalTotpResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers ConfirmLocalTotpResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers ConfirmLocalTotpResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ConfirmLocalTotpResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ConfirmLocalTotpResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUnlockLocalAccountResponse parses an HTTP response from a UnlockLocalAccountWithResponse call
+func ParseUnlockLocalAccountResponse(rsp *http.Response) (*UnlockLocalAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlockLocalAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers UnlockLocalAccountResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers UnlockLocalAccountResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers UnlockLocalAccountResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers UnlockLocalAccountResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 429:
+		var headers UnlockLocalAccountResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers UnlockLocalAccountResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers UnlockLocalAccountResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -60041,365 +68456,421 @@ func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretR
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"/zcA",
+	"7P1rdxs3si+MfxUs/metsc8mJdlxPIm99gvFdmY84yQ6lrxnr/9sHx6wu0giagIdAC2Z48fPZ39WFYC+",
+	"sZvspiT6os6LmCK7cS0U6vqrj6NIrVIlQVozevZxpMGkShqgP15prTR+iJS0IC1+5GmaiIhboeTx70ZJ",
+	"/M5ES1hx/PQnDfPRs9H/77ho9dj9ao5da58+fRqPYjCRFik2Mno2Ord8lgAzXAor/g0xA3pyPFoCj0HT",
+	"UP578hb+yMDYyeuX+HetBdBXoCcLkKC5hZhFSmtIaJRMxCCtmAvAJouhroR8A3Jhl6Nnj56OR3adwujZ",
+	"yFgt5AJH+elTeJoGcBpZcQWvqS27PtPqSsRAi8PjWGBHPDnTKgVtBa7enCcGxqO09NXH0aWQMf4LMluN",
+	"nv1rpEQc4aD4KhmNR0nM09H7jaFQI9TbVNDbc6VX3I6ejbJMxKOG543KdATljuYigdF4FHPLZ9xAQy+f",
+	"xiMNf2RCQ4wv0EjzlorH1ex3iCx2cmotj5bneVc9liHVQmlh15XJCGm/ezwaj1b8g1jhqB+d0H9j3Cn3",
+	"zUk+DCEtLEBvDDtvuXHEWSzsq6tAyN3HyyNHZx83lzrSgAQ35bYymZhbmFixgqbticFykZj2QVidQcP4",
+	"a7svpH36ZFRankeby4MzETISKU+6Eo8Gt+k9ns8SWyY2k0URGIP0BlIAvjXnIsl0B7qjPkqLOg6Ln3dU",
+	"rF/rHp/xRV+SFBZW1Q/bWFmJkj7lg+Ba8zUtue9+Wws4xNdyrjYXgPr3jbTO8FzIy54zjJYQXaZKSLvJ",
+	"P/8mFkswlnFsmwFOjImYxZCIK9AQH43GBSEEutuktUjJuVhkNJP8rMyUSoBL/B0kMvrWH+N8dBtEtuRm",
+	"Gmkg7suT5gbqzNWsTaIWeI1Y28xXE27sFMIl1/zzXOlrruOeR1zDlTCeZ1SX+p0BFn5lj9i1sEtWrNt/",
+	"0tYxbtjr+eQXbqMls4q589C4CdsOf42yil5GxVZsLO24TCiliTSR4gseLeEs071PGzcGrJlqWKkraOZq",
+	"m9Q1W1vAdxLgBuLNlX2jFiLiCaPnmJqzFEcWM9fZc2as0nwBTBimIUq4WEHMZmu24HqG30cqSYCYTWdy",
+	"D8e650z6Mdgr0LgD/Tqp7X3RY+OwGzoZ1zdpYwMaKQL3eI7yIZxbbjPTkzBivjbTBOa2UTTYXEmp7JTP",
+	"LejK81uPJr4yg7nS0P0ds+SPv3/ayCRMPs1cqLscjUfwIRX0iP9IC4hdr8FOr3gi4kaOZDK3lE09ZQYa",
+	"vq9vtG+gMs/yOo1La5yPPp9h454GetlvR+my3jytP4sPEDOp5MSANAKFaxapmLjcin8IovnTJ41824KM",
+	"1tOVqWzhlgPXvEkxLDSPaWsyya+4SJAp0l+XUl3L3eKKb7hx2Yhp/wwQ91wxLpVcr1SGR417PjfnJGP5",
+	"5zfvvrAGxQR5ijPk0gg3JZ5aOvuR4qmKTeADhkgiUpJL92/MR+ORisRoPFoIO0nm+OhCkTaWrPCfbLEQ",
+	"cjHnEdBWXQG+KVP8TWYLsO79CUdOwCOL76d4etNshv9fp9h2pKlDza/x/9lsvXBiT8Q1dWauBRGoBa05",
+	"zg4fS1fNhybJFqRWcGtBy9Gz0f/5F5/8+2Ty43v/73Ty/uPJ+OnjT38a7dxRbCxf0O0b+xNe0MPu3u3u",
+	"ptksEWY5TVUiovVOuTqzZ+6FM/f8jemjdF2bBssDX8HE7Q9zzxmU2Dgpx2MmJMNtZkrHoJG15erFzmt/",
+	"xT+8dg8/fVLTMZBBiT8y8L9bncG+ZHwW1MMbWjIyR2oG9JWIYNfdVmLwj72Gn9tixp1vOBpD+9TeggWJ",
+	"0znLKWfrBKsb++oDj2yyZkoCypJzgHgqYsZlzHJ6GNOf3DKUiGx49BIgnaLuMGYr/mHKFzA1gGfP0OP4",
+	"nYiT/MsjthJyii8xzwmIgh6NmZfR8S/c4qNRfRN4kqjrIJBNY0jAwh6al59bJ6oUMkqyGKaWLxZt7eUL",
+	"0Gzf2WquqK3YHgaP+vru04TfkO3jP7mpaP+pnXRV0lelknwFtaP16PEP/Y4WtdF+oPay9d3ru6vOJRMV",
+	"kYqtYaUs0Aeypje+HHa0ypcutFih4vru4ufJD54VMXx0jIxopYxlj09OnBI8JvOCyixaGKxWCYuWXPPI",
+	"gjY1Obs3G6bRjYOdeOc980+YLZXqa7Mq24RqFquLi7NzRrJBxGIwVkiy9pemnNs0zJj9kYFeM6XZXPPF",
+	"CqQ9Yi9/PWcajEoy5yUwjAwfEDMl0QSm18H+tcblk8408Dw31lB3LFZgmFSWrfglMAn2WulLpp2vwlQM",
+	"CZkW9TV/8kPTPQmRhoYpux3/2y+nL5gRCynkgrlHx+y7x8wutcoWS/bk5MenbveP2K84DabBZlrivDRL",
+	"QRthLMQomaQJF9LCB1ujBWxiOzGMR9daWPhNJutm8SPfuHw6TaTxkm6s4nqubr5YrTLyDIUbzjRfNysV",
+	"V3wddCtCXDY/ZzIRxk4VjrftqJmUR3UO+vj7pzuMe30NMTTYcdPcGhdImEiRBfbUGOjrtsjF466X+17O",
+	"DLEAY2vitbMmPPvXyeRHPpm///j0SbNk3XFcl7ButIisIBZ86r7+2Ow2A8nltjvLuVpqpgkaz0Rd46H5",
+	"+/lvv7IVWI6+szGbqUzGTiZ7+oT9Q/x0NGrYNyP+DVM6hNulj5ObWwezNFG88A22WQ87SySbzpgyFVXa",
+	"G1fMirhJlS3JaaOyHjXvTmmPOhyAO3fs1Pqr6mF0Rx7W2VOM54xHl/1nHymlY7wam09IRxoL5H/oY1Rh",
+	"y+1q+d6Ena9NuasqVedT77Q7B6RP3+MXRKEXfLGnztLvht2uu92E33mZtsLitjrAKpM/4ObjUn85G/9f",
+	"br2+ROmkY9M3p7fdnpktl2mZzCrz7LTuB6S7sNOfnfbUigv5zvSf+SxRsy2SWYPXGV+IVCZtxxdiGltX",
+	"om5hgbUFKdocByZVGte4PKum5Xo1nwOFr53mgUx7RT8FDYs8F7llnhQtMj2WIkAK2wZ9z+OVkI2qV9DW",
+	"GlU7p8BNZ+upVgk0mN/RUGbYUiUxqsOcrdAjgx9jkOsxu16KaMmQdrWIAe2va0YdVkzxG2OqE/OV4NsH",
+	"YJfcuoaZXQJzK4Z2BLsEoZm6ln06rG1+HgBVKLbFgDbXaCsBnIFeCUOe/r2ooDvTqNNcw7LGwmyxSu8d",
+	"uNZ5ZG/DCw1RhEXXpXGW+hjnC7J9vfdxPVwsga2AYldczBt6FZCu5gDxn40TnpmFVZpwC4Y90EpZNhfa",
+	"2IfkYig9q64l8+eUOQ/aEftNi4WQhnENeSvP/ic7OfkuQuZCn4CMZeBCv+oeffJSTBU100jP4ZGKiL7x",
+	"VB+/Q/AChvFOoyUXskKNO49xcLhuI463wGO3aedgrZALE9708zU9yIvHfqnzNm42/L2FFJ0lsMfR9Z7U",
+	"t1kCO7lU2MyKKNOya82L0UQ24zq1hbmMwyVU2ZrtZ7E0m74xLHLdzKREXLMYNvhcym7n08n/33ucj55N",
+	"3v9Ho1Fsy7lqC5xuC3uBBCKr9K4N9ytzHh7HveZ6AbUDvIeOnQ+4NJixW898ols3rXyIejqeuEjw5p8q",
+	"Oc1SYzXw1ZZgzzlPkhmPLvFxjJaaI5NtfJKcOFNit82S27bZmL18aD0YZd3lJKSxZF5z/LaI6R+Pgh9s",
+	"t0n8Nm0vrV77PNuklxJZtf0LSbF1U++AcYFdmV2CtCSKel/VTMSxcw7mO+1k10REzipJvmMaxRQJqSFG",
+	"DM+ZljyZhmwVjawsESthoSG4bzz6MMFRTq64prXF4dKUX6gYXrtxv82Hnf/ybmP8+U8/lyaSf/mrsj/7",
+	"CeXfvShmln93Vpriz2GG5V5LUy0N0835lZ9y/sNbbuFNmDpZDE1QzhrkNJqkJ54daTj1EGbynoTWK201",
+	"kdQQfXf3Pu67N7Hcanwfja4aHVURWWr730ZVFPr3Nk996cnMd13I2MM+sW/1wDcXkNZZ8HMBHr/pGDTa",
+	"djrJfKOim7a1cm7euLfQlb/VJnd1ILo8WXH6u5r1jdPXIYLMbYCA3g2oBKYLzfdNETDTGDCQsPNrzhs4",
+	"NWBunDLgpW+3CQ0D2rK6zRPfup7tQ2+jqjs3e4ZDeFjTJk2NTvBPQqJV6w5lxQ31rPOx4vEeL+15AexW",
+	"NNvWERMWzF6pSX1SkjaNgi+FsUJGlqFd1ucjaZiDBhlBnIfquCBhCAGlpmPaUZ8dLiSTzc13DsSuU02z",
+	"JGmKf3a5nvMsYfQEM0JGwMgwjXbYGSy4ZA8SvjDMaj6fiwhzrpQENk8ys2TYhb7iycOOsw/CQGua1D68",
+	"rqCpumSQr1Kpg5AaFVKiRmF1ttLhQfgV9fQZmJZI+qfGVwnplIUs91I6JJtrtUKzPpIT/ikSOGJoE5hg",
+	"LNdzHwDnAqtTbpfOqCkp7s0svd29LSFpp+7cMT0/4TNIdjtxfKikezpkMTcu51+1ylL0LPzC07TLFVBd",
+	"yl94ahhnmOj/9EmmkwlIVJxilkedsTcvT8/YArthr19iFAaukTIQM7y52euX5oid0Vc8cWsqpDsTNITn",
+	"DIJJg14wLFIrcLslPB2wmbu/zOYWUMdtVmESHXyuxZ4ek7z9UmtN6xxIdr+bVhiTga7Z/1xM59ZA2j1c",
+	"G22pE096Bnj7IRcN1sbSYZHuTJgva3fb4wa3CaodZnDnjLjW31uIlP4MkmTzMHpOvOfWjEun4lbJvgMJ",
+	"3IS49/LT/XMJkjJzxoxswizlxlwrHVN89kRQUHlwHrK50j6snEckHjH4EEFqyVs308AvJ4uEG8PIVy6M",
+	"1dwqvck8jVHTFZcx/trolaitTfX5rYuwZy7Ydj/unnbrWkLZeATkEpVRcwT3TZxjTRdOj/S8cpB4frRv",
+	"KdmN+q5lvNUc0rnlqtNVl+/xwbhg3mOHqCEJH5ry+bv5m6jd7XPfC7SJk5zTlImTAbsmHrAElqiFkEyj",
+	"2rMijAmiXLlgdilMIdtqsVhaJl0EyuZhiQr8hO4rvQm60HDXOKG6+6a58b5wb+0Zfbc16xBxR4pUl1vj",
+	"G51l9q3QL3cRmWqWPFbXLlQHFZltFMVJ1ZmUNKGcgnwsiOErwC+tilTCLL8EpDKIIAYZQTN1ZWnccw+b",
+	"2JFnQj4OrQCS8RRW2dm2wMbKWMbhiDWsUe1IdDneL3JK73GXv5MUseXW9rfXL1+M2fnpL29IsSRlyfhw",
+	"kOcMNU96bAWrGWhDNzv+nW8RrhBDoLz1ETPptDSDaQqrwBxAT1Zc8oWXDbC7lhRfiKchocr0ixlBHWwa",
+	"t0CXcRxN80+JKAJzN36FFRfJlFurxSxrySxwW9LWglPQZpS1LLc8EaFAtOV3Ee8Yhnssj93rxE43tO+G",
+	"daV2TZfOzZSghlrSL9Lp9oXCJ0IKwvTDqtlssUXkpltpxzAdGe94qAZBuPH7Jpk3Ppbp5imgtLeVHuiB",
+	"dnKgn3dQw6cOvOO1TLP+aXY3u1m33pJ7Xm8N2eBPn+wQPccjrSxuXnUvG2y+yBiRCz5jGgLmpruUnLRe",
+	"4oSwZikXuvk+ast0Rf7LHA/yFj6MRiQ2jAwt17OO2D+1sOBtgWolLMbcupsFjVoEqkDjsgrv0CueZOWr",
+	"cbuhru2C63IHvRHG7i1mdoMgbMYjbeBVeI9Oe5qSRdKp6X01gvYWXXCV15B3NfgGHz71z26PnOurNQfr",
+	"SmnxymJKpbW84/rwu1DKBfSmlDtUEjADvv+G4hxe4KuNbSYqupyaS7jeisixKS/vyfocyEADs8kWCzAk",
+	"ct5MprKJmdZzznE0xuGpaWsrrqCioWuuJUUU72/Z9qyJ0Mv8ZpXa3UNYxq0LUWeHvfZE3AyOWeLXgffP",
+	"a0o0qUj+R2GI8dsaSOktq4sbiur2q6PDTbEHxIuLp+h9OrGnv+KrHcxWPbOWeoHN3F4IQDkPqqRf+vXZ",
+	"tepuLW6e/XIX2VAl0C9aEf/How4AYOOR88ltQGGEgOum/m4SWZyHD29GFudBx73ANnYaR28ed5wv0vb8",
+	"nTK5HMxQip19dhtpcZXvC/PZ3ZbWfFM352R7vM5Wl/lrT3F51s5d7pjvpDlG8kY2whtb6ErscMtmY4da",
+	"2PXPezm+Y7AQ7Y8Ts/lTr4zZvVDw67yLkiApKh+hSQqokm749OV0XP9i4ZspLU6Xtb979lLf7E+7eMre",
+	"PATtUOfOBHChLqFvorEDSja9yMpEKq2tyrd2rfe5o/e/WxuTjpv3uYpM2j6dept+r8bljW6lo/jAhNRx",
+	"gQtFoA4T1t+tG1wkO5aD8mpMR69GdSH+yJTl3VnF/8bHm7M9y+lN3RvM04JaG/0yrsry3MZh1dr3ohvw",
+	"RD2pWytrEx8aC9pF1aWgUa2NwITIWbIgbPqBVsBNpnveuftsv5tbw1ZZP4GdySthpi9womZj2f2gyg2O",
+	"K9NrXPeypa9/Nn0eO8IelCJtHvqwnR0BN/BBGNuCPUhu5OBk6b4xaBKDeJpJK5Lub1ll02kwRzcOJzOg",
+	"uyGK+EnVGm1aeu8F2y9GcntoUD3H9kboDxs+vn6WtZAF2g6i4RfiDPkGXPeOFeOW8TwwjMq+eDd+mgC7",
+	"VlkSs1gdsVOKp6d4WuNczS4GWjLaMowoqUfYbpLsrNisbSe1trU3MdaGMXXs8jzLlzXVapbUBdqdRtgQ",
+	"rzztve/jEW4Ct5mG6RVoMRdt5LmPvXY8oq2cYh9TIZsa3pAF/Mo1Dmyc7+XGnOtdlZayNPbdlLyf+ZeY",
+	"XkMRHnTS0W/ogEuUumRZyh5IlTvtHtaRhxsxVt25aHENUsj6JUj24O//vHjIfPAEC7UL2QMX+o4//Pcv",
+	"bx4esZdAAfDjkBkQ1nkS1jn/hQzPG9jIP/7l0fePO+F31+i7pzqSxQI8XGl3gqNwjC0BCP1a2xJM0D0c",
+	"dzMS1w+liRo9kuEvmeUBaGoXAFWuijlgX9LD6EMjwtQ+xaYKoLbSe5sswvJF35YzGS25bAXPD+CDW7pt",
+	"w4eqvzreLOFUGW95LFs25hy4jpZ3bqeo9OYzq28bZ47EHd5Qjeg0s0ulqfgoQYiBYTzSCqOxE4zrXrRk",
+	"5/UoTVmJ1w8D2bnse6WY70B97ZVAiM+25twNwAdfK3huESpR7fcfGF/jwyDVtQOZJ58L9rFXGYMbuGyK",
+	"tMyCDEu5md1RfPP4jK1wvjmf6HfaMNx15cvJbfJzMq1GmTaqOVVs+wrkbTeP10bLThAnKyHL3z66DdCT",
+	"G6NyNM+nY5GRGgoj4M6jfuVolb22xkfhypj58kyUxRgyIDd1pq+g3EYrEexbXaNVN6/1vs0+4FKnLjwa",
+	"QM8hECub4unuqmhWtqcagXDyuKlYIHywIGOzp3upqzO8cBPUYGM2/aCNeHDvy9BwW6uRhZ66gcGEfflJ",
+	"xTfGQLzF4I2S7dU7eMv7mjvTyuSxm/a6Be9upJ27hcqRMJnE7sLXY8ZdBbf8Z/zriBVUxVaZsczzn/yp",
+	"cpZGzojck8r6gr6Ms2gdNfGiuyby+0a9W2oX7SarPWJ5e2o+le52WirbHbBnHQqeNJ6CUhGRMcv/8Nr7",
+	"2BlbQvU7px/FU50l4HwYGgxI642VSrOIJwloU6tt7eGQCVQWLTMhRsiZ310pvbwJp7iGQwgxI+c0K6qF",
+	"sIinNtMNZ4de7XoQ3MNt9WV26FE3K5ez+ZO6lrjyXW/CPmoc+SlCBz2HXN7wHbrEnSsI41GgxX2K43R/",
+	"flsdZmczjHjdKFWy2YoQc0HgkZluDoQrNzTdEkDVucRATvo1tSg0UKb3FgWpkqOXx7ZUptw88DL9NvKm",
+	"Cjhd34CjBjjpevF38uRVEZXYu3evX46R2cAqtWvmlo0YjFSh2iZxkOJS+9P/EzAOTic/v//4w6dJ+c8n",
+	"ff581HIH9jm4BwN9rmE9b40TrpFdE2yz63zcFa2rQh03iUkvM+xeERp9i8Ah2lCDHXFGBQWBmYQj4jq3",
+	"KEEalx7qBU2t8AHn8TMZZomyB8fsP9ydhxlTGx6S5jqB+xdErjtXa+hlpSq0OG53nR+xV5g+xckDyaWy",
+	"S7qPfUPM04OpXevOqy6U7BCcX6MqP70KK+tIOnuYTHeWoWiyGr8FbpSksvUFEEDYZrfBM2Aa5plBF5Or",
+	"nYvrV2wAAhCnoIsMhq3Xb1v2ZdEezw3Zt1ZVAefY2OseGOH1l1pjg63mEfRlXgUNXNDrOytr5AU1/CzH",
+	"9dIPbhidyO4ijLgH1fm9bd2qPmDvWzZqG+k4WPZOVqDQTAXWPUyh1FI+li3r1gmFv1byVSyWYCwLnbNr",
+	"Ic1zqvTC6LrJC70EnB2q9MJO8R//hATUJXzcjyPFSgukoVMiqfvRHLFXf2Q8meSdYh+Jc/K6DvybEZek",
+	"2S+VMsBiMSe4x6Kd0ectKvAtVQ7YQlbnpXH3IK2XYgWSwB1Jo43UaibQ8UIa7OmvL4/YKxIg8QYE90wm",
+	"IyXxdsMHnzPAcvEhMkf4ZyJuYGKwZSuu4IidcbtEdXkuPiCt4clhBqgesXPqcE2vyphpwJmxWNnwhBkz",
+	"rE9AgoV/CEzEU8qTSzkFr5lms3YfqSavMtlJApq62XTxbGzePTt6+NS+zRW70C3oEo0c8zPLzs1Ubk+z",
+	"WNhzIS/7knioZS0M43aSADd2okhQQ8OLjkFD/IyZtUnUAh96+/ML9v2Tx0/YAxVZsJPIY3AiA2QXL86O",
+	"L96cPxyzpbUpPv7rS/JSnv12fnHETpmEawxovURl65rr2CBPltZ402cw6AjLrrkpIX5uEnBRx3tTAPsJ",
+	"uAbtg4FQraPRYL9mHJJIQUZ6ndoixifUwz5ivxGjdzgB46qOaBVzYRKNtbF3VcPeAerQXtYcx/+MZmHY",
+	"u7dvjvx+PGNZnD47Ph4zG+G/qNLaxOCnpTL2Waq0PWJvlEqRRdCOJkJeTsr3nGNJXhjtpmHUzcRuMKMx",
+	"DXN3rkzIuAuzbaHo/ojXtZAwJzyzuYAkNiyTGDGHKLFeI3k9n/xCrDYPuiQTZNBHNynugLDYzTzOvsnD",
+	"7A8U7F+wrEcnTWE2txL8v72TurDZNSR/Q8G917alg11cWy+ptwHofy9czbeQJjwCZzWhfp7TR8fH8LIp",
+	"3Pjs1DK6ywhSXM2Jl0/R3D1mK/5hyhcQIpm99+LDVMRJ/mUL4lYoyz/1kYYtbHwLj3fKPkwtX7TG+uVj",
+	"rUvl3z3ead2rTW4P+2B9KfZpQsgpTmL7+Jtj45ropnP2bgvBYLAexMJhXDth/TmGzvMZeajohkDGD9qZ",
+	"t4Q1+VFlr+SV0EquQNoJXqMQozEuXJsecrwknG+rjbgZUNOEfmR8mekEplasQGW2vBcr/sEv/Q8+WmTL",
+	"ToTGGsgib+fxDzsbatqX4qLotys/oUZjKBgc+WekpMVNeGCyFR5UZ+7E9Fvz0OO3k+7hEqToidxXiGc7",
+	"V2SKn3DP5kpHEDvzG3fGN+eYQC0Ob4/nGKhTsAhXPFOYYLFs2MQ+9nlc7/ZywtuOgHt3axWG7a/30+wo",
+	"+bIszHnMhqKVnfKca6Kw6b9vI5a9CjPjIk5RNr0D9+f2XdpjZ3bsRmuxjT4TvIMdG5eXuT6qpu2synD9",
+	"zn+u7j9j3p1KumfJafD65RGd49oDdOrxt3ymlQdyCf71S+IbBWOgX4RGGyFaWnLTCoTCzI5pGGGh1iV+",
+	"xagyAzUZiVi7jjwKnQR7rfSlYQ8uXpyxFEAzHscaMIkwhPoIC89R9nMvrwiRlcvcITK5FjEwkmiPGGU1",
+	"s1kWXQbFbIlXk5BsBSul15QYGt5kD4yQiwQm+Re0rw8b8r4yX5SyuDtO6L9d1weNeXuiSDXrewNBoBcz",
+	"8mX7DLo+pishs9xh58b4tNuoN05ITloFJk0lJFjYZk98Ga27R1BmOF7h9eaJjf22NJ6vzWClvqIPjyca",
+	"yOuIl16qkcDEFZgj9k4a8EJPqOGxBC1sqKuCVOsCx6CIbztirlAAuGgfKqKCdEkP50U/MG/sOeMxT10q",
+	"c6wckP2KoQp/JeKMJ8n6aLRXUdZyhuiOqqylR5vLspZ9GY2rLyQY8zIPvuhzY2HRfWOV7pCC8iJ8VWDv",
+	"EXxb3+ghbjnmtu3RnQYet/gbyHqlp6Tw7GqZADf1G3w0tL2RVo8dlcY6rq5Urb/KQjQfkZWy8AJ1770U",
+	"/B0SWsEo//LdX548+uHxkzLXKUdb1uQDkFaL3a124WM5wq+1yXZtLLT7w9Mnu5uVsOB4Wrs3+93uRo3l",
+	"6AWcu1O732h3J0s1rkjLjFrHVN2nshS4hc5ya/Ne0cRlTUMqCYXXqNA32PluwzRqmniZOU329PzF69ds",
+	"CTwGnau1UjWkGaCydL0U1l15TmN1LxyxEBrgtKMVFomyip2Wv33OeCowPCz/+b8np6mY/AOIl+9MI3Ev",
+	"10SAHx79+LjqsGST//f9/9o0XzXZ0SuDvr2GP7USgMs/2QttxVmOUi2ueJvJKOJTYq4bac0p/yMDhq1x",
+	"q/SEpxTqGueVz16ceufiXICmzZ+LBMzaWFi5ymcNtsZt8dnfNdsPI+Szu0Os6yz507jkp2k0or4K1M6K",
+	"B5kmUcPr5BRuJIy3r3o8Z4u2VDS8HrFf6ZCkCRfSwod222rZsFq2m7Z/bjOmtiXJXejM4Ez+dnFxdk51",
+	"1tBZU2T/5BM0Y/ZHBno9ZnPNgxdXaeYLsh2je7esqphGb1NpluQZenZ83Ox+iIWGyE5VUS8/F+d3uLCq",
+	"1vmnnXCpGkxWN7hZahdAHpC6Matx7ZxtDiRQ8fsdh3yviljdYG8beMnOYM6wVD8+fvzdd395fPLd0x++",
+	"f/KXvzztogjtH2xRcTyXanW0I9i+BfIWnxfFpXssX95dQy3RVy5qp+pnGQflAz3KlIlDvbMHQsbwgf1n",
+	"Hg5E6vA+9ZuckNcPla1tEdtEi7xQ8inNDs96z4UreNF2ust7+s290HKwdgzzBcEC7FM6t8cIA35mHw2I",
+	"V9avY0elRS9DO/RoIVeowph3pIa0ZZQEj/rGDypt/NrAH70KhnePwlz0mP0Fz7FOO+ci4Mhpa/NkPpXW",
+	"kg52BPZukOMeEBQO3qKHz7reZxNEyhJ4dZXbdwUf7YkMdj295nVw3/YOtiee71MLOSyZb8F34WddHuCu",
+	"PascmVsFsOgKqbA3JsKtsNg+BE5VVYWSr6TV69tdrFiYVBlRz1Zy2FE5kE6qlQ3Ru85b2mgo7c3X+jKw",
+	"8hDRJI5DAxcV1JJC1ZEdudbHBUJ/KT/K8aryQnXcrq5YcHU1OU38xwYN0aEm9mzR7ViTF35zoYut7vZ8",
+	"hVK6vNKkXJesZX0ZcfVsNGHB5WbBBp3IAMTTghKaltzqTEa8Wwx8npUSNrGYWr535RZ3ENLPIrGg+253",
+	"zsb6guaVXJrd3wqwUiFwuSfI4rbp/83fpL1v9H6Xanjq483vW6muu/fblfk1ik6SKjf4d3vcu3tct7uy",
+	"oAMU2t737s4rqjUpegWx4FP39ccdOXu3d6F7WPiOF1fhPOzYTQn9svMF1iRUtGX2lhatlMRLU9pBPH9X",
+	"s77ncZ8keM/RpwXnDne+WEgnbmIvfMFbHLYxGDvtEwGyNVZvXnDhjjsY+HZ3wJgQD0imqdaYQQv6irc6",
+	"a1ou6HoxKnQLCJmpjHwj2F3mUZa5zCqgcx2KdKTQPX3epftP++U305r2TCK8SRVe57XscVib3ZzlGkRh",
+	"jTZWoEaoTdP129ew+Rs0UxDq5hEq1ylsK7nrp76bBexTBfMznOmbHdvhPI46gY51J+/dhHXnUDrV7m4A",
+	"pVNtiEDWDn4g7vDO+rKJ/7agxrZCTpRW5hcuxRyMvXOM2wbjd13b2qiyRkZ1Z7FtZBTezNdk4t1rYCVj",
+	"b31sOXhuX42mFWlrU/but/ytdqd2/tmSCN1CzrfkWSsjjpXGsGNJzgB0X3E8DzC4FbiqnvUgb1NQ61/f",
+	"pa28+BbJDV9oF5hKQ+iwU3vVDm/frtY1taEi0oZPvxy72ilLtdN6VZbKdd5hNQ551WN/t3PXY0v7XPZb",
+	"9vEGR+DQO931vjzPdai+RiYzdXbTrv4zjP2diyQxU6SABOwebwb/Qcf3EjUz0xjizE0X4l4vWs2lmYPW",
+	"3d+jjIz+73k/3XQGSyG7vwTRZZ573uUFJeeJiKzp/ryBKKMgTY9911VyDAJzXxop3iOHUbeXwtim3WWa",
+	"8Sjhi7I07B+Q2WoWfjd2yq2FVWr7eX3xxXoYfO1n78ro3azJqKJQrxcJtFxn/YpapUsfPx5EVwnX5FzD",
+	"UdPhD3+RaEpaiIYVSNuqBpC2uU+gvH+1h6feLa/nE5vakPvZdG8sW0HcK+dMZ1K2dk/LFivZ2SZNy9yD",
+	"tL2w2s8dUveNLV1Af5hJhd2U59DCJsb1O6KJqTZy6CYu2sRQNphFmcFtMIVi18vk0XS1NF9UdTrodKvu",
+	"EwFwu9bwm8r8d2FhrZlRC1tnN5um6+GQIml5M29FMt2zopSUypVV2iKutXtxi5GEsirtrrj9nXidfW21",
+	"dat6tmpur+qAdyxusHncauDNnfkmffDe/sEwzb5EbLZoZNeK7VfvAT6Q4THuF4GwxX/vL3pTBCP3tnf5",
+	"mbiQ7abudUAz2avV8G5+yd5olL48SnuYRjMUR56P1st+WniX8zCE2noXcxoXe9uRdE4R+nY/nN+C15Q0",
+	"Y1+MuvznJmWVyLbnyrexn36z3QeatlkbatOixHx+Iwp7KebzJvrac83beHZJJKMRd1zGFyE/6dYyQHtl",
+	"d7Y5PTokcLa82iVJs+XVbqmYbSF6nz3dspny9ingX/GXxPEoGEcqFQ7xVTCgr4ISgUolaaFz1ah+RpnW",
+	"LqqS3G3ettDgUHBVWd1zW1B4DeSD3RU67x4MvY7DNDuu4w2iUiOUqzuSX1jCr5Mv3cldUGo0zHhcXthi",
+	"0TpupRdK+hqjO+VwtvDWra6H7Sl/XViNV+j65ew1rMs+YsNNd7zbyErC4u0UY7sNMLn9AOT2BI3rCRS3",
+	"63IK726sw3hrYbp26fmL8jFvqU3V3VN8ocVi0dtZ/LuadbUYGdus5tZG71sMzzeP2qjkai9BrjPeYSNe",
+	"GnxIBRr3elvQORnQ97G9u/iaXu+1iZJNNl59hdQ/dfKYktuAdNplxeYQyaohX9lp5RaTKsxtNB7NNVDp",
+	"OOqiAyaZdddji8zZKly2TXcLjb36kCZc8j24cccrtETJu6Pc+xholyKOQZbNGnWgkUqStCGwBAtYbyTi",
+	"mYFS4ZZQmcBVMVzC6qgfsmCDHKuvvKOiw+oUBovWySAME+5sPfXbYOp3kfJdye/u1XNdZCws1IHCc70g",
+	"zZJkapdaZYulJ3SHOVValelKGALv303shcm6vU6xG0zZkuKob4MKtlD6jS62vaq23VaA1bayJSqB+iYJ",
+	"8raYJY995Raf+lbduWnEZSzitsDKfsHm3grW/8rpHw/m51yqR5N33rz5N4FZvvCw8FS6IlkHAGVPsg79",
+	"LQz5zmCS+zDFnpkWA/JyM3e/SfLEDYu6bBPlGwmqMa2hw1E4QCRvpb+mW4aCKKjMxR6rtcUl6Dt+m8m+",
+	"B34JTEOqNIGeBomBoCATYSzTYFIlDTQVK9JrjAdpOcNCCtNXzu2eH6T07ty6TL51DxbgouR276rb6L6R",
+	"phsychH0QAE3EDvZmIuqelq0YAuVLbThQ+LLcfLvO52r0NY436hxLmeXZreLng53apB4D3hkrtQlxOco",
+	"PkRwEYIq+8yyc1qa8hZRv6VWZ/B+vHFmWkqiq1bLoMLN9FX+zyHS0Nf0ZfKXqjzh3cXPkx/Y3345fcGM",
+	"WCAFM/fomH33mHlximHQKSNbfoBhC1iFiGaWgjaCANGErOKzbY1b7YTSV7OL4xwaFyiTPyW9c1e3FmNe",
+	"cSH3raeuKXfbD2/nES76KmXrtqdMZDkiwu3GK2xzXewjMHcF5dhasHhLJcG3mfy5Y8GgA237Shjj7wAX",
+	"kbLhIr4tCnibX4s97v8XhCWpHRY0Sf1HDGOiDFuqJMYyCStlLPv+5IR5Lx57kCNZMAtJYrDOAlV+5XLt",
+	"Kndl9uER+1lpxlmssYyiHJPxIaGGET46VzCul9wyjhp9gs8xfzPh49KXS41VA6g5xfutuO7ubHKvmGtI",
+	"ba83MtmrGyekxt2vv9LRbbj9yJ7VE5xjEU29jNFtyEVl8j4e8eItH4zbu7dibr1eC5YW6P/qteZp2qb/",
+	"FdvcdePoemnYgOoIu7YWGFdDgzk8T9CF+sL6lBTfDq+ZS4HLhOkroEFG3V8Mp+umK7gVfqewgExLp62v",
+	"U2WjjaZlbljCcZX5VBnLBtNoXMzyEW06SJtHsuHYtByJJnLfBT50zlfJq1L9wT6A98Vt24CjE/Fu0Q2h",
+	"ldI7beP8xbsIXq863XY1aQc/zilAvPvRfFG8VEDnb/BpaXHFW0qH7sPF1WWL1yZR01A+sfskKlvc0Jsx",
+	"d9HqFU9EPM2kFUl3NfqaaxmqXvTAlCrTU7Eb9ZnV129cpYl8q0rDoK3oRo77hSB8WCX1CilPHz96sjNu",
+	"Dt9rHJdTajtm5DXZg3wJDObHSQViUw1UMI3w4/PK9t6wwiKuXZ1iNivXX6XymtXy/4xK25vmMpuIFl9S",
+	"FYIQffVoq78hPHaZXem1nPAWoMJ8XrtNEtUaIC3++PJgm/fBnoXiM29V0hsXWaskR0XeB8R4s2BjB9ji",
+	"vNOWGeFE/qp5fzzCRf5SJ9by2pXNXuf99S1G6ftrmYYVcp/w/sphaWL0vvbcxrOjn7G54ty4+g9Ucs5X",
+	"1sEqofhLpKRRCbBZRtVzUCtCTsmMFUnCPMQgVSmcZSKxEyF9AanRuNGp0QaCyOOpkkn519Jrm8CbIK/I",
+	"cKhCHhUVNWwG4MS57b70HS6ZezjvsTyy0nI27uI+/s0ibSBMjKeXeJalES6OgZMYF6lI8VS5KDSkTgOa",
+	"PkruodBjPhqPVCRG49FC2ElCcX0LRai4yQr/yRYLIRdz59Jd8SvAN2WKv8lsAda9PwlZKfh+ioJrms3w",
+	"/+sU2440dag5Wo90NlsvYEWD4po6M9diji1Z0Jrj7PCxdNW4MXuaMPbyAdeuFS1WK4iZMy26vaYibePc",
+	"xPD45MSZE8dF0YSNWiYbNapPttsPbxE4psFHW8qA2OKGcnS6N8j7Vt/5lppuJ9sBdbeKde6pVrzcrRFo",
+	"9en+ktl9om16gX4B6Vd7uzDvYIn38ocWkSFlK2h1dl2WfA+fzU2XsJ/PZ+NINALT7i6hhhN9LeeqxfHj",
+	"G+m+hH8Dnthl73J7/gavVmoMpewYfHDpBq6gbe4XSUELFWMZ3GT9nEXBDhspdKXgxZ9qFYExLBFzIAkg",
+	"TTJTamAp8DZuKajXhLHQYshrjWWtIhDU7cZcGyyFyY15xnzk9hg5tnSZCmOqLQXS+mjUMSuqt0M8ZtVK",
+	"f0fbERD2QDgg5WcaeeSxDrarvYER0h+/nybcgozW01VXm2QoCnknlRw2Y9mWRNhUgg8WmheOaGd1yeSl",
+	"VNfSB7eVwjrf9wG08rdiHryWz7HIot959u7c3Vzu7G7ZTvtUf9Nx77jsQ96H+6wozakZJK71lquOc7zF",
+	"XV/v4zZFqLu6zctHo4PEdCDK/1w0j9ao/eChOrLIEChMkBCmD9BSx2cpAne6FLbfCythTOc+tmS175Fy",
+	"0q9a+S1GwO4d9ZprVPnYSz0FLJgA7TLa2PTKJtU2YAdpHuj4UV+f6wxegLH7pZsXolybS267nEi/Ommx",
+	"sIFZMJY5N1iL/NcmVLVCLPFoGbJV24xa/YSo7hLk1hp6YVzj2lJWJtm4cZZrWwmR62mwbA/SrA04PNk6",
+	"inNXrLl/OYDNhOyVWGgX1RPhWLK0Gfx7W4AphqFZm4BzkFJtdRc5vUcWmFXlwcXCoEXQfLdb+uUhKXv7",
+	"4nVet5rRTFmeuMicFXCTaaCAHAqRqcXXeMtxKnyJdu/TLtRKbCTV6nennBkM6q+H3uTRNuyU+chV9rua",
+	"seulMsAK3FMKFE5i0lK5ZD+eMLfwhoJ/+IzLWEk/johLNgPmMa82VVU35Ck5zffYuPB6eynvra/7Vdq7",
+	"+/z9ffvfGkFNjHHvse0VgI1x312Pwt7m5G6Hfwf8YcqdG2+XYU/5NM19l7HUwp6b3D/03AeM7DvkWw5d",
+	"T3lmynHrzh9ChN+4ceZa2N4Zrp+Hm3v08r1X2r+9J2H0B7Nu8kgEwRlPLs29Kd6/fXmrS1Cd0ub52TwP",
+	"4yoLr7HkOjHXWW6dhda4nj/mFZLeicBdXLd3L9LnXd0Az8838gtxxb2BlCPC5EHESZBxd/rnV1wklEHt",
+	"X61OvuMhqqkynq2XQZYbaho6JJ3p72rWb5lTNBipzPSdbIPoVlqxzVE3Ls6WDXxn+pNbaQobq4pHoOAt",
+	"VcnwbLk26DlwDlMU5niSsEitQsY3Hp+jQp/ehVE9JTmxM7ZynKVTw696gtm6gPbup+slPe+WtTnKOc/o",
+	"7TqERC1w2dqW9SdaTW6YAZB5ooszOjzH0KZEzZhZchTEZ2v2q//JSdmG/Up+kK7rHkT6vvc0xhS0TeAN",
+	"eupZliaKx8w/yzJcwefMJUUX2renPbbkhkkloeOwM1kEsvbY/nrAZ37sSuRXofn6ZjXRXeNo6pRREF51",
+	"zZuO8oW/J1/sU3B1Dp3hyStgCh2eT0MYWcfnjbB7oacW/TjjfB2WQLTgt1D+3J1ft9SL87Ye3oJW7vzu",
+	"qyHug0vTUR0jxSrrC12TU8a0X95jr05MpNIaYfQ2MzULMNoVKk+zWSLMMpc7Pda3WGS6FNdE31OsaqO4",
+	"UwQhuuRF/8ejDrGW/bANKlyiV9RTo5mqWXrZjYPiJKVRIMrmvNRtKkqFdvJdLjmKKwV2SqTffA5t+gL3",
+	"TPeHZnaW3JRbC1qOno3+z79OJj++//j005926lr0ctt4XkmtkmSP2C5lU7QHTzMtOiA0lx5uHInm87mI",
+	"zvbJ4siiS+hxUJ0aKWSvciYqs309bVNSiRrrahzCG9ecoNbysOct0P35JNlPdnKbFVoo91xe6tIubXOL",
+	"5bPcQlLnEHBve1ivz1Py/Bh69xlzozZ5bKd1TZNh2sNONEQyeXtkxzuqX/JK5bw0Qnw3F28i/lUp3ejz",
+	"GwqhyUdKNprHLKQ9gRKtqjy4dQ3IftNz6nXPFc2valKqjDpf6by7Jtp5R2aaEMZ/ptWV6B/14m7nrrkC",
+	"oZMX7q1dOEN1w7QScYRz5atkNB4lMU+3Rji3Q8s2hiETXMPUpNNSwlHzuApchk5F2Ao0HL9aTbvhcSIO",
+	"IbpuW3IoZRlW2cXfLi7OzhmxsojFYKyQPm4wjwbXQPvMEzNmf2Sg1wg0Mdd8sQJpj9jLX8+ZBqOSDN9D",
+	"L5XPp2RKMrjC52NIBH0o4hSfM7dqmbO+sVgB6sOWrfglMAn2WunLkOZU1e3xIq6Foz/54SawNrcYqJ4v",
+	"9O4i0FvI5aVfr76SuCt3ZfaItypsbj2Lx+M4+1LqFUhbF8a7RciREuWDGqtXgUt5LBHwaJx/m/I1WmZG",
+	"4YhPM5nPFweouTSp0kXL49HS2rT0Z1jZKXxY8szYUL+Idil/7n0XD09h58xXjz7zDmJ9vnKFiyHf89oe",
+	"dqCuOzcc1PqrZZKdnHQGHdrnNLYa/v2oDjX7/Wd9Q6gl3//bLpVhqndCiMbW3AL7T5bTKTtmD4o//sPH",
+	"ED3MbZyUcIzBEYHdo40zOMQbgMxCUz3qBHZ+uF+lyfKMG9Se2pqXD27unQ0dbtkKCkLbK/ux30KVb/vN",
+	"WIPPtorj0bVbh73CekvvVq7ZG23GoZhAsfM3RVobjzBRhSdJx57p+OPSCxmr62nM13uVCii/XgxhW+j4",
+	"P7WwoN8AN/tmxFPyO7m9/2yKZHYCJtOMcEIYLyXyCsnOlLELDef/+80mt4FURcv61NsO0B5mYHUtQXe3",
+	"0qJrBD1KnYMsNwQJXzQxUa7uWpaCNh7qsLAYViUdzDIJyL0dwcE3t9ZpSpkWdn2OtOZNWcA16NPMpXER",
+	"EZIOQl8XE0K5avTp0ydf62VDHfkvF3TMHrEVl3wBK5A+H5Ugsn4GKKPhMq0yC8Y/W9MoMJf5OSOBG91x",
+	"nLlFbtM7xCpN1pTfnWplVaQSxmOeIq0JQ7/SYCA+Yi6qt6wYkTkFW+FRBCk9dOYiqfPW3DMGUk7XKkF9",
+	"luZ4evaa+YhrIRdIvlbYBEbPRv8gdAV2Ki37pfJ8CZzt2ejk6NHRCdFhCpKnYvRs9N3RydF35FuxS9qj",
+	"Y56K46tHx859evxRxJ+OU62uQOLJwicWTbiEZ/kjYxyi06Fx7TTFNNN+xOpakveTXIroGVcSnJ/2iL11",
+	"VGU8gLjzg9JvfzZhJ7GROTgxAY8t9fA6Hj0b/RXsKT5bDIPmpPkKLGgzevavjyOB48R5hsj2ZwHIMdCz",
+	"1Rk4MM8V73L5vB+PcgxWfP7xyYk3jNhgb07zkg/Hv3u0vqL9rd6wYiZ0FGoGPHeLzrMkR4Gl5HYegzOK",
+	"/vfE451MXr/c3C1EIQE9WYDERaRYVK0hcTsmiGDngo5kMditJcw/0RifnJy0TStfp+NXFDdITz/q9fR3",
+	"vZ5+0ufpxz/2ePr7XrP8vse4aRHzA5jFwraet1/hGjd3LrSxjB5lpPg5Iy67hLUBy1KMMqBdLR2wKuTL",
+	"5llCiMFTbPEVNdhykMjIU5yksne6+wEa16f1CqEHmfOJeQwCOFocuVPv7CJHo3HjCPJ47xLJFuafR49/",
+	"aOy+qSXHsiothfvUS68kUkqRy5PNiv3m9F4jiLYRV8ASdQ2azVQmidkVJp+26XmLb8Pabg1K3FzgMIIs",
+	"TfuNwKq9+m9qijKNK60FzJJn35+U0vofn5zsUuibO4gybZRuI4ZGW+CdcnM6T6RIDMz83jLziRHy0uvq",
+	"vvpCHa1gpa7AkOiDz/Zg2oRTCkRm59hLM9N2NFUck9cxrFJFSU6Tf8B6qzBUPj/fP90Z5NDW43zyC5Vi",
+	"2dZVKQrgf0b/ejT58T0FA/yv/xn9afQZzi0t6D7n9tWFq/xcfe1/ZwpPaaqMwOANVrL877sE44FF9GIR",
+	"J31YxJNHj3s93Wvcj77vxdp++CoZ4bhZhqXDxRzUCGrfVaXbp8o5IzHZGXqwQ9QHS7xw4A8Df/hKT06a",
+	"2abMbXdSvKzAawepp+xwltn7KzjQofhJxevbs9yUl/PTp0/1AX8a+NHAjwZ55StS3I7hQwA0bxRkXtHP",
+	"Po6JwN7JmVBY5VqZ8XPi3655ciFYA8ncvYpeDOM+HrknmuWcVPzXI2evc6Mc7HWDve6W7XX+3UaD3UjG",
+	"v7val2HRI3M1Goev399UYf8wkfHmJbgx8JGFD/YYu9763OalSFITxP4Qjpkkyzojy/pz8lD9/fy3X5nz",
+	"bBJ6ZCIkECS0G9jRYKz7tox1seALqYwVkWll+S+9L9MQSkvMI9xLk6XEyGeZjBNgDyzXR4t/P3xGaOAY",
+	"fDBXYwbzOVDWTk3fJb+Niz00eZPjEuB/TID3Y+YIg61CUrpTjvHJiJJIXW2EYwfrlKgF0asZl8DKuRU0",
+	"uzFbKPSOIz3H2Sp1Oje3fMYNHBuXO53H414Ju3Zhu6ZduWBYpCB39AoTrrLGq+tlaaF78YTFv0VaPec5",
+	"d5sJyYl17T751d3iOlq6XKrSYX7h+p+8FMbJv44PNRX3Jo/7XCQOO7tygL8Y8Xc49luOfY5N6A/8plf0",
+	"Z3qik3z1RXq4xm2yIMzFh/amTg5rc8dVHlxlex7DL8lypUzDOXpBcuvPLhfr85qa7sj+U5phJ+vPo1s9",
+	"OYPh5x4bfu7SlPOl3tjHMzILP/uYM5yarZyOI4Z2AsrTDpXWRxSi+MqUjqlAaswMWBfc6ZJ2WUq14ukZ",
+	"CUwERkQJstI4A0ZJFA7yPITwReyRRSpJXDob9ZHnuxXgKH4wmyJywUl+8qbvb5xhuml+Bq5JHXv43S+c",
+	"gb4pVW78AlWMwcI+WNj3YOIYZ74tNMrFN3kuHqLrDXFUuwShmWcFFEB/CSmZ7pI147lublyd6ypvH1N7",
+	"E0qrj5krS0eN6gDr7B6k8okaTzBGaMXI9OeZgdhZbZ6c/Miul6j6B5QafPF3NTPMcr0AW9wGmUzAGEal",
+	"0/4TOVtbKNcXISEf0Bm7Yfk+TYzy6922rOhlCSvbapISxrrFbbXUK1c5q0FV90lHG+jcd63+vvRljwcN",
+	"eOD732Yk2IYt2PO7Oz1Wg248uI7uxtR1gEyzNKi51aPjoHzum7RwV6FbOMzulruBOw3caRAsvlyFMk9i",
+	"pn+36pdnpA5OFkS6pHXwpJahjJ5tn0vtioOTKujL6FvDEHcoPHvOV0BFNpUW//ZYWUHjdHFhqGQuuJ7x",
+	"BUxKJkIDKy7RIY6xX6E3GrTXYJp0RZ9GThnQh8h7Hjc2yn33X2g+tVujvOJxA7MNv/lC7vHo/vCfnuf4",
+	"VpI/SrW2WKiz7rL/KwfnOfNJzr6cXAADUNfSQTZESulYSDTyXwtpjtj5ksfqungSI1qYBKzdO+dJYgJ6",
+	"/BF7QU50RuYfNhMyNiwPjByXsBvG3nlAUBIOhkAkeMCClckPGHmHukYLxDzJQEZQycD+BSynseA7DjuP",
+	"ScVCnA3mbDOlHZI9yGwFmjef+r+CHY787iP/Uhiq2AyxW6bBmnJvw3qcOOAu/4m7iNujufMAPbINJ3AF",
+	"ibuCIXgEH/AkIQ5DFRskeQcNM2Af7nIHNsfBuVvcDesrxy2pzKXhxL0sL+ToHhH7LaR9nXtPQpUYMRI5",
+	"9y8oTSJrDk//jK1UDMzT65i5MHh8LJOJMHbq7iIqXy9Wq8wiChTT4KCzUq2sF0wfSCUn57+enp3/7beL",
+	"IJkaFnEplWWzMKj44RE7bQv5PP9MpH77hoJNKj+crWA4YXd2QeSx2bvuCNQFV6AXEDMLqzThtkCnaorr",
+	"xvOptFgIiUqlCwC54kkGjfdFCnolDKl+u66O/LL6Nm6P+nQGke2ei2zlOumDHnnLeiTGtJ8VxdwPpkTe",
+	"r1j5tqRJt9docroqCWyeIp4zWKV2zQygZdCwTOZPxCwciraIhkpdsFZnzs5xvgWbaYeRyQi5NO+Yom0c",
+	"OCnj0hk9w0UXsP1NtmobXywWYGybM8Is+ePvnz5DZwSfzN9/fPrk058+m+XAH48hH2G4jIrL6Phj/van",
+	"Y8sXw+10x7fTBV8c9IKqNppv9nD5fVGJYgWXvuCLgUMPHLqFQwdj1cCl75ZL/1dY54FTD5y6hVN7Ghm4",
+	"9cCtd3Dr44/+015xOzzoqsFVceRRiv7TtcQe+MP70L3lkfT8w2MK6PEV5CnHhC/M89CC85ywpYjBMGFd",
+	"mQb8SsjSUxroKY283lCqine5lEy+JWeOeysvfFDcQaXaBymOyOQG4ePCaNDsnhxXnTzO9/N8089jgtNm",
+	"zFRmZ+qDQ62iPsupF1atZsYqSQaA1QqjmKxaYSH4ZH3EfkrULGTJRAkXCKqDhnGN9fh9qFMpG3Lsr0Eh",
+	"EyFhR2iTZxvfys1Sbfsqn9xtR+LuhtzKr7Ci6naAccq/cEREw6MP74fIrXsRuXUjpu1jLweZ+25l7lO3",
+	"yveWLw6y/OeT5V3FpUGSHyT5Yyd4TkIsRDvbvwhP+FTuAgbDNMY3EBgUNZ6/+bXHOBRT+km4CpRD4s9w",
+	"Ug8WRPgTiTl5wKBVeQSTcTkuDk4XZas2qEphGBXNpu1+4KF0xoyvZmKRCbses2gdJWAeshnMlQZUkoXJ",
+	"6x6OA2wDi5ZcLmArTORZ9rl4wHhIoNwH+76FvR02l3Lgr0Ni5R6Jld9U8qNHutkVyvoWNW73TJXN9whN",
+	"JYbeGdYM05fc2PKg1bszHlU6GhjBIGh9tfgPWePhTRO0/5MwpVap8wLUIK4KIz0TMtJUG7oMnZQTb98T",
+	"z5MkAFx5IfCIXdDfhq0yQ2khhq9g4qY3Lmx4iYp4UrwUBByUBDdH1ZRHUmcgA/LFjQW3BlZ5OKFt4NOD",
+	"wDYgYRxKGHxmwdh2yNyXej3RmXQua8MR5aIGicsXXEhT4Br+2dT9M+aI/aosFUISBi8RI4yFuPGKqd8r",
+	"fTByL8B0ugy+hqzCyjxwYp7NfFZm7MaxNzLuwCsHBO9OHEqDUckVbCuylnAhnYeYHs7wl2cut9I5gx2T",
+	"GDNT9QAb52vVwI2SZuzjWlbKAouQZ7G5BrOUYEyBLIutoswMOuQ4U8cc2dVKWOtZVaQy2Wi3fOumg8ao",
+	"F7mD+jMmWUXlQdxxnMl++Ud36XPxu0E0JFvDSAZmdp98lp43tDKc33QMGmKMXuMmAjIlY3iI0sKuS3KM",
+	"V1Z5/LzCblQWtGL6saxHl5hIHoMiDBOy8KrM1lUl2LtKTHMwCHIZz7iG8kR3zErcOhc1v/YOgBgU1oFv",
+	"fbGGxdPCZqhLNkbiZFQwxfmKKcSZTH04HAaY2Zys6dFNfbCD5ufaD+qfe/P5dvPguDBqBjTGoia6q77b",
+	"IJzRHHazzcGE2EfGokUNC3pgndV1S3f2wI0H8+FgPrwLWfn4o/sw3VmthYps8SAAZ2Zff9NMkeJeuUMA",
+	"PUsqXuc+JoLKaMogwVEUTP7e8fgDScDbMjMGvjvw3YHvfhmyfnOWRc7R70iPoJtAaabBF1oshwQEt07H",
+	"iyDXE8JruWZAniJD0azbFYRSMATpCkWBMGq4pDY02FpO7T2/UW5fa3BL6pfzs+gMw0U2XGTDRXYXCoQj",
+	"NruezFwgttkShNpYu6/Z2v3aN/tTaLWTyTtP7Bx9q/mDdynz19Z8yPq7d5boxkihlnNbkt1Kac8rf70a",
+	"5q94DDCqyUbPy/WyNfDYsMwAm6lMxhCzd+9ev6REabDl1OqWytk1ov1W62fXp3ng+tmN3Q9sYZBo7oNE",
+	"s7Nw9VtXwZgz/wZqmWN070fcRDyGMZshZARoZsC4mgp2yS2LIQUXCilsa23jNtScL5LxHUYyGUonD1xo",
+	"MBDuNPjsRNduYno7MwmbmRRrygAMx/buUwBrPQ2MoT9j+NIxDVop7xysYefnv01WXMbcKr0+Yq8knyV4",
+	"E+vwFpcM8Es01Gl1JchMjcZgyeCDw/VjMw38crJIuCEgA5VJyx48OfmRKbsEfS0MPHxOtuemB3lyzdeG",
+	"XQKkhl0rfSnkohHqoOFU3J2+8HkyvYbjePN7+schp6CDjB7Ocn+zI0MzoyHguBk3MDFW6RJzMOyBgUgj",
+	"b3GwcpoqZUD8cEw2iwmBws1FApPcnVV6e8yuUcJHZpEoLAmlM2nFytcQ1FdCLsb0a4Vx5alXMm7lM8Zy",
+	"m5ntVtOzfFUOcch9ZziA4ah/5TdvHwvgEXMmOMT5CoR/xE4bLlph2CwTiWUPfnv98gWLPbzceszOT395",
+	"w1bBeoh0j5a/GqiQO5pjZhTq2FpdgtxEK9LwO0R5eOiTx4+pNenzE0NofVkyoJBXlAzW7oLfHLea0zE0",
+	"fOXqJKpIJe5w8kswHjsJsXYhFtxCst5lpQxn5a5vfd/Na4mi1GeyFeZzHTytg6TRjRE+/vbkkmPDV8mx",
+	"WKVK20lgdO1p2a2s9owTwnjKDRLh6/is4JoPPO4tWIrFd1mPyfphwPZW2hoGMk6VkB7r3IgFJlNOItBI",
+	"vxG3GNifCt3AwV7T2M/5KglenjviXuUuXKefKTd6cyCDXLMHYxmUkuPtGAyth/1tJilKThI0o7BrFgu+",
+	"kMpYERkqBs0xYzmmRMKGWrSUl8ivCJjBPmNVoYsYwN//+Y9zxzHoBRYlKrqcmEu4ZjHYgN6/KZ1tMowx",
+	"Bv69eXl6xi5enB1fvDk/Ri/IsQGuo6UvE9gM6fCZhKLPCLrQNJSBtQyIC3fPiHa7MFtYkfO1lVU84gPC",
+	"GubsI+i4nGcGFa+lSMiggepYYdNwj4e8voQbu6Fo7fJxljjE54OEPUQCx5PNnflVscB7BhYwIIreprXn",
+	"Fj18Bzyg7w94QQ+2iyHU8gtwcb7NbZWlW9g636WrqBOSLX/Dil3uYsZEGfRGOhOm826opipc79KY34+7",
+	"9vaVi5a1+8x6xcC2BtnlqzPn/vCNql3HsTCo7uxhB3rp3qw62O5E3XId3Tt9a2DBAwse1Me7YnyO7+zB",
+	"937KRBI7TxXIOgcce9e9C7QPvvsmV/04N4ZrMJbrBpSoV3LgewPfG/je5+B7A5ckLlkOCuhnkXv1wfn2",
+	"KY4QXXUUWRhBYSQIbZPPEB/DwAF6WxiruVW6sXQPOsDP05K7/wsz6mFMRZjaf3xYJVV2tXECN/gRrtV5",
+	"EUExGNa/0ErWn/VcpnjfwPUe4sv5EgtEXy8xXDEE7LxkluIWlXZHNYyJ3OdcOg86hQqP2bXKEhejw4Rk",
+	"3AlCFE+sVQI+eTAMmy05QpqLheQ2w9FwDUwqy65AIynGlTjIPJqyITXBzTdc6L/wNG3PK/waSi34Gfh5",
+	"fSaXf3UQg7P/63b2f/UBigRqsiVZgltg7hkXJ+jr1v+RKctNjxzlv4J947q6w7PlenhB4U+D3jF46g7p",
+	"qfMOOb31wJSQ6J6HFASG9L4uJw04hGxRHKoe5+wsK87ZAFN34/p4fi0PLCMMfOybFUbumY3DccLjzPBF",
+	"e5WnF5nWIK3jkYye9RmPWlmbgC+4pPeSN95R13d+WF03gzR/H+sLUWHbic/H7W+1O6cE3uCwKKf4UsNV",
+	"8xx7EGlAGYPQdQ1Y9O1SxP7/5dK6Z8tt/N+HzWcDWz71I77Lw1HuZzgdX3EucBu9H1tl022R5L9JXxwG",
+	"7VcQT4RsTGNf8TXV3iPJ94g5CC1nyjYQKRmzOY+sao9VIFK7wMEMUdTfcO75fuR0brm2hl38dnHGQGqV",
+	"JDn6t8NxcJSmbMozu2Tv3r5+7oNmQM6VjihUMlkzPregXYIVmjAbcSh/goWQW6jx9rgrtv8qn83AX+88",
+	"2fnr4MbHnj7bPRX7HaJXPvSCTtH1Elwdr0jFhGJCdQwb8A7cWKrn4fZ1dWzad9VNWx/uhCFdrtOJyiSm",
+	"wu7h9XuRANemBPmD7aisIejoHXWxXSYf6PWrpqkVWC0ic2w1n89F1KolXogVTGZZdAlkquPRJVpD/FtH",
+	"7HWgMROpFEpodkhyz10NlNpPobxiqJESKtZuey6UWnnhDS/kQ55xhychJFvBKoQWz5PM4LeueuN3J15a",
+	"N0fsBZXZDrYbnEN06cEoJn4IeThKotRllhr2YCmsu1oMkmmcB+whofPIhpJiWWqsBr5ymBZcW4HagYe8",
+	"MOyBB9/jbCWMaVaBL9ya/uI2pls9AVqyyskAiSD//xqFwz8aj3CR8Rma4uh95/oCSFO3UKZgrtWquZ2Y",
+	"W5hYsYLujVl1a00ZC2nj0n2Pw32E/oBH8eh9i3X/riRoRwTnoEUoXzkI0PfMfOeZbLsT/IVWxkyItwaG",
+	"7NAsEIWH/p6oa0l64co5V5QkvpSCpteO8+L4jsuijqm0+LcjA+f/C2V0uclj88LrVHFXyMVzZpXliWOp",
+	"xiukvimI2Yr4cwO2xjkN9ixMc4PT1WbLDUyENCC9mygRFjRPmMlmjgiDqTIsRqSUjoXklnIJm87+H6Nt",
+	"fsSujM3z1RszSPdaEyvi6eVoPOLSCIxTH494is9FKlI8VbGhz7jFdGIjJbl0/8YcFz0So/FoIewkmeOj",
+	"C0WcIkH2tswWCyEXc043xIpfAb4pU/xNZkh19P4k3GS0S4/xf9kM/79Ose1IU4eaX+P/s9l6ASsaFNfU",
+	"mbkWc2zJgtYcp4mPpauWO6i67f8QMg4bq64lbrOXAlr2VGmxELJxGUmAxr7psqcPxKB7XIb3rtiOP57h",
+	"rA7OpPt6G+VVdMyxw5MUV+2u038GUNm80hWLuGSxQkme50V0xwylQgJp0SoBttAcb5AHKx4thYSJC0Ul",
+	"6dYwybVW11izMYUIsZ18pOo805RZ4yRuF1NK9A7xw6O8K1aKWxmTwvHsI/LnT2PPT/yfFObqud2zj3TN",
+	"0ff/evYxvy0/vWcPyLelaL488U08LClCpPkYMlUJiSO2lASUr8dzlw/kr0u7hJWB5Krpmvwr2Fdhwc+K",
+	"XehfaezmOUAbmoEJpSc7Red8d3LSue285S8DcKNxBwZOeC85IWFfTyys0oTbLfK5A+7WkJEfMGBm5++V",
+	"okaIzVTh8UpVyxohtB1k/UU+iLsUASpdDfDZQ7k9mQNGoy0rUDQmelmQsWHROqJcWEzxl+SAYTpLfM5H",
+	"DQD75ISeK13rKzCGL6ANo7pKjt9qIb3qLD8LQHZtoYeAzyEd7gu+hndCR+YIkZJlUsMcNEgMoAgtuBI6",
+	"Dq2EuytZ6eLX/A3DhH3YhgTZiTkdJj//m4mg3+VvDGX2BmljwA05AOwkjytCT5O+fngu8P5g8v8gBwxq",
+	"xmdIYKuoGeTTpxuaUsw1GJW4qFytssXSh0hqINUDt9mVw3OZbZUiPGJOZjmXyT6DSK0gqCyNSWzD/f5V",
+	"ZMjtqzwNTHNgmoO0dEPFLLgcetc6LBs9WUD1YavMEqWZEBOGGlyN+z1nkUoSVw6EYhkMywywmcpkDDF7",
+	"9+71SyrYBpalfCFkS4g8GVaL4XfysFDo/W34/2/PtXwYHDW/TINPeADX/SYrnCvzFXEubxoveXu/Sat4",
+	"fZqfrWRkZQCDXDfw2IHH3o7M6DDtCD+OCD77ipjwORTS41uawWAf+CLtA5sb9dkKYQwXyXCRDBfJnV0k",
+	"FCJqtmVJFln2vhyRoghRV6s4BW0EAaMK6eDc1wE67ah+iZTtyoR5LPSarTJj2QzwdexintlMOxQhjH4R",
+	"kikJbA28AT/itTEZnDuk5AucxlcMcbo5l0NL7jiAeHMEPTku5Q5OXihptaqhOYckA6kmSCHNGXYDHx34",
+	"6FfBR31mDJ00IPj24zlAbI4pJP7T8SxRM3P8MRYLMPbTFkNv3gxzzbAHPjUMpfIrYEbEGDf/tkj3dW9A",
+	"OTf4iP2UqBmbrS2Y5xgqKOQiAfY2uPNMlmLbTWjRfwVbGoRDosfGOjFTn9p1c+G82qxbta5iMgpmfDJ/",
+	"//Hpk09/6m5OFjJKshimEbKsaoKab2GmVAJcbpHoaYGbXt0z7kBFFuzEpUhXuWe+kDMhOU1jJzp+QRJV",
+	"Hn0aRZDaCY3dbEfcR378wg118tJtygYJmyV//P3TZ/+TnZx8Fy3hA33Yviific0/Pnl6qLU/dwcQV59p",
+	"TyTDFnzNAKBPv/Uby8Ma3/1V9ZuOQSNFBRxlwubizGV2HrFfQxrZOM9URn3gCrTBvlMNc/GBIuXnIrHU",
+	"lG+fsCf0EXvy6IStgHu1xbWL1+AMEnVdinSZLIWhWnuJup5ccxzGiutL9sAdVYZHJJ/05I26nvwTH3r4",
+	"zLWhpMlWoJ0Oo8EAxC5fD39dcSnmYGy3G/eFX/yDXrrdHbVC2qdPRiWv6kn3hN1Nt23uqX10cnKyX6P7",
+	"XN61JvJsxcrbwsLKNDDMfGhca75ub9VT7K226Sl/6ih/v6bv0uVdomZHx4PL+zB30sm3fichadz9hRRw",
+	"rONMUyKiD4M0SIoygm4c/G841IOw7wMdZZrQcIjvYwbvrmMZZJuDHc2JsfhT6BfxTrgxYA1lIPEFejqZ",
+	"sXR6L2HNlG6sjtx0bn8Jc/mcotelkHEzsA3OEtvhi9H7G0hyOyFSBuHtCxbevg4IiNLRCodqEASHO6Tl",
+	"DgnZKnd/h/yq5MS7LhtwJMI4njENFqT7LgvFqglnvIx8STzr2IoVILpleBAxluNUCWnNmEUaiAR5YsZF",
+	"dUdsihPVB6ALwuIhL6pniB2t872Sa74WafNGiSADt/iWuMXvatbNCvkgBmN9sFlgBn9XM6rYaoCVf/W5",
+	"cECw6GTmW5fZhc6ZAjQnPZS6xR5GhzkUf1ezAU1mQJPpQvf5JZgTsr+8aldi/VCU3twM+2SOnp4TIp3V",
+	"a4dIg80YvnKaluuECM3H//hYISpOjLSZJXbsy4KV3qOWOIvFfA5kfAmNlJNPPQDOj23h/NWj8q3G9Fdn",
+	"+VmQbmoLPfCjIbDnPgT2/K5mu2Fz9uDM3xYvdvAynXjxVx7YP6DtDNzvPiH5dGRszYpUK5fbYeQ4EPd4",
+	"fzAVbhCX7pX6RhledyolXCwBLaLuXg7ZSw6/m96YqXj9lcoSZ7h690aUuGtdkVbz0Kl7A/MbpKX7rCse",
+	"k6IolNzfiI0YihOqexDrNdOZxICHvFliuL+rmQdlS7VK+YJw39o9YbuFsDO8SOC6NLSX+Ty+HXEszMnP",
+	"duBOg7cpP7c6254Iu1uAA2MRiBEPrFTXvc7j1ymuXWixWIC+n7afx3fiB3cr2sSY3mYybM9gXhoEpm+H",
+	"8RrLbba/tHSm1UKDMWOW8IWrbctFkiEvVXPCD/hdzTpYnc7dML4dYcdPaJBxBhknHLUQ7XZMxUv3l3ZO",
+	"kT4JddoJ0qUyES45zqVw5/Ae+BWeRE1wIhCzGdV0Y6l73cFUX3OTN+dkFRollrTEE21yQQRRqfHt0CXz",
+	"hVfLA61G+bmUjpgZgQkd7DfUrYp4v65hfhSyd62FtSCfM/Ahfy0Rf+N6uJ+XvTQkwA1MnD+RmWtho2Up",
+	"GFBdgfZ99DELUvtUKJAm4ivumS6C5SZvxO1dN0XnDba4G0U3+nWlvj6jXa42HNQNhltiEDvvmdiZ34X+",
+	"ErqJ7p/b68R8TtlJ20LN2QOTufqrY7y55mCjZTl1/Hc1+7NhKYB+yPiCC2nsLqPBHl7XTYPfweuxHITn",
+	"fjnsdjA6Hiwz+i7Z4RfO4FIAvb8y3QIduzMq/ox6Pcx5wr6GuPghLv4m9ExBFCmA9kXShQm2cpCRXqfW",
+	"a1ROJwtq67cSLY8n6B6Ey+M0P3e8PC31wKgG5eo+KFcke9xexHydZ38b4fFbmO8QHz8wu4HZfWvx8btU",
+	"qaon8lDs4f3hlLVB/hki4G+mqd2TcPdvXDS4c2Xvcwe8D8xukH/ujbJ3w7AtF51EzrIkYcjVEb0P3XM7",
+	"jc15pNbhoqgGe/M9jqTycULHhGyohV1P5kLGQi7aqf80SUoBRiFUqKixVxdy3klfpD9mWDqE5V2xlTAr",
+	"vNbAsDnW2wuhU1olCYZGmYhLBDmzS/yL5I6UC0JF1y5pBE3ZmVUrbgXCH62bz9fr0OPPYW43Le+8gRr+",
+	"6Cao4V9ksefamg14hwOXOKZ4PwG3xxvwdJrSG6GDtnvSP3cWxjGUaW+64MurtB4O7uBO3udoOs+qsxX4",
+	"ON8i+ktpH4XLHvigZSXRlIHH+eERe6MinpRR2pinbLzE4QOsUssymYAxKCGr66mPHJ66S73dzVuh7G+7",
+	"0nl9sgf38zZ0PxSpHawMg5XhdmWpnT7lvozbeSExgcWx7eeUO1FiwHYJ0kf/GEicIXceNCqqoF4ujRv0",
+	"LNdYuxO4C2seqp/3qn5+GAFxEA4HfvutebXT7BYkYLSU8qjESf9smM6SJu30LLMDB7wDDnj7wnXDTh3c",
+	"qTZI1gOnHzj9nUnWAe3mdiyU3FiGLbIHKy4zb9ZAYo6zBOKHYybhGoxlc6GNHVNEBCZWa6C6LjMVCypc",
+	"btlKGcsen5xQQvQlpHaHkfNtJgcD51YG+jaTg3VzsG7uc6zPLddlz8OYLbieYUHmSCWoEwfwBC5LDssZ",
+	"yjgIgDXOI7R4dLnQ5Lx88PjkMWK2qCShn3QmSa12yAXIDY4Q9G6qswDaYJh0vk2EbQDm+Qv+zi3jzIqV",
+	"t68quwR9LQwGFwScN9Tk5yCjAnECoRVAM7Kk0tgXmkfAUtBCxWh35ZFN1iwRl1AwMOyuQaCl9SkftNHd",
+	"iGOb/XSSxh7fCTNpg6YyOMh6XDfauN0zHxte0dBQwm4Qrgbh6lsQrnKT5a1IWMj6kOdRLGmJWTYHk1c4",
+	"0lceSb6d8wwizLcfWaES2BZm2Bg2jhf6ShhDlvpfwPKYW85WmeUOQzecs81o8edl4UYDjw3LDEaZZzKG",
+	"mL179/olhn4bsCzlCx/U2KKl0MgH7aQhcMqDZOEKDdrJIBd8k+b1FsCCL5Nf+XgKlcA3HjGCMzxwmEiZ",
+	"2w2W7IGpDkz1lqRCB+S20FxaOieNHs0vleOeAwmIf3WjHzyhX6QntLpJB3aCDvfGcG8M98bt3hsGrN2a",
+	"ufU63BLhySP2Sl4JreQKpJ2gLwNidsWTzANC55jWOsCA9sN+OA8jutNEJTeMvK+BmwxWu4PFlOUxYuiA",
+	"g1hYRFMvna/Op+UsK5+Wz6ulfhNRXlV+cEDJZuBHg3QzSDe3L92QP32yBJ7Y5RafSblEBHFlTAwHzSLu",
+	"NFoXosWy1FgNfMVcg81ejnNq5m+uy07OjtvzUbQ4QaJMG6VHbcz95MkPh/VilpdocHfcW0+mP3Clc9l2",
+	"msxXfJBamko1zMWH9qZOPseRHA7jnofxC/SzNfmzzkN82Tfs0fJzPLBPq9zrILffS7n9nhXZ8Ld3Pa5v",
+	"054XeM4d313D2Rvk1TsCcL37gNEcJLZ6fN6l8Zdza38DFj4cZh/5YOBRA48a7HpftuxxTMVpt4GhnGV6",
+	"4WvYxjmmCeFSVYrDbqsfGJ5AXMo5aJ9ClahZ8HlGCRcrl1a1mRTW5LnRC8/XX9DwvwDm3rRonBkhFwmw",
+	"lEeXOCkhjQUe4/JR+thSJWF13ArjXBtNJ0rpWEhXT/H2KmrcHoemfaBZDxaQgXV+c9HXdy7EtrHnHc6X",
+	"d1WfClMOFnCDJWviOmVu/JxJJSe66rzxKfRS2alnBbMEmuNMdvtpvpq0sMpcBu51j50p7sz56v1OjNni",
+	"9+QxniEDkQZbK/lvdWask62qdZtLZ9KRHXvhfwbMcI+SDKGfmZK+cshzlmwge4bTirLTUsQxSMYNe3Ly",
+	"pCWBEwfmpSU3pTtNsSx6ewuR0vGgtQ2H9+u1LG2JQAv6T7UuO4U6eC6Q1xcKRh46xqJQQ442mEDIFIgx",
+	"SztZM3eclZ7wNNUKEf1fnLLXLw21ZPgq5zhFpdlIA9ElAlsEdcswHkWAPx+xU6tWIsoHd8yzWNhjldmZ",
+	"+vC89Lap16ttTDpo4i6Dpe32mKhf1IMjpg1sfNAgBw3yQJJmznMd5X+me81FADClWUaeExdhnd8rPhyQ",
+	"MtPKlwy31hkHrcL8NoKkRxm2cj1ulXv9FdZ+SwZ05ELcdq0eN911zGVNvCh+mq2tF5fdjeaMmWNGN5/D",
+	"1g+X3PO86N5cyAXoVAsH4XwJayrZrpSdYLE+rVxuH1vxNRPyiieC1kwltRsYpXh82+y+P/PXhjv0lm6w",
+	"Ykl7lG4frtHhGh2u0a/nGn1mwQXtNYNkvFBS+vxqfPAZWUhDfvVfX10Eb0zFFsqUFgtRgsjKnVpl9m7G",
+	"qI7hdQULDcYEyP4OvjAsRItnEwuzCJNfRc7Og5wCYkQ89LHyThmsWWt9vVhfVraqhmLs/Qxowk2a2wUY",
+	"uzUw4isz3uJ83lJd3cGA+4VxvS+Se1huzfEcIG5P3T0DPcEngvN2TGIkHdA0SxIWqUxaQ3ij1FBT5ktz",
+	"jsvPADEWAjVDgkvjkc7XZwiov78OGTqhmzkum2fU39dG/NsdTqeOrkDa8hHdkp62LRFtOKa7bt7hoA4H",
+	"dUvh7lOp5HqlMuNPnUHpFlBdRaqmA3sFmpwkzmzzTxJqZZ69P3H4SjPgGjSz6hKkl9bdqBhPjGIR11qA",
+	"YTGkIGM0iNDRFhKMecZibvmMGxi7csjGKs0XrnOH4D1xCN44l5ZwhzsvEo60LtxxyszXdJYefY0UPB4Z",
+	"iDJEmB89+9f7Kj0TcRyvxELnaOOtqMuBlPKnO6Avk+YXkcmGyJFAYCRmSS/BLkG7+p9ozcFj439lxook",
+	"YUuVxIbomfFrLsjOGiXAZZaOiZ7x3YRbMBar37fQMo35l3yCd0nVtb6+PvIeropbvCpqR8vc+tl6CxFI",
+	"W3oFz4Q/IHggTLV4TIvo5zr+u5qZA5yNv6vZID4NJVVuQvW+tAovvYQB+knig+zJMUcVTfLr5AF3FlH3",
+	"BjwcOyfYSl15JUmD5UJCvHET/dnfP6EFf7oebinQcuoqumidkSPxdzULNleDQqBZ8hTQCKrBZCuIQ5j8",
+	"EXuhUuE9d1egkVopRyDX9c7/djp5/P3T/OYL12q4M6+FjZbYAIW88AQDatCQer0EyeAK9NpdwcLk7T+n",
+	"IFgjrNJr9u7tG8NixaSyvoCMN9AiTOecFphHl7i+dulcf7h9UKo64ycgY1/VNS9A4xtKlbZFoZjrJZWh",
+	"0eCL0lyrLIlZrFzJhkzOhRRm6ZewWrGmXAen8eYnIil4zl1Wlyn1cuDaMvWeq+fr72rWt7IMvjJUlhnS",
+	"wz+7qLS7Asw+NweyFeQluZsr1cp5ssh2BtpsUyEcG/m63UdbGcYggN1DpcSFZn104s2ndr/yvmcu5RnZ",
+	"mlSKIpvOpERxwN/oeAYlfEBxA6JLamnMLgFSfAZ/dFbg515WooRMITNXMhkbpmgmPuMyVtILCm1yWYOI",
+	"EA7DaeQtAwfDEa82yqPcMtHWMEi0n/9rRLOmJ3FBRu+/JP6B0oPblS+AbRxWzvKy/MAu77ef3THXzPAF",
+	"tAovnpgYPcXmWq2cVrYKdRRQVXJpUMZiDYRFT0xs1/47GsTd8wLXzyBN3EdpgvxT7WbNC/y5oGuSuuFD",
+	"KvTa0Tg3lmUG2smbnVP4swmOM9rxcmhznqzD3sKVugTXx8tXb15dvGJ+eCTgtJg+nRfqwk2jk9871UJG",
+	"IuVJhfD2LDhngp9t8553tp3ReEQLBk7qwCnGo/ed2793TnraycG+fM8ZUm48aAN5+VLLGjkmVuZK32Zt",
+	"o7utektcsrKIAzMYUgO+1dSAa5gtlbrsXeU3CFcTjDVyCWxE7h5ogZPjBWMJS6lpYzbLrPMppdksEREz",
+	"2Szvq5D0hCkcajw42CgzLMzliP2qmE9uE6aQ4xrFtH+GKQ7lgDf5nV+cQegZ+Ny9rwT8lfA0l3nsD+63",
+	"DbAeJnlghPVKt0P66cB7B957GzKmy1Npt2zDFchJzNcY/SMo3si408Y0gQVcgcYoIkoqA818s/3M2/5o",
+	"90hVuZ8C4ZCpcr9NYfmZDcawHDb+WxKlCKV9uyQ11AH/EpD0ewmCJ4MgOLDbQRD8wi+VYy/lCdjD+PiT",
+	"d42gyGgnje4R9jMXSeZeRqRYMCwFGYdo8hh4zIohBHyQHE5k7t72YCJz8QFiFgu+kMpYEbGIW1goLWqV",
+	"yBEomqV8nSjukLL4NQNcCbPVNvmyWIoD3kLdBV0h7dMno/2cvHfuRaZE1EYvuN/vEfJuWmByhOPOHzry",
+	"rbrP60GwHjj9veT0xx+JY08RiEqD/749avgtGIrfYXkuz4P8JCN7xaP8sDAXWJWzeOOyjGJhSHEBzQzI",
+	"2DBhGV9wIVutBs8ZzxvJG46UnCcisqbJ6e6fqh3xzxcOHFa4W9O9WPu34eOv79TAiIfg3H4MzQuHg+Aa",
+	"hjqIrYPYOnDLQWz9pri8syBjSy2VLb5m0/dbZQsHuxvxYAH/QtG5G7ZqMIQPhvDhnvm67pkqkNrHkYPp",
+	"O82QuP71/tP7T//fAA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

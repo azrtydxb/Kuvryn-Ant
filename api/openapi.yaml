@@ -9372,6 +9372,1122 @@
           }
         }
       }
+    },
+    "/api/v1/identity-providers": {
+      "get": {
+        "operationId": "listIdentityProviders",
+        "description": "Requires instance admin. Lists database-stored providers (secrets never returned), read-only file-configured providers, what the login runtime is serving, the SSO-mandatory policy and the break-glass account status.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProviderList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createIdentityProvider",
+        "description": "Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityProviderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/test": {
+      "post": {
+        "operationId": "testIdentityProvider",
+        "description": "Requires instance admin. Runs connectivity diagnostics for a candidate configuration without saving it: OIDC discovery and JWKS fetch with clock-skew detection, SAML metadata and certificate expiry, or LDAP TCP/TLS/bind/search checks.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityProviderTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProviderTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/saml/import-metadata": {
+      "post": {
+        "operationId": "importSamlMetadata",
+        "description": "Requires instance admin. Parses pasted IdP metadata (never fetched remotely) and reports endpoints and signing-certificate expiry.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SamlMetadataImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SamlMetadataImport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/{id}": {
+      "get": {
+        "operationId": "getIdentityProvider",
+        "description": "Requires instance admin. ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateIdentityProvider",
+        "description": "Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIdentityProvider"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteIdentityProvider",
+        "description": "Requires instance admin. Deletes a provider and its secret. Refused while SSO is mandatory and it is the last enabled provider.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/{id}/enable": {
+      "post": {
+        "operationId": "enableIdentityProvider",
+        "description": "Requires instance admin. Builds and enables a provider, replacing any other of the same protocol, without restart.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/{id}/disable": {
+      "post": {
+        "operationId": "disableIdentityProvider",
+        "description": "Requires instance admin. Disables a provider. Refused while SSO is mandatory and it is the last enabled provider.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/{id}/metadata": {
+      "get": {
+        "operationId": "getSamlSpMetadata",
+        "description": "Requires instance admin. Exports the SAML service provider metadata for the IdP administrator.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SAML SP metadata",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/samlmetadata+xml": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-providers/{id}/preview": {
+      "post": {
+        "operationId": "previewIdentityMapping",
+        "description": "Requires instance admin. Shows who a pasted ID token or SAML response, or an LDAP login, would sign in as and what roles that identity has. Signatures are not verified and nothing is stored.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MappingPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MappingPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/identity-policy": {
+      "get": {
+        "operationId": "getIdentityPolicy",
+        "description": "Requires instance admin. ",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putIdentityPolicy",
+        "description": "Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityPolicy"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/local-account": {
+      "get": {
+        "operationId": "getLocalAccount",
+        "description": "Requires instance admin. Status of the break-glass local administrator (create or reset it with `ant admin break-glass`).",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalAccount"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/local-account/unlock": {
+      "post": {
+        "operationId": "unlockLocalAccount",
+        "description": "Requires instance admin. Clears the login lockout.",
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/local-account/totp": {
+      "post": {
+        "operationId": "beginLocalTotp",
+        "description": "Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpEnrollment"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "disableLocalTotp",
+        "description": "Only the signed-in break-glass account may call this. Removes the second factor.",
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/local-account/totp/confirm": {
+      "post": {
+        "operationId": "confirmLocalTotp",
+        "description": "Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -15225,6 +16341,781 @@
           "read_origins"
         ],
         "description": "The merged result of the feed's bound templates (root first) and the feed's own publish policy. Origins are template:<name> or feed."
+      },
+      "CertificateStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "not_before",
+          "not_after",
+          "days_left",
+          "status",
+          "sha256"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "use": {
+            "type": "string"
+          },
+          "not_before": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "not_after": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "days_left": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "expiring",
+              "expired",
+              "not_yet_valid"
+            ]
+          },
+          "sha256": {
+            "type": "string"
+          }
+        }
+      },
+      "GroupRoleMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "group_id",
+          "role_ids"
+        ],
+        "properties": {
+          "group_id": {
+            "type": "string"
+          },
+          "role_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Maps a base64url-encoded immutable LDAP group ID to proposed role IDs. Proposals are informational; effective roles come from identity bindings."
+      },
+      "IdentityProviderConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "issuer": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "groups_claim": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "idp_entity_id": {
+            "type": "string"
+          },
+          "idp_metadata_xml": {
+            "type": "string"
+          },
+          "sp_certificate_pem": {
+            "type": "string"
+          },
+          "groups_attribute": {
+            "type": "string"
+          },
+          "email_attribute": {
+            "type": "string"
+          },
+          "provider_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "bind_dn": {
+            "type": "string"
+          },
+          "ca_pem": {
+            "type": "string"
+          },
+          "user_base_dn": {
+            "type": "string"
+          },
+          "group_base_dn": {
+            "type": "string"
+          },
+          "login_attribute": {
+            "type": "string"
+          },
+          "user_id_attribute": {
+            "type": "string"
+          },
+          "group_id_attribute": {
+            "type": "string"
+          },
+          "user_class": {
+            "type": "string"
+          },
+          "group_class": {
+            "type": "string"
+          },
+          "member_attribute": {
+            "type": "string"
+          },
+          "allowed_endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "group_roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupRoleMapping"
+            }
+          }
+        },
+        "description": "Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML."
+      },
+      "IdentityProvider": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "enabled",
+          "config",
+          "has_secret",
+          "revision",
+          "created_at",
+          "updated_at",
+          "active",
+          "shadowed_by_file",
+          "certificates"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "config": {
+            "$ref": "#/components/schemas/IdentityProviderConfig"
+          },
+          "has_secret": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "True when the login runtime is serving this provider right now."
+          },
+          "shadowed_by_file": {
+            "type": "boolean",
+            "description": "True when a file-configured provider of the same protocol takes precedence."
+          },
+          "certificates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateStatus"
+            }
+          }
+        }
+      },
+      "IdentityProviderInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "name",
+          "enabled",
+          "config"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "config": {
+            "$ref": "#/components/schemas/IdentityProviderConfig"
+          },
+          "secret": {
+            "type": "string",
+            "description": "OIDC client secret or LDAP bind password. Write-only; omit on update to keep the stored value."
+          },
+          "rotate_sp_certificate": {
+            "type": "boolean",
+            "description": "SAML only: regenerate the service provider key pair."
+          }
+        }
+      },
+      "UpdateIdentityProvider": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "enabled",
+          "config"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "config": {
+            "$ref": "#/components/schemas/IdentityProviderConfig"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "rotate_sp_certificate": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FileIdentityProvider": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "label",
+          "detail"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "description": "A provider configured from a mounted file. Read-only; secrets and paths are never shown."
+      },
+      "ActiveIdentityProvider": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "source"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "file",
+              "database"
+            ]
+          },
+          "provider_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LocalAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "exists",
+          "totp_enabled"
+        ],
+        "properties": {
+          "exists": {
+            "type": "boolean"
+          },
+          "username": {
+            "type": "string"
+          },
+          "totp_enabled": {
+            "type": "boolean"
+          },
+          "locked_until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_login_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "The emergency (break-glass) local administrator."
+      },
+      "IdentityProviderList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "file_items",
+          "active",
+          "sso_mandatory",
+          "origin",
+          "local_account"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityProvider"
+            }
+          },
+          "file_items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileIdentityProvider"
+            }
+          },
+          "active": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActiveIdentityProvider"
+            }
+          },
+          "sso_mandatory": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "local_account": {
+            "$ref": "#/components/schemas/LocalAccount"
+          }
+        }
+      },
+      "IdentityProviderTestRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "config"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Use the stored secret of this provider when secret is omitted."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/IdentityProviderConfig"
+          },
+          "secret": {
+            "type": "string"
+          }
+        }
+      },
+      "IdentityTestCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "ok",
+          "detail"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      },
+      "IdentityProviderTest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "ok",
+          "checks",
+          "warnings",
+          "certificates"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityTestCheck"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "clock_skew_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "suggested_allowed_endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tls_mode": {
+            "type": "string",
+            "enum": [
+              "ldaps",
+              "starttls"
+            ]
+          },
+          "certificates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateStatus"
+            }
+          }
+        }
+      },
+      "SamlMetadataImportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "xml"
+        ],
+        "properties": {
+          "xml": {
+            "type": "string",
+            "maxLength": 262144
+          }
+        }
+      },
+      "SamlEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "binding",
+          "location"
+        ],
+        "properties": {
+          "binding": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
+        }
+      },
+      "SamlMetadataImport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "entity_id",
+          "sso_endpoints",
+          "slo_endpoints",
+          "certificates",
+          "errors",
+          "warnings",
+          "ok"
+        ],
+        "properties": {
+          "entity_id": {
+            "type": "string"
+          },
+          "sso_endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SamlEndpoint"
+            }
+          },
+          "slo_endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SamlEndpoint"
+            }
+          },
+          "certificates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificateStatus"
+            }
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MappingPreviewRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "sample": {
+            "type": "string",
+            "maxLength": 2097152,
+            "description": "OIDC ID token (JWT) or SAML response (base64 or XML). Decoded, never signature-verified, never stored."
+          },
+          "login": {
+            "type": "string",
+            "maxLength": 256,
+            "description": "LDAP login to look up (no password)."
+          }
+        }
+      },
+      "MappingSubject": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "issuer",
+          "subject",
+          "groups"
+        ],
+        "properties": {
+          "issuer": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "audience": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MappingBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "found",
+          "roles"
+        ],
+        "properties": {
+          "found": {
+            "type": "boolean"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MappingPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "identity",
+          "signature_verified",
+          "binding",
+          "proposed_roles",
+          "would_sign_in",
+          "problems",
+          "warnings"
+        ],
+        "properties": {
+          "identity": {
+            "$ref": "#/components/schemas/MappingSubject"
+          },
+          "signature_verified": {
+            "type": "boolean"
+          },
+          "binding": {
+            "$ref": "#/components/schemas/MappingBinding"
+          },
+          "proposed_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "would_sign_in": {
+            "type": "boolean"
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "clock_skew_seconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "What a sign-in with the sample would do. Access comes only from an existing identity binding."
+      },
+      "IdentityPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sso_mandatory"
+        ],
+        "properties": {
+          "sso_mandatory": {
+            "type": "boolean"
+          }
+        },
+        "description": "When true, local password sign-in is disabled for every account except the break-glass administrator."
+      },
+      "TotpEnrollment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "otpauth_uri"
+        ],
+        "properties": {
+          "otpauth_uri": {
+            "type": "string"
+          }
+        }
+      },
+      "TotpConfirm": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$"
+          }
+        }
       }
     }
   }
