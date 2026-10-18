@@ -51,6 +51,7 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 		return nil, ErrUnavailable
 	}
 	source := ""
+	publications = append([]Publication(nil), publications...) // MatchedRule is set on our copy only
 	for i := range publications {
 		item := publications[i]
 		decision, err := router.Resolve(routing.Request{Namespace: item.Namespace, Package: item.Coordinate, Path: "/" + item.AssetKey, Principal: p.PrincipalID})

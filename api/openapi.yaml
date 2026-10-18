@@ -40,8 +40,15 @@
           },
           "500": {
             "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "description": "Anonymous callers receive name and version only. With an instance-admin bearer token the response also carries dependency readiness: database, blob storage and writer-lease state."
       }
     },
     "/api/v1/feeds": {
@@ -4511,6 +4518,3108 @@
         },
         "description": "Export every matching audit event. Requires instance admin; the export is itself audited as audit.export."
       }
+    },
+    "/api/v1/source-health": {
+      "get": {
+        "operationId": "listSourceHealth",
+        "description": "Remote sources the caller can read, with upstream health.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceHealthPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/sources/{id}/health": {
+      "get": {
+        "operationId": "getSourceHealth",
+        "description": "Upstream health of one source. Requires read on the source; non-remote sources report not_applicable.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceHealth"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/sources/{id}:test": {
+      "post": {
+        "operationId": "testSource",
+        "description": "Connection test: one bounded GET of the remote source origin with its configured credentials, CA and egress policy. Requires configure on the source. The attempt is audited and recorded in health. Only remote sources with a stored configuration can be tested.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/stats/feeds": {
+      "get": {
+        "operationId": "listFeedStats",
+        "description": "Per-feed package, byte and pull counts for feeds the caller can read.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedStatsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/stats/sources": {
+      "get": {
+        "operationId": "listSourceStats",
+        "description": "Per-source size and attachment counts for sources the caller can read.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceStatsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/storage/usage": {
+      "get": {
+        "operationId": "getStorageUsage",
+        "description": "Storage usage from blob metadata and local staging. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/metrics/traffic": {
+      "get": {
+        "operationId": "getTrafficMetrics",
+        "description": "Time-bucketed package traffic. Instance scope requires admin; feed scope requires read on the feed; source scope requires read on the source. Counters are batched in memory and flushed every 30 seconds. Cache counters track remote-source metadata lookups (hit when served without contacting the upstream) and artifact fetches (always a miss).",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "instance",
+                "feed",
+                "source"
+              ]
+            }
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "step",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "5m",
+                "1h",
+                "1d"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrafficSeries"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/assets/{id}/provenance": {
+      "get": {
+        "operationId": "getAssetProvenance",
+        "description": "Provenance, verification result and download count of one asset. Requires read on the asset's source and feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Provenance"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/stats": {
+      "get": {
+        "operationId": "getWebhookStats",
+        "description": "Seven-day delivery success rate overall and per webhook. Requires instance admin.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookStatsPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/webhooks/{id}/deliveries/{event_id}:redeliver": {
+      "post": {
+        "operationId": "redeliverWebhookDelivery",
+        "description": "Resets a finished (delivered or dead) delivery to pending so the dispatcher sends it again. Requires instance admin; a pending delivery conflicts.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDelivery"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/settings": {
+      "get": {
+        "operationId": "getSettings",
+        "description": "Instance settings. Environment-backed values are returned read-only. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putSettings",
+        "description": "Replaces the editable settings. Requires instance admin.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstanceSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/retention/policies": {
+      "get": {
+        "operationId": "listRetentionPolicies",
+        "description": "All retention endpoints require instance admin. Lists retention policies.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionPolicyPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createRetentionPolicy",
+        "description": "All retention endpoints require instance admin. Creates the policy of a feed or source (409 if one exists). Local and replica content is exempt unless allow_release_delete.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRetentionPolicy"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/retention/policies/{id}": {
+      "put": {
+        "operationId": "putRetentionPolicy",
+        "description": "All retention endpoints require instance admin. Replaces a policy's rules.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutRetentionPolicy"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteRetentionPolicy",
+        "description": "All retention endpoints require instance admin. Deletes a policy; its content is then never selected for deletion. Returns the deleted policy.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/retention/runs": {
+      "get": {
+        "operationId": "listRetentionRuns",
+        "description": "All retention endpoints require instance admin. Last runs (manual and scheduled), newest first, without report bodies; at most 200 are kept.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionRunPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "startRetentionRun",
+        "description": "All retention endpoints require instance admin. Starts retention, garbage collection and an integrity batch now, in the background (202). Poll the run for its report. dry_run changes nothing. One manual run at a time (409 otherwise). Deletion is fenced by the writer lease and grace periods exactly like scheduled runs.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRetentionRun"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Run started",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "Location": {
+                "description": "Run resource",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/retention/runs/{id}": {
+      "get": {
+        "operationId": "getRetentionRun",
+        "description": "All retention endpoints require instance admin. One run with its report.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/retention/integrity-findings": {
+      "get": {
+        "operationId": "listIntegrityFindings",
+        "description": "All retention endpoints require instance admin. Unresolved blob integrity mismatches found by the rolling scan. Nothing is repaired or deleted automatically.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrityFindingPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/permissions/effective": {
+      "get": {
+        "operationId": "getEffectivePermissions",
+        "description": "What the principal can do on a resource, from its role grants (machine-token scopes narrow a specific token further and are not applied). resource is instance, feed:{uuid}, source:{uuid} or artifact:{feed uuid}[:{namespace}] (with optional source). Instance admins may inspect any principal; others only themselves.",
+        "parameters": [
+          {
+            "name": "principal",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "resource",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 300
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectivePermissions"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/audit-sink": {
+      "get": {
+        "operationId": "getAuditSink",
+        "description": "Audit streaming configuration and delivery state. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putAuditSink",
+        "description": "Configures the audit streaming sink. Requires instance admin.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutAuditSink"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteAuditSink",
+        "description": "Removes the sink. Requires instance admin.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSink"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/peers": {
+      "get": {
+        "operationId": "listReplicationPeers",
+        "description": "Replication (destination side). Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationPeerList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createReplicationPeer",
+        "description": "Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplicationPeerInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationPeer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/peers/{id}": {
+      "get": {
+        "operationId": "getReplicationPeer",
+        "description": "Replication (destination side). Requires instance admin.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationPeer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchReplicationPeer",
+        "description": "Replication (destination side). Requires instance admin. The expected revision is in the body.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplicationPeerPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationPeer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteReplicationPeer",
+        "description": "Replication (destination side). Requires instance admin.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs": {
+      "get": {
+        "operationId": "listReplicationJobs",
+        "description": "Replication (destination side). Jobs whose destination feed the caller may replicate or configure.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationJobList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createReplicationJob",
+        "description": "Replication (destination side). Requires configure and replicate on the destination feed.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplicationJobInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs/{id}": {
+      "get": {
+        "operationId": "getReplicationJob",
+        "description": "Replication (destination side). Requires replicate or configure on the destination feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchReplicationJob",
+        "description": "Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplicationJobPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteReplicationJob",
+        "description": "Replication (destination side). Requires configure on the destination feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs/{id}/status": {
+      "get": {
+        "operationId": "getReplicationJobStatus",
+        "description": "Replication (destination side). Progress, lag and failures of one job.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs/{id}/runs": {
+      "post": {
+        "operationId": "triggerReplicationJob",
+        "description": "Replication (destination side). Requests a run now. Requires replicate on the destination feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Run requested",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationTrigger"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs/{id}/deletions": {
+      "get": {
+        "operationId": "previewReplicationDeletions",
+        "description": "Replication (destination side). Read-only dry run of deletions the job would propagate. Requires replicate on the destination feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationDeletionPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/status": {
+      "get": {
+        "operationId": "listReplicationStatus",
+        "description": "Replication (destination side). Status of all visible jobs.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationStatusList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/export/feeds/{feed}/head": {
+      "get": {
+        "operationId": "getReplicationExportHead",
+        "description": "Replication export (authoritative side). Requires replicate on the feed. Current durable change sequence.",
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationHead"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/export/feeds/{feed}/manifest": {
+      "get": {
+        "operationId": "getReplicationExportManifest",
+        "description": "Replication export (authoritative side). Requires replicate on the feed. Current-state manifest of assets or tags in stable key order.",
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asset",
+                "tag"
+              ]
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "include_cached",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "package",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "version_prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationManifestPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/export/feeds/{feed}/changes": {
+      "get": {
+        "operationId": "getReplicationExportChanges",
+        "description": "Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor.",
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            }
+          },
+          {
+            "name": "include_cached",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationChangePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/export/feeds/{feed}/blobs/{digest}": {
+      "get": {
+        "operationId": "getReplicationExportBlob",
+        "description": "Replication export (authoritative side). Requires replicate on the feed. Blob bytes; a single Range is supported.",
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "digest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          {
+            "name": "include_cached",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blob bytes",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "X-Content-Digest": {
+                "description": "sha256:<hex>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Single byte range",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "X-Content-Digest": {
+                "description": "sha256:<hex>",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "416": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4561,8 +7670,12 @@
             "enum": [
               "v1"
             ]
+          },
+          "readiness": {
+            "$ref": "#/components/schemas/ReadinessDetail"
           }
-        }
+        },
+        "description": "The readiness property is present only when the request carries a bearer token with instance admin permission."
       },
       "Error": {
         "type": "object",
@@ -6852,6 +9965,2349 @@
           },
           "page": {
             "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "ComponentStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "unavailable",
+              "unknown"
+            ]
+          },
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "Fixed non-sensitive code."
+          }
+        }
+      },
+      "WriterLeaseStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "held",
+              "lost",
+              "superseded",
+              "expired",
+              "unavailable",
+              "not_serving"
+            ]
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "epoch": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "remaining_ms": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "This process's instance writer lease as recorded in PostgreSQL."
+      },
+      "ReadinessDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ready",
+          "database",
+          "blob_storage",
+          "writer_lease",
+          "checked_at"
+        ],
+        "properties": {
+          "ready": {
+            "type": "boolean"
+          },
+          "database": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "blob_storage": {
+            "$ref": "#/components/schemas/ComponentStatus"
+          },
+          "writer_lease": {
+            "$ref": "#/components/schemas/WriterLeaseStatus"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SourceHealth": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "kind",
+          "status",
+          "requests",
+          "failures"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "degraded",
+              "failing",
+              "unknown",
+              "not_applicable"
+            ]
+          },
+          "last_success_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_error_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_status_code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last_error": {
+            "type": "string",
+            "description": "Coarse class: timeout, connection, authentication, rate_limited, upstream_error."
+          },
+          "p95_latency_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failures": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Recorded in memory per upstream exchange and persisted periodically; counters cover the process lifetime plus persisted history."
+      },
+      "SourceHealthPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceHealth"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "SourceTestResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "reachable",
+          "authenticated",
+          "latency_ms"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reachable": {
+            "type": "boolean"
+          },
+          "authenticated": {
+            "type": "boolean"
+          },
+          "status_code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "latency_ms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "error": {
+            "type": "string",
+            "description": "Coarse error class when the test failed."
+          }
+        }
+      },
+      "FeedStats": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "slug",
+          "format",
+          "packages",
+          "versions",
+          "assets",
+          "bytes",
+          "pulls"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "packages": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "versions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "assets": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Distinct blob bytes referenced through attached sources."
+          },
+          "pulls": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Successful pulls since counting began (lags traffic by one flush interval)."
+          }
+        }
+      },
+      "FeedStatsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedStats"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "SourceStats": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "name",
+          "kind",
+          "format",
+          "packages",
+          "versions",
+          "assets",
+          "bytes",
+          "attached_feeds",
+          "cache_hits",
+          "cache_misses"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "packages": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "versions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "assets": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "attached_feeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_misses": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SourceStatsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceStats"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "DomainUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain_id",
+          "name",
+          "blob_count",
+          "blob_bytes"
+        ],
+        "properties": {
+          "domain_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "blob_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blob_bytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "StorageUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "backend",
+          "blob_count",
+          "blob_bytes",
+          "logical_bytes",
+          "dedup_saved_bytes",
+          "unreferenced_bytes",
+          "gc_candidates",
+          "domains",
+          "measured_at"
+        ],
+        "properties": {
+          "backend": {
+            "type": "string"
+          },
+          "blob_count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blob_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Physical bytes of all committed blobs."
+          },
+          "logical_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes as seen through assets; a blob shared by N assets counts N times."
+          },
+          "dedup_saved_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unreferenced_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "gc_candidates": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "staging_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Local upload staging usage; absent when the backend has none."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DomainUsage"
+            }
+          },
+          "measured_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TrafficPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bucket",
+          "pulls",
+          "publishes",
+          "bytes_out",
+          "bytes_in",
+          "cache_hits",
+          "cache_misses",
+          "errors"
+        ],
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pulls": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "publishes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes_out": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes_in": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_misses": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "errors": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_hit_ratio": {
+            "type": "number"
+          }
+        }
+      },
+      "TrafficSeries": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scope",
+          "from",
+          "to",
+          "step_seconds",
+          "points",
+          "totals"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "feed",
+              "source"
+            ]
+          },
+          "ref": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "step_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TrafficPoint"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TrafficPoint"
+          }
+        },
+        "description": "Sparse series: buckets without traffic are omitted."
+      },
+      "Provenance": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "asset_id",
+          "coordinate",
+          "version",
+          "asset_key",
+          "source_id",
+          "origin",
+          "created_at",
+          "digest",
+          "verification",
+          "verification_detail",
+          "downloads"
+        ],
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "asset_key": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "remote",
+              "replica"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "uploader_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uploader_subject": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "matched_rule": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "verification": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "integrity_failure"
+            ]
+          },
+          "verification_detail": {
+            "type": "string"
+          },
+          "downloads": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_downloaded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "description": "uploader_id, uploader_subject, token_id and matched_rule are present only for callers with configure on the feed or instance admin, and only for assets published after provenance capture."
+      },
+      "WebhookRate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "delivered",
+          "failed",
+          "pending"
+        ],
+        "properties": {
+          "delivered": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "success_rate": {
+            "type": "number"
+          }
+        },
+        "description": "success_rate = delivered / (delivered + failed); absent until a delivery has finished."
+      },
+      "WebhookStatsItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "webhook_id",
+          "endpoint",
+          "delivered",
+          "failed",
+          "pending"
+        ],
+        "properties": {
+          "webhook_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "delivered": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "success_rate": {
+            "type": "number"
+          }
+        }
+      },
+      "WebhookStatsPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "window_days",
+          "overall",
+          "items"
+        ],
+        "properties": {
+          "window_days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/WebhookRate"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WebhookStatsItem"
+            }
+          },
+          "next_after": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SettingItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value",
+          "source",
+          "read_only",
+          "enforced"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "env",
+              "stored",
+              "default"
+            ]
+          },
+          "read_only": {
+            "type": "boolean"
+          },
+          "enforced": {
+            "type": "boolean",
+            "description": "False when the value is recorded for the console but the runtime still applies its built-in limit."
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "InstanceSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "items"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettingItem"
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PutSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "session_max_age_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 28800
+          },
+          "session_idle_timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1800
+          },
+          "default_anonymous_read": {
+            "type": "boolean"
+          }
+        },
+        "description": "Replaces all editable values; an absent field reverts to its default. Environment-backed keys are read-only and rejected."
+      },
+      "RetentionPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "min_keep",
+          "include_tagged",
+          "allow_release_delete",
+          "enabled",
+          "revision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "keep_last": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "max_age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "min_keep": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "include_tagged": {
+            "type": "boolean"
+          },
+          "allow_release_delete": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "description": "Targets exactly one of feed_id and source_id."
+      },
+      "RetentionPolicyPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetentionPolicy"
+            }
+          },
+          "next_after": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CreateRetentionPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "keep_last": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "max_age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "min_keep": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "include_tagged": {
+            "type": "boolean"
+          },
+          "allow_release_delete": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "Exactly one of feed_id and source_id, and at least one of keep_last, max_age_seconds and max_idle_seconds. min_keep defaults to 1, enabled to true."
+      },
+      "PutRetentionPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "keep_last": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "max_age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "min_keep": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "include_tagged": {
+            "type": "boolean"
+          },
+          "allow_release_delete": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "description": "Replaces the rules; the target is immutable. At least one of keep_last, max_age_seconds and max_idle_seconds."
+      },
+      "RunDeletion": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "coordinate",
+          "version",
+          "reason"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "RunBlob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain_id",
+          "digest",
+          "kind"
+        ],
+        "properties": {
+          "domain_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "row",
+              "object"
+            ]
+          }
+        }
+      },
+      "RunFinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "domain_id",
+          "digest",
+          "kind"
+        ],
+        "properties": {
+          "domain_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "missing",
+              "size",
+              "digest"
+            ]
+          }
+        }
+      },
+      "RunReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "versions_deleted",
+          "protected_release",
+          "protected_tagged",
+          "blobs_marked",
+          "blobs_swept",
+          "blobs_unmarked",
+          "skipped_referenced",
+          "gc_failed",
+          "integrity_checked",
+          "integrity_bytes",
+          "integrity_errors",
+          "integrity_mismatches",
+          "integrity_wrapped",
+          "truncated"
+        ],
+        "properties": {
+          "versions_deleted": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "protected_release": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "protected_tagged": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "blobs_marked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "blobs_swept": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "blobs_unmarked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skipped_referenced": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "gc_failed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integrity_checked": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integrity_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "integrity_errors": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integrity_mismatches": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "integrity_wrapped": {
+            "type": "boolean"
+          },
+          "deleted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunDeletion"
+            }
+          },
+          "marked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunBlob"
+            }
+          },
+          "swept": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunBlob"
+            }
+          },
+          "mismatches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RunFinding"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "description": "Counters are exact. Lists hold at most 500 entries (truncated tells whether any was cut). For a dry run, the lists show exactly what a real run started then would do."
+      },
+      "RetentionRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "trigger",
+          "dry_run",
+          "state",
+          "started_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "scheduled"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "requested_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "report": {
+            "$ref": "#/components/schemas/RunReport"
+          }
+        },
+        "description": "The report is omitted from list responses."
+      },
+      "RetentionRunPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetentionRun"
+            }
+          },
+          "next_after": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "StartRetentionRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dry_run"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          }
+        }
+      },
+      "IntegrityFinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "domain_id",
+          "digest",
+          "kind",
+          "detected_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "domain_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "missing",
+              "size",
+              "digest"
+            ]
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IntegrityFindingPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntegrityFinding"
+            }
+          },
+          "next_after": {
+            "type": "string"
+          }
+        }
+      },
+      "EffectiveAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "allowed",
+          "via_roles",
+          "denied_by_roles"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "read",
+              "publish",
+              "delete",
+              "configure",
+              "replicate",
+              "admin"
+            ]
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "via_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Roles that allow the action on their own."
+          },
+          "denied_by_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Roles holding a matching deny, which overrides any allow."
+          }
+        }
+      },
+      "EffectiveResource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "instance",
+              "feed",
+              "source",
+              "artifact"
+            ]
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "namespace": {
+            "type": "string"
+          }
+        }
+      },
+      "EffectivePermissions": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "principal_id",
+          "disabled",
+          "resource",
+          "actions"
+        ],
+        "properties": {
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "resource": {
+            "$ref": "#/components/schemas/EffectiveResource"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EffectiveAction"
+            }
+          }
+        }
+      },
+      "AuditSink": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "configured",
+          "enabled",
+          "has_credential",
+          "checkpoint",
+          "revision"
+        ],
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "syslog",
+              "http"
+            ]
+          },
+          "endpoint": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "has_credential": {
+            "type": "boolean"
+          },
+          "checkpoint": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Highest audit event id delivered."
+          },
+          "last_forwarded_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "Use revision 1 with configured=false as If-Match to create."
+          }
+        }
+      },
+      "PutAuditSink": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "endpoint"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "syslog",
+              "http"
+            ]
+          },
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "http: https URL. syslog: udp://, tcp:// or tls:// host:port. Loopback and link-local targets are refused."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "credential": {
+            "type": "string",
+            "maxLength": 4096,
+            "writeOnly": true,
+            "description": "Bearer token for http sinks, stored encrypted, never returned. Omit to keep, empty string to remove."
+          }
+        },
+        "description": "Delivery is at-least-once and ordered: syslog is RFC 5424 (octet-counted over TCP/TLS), http is NDJSON POST. A new sink forwards events created after it was configured."
+      },
+      "ReplicationPeer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "url",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "ca_ref": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReplicationPeerList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationPeer"
+            }
+          }
+        }
+      },
+      "ReplicationPeerInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "url",
+          "token"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "ca_ref": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 4096,
+            "writeOnly": true
+          }
+        }
+      },
+      "ReplicationPeerPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "url": {
+            "type": "string"
+          },
+          "ca_ref": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string",
+            "minLength": 16,
+            "maxLength": 4096,
+            "writeOnly": true
+          }
+        }
+      },
+      "ReplicationFilters": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version_prefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReplicationStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phase",
+          "running",
+          "checkpoint",
+          "seed_done",
+          "consecutive_failures",
+          "assets_applied",
+          "blobs_transferred",
+          "blobs_deduplicated",
+          "bytes_transferred",
+          "deletions_applied",
+          "deletions_held",
+          "conflicts"
+        ],
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "new",
+              "seed_assets",
+              "seed_tags",
+              "incremental"
+            ]
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "checkpoint": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remote_head": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "changes_behind": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lag_seconds": {
+            "type": "number"
+          },
+          "remote_checked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "seed_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "seed_done": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "last_attempt_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_success_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "next_run_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "assets_applied": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blobs_transferred": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blobs_deduplicated": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes_transferred": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deletions_applied": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "deletions_held": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "conflicts": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ReplicationJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "peer_id",
+          "remote_feed_id",
+          "dest_feed_id",
+          "replica_source_id",
+          "mode",
+          "interval_seconds",
+          "include_cached",
+          "filters",
+          "deletion_policy",
+          "enabled",
+          "revision",
+          "created_at",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "peer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "remote_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dest_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "replica_source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "scheduled",
+              "manual"
+            ]
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_cached": {
+            "type": "boolean"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/ReplicationFilters"
+          },
+          "deletion_policy": {
+            "type": "string",
+            "enum": [
+              "ignore",
+              "propagate"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReplicationStatus"
+          }
+        }
+      },
+      "ReplicationJobList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationJob"
+            }
+          }
+        }
+      },
+      "ReplicationJobInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "peer_id",
+          "remote_feed_id",
+          "dest_feed_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "peer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "remote_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dest_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "scheduled",
+              "manual"
+            ]
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_cached": {
+            "type": "boolean"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/ReplicationFilters"
+          },
+          "deletion_policy": {
+            "type": "string",
+            "enum": [
+              "ignore",
+              "propagate"
+            ]
+          }
+        }
+      },
+      "ReplicationJobPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "scheduled",
+              "manual"
+            ]
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_cached": {
+            "type": "boolean"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/ReplicationFilters"
+          },
+          "deletion_policy": {
+            "type": "string",
+            "enum": [
+              "ignore",
+              "propagate"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReplicationStatusEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "dest_feed_id",
+          "enabled",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "dest_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReplicationStatus"
+          }
+        }
+      },
+      "ReplicationStatusList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationStatusEntry"
+            }
+          }
+        }
+      },
+      "ReplicationTrigger": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "job_id",
+          "state"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
+      "ReplicationDeletionEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "kind",
+          "coordinate",
+          "seq",
+          "disposition"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "held",
+              "pending"
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "would_delete",
+              "protected",
+              "absent"
+            ]
+          }
+        }
+      },
+      "ReplicationDeletionPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy",
+          "applies",
+          "entries",
+          "counts",
+          "truncated"
+        ],
+        "properties": {
+          "policy": {
+            "type": "string"
+          },
+          "applies": {
+            "type": "boolean"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationDeletionEntry"
+            }
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [],
+            "properties": {
+              "would_delete": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "protected": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "absent": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReplicationOrigin": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "name",
+          "kind",
+          "priority"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReplicationSubject": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "digest",
+          "size",
+          "media_type",
+          "artifact_type"
+        ],
+        "properties": {
+          "digest": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "artifact_type": {
+            "type": "string"
+          },
+          "annotations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReplicationItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "origin",
+          "coordinate",
+          "version",
+          "asset_key",
+          "media_type",
+          "digest",
+          "size"
+        ],
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/ReplicationOrigin"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "asset_key": {
+            "type": "string"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "component_metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "subject": {
+            "$ref": "#/components/schemas/ReplicationSubject"
+          }
+        }
+      },
+      "ReplicationTagItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "origin",
+          "coordinate",
+          "tag",
+          "version"
+        ],
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/ReplicationOrigin"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "tag": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "ReplicationComponentItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "origin",
+          "coordinate"
+        ],
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/ReplicationOrigin"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ReplicationHead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "seq",
+          "now",
+          "format"
+        ],
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "changed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "now": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "format": {
+            "type": "string"
+          }
+        }
+      },
+      "ReplicationManifestPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "asset",
+              "tag"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationItem"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationTagItem"
+            }
+          },
+          "next": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ReplicationChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "seq",
+          "at",
+          "kind",
+          "op",
+          "source_id",
+          "coordinate"
+        ],
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "op": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "asset": {
+            "$ref": "#/components/schemas/ReplicationItem"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/ReplicationTagItem"
+          },
+          "component": {
+            "$ref": "#/components/schemas/ReplicationComponentItem"
+          }
+        }
+      },
+      "ReplicationChangePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "changes",
+          "next",
+          "more",
+          "head"
+        ],
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationChange"
+            }
+          },
+          "next": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "more": {
+            "type": "boolean"
+          },
+          "head": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "head_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

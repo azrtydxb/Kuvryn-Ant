@@ -30,7 +30,8 @@ for (const [path, entry] of Object.entries(spec.paths))
     const response = Object.entries(op.responses).find(([status]) =>
       status.startsWith("2"),
     )[1];
-    result += `${op.operationId}: { body: ${op.requestBody ? type(op.requestBody.content["application/json"].schema) : "undefined"}; response: ${type(response.content["application/json"].schema)} };\n`;
+    const json = response.content?.["application/json"]?.schema;
+    result += `${op.operationId}: { body: ${op.requestBody ? type(op.requestBody.content["application/json"].schema) : "undefined"}; response: ${json ? type(json) : "undefined"} };\n`;
     routes[op.operationId] = {
       path,
       method: method.toUpperCase(),

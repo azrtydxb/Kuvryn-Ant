@@ -1,5 +1,5 @@
 // Generated from api/openapi.yaml by npm run generate. Do not edit.
-export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1" };
+export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1"; "readiness"?: ReadinessDetail };
 export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error"; "message": string; "request_id": string };
 export type PageInfo = { "has_more": boolean; "next_cursor"?: string };
 export type Feed = { "id": string; "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number; "anonymous_read": boolean };
@@ -72,6 +72,69 @@ export type IdentityBindingPage = { "items": Array<IdentityBindingRecord>; "page
 export type IdentityBindingDeleted = { "id": string; "deleted": boolean };
 export type AuditEvent = { "id": number; "created_at": string; "principal_id"?: string; "action": string; "resource_id"?: string; "result": "success" | "denied" | "failure"; "details": {  } };
 export type AuditPage = { "items": Array<AuditEvent>; "page": PageInfo };
+export type ComponentStatus = { "status": "ok" | "degraded" | "unavailable" | "unknown"; "latency_ms"?: number; "detail"?: string };
+export type WriterLeaseStatus = { "state": "held" | "lost" | "superseded" | "expired" | "unavailable" | "not_serving"; "owner_id"?: string; "epoch"?: number; "expires_at"?: string; "remaining_ms"?: number };
+export type ReadinessDetail = { "ready": boolean; "database": ComponentStatus; "blob_storage": ComponentStatus; "writer_lease": WriterLeaseStatus; "checked_at": string };
+export type SourceHealth = { "source_id": string; "kind": string; "status": "healthy" | "degraded" | "failing" | "unknown" | "not_applicable"; "last_success_at"?: string; "last_error_at"?: string; "last_status_code"?: number; "last_error"?: string; "p95_latency_ms"?: number; "requests": number; "failures": number };
+export type SourceHealthPage = { "items": Array<SourceHealth>; "page": PageInfo };
+export type SourceTestResult = { "source_id": string; "reachable": boolean; "authenticated": boolean; "status_code"?: number; "latency_ms": number; "error"?: string };
+export type FeedStats = { "feed_id": string; "slug": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "pulls": number };
+export type FeedStatsPage = { "items": Array<FeedStats>; "page": PageInfo };
+export type SourceStats = { "source_id": string; "name": string; "kind": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "attached_feeds": number; "cache_hits": number; "cache_misses": number };
+export type SourceStatsPage = { "items": Array<SourceStats>; "page": PageInfo };
+export type DomainUsage = { "domain_id": string; "name": string; "blob_count": number; "blob_bytes": number };
+export type StorageUsage = { "backend": string; "blob_count": number; "blob_bytes": number; "logical_bytes": number; "dedup_saved_bytes": number; "unreferenced_bytes": number; "gc_candidates": number; "staging_bytes"?: number; "domains": Array<DomainUsage>; "measured_at": string };
+export type TrafficPoint = { "bucket": string; "pulls": number; "publishes": number; "bytes_out": number; "bytes_in": number; "cache_hits": number; "cache_misses": number; "errors": number; "cache_hit_ratio"?: number };
+export type TrafficSeries = { "scope": "instance" | "feed" | "source"; "ref"?: string; "from": string; "to": string; "step_seconds": number; "points": Array<TrafficPoint>; "totals": TrafficPoint };
+export type Provenance = { "asset_id": string; "coordinate": string; "version": string; "asset_key": string; "source_id": string; "feed_id"?: string; "origin": "local" | "remote" | "replica"; "created_at": string; "uploader_id"?: string; "uploader_subject"?: string; "token_id"?: string; "matched_rule"?: string; "digest": string; "verification": "verified" | "integrity_failure"; "verification_detail": string; "downloads": number; "last_downloaded_at"?: string };
+export type WebhookRate = { "delivered": number; "failed": number; "pending": number; "success_rate"?: number };
+export type WebhookStatsItem = { "webhook_id": string; "endpoint": string; "delivered": number; "failed": number; "pending": number; "success_rate"?: number };
+export type WebhookStatsPage = { "window_days": number; "overall": WebhookRate; "items": Array<WebhookStatsItem>; "next_after"?: string };
+export type SettingItem = { "key": string; "value": string; "source": "env" | "stored" | "default"; "read_only": boolean; "enforced": boolean; "description"?: string };
+export type InstanceSettings = { "revision": number; "items": Array<SettingItem>; "updated_at"?: string };
+export type PutSettings = { "session_max_age_seconds"?: number; "session_idle_timeout_seconds"?: number; "default_anonymous_read"?: boolean };
+export type RetentionPolicy = { "id": string; "feed_id"?: string; "source_id"?: string; "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep": number; "include_tagged": boolean; "allow_release_delete": boolean; "enabled": boolean; "revision": number };
+export type RetentionPolicyPage = { "items": Array<RetentionPolicy>; "next_after"?: string };
+export type CreateRetentionPolicy = { "feed_id"?: string; "source_id"?: string; "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep"?: number; "include_tagged"?: boolean; "allow_release_delete"?: boolean; "enabled"?: boolean };
+export type PutRetentionPolicy = { "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep"?: number; "include_tagged"?: boolean; "allow_release_delete"?: boolean; "enabled"?: boolean };
+export type RunDeletion = { "source_id": string; "coordinate": string; "version": string; "reason": string };
+export type RunBlob = { "domain_id": string; "digest": string; "kind": "row" | "object" };
+export type RunFinding = { "domain_id": string; "digest": string; "kind": "missing" | "size" | "digest" };
+export type RunReport = { "versions_deleted": number; "protected_release": number; "protected_tagged": number; "blobs_marked": number; "blobs_swept": number; "blobs_unmarked": number; "skipped_referenced": number; "gc_failed": number; "integrity_checked": number; "integrity_bytes": number; "integrity_errors": number; "integrity_mismatches": number; "integrity_wrapped": boolean; "deleted"?: Array<RunDeletion>; "marked"?: Array<RunBlob>; "swept"?: Array<RunBlob>; "mismatches"?: Array<RunFinding>; "errors"?: Array<string>; "truncated": boolean };
+export type RetentionRun = { "id": string; "trigger": "manual" | "scheduled"; "dry_run": boolean; "state": "running" | "succeeded" | "failed"; "requested_by"?: string; "started_at": string; "finished_at"?: string; "report"?: RunReport };
+export type RetentionRunPage = { "items": Array<RetentionRun>; "next_after"?: string };
+export type StartRetentionRun = { "dry_run": boolean };
+export type IntegrityFinding = { "id": number; "domain_id": string; "digest": string; "kind": "missing" | "size" | "digest"; "detected_at": string };
+export type IntegrityFindingPage = { "items": Array<IntegrityFinding>; "next_after"?: string };
+export type EffectiveAction = { "action": "read" | "publish" | "delete" | "configure" | "replicate" | "admin"; "allowed": boolean; "via_roles": Array<string>; "denied_by_roles": Array<string> };
+export type EffectiveResource = { "kind": "instance" | "feed" | "source" | "artifact"; "feed_id"?: string; "source_id"?: string; "namespace"?: string };
+export type EffectivePermissions = { "principal_id": string; "disabled": boolean; "resource": EffectiveResource; "actions": Array<EffectiveAction> };
+export type AuditSink = { "configured": boolean; "kind"?: "syslog" | "http"; "endpoint"?: string; "enabled": boolean; "has_credential": boolean; "checkpoint": number; "last_forwarded_at"?: string; "last_error"?: string; "revision": number };
+export type PutAuditSink = { "kind": "syslog" | "http"; "endpoint": string; "enabled"?: boolean; "credential"?: string };
+export type ReplicationPeer = { "id": string; "name": string; "url": string; "ca_ref"?: string; "revision": number; "created_at": string; "updated_at": string };
+export type ReplicationPeerList = { "items": Array<ReplicationPeer> };
+export type ReplicationPeerInput = { "name": string; "url": string; "ca_ref"?: string; "token": string };
+export type ReplicationPeerPatch = { "revision": number; "url"?: string; "ca_ref"?: string; "token"?: string };
+export type ReplicationFilters = { "namespaces"?: Array<string>; "packages"?: Array<string>; "version_prefixes"?: Array<string> };
+export type ReplicationStatus = { "phase": "new" | "seed_assets" | "seed_tags" | "incremental"; "running": boolean; "checkpoint": number; "remote_head"?: number; "changes_behind"?: number; "lag_seconds"?: number; "remote_checked_at"?: string; "seed_total"?: number; "seed_done": number; "last_attempt_at"?: string; "last_success_at"?: string; "next_run_at"?: string; "last_error"?: string; "consecutive_failures": number; "assets_applied": number; "blobs_transferred": number; "blobs_deduplicated": number; "bytes_transferred": number; "deletions_applied": number; "deletions_held": number; "conflicts": number };
+export type ReplicationJob = { "id": string; "name": string; "peer_id": string; "remote_feed_id": string; "dest_feed_id": string; "replica_source_id": string; "mode": "continuous" | "scheduled" | "manual"; "interval_seconds": number; "include_cached": boolean; "filters": ReplicationFilters; "deletion_policy": "ignore" | "propagate"; "enabled": boolean; "revision": number; "created_at": string; "status": ReplicationStatus };
+export type ReplicationJobList = { "items": Array<ReplicationJob> };
+export type ReplicationJobInput = { "name": string; "peer_id": string; "remote_feed_id": string; "dest_feed_id": string; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: ReplicationFilters; "deletion_policy"?: "ignore" | "propagate" };
+export type ReplicationJobPatch = { "revision": number; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: ReplicationFilters; "deletion_policy"?: "ignore" | "propagate"; "enabled"?: boolean };
+export type ReplicationStatusEntry = { "id": string; "name": string; "dest_feed_id": string; "enabled": boolean; "status": ReplicationStatus };
+export type ReplicationStatusList = { "items": Array<ReplicationStatusEntry> };
+export type ReplicationTrigger = { "job_id": string; "state": string };
+export type ReplicationDeletionEntry = { "source": "held" | "pending"; "kind": string; "coordinate": string; "version"?: string; "key"?: string; "seq": number; "disposition": "would_delete" | "protected" | "absent" };
+export type ReplicationDeletionPreview = { "policy": string; "applies": boolean; "entries": Array<ReplicationDeletionEntry>; "counts": { "would_delete"?: number; "protected"?: number; "absent"?: number }; "truncated": boolean };
+export type ReplicationOrigin = { "source_id": string; "name": string; "kind": string; "priority": number };
+export type ReplicationSubject = { "digest": string; "size": number; "media_type": string; "artifact_type": string; "annotations"?: {  } };
+export type ReplicationItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "version": string; "asset_key": string; "media_type": string; "digest": string; "size": number; "component_metadata"?: {  }; "subject"?: ReplicationSubject };
+export type ReplicationTagItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "tag": string; "version": string };
+export type ReplicationComponentItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "metadata"?: {  } };
+export type ReplicationHead = { "seq": number; "changed_at"?: string; "now": string; "format": string };
+export type ReplicationManifestPage = { "kind": "asset" | "tag"; "items"?: Array<ReplicationItem>; "tags"?: Array<ReplicationTagItem>; "next"?: string; "total"?: number };
+export type ReplicationChange = { "seq": number; "at": string; "kind": string; "op": string; "source_id": string; "coordinate": string; "version"?: string; "key"?: string; "asset"?: ReplicationItem; "tag"?: ReplicationTagItem; "component"?: ReplicationComponentItem };
+export type ReplicationChangePage = { "changes": Array<ReplicationChange>; "next": number; "more": boolean; "head": number; "head_at"?: string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -122,6 +185,48 @@ purgeSourceCache: { body: undefined; response: CachePurge };
 listServiceTokens: { body: undefined; response: TokenPage };
 deleteIdentityBinding: { body: undefined; response: IdentityBindingDeleted };
 listAuditEvents: { body: undefined; response: AuditPage };
+listSourceHealth: { body: undefined; response: SourceHealthPage };
+getSourceHealth: { body: undefined; response: SourceHealth };
+testSource: { body: undefined; response: SourceTestResult };
+listFeedStats: { body: undefined; response: FeedStatsPage };
+listSourceStats: { body: undefined; response: SourceStatsPage };
+getStorageUsage: { body: undefined; response: StorageUsage };
+getTrafficMetrics: { body: undefined; response: TrafficSeries };
+getAssetProvenance: { body: undefined; response: Provenance };
+getWebhookStats: { body: undefined; response: WebhookStatsPage };
+redeliverWebhookDelivery: { body: undefined; response: WebhookDelivery };
+getSettings: { body: undefined; response: InstanceSettings };
+putSettings: { body: PutSettings; response: InstanceSettings };
+listRetentionPolicies: { body: undefined; response: RetentionPolicyPage };
+createRetentionPolicy: { body: CreateRetentionPolicy; response: RetentionPolicy };
+putRetentionPolicy: { body: PutRetentionPolicy; response: RetentionPolicy };
+deleteRetentionPolicy: { body: undefined; response: RetentionPolicy };
+listRetentionRuns: { body: undefined; response: RetentionRunPage };
+startRetentionRun: { body: StartRetentionRun; response: RetentionRun };
+getRetentionRun: { body: undefined; response: RetentionRun };
+listIntegrityFindings: { body: undefined; response: IntegrityFindingPage };
+getEffectivePermissions: { body: undefined; response: EffectivePermissions };
+getAuditSink: { body: undefined; response: AuditSink };
+putAuditSink: { body: PutAuditSink; response: AuditSink };
+deleteAuditSink: { body: undefined; response: AuditSink };
+listReplicationPeers: { body: undefined; response: ReplicationPeerList };
+createReplicationPeer: { body: ReplicationPeerInput; response: ReplicationPeer };
+getReplicationPeer: { body: undefined; response: ReplicationPeer };
+patchReplicationPeer: { body: ReplicationPeerPatch; response: ReplicationPeer };
+deleteReplicationPeer: { body: undefined; response: undefined };
+listReplicationJobs: { body: undefined; response: ReplicationJobList };
+createReplicationJob: { body: ReplicationJobInput; response: ReplicationJob };
+getReplicationJob: { body: undefined; response: ReplicationJob };
+patchReplicationJob: { body: ReplicationJobPatch; response: ReplicationJob };
+deleteReplicationJob: { body: undefined; response: undefined };
+getReplicationJobStatus: { body: undefined; response: ReplicationStatus };
+triggerReplicationJob: { body: undefined; response: ReplicationTrigger };
+previewReplicationDeletions: { body: undefined; response: ReplicationDeletionPreview };
+listReplicationStatus: { body: undefined; response: ReplicationStatusList };
+getReplicationExportHead: { body: undefined; response: ReplicationHead };
+getReplicationExportManifest: { body: undefined; response: ReplicationManifestPage };
+getReplicationExportChanges: { body: undefined; response: ReplicationChangePage };
+getReplicationExportBlob: { body: undefined; response: undefined };
 }
 export const routes = {
   "getStatus": {
@@ -361,6 +466,216 @@ export const routes = {
   },
   "listAuditEvents": {
     "path": "/api/v1/audit",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listSourceHealth": {
+    "path": "/api/v1/source-health",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getSourceHealth": {
+    "path": "/api/v1/sources/{id}/health",
+    "method": "GET",
+    "idempotent": false
+  },
+  "testSource": {
+    "path": "/api/v1/sources/{id}:test",
+    "method": "POST",
+    "idempotent": false
+  },
+  "listFeedStats": {
+    "path": "/api/v1/stats/feeds",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listSourceStats": {
+    "path": "/api/v1/stats/sources",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getStorageUsage": {
+    "path": "/api/v1/storage/usage",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getTrafficMetrics": {
+    "path": "/api/v1/metrics/traffic",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getAssetProvenance": {
+    "path": "/api/v1/assets/{id}/provenance",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getWebhookStats": {
+    "path": "/api/v1/webhooks/stats",
+    "method": "GET",
+    "idempotent": false
+  },
+  "redeliverWebhookDelivery": {
+    "path": "/api/v1/webhooks/{id}/deliveries/{event_id}:redeliver",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getSettings": {
+    "path": "/api/v1/settings",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putSettings": {
+    "path": "/api/v1/settings",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "listRetentionPolicies": {
+    "path": "/api/v1/retention/policies",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createRetentionPolicy": {
+    "path": "/api/v1/retention/policies",
+    "method": "POST",
+    "idempotent": true
+  },
+  "putRetentionPolicy": {
+    "path": "/api/v1/retention/policies/{id}",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "deleteRetentionPolicy": {
+    "path": "/api/v1/retention/policies/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "listRetentionRuns": {
+    "path": "/api/v1/retention/runs",
+    "method": "GET",
+    "idempotent": false
+  },
+  "startRetentionRun": {
+    "path": "/api/v1/retention/runs",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getRetentionRun": {
+    "path": "/api/v1/retention/runs/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listIntegrityFindings": {
+    "path": "/api/v1/retention/integrity-findings",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getEffectivePermissions": {
+    "path": "/api/v1/permissions/effective",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getAuditSink": {
+    "path": "/api/v1/audit-sink",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putAuditSink": {
+    "path": "/api/v1/audit-sink",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "deleteAuditSink": {
+    "path": "/api/v1/audit-sink",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "listReplicationPeers": {
+    "path": "/api/v1/replication/peers",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createReplicationPeer": {
+    "path": "/api/v1/replication/peers",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getReplicationPeer": {
+    "path": "/api/v1/replication/peers/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "patchReplicationPeer": {
+    "path": "/api/v1/replication/peers/{id}",
+    "method": "PATCH",
+    "idempotent": false
+  },
+  "deleteReplicationPeer": {
+    "path": "/api/v1/replication/peers/{id}",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "listReplicationJobs": {
+    "path": "/api/v1/replication/jobs",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createReplicationJob": {
+    "path": "/api/v1/replication/jobs",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getReplicationJob": {
+    "path": "/api/v1/replication/jobs/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "patchReplicationJob": {
+    "path": "/api/v1/replication/jobs/{id}",
+    "method": "PATCH",
+    "idempotent": false
+  },
+  "deleteReplicationJob": {
+    "path": "/api/v1/replication/jobs/{id}",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "getReplicationJobStatus": {
+    "path": "/api/v1/replication/jobs/{id}/status",
+    "method": "GET",
+    "idempotent": false
+  },
+  "triggerReplicationJob": {
+    "path": "/api/v1/replication/jobs/{id}/runs",
+    "method": "POST",
+    "idempotent": false
+  },
+  "previewReplicationDeletions": {
+    "path": "/api/v1/replication/jobs/{id}/deletions",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listReplicationStatus": {
+    "path": "/api/v1/replication/status",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getReplicationExportHead": {
+    "path": "/api/v1/replication/export/feeds/{feed}/head",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getReplicationExportManifest": {
+    "path": "/api/v1/replication/export/feeds/{feed}/manifest",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getReplicationExportChanges": {
+    "path": "/api/v1/replication/export/feeds/{feed}/changes",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getReplicationExportBlob": {
+    "path": "/api/v1/replication/export/feeds/{feed}/blobs/{digest}",
     "method": "GET",
     "idempotent": false
   }
