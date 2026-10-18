@@ -1,0 +1,9 @@
+{
+  "branch": "feat/service-foundation",
+  "tasks": [
+    "C01-T1",
+    "C01-T2"
+  ],
+  "evidence": "../implementation/foundation.md",
+  "planning_snapshot": "verification.json"
+}
