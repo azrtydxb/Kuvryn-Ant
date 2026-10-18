@@ -78,6 +78,13 @@ type artifactRuntime struct {
 	remote      *remoteruntime.Manager
 }
 
+// leaseTTL is the writer lease lifetime. leaseAcquireWait bounds how long startup
+// waits for a previous owner that died without releasing (eviction, SIGKILL);
+// it exceeds leaseTTL so an expiring lease is always outlived.
+const leaseTTL = 30 * time.Second
+
+var leaseAcquireWait = leaseTTL + 15*time.Second
+
 func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (*artifactRuntime, error) {
 	instance := cfg.InstanceID
 	var owner string
@@ -100,7 +107,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 	}
 	// Ownership outlives the signal context so in-flight HTTP requests can drain
 	// while still fenced. artifactRuntime.Close releases after Serve returns.
-	manager, err := ownership.Start(context.WithoutCancel(ctx), pool, instance, owner, 30*time.Second)
+	manager, err := ownership.StartWait(ctx, pool, instance, owner, leaseTTL, leaseAcquireWait)
 	if err != nil {
 		return nil, err
 	}

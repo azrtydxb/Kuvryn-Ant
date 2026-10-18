@@ -68,6 +68,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		logger.Error("configuration rejected", "reason", err)
 		return 1
 	}
+	prepareStagingDir(logger, cfg.Storage.Directory, mode == "serve")
 	defer clear(cfg.RootKey)
 	identity.SetTrustedProxies(cfg.TrustedProxies)
 	cfg.Tracing.Version = buildVersion()
