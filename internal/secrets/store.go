@@ -83,7 +83,26 @@ func (s Store) Create(ctx context.Context, instance, actor, purpose string, plai
 		return Record{}, ErrStorage
 	}
 	defer storageRollback(tx)
+	r, err := s.CreateTx(ctx, tx, instance, actor, purpose, plaintext)
+	if err != nil {
+		return Record{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return Record{}, ErrStorage
+	}
+	return r, nil
+}
+
+// CreateTx requires caller authorization and keeps encrypted storage and its
+// audit/outbox inside the caller transaction. It never commits or uses the pool.
+func (s Store) CreateTx(ctx context.Context, tx pgx.Tx, instance, actor, purpose string, plaintext []byte) (Record, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if s.Keys == nil || tx == nil {
+		return Record{}, ErrStoreInput
+	}
 	var id string
+	var err error
 	if err = tx.QueryRow(ctx, "SELECT gen_random_uuid()::text").Scan(&id); err != nil {
 		return Record{}, ErrStorage
 	}
@@ -105,9 +124,6 @@ func (s Store) Create(ctx context.Context, instance, actor, purpose string, plai
 	}
 	if err = secretEvent(ctx, tx, instance, actor, r, "secret.create"); err != nil {
 		return Record{}, err
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return Record{}, ErrStorage
 	}
 	return r, nil
 }
@@ -155,6 +171,25 @@ func (s Store) Update(ctx context.Context, instance, actor, id, purpose string, 
 		return Record{}, ErrStorage
 	}
 	defer storageRollback(tx)
+	r, err := s.UpdateTx(ctx, tx, instance, actor, id, purpose, expected, plaintext)
+	if err != nil {
+		return Record{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return Record{}, ErrStorage
+	}
+	return r, nil
+}
+
+// UpdateTx replaces ciphertext and records audit atomically in the caller's
+// transaction. Caller authorization and final commit remain the caller's job.
+func (s Store) UpdateTx(ctx context.Context, tx pgx.Tx, instance, actor, id, purpose string, expected int64, plaintext []byte) (Record, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if s.Keys == nil || tx == nil || expected < 1 {
+		return Record{}, ErrStoreInput
+	}
+	var err error
 	instance, id, err = canonicalIDs(ctx, tx, instance, id)
 	if err != nil {
 		return Record{}, err
@@ -181,9 +216,6 @@ func (s Store) Update(ctx context.Context, instance, actor, id, purpose string, 
 	}
 	if err = secretEvent(ctx, tx, instance, actor, r, "secret.update"); err != nil {
 		return Record{}, err
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return Record{}, ErrStorage
 	}
 	return r, nil
 }

@@ -1,0 +1,11 @@
+.git
+.local
+.env
+.env.*
+**/node_modules
+internal/console/dist
+bin
+coverage*
+*.test
+**/__pycache__
+.DS_Store

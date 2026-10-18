@@ -127,3 +127,30 @@ func TestBearerUnavailableDoesNotConsumeFailureBudget(t *testing.T) {
 		}
 	}
 }
+
+func TestTrustedBrowserPrincipalCannotOverrideAuthorization(t *testing.T) {
+	for _, tc := range []struct {
+		name, header string
+		p            Principal
+		want         int
+	}{
+		{"browser", "", Principal{InstanceID: "i", PrincipalID: "u"}, 204},
+		{"missing instance", "", Principal{PrincipalID: "u"}, 401},
+		{"token context", "", Principal{InstanceID: "i", PrincipalID: "u", TokenID: "t"}, 401},
+		{"scoped context", "", Principal{InstanceID: "i", PrincipalID: "u", Scopes: []Scope{}}, 401},
+		{"invalid explicit bearer", "Bearer invalid", Principal{InstanceID: "i", PrincipalID: "u"}, 401},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewBearer(authFunc(func(context.Context, string) (Principal, error) { return Principal{}, errors.New("invalid") })).Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }))
+			r := httptest.NewRequest("GET", "/api/v1/feeds", nil).WithContext(WithAuthenticatedPrincipal(context.Background(), tc.p))
+			if tc.header != "" {
+				r.Header.Set("Authorization", tc.header)
+			}
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			if w.Code != tc.want {
+				t.Fatalf("got %d want %d", w.Code, tc.want)
+			}
+		})
+	}
+}

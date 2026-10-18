@@ -40,7 +40,7 @@ func Route(pattern string) string {
 		pattern = path
 	}
 	switch pattern {
-	case "/health/live", "/health/ready", "/metrics", "/api/v1/status", "/api/v1/feeds", "/api/v1/feeds/{id}":
+	case "/v2/", "/api/v1/sources", "/api/v1/sources/{id}", "/api/v1/feeds/{id}/sources", "/api/v1/feeds/{id}/sources/{source_id}", "/api/v1/feeds/{id}/publish-policy", "/health/live", "/health/ready", "/metrics", "/api/v1/status", "/api/v1/feeds", "/api/v1/feeds/{id}":
 		return pattern
 	default:
 		return "unmatched"

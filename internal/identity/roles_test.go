@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestBootstrapConcurrentAndRecovery(t *testing.T) {
@@ -70,6 +71,8 @@ func TestBootstrapConcurrentAndRecovery(t *testing.T) {
 	if _, err = f.pool.Exec(ctx, "UPDATE principals SET disabled=true WHERE id=$1", identity.PrincipalID); err != nil {
 		t.Fatal(err)
 	}
+	principal.TokenID = ""
+	principal.Scopes = nil
 	policy, err = (Roles{DB: f.pool}).Resolve(ctx, principal)
 	if err != nil {
 		t.Fatal(err)
@@ -137,7 +140,14 @@ func TestRoleResolutionIsolationAndDeny(t *testing.T) {
 	if _, err := f.pool.Exec(ctx, "INSERT INTO role_grants(instance_id,role_id,kind,effect,source_id,actions) VALUES($1,$2,'source','allow',$3,ARRAY['configure'])", f.instance, role, source); err != nil {
 		t.Fatal(err)
 	}
-	p := Principal{InstanceID: f.instance, PrincipalID: f.service, TokenID: "token", Scopes: []Scope{{Actions: []Action{Read, Publish, Configure}}}}
+	issued, err := (Tokens{DB: f.pool}).Issue(ctx, f.instance, f.actor, f.service, []Scope{{Actions: []Action{Read, Publish, Configure}}}, time.Now().Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := (Tokens{DB: f.pool}).Authenticate(ctx, issued.Secret)
+	if err != nil {
+		t.Fatal(err)
+	}
 	policy, err := (Roles{DB: f.pool}).Resolve(ctx, p)
 	if err != nil {
 		t.Fatal(err)
@@ -154,8 +164,8 @@ func TestRoleResolutionIsolationAndDeny(t *testing.T) {
 	}
 	p.PrincipalID = f.actor
 	policy, err = (Roles{DB: f.pool}).Resolve(ctx, p)
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("mismatched token identity accepted: %v", err)
 	}
 	if policy.Authorize(p, resource, Read) {
 		t.Fatal("unbound principal gained role")
@@ -163,8 +173,8 @@ func TestRoleResolutionIsolationAndDeny(t *testing.T) {
 	p.PrincipalID = f.service
 	p.InstanceID = f.other
 	policy, err = (Roles{DB: f.pool}).Resolve(ctx, p)
-	if err != nil {
-		t.Fatal(err)
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Fatalf("mismatched token identity accepted: %v", err)
 	}
 	if len(policy.Roles) != 0 {
 		t.Fatal("role crossed instance boundary")

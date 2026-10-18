@@ -21,6 +21,13 @@ type Authenticator interface {
 }
 type principalKey struct{}
 
+// WithAuthenticatedPrincipal is only for trusted in-process session middleware,
+// after authenticating the session and enforcing its CSRF/origin requirements.
+// Request headers and cookies must never be copied directly into this context.
+func WithAuthenticatedPrincipal(ctx context.Context, p Principal) context.Context {
+	return context.WithValue(ctx, principalKey{}, p)
+}
+
 func PrincipalFromContext(ctx context.Context) (Principal, bool) {
 	p, ok := ctx.Value(principalKey{}).(Principal)
 	return p, ok
@@ -48,6 +55,12 @@ func NewBearer(auth Authenticator) *Bearer {
 }
 func (b *Bearer) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if len(r.Header.Values("Authorization")) == 0 {
+			if p, ok := PrincipalFromContext(r.Context()); ok && p.PrincipalID != "" && p.InstanceID != "" && p.TokenID == "" && p.Scopes == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 		key := peerIP(r.RemoteAddr)
 		entry, ok := b.reserve(key)
 		if !ok {

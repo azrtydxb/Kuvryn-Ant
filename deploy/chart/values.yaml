@@ -1,0 +1,80 @@
+# OKE is the primary validation target; resources are provider-neutral.
+image:
+  repository: kuvryn-ant
+  tag: "0.1.0"
+  digest: "" # Prefer an immutable sha256 digest for deployment.
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+replicaCount: 1 # This release enforces exactly one writer.
+publicURL: https://ant.example.invalid
+instanceID: "" # Empty resolves the bootstrapped instance from PostgreSQL.
+shutdownSeconds: 15
+terminationGracePeriodSeconds: 45
+maxRequests: 128
+postgres:
+  existingSecret: ant-postgres
+  dsnKey: dsn
+  # Optional libpq TLS files, e.g. sslrootcert=/run/ant/postgres/ca.crt in DSN.
+  tlsExistingSecret: ""
+rootKey:
+  existingSecret: ant-root-key
+  key: root.key # Exactly 32 raw bytes; preserve and back up across upgrades.
+  activeVersion: v1
+  previousKeysManifestKey: "" # Optional JSON version -> mounted key filename map.
+persistence:
+  existingClaim: ""
+  storageClass: "" # Empty uses the cluster default; select an OKE block CSI class.
+  size: 120Gi
+  accessModes: [ReadWriteOnce]
+  annotations: {}
+storage:
+  backend: disk
+  s3:
+    endpoint: "" # Empty uses standard AWS S3 endpoint resolution.
+    region: ""
+    bucket: ""
+    prefix: "ant/"
+    pathStyle: false
+    credentialsExistingSecret: ""
+    credentialsKey: credentials.json
+    caExistingSecret: ""
+    caKey: ca.crt
+# Each provider mounts the entire Secret, including config.json and referenced
+# key/certificate/password files. Config paths must use the matching mount root.
+auth:
+  oidc:
+    existingSecret: ""
+    configKey: config.json
+  saml:
+    existingSecret: ""
+    configKey: config.json
+  ldap:
+    existingSecret: ""
+    configKey: config.json
+service:
+  port: 8080
+ingress:
+  enabled: false
+  className: ""
+  host: ant.example.invalid
+  tlsSecret: ""
+  annotations: {} # Configure controller upload/time limits explicitly.
+metrics:
+  headlessService: false # Same port; restrict scrape access with NetworkPolicy.
+networkPolicy:
+  enabled: false
+  # Explicit peer selectors/IP blocks; [] denies all ingress when enabled.
+  ingressFrom: []
+  # Explicit egress rules for DNS, PostgreSQL, object storage and configured IdPs.
+  # [] denies all egress. No provider-specific destination is implicitly trusted.
+  egress: []
+resources:
+  requests:
+    cpu: "1"
+    memory: 2Gi
+  limits:
+    cpu: "4"
+    memory: 8Gi
+nodeSelector: {}
+tolerations: []
+affinity: {}

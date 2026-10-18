@@ -209,3 +209,52 @@ func TestMetricsAdmissionAndSaturation(t *testing.T) {
 		t.Fatalf("missing saturation counter: %d %s", metrics.Code, metrics.Body.String())
 	}
 }
+
+func TestForcedShutdownJoinsOuterDeferredCleanup(t *testing.T) {
+	entered := make(chan struct{})
+	cleanup := make(chan struct{})
+	release := make(chan struct{})
+	svc := New(pingFunc(func(ctx context.Context) error { close(entered); <-ctx.Done(); return ctx.Err() }), 1, 20*time.Millisecond, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	svc.WrapHTTP(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() { close(cleanup); <-release }()
+			next.ServeHTTP(w, r)
+		})
+	})
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- svc.Serve(ctx, listener) }()
+	go func() {
+		response, err := http.Get("http://" + listener.Addr().String() + "/health/ready")
+		if err == nil {
+			response.Body.Close()
+		}
+	}()
+	select {
+	case <-entered:
+	case <-time.After(time.Second):
+		t.Fatal("handler did not start")
+	}
+	cancel()
+	select {
+	case <-cleanup:
+	case <-time.After(time.Second):
+		close(release)
+		t.Fatal("cleanup did not start after cancellation")
+	}
+	select {
+	case err := <-done:
+		close(release)
+		t.Fatalf("returned before cleanup: %v", err)
+	case <-time.After(30 * time.Millisecond):
+	}
+	close(release)
+	if err := wait(t, done); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal(err)
+	}
+}

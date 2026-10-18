@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -91,11 +92,39 @@ func status(w http.ResponseWriter, code int, value string) {
 }
 
 // Serve drains accepted requests on cancellation, then forcibly closes overdue
-// connections. It returns only after the HTTP serving goroutine has exited.
+// connections. It joins admitted handlers, including deferred cleanup and outer
+// middleware, before returning so runtime dependencies can then be closed.
+// Handlers must honor cancellation and bound their own cleanup operations.
 func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 	requests, cancelRequests := context.WithCancel(context.Background())
 	defer cancelRequests()
 	s.http.BaseContext = func(net.Listener) context.Context { return requests }
+	// This gate is outside every middleware installed through WrapHTTP. Holding
+	// the mutex across Add and admission closure prevents Add racing with Wait.
+	var gate sync.Mutex
+	var handlers sync.WaitGroup
+	accepting := true
+	next := s.http.Handler
+	s.http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gate.Lock()
+		if !accepting {
+			gate.Unlock()
+			status(w, http.StatusServiceUnavailable, "stopping")
+			return
+		}
+		handlers.Add(1)
+		gate.Unlock()
+		defer handlers.Done()
+		next.ServeHTTP(w, r)
+	})
+	stopAdmission := func() { gate.Lock(); accepting = false; s.stopping.Store(true); gate.Unlock() }
+	defer func() {
+		stopAdmission()
+		cancelRequests()
+		_ = s.http.Close()
+		handlers.Wait()
+	}()
+
 	done := make(chan error, 1)
 	go func() { done <- s.http.Serve(listener) }()
 	select {
@@ -105,7 +134,7 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 		}
 		return err
 	case <-ctx.Done():
-		s.stopping.Store(true)
+		stopAdmission()
 		drain, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
 		defer cancel()
 		err := s.http.Shutdown(drain)
@@ -115,5 +144,13 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 		}
 		<-done
 		return err
+	}
+}
+
+// WrapHTTP installs trusted outer middleware before Serve is called.
+// It must not be called concurrently with serving requests.
+func (s *Server) WrapHTTP(wrap func(http.Handler) http.Handler) {
+	if wrap != nil {
+		s.http.Handler = wrap(s.http.Handler)
 	}
 }
