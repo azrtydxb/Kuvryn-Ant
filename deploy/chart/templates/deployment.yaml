@@ -43,6 +43,10 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            {{- if .Values.federation.enabled }}
+            - name: federation
+              containerPort: {{ .Values.federation.port }}
+            {{- end }}
           env:
             - name: ANT_LISTEN
               value: "0.0.0.0:8080"
@@ -110,6 +114,16 @@ spec:
             - name: ANT_OTEL_SAMPLE_RATIO
               value: {{ default 1 $tr.sampleRatio | quote }}
             {{- end }}
+            {{- if .Values.federation.enabled }}
+            - name: ANT_FEDERATION_LISTEN
+              value: {{ printf "0.0.0.0:%d" (int .Values.federation.port) | quote }}
+            - name: ANT_FEDERATION_PUBLIC_URL
+              value: {{ .Values.federation.publicURL | quote }}
+            {{- if .Values.federation.join.existingSecret }}
+            - name: ANT_FEDERATION_JOIN_DIR
+              value: /run/ant/federation-join
+            {{- end }}
+            {{- end }}
             - name: ANT_AUDIT_RETENTION
               value: {{ .Values.auditRetention.retain | quote }}
             - name: ANT_AUDIT_PURGE_INTERVAL
@@ -147,6 +161,11 @@ spec:
               mountPath: /run/ant/s3-ca
               readOnly: true
             {{- end }}
+            {{- end }}
+            {{- if and .Values.federation.enabled .Values.federation.join.existingSecret }}
+            - name: federation-join
+              mountPath: /run/ant/federation-join
+              readOnly: true
             {{- end }}
             {{- range $name, $provider := .Values.auth }}
             {{- if $provider.existingSecret }}
@@ -211,6 +230,19 @@ spec:
               - key: {{ .Values.storage.s3.caKey | quote }}
                 path: ca.crt
         {{- end }}
+        {{- end }}
+        {{- if and .Values.federation.enabled .Values.federation.join.existingSecret }}
+        - name: federation-join
+          secret:
+            secretName: {{ .Values.federation.join.existingSecret | quote }}
+            defaultMode: 0440
+            items:
+              - key: authority_url
+                path: authority_url
+              - key: ca_sha256
+                path: ca_sha256
+              - key: invitation
+                path: invitation
         {{- end }}
         {{- range $name, $provider := .Values.auth }}
         {{- if $provider.existingSecret }}

@@ -86,6 +86,32 @@ httpRoute: # Gateway API alternative to ingress; TLS is terminated by the Gatewa
   filters: []
   # Large uploads: "0s" disables the timeout on implementations that support it.
   timeouts: {}
+# Phase 2 federation (off by default). Peer traffic uses a dedicated mTLS
+# listener with its own Service (decision D1): TLS must reach the pod
+# unterminated, so use a LoadBalancer/NodePort Service or ingress-nginx
+# ssl-passthrough. Federation keys are stored encrypted in PostgreSQL under the
+# root key; the chart never handles federation key material.
+federation:
+  enabled: false
+  port: 8444
+  publicURL: "" # https URL other members use, e.g. https://fed.ant.example:8444
+  service:
+    type: LoadBalancer # LoadBalancer | NodePort | ClusterIP
+    port: 8444
+    nodePort: null
+    annotations: {}
+    loadBalancerSourceRanges: []
+  ingressPassthrough: # ingress-nginx with --enable-ssl-passthrough
+    enabled: false
+    className: nginx
+    host: ""
+    annotations: {}
+  # Optional Secret with keys authority_url, ca_sha256 and invitation. When set
+  # and this instance was never federated, it joins automatically at startup.
+  join:
+    existingSecret: ""
+  # NetworkPolicy peers allowed to reach the federation port (other members).
+  networkPolicyFrom: []
 metrics:
   headlessService: false # Same port; restrict scrape access with NetworkPolicy.
 networkPolicy:

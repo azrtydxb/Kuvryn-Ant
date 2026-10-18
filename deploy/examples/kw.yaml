@@ -37,3 +37,15 @@ ingress:
 extraEnv:
   ANT_OCI_DEFAULT_FEED: dockerhub
   ANT_OCI_MIRROR_MAP: docker.io=dockerhub,ghcr.io=ghcr,quay.io=quay,registry.k8s.io=k8s,gcr.io=gcr,public.ecr.aws=ecr
+
+# Phase 2 federation (docs/operations/federation.md). kw joins the OKE
+# authority over a NodePort/MetalLB Service; the invitation Secret holds
+# authority_url, ca_sha256 and invitation.
+# federation:
+#   enabled: true
+#   publicURL: https://fed.kw.example:30844
+#   service:
+#     type: NodePort
+#     nodePort: 30844
+#   join:
+#     existingSecret: ant-federation-join

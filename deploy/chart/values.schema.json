@@ -12,6 +12,49 @@
     "auth"
   ],
   "properties": {
+    "federation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "publicURL": { "type": "string", "pattern": "^(https://[^/?#@]+)?$" },
+        "service": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": { "enum": ["LoadBalancer", "NodePort", "ClusterIP"] },
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "nodePort": {
+              "type": ["integer", "null"],
+              "minimum": 30000,
+              "maximum": 32767
+            },
+            "annotations": { "type": "object" },
+            "loadBalancerSourceRanges": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
+        "ingressPassthrough": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "className": { "type": "string" },
+            "host": { "type": "string" },
+            "annotations": { "type": "object" }
+          }
+        },
+        "join": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "existingSecret": { "type": "string" } }
+        },
+        "networkPolicyFrom": { "type": "array", "items": { "type": "object" } }
+      }
+    },
     "replicaCount": {
       "type": "integer",
       "const": 1
@@ -38,10 +81,17 @@
           "additionalProperties": false,
           "properties": {
             "enabled": { "type": "boolean" },
-            "endpoint": { "type": "string", "pattern": "^(https?://[^/@\\s]+(/.*)?)?$" },
+            "endpoint": {
+              "type": "string",
+              "pattern": "^(https?://[^/@\\s]+(/.*)?)?$"
+            },
             "protocol": { "enum": ["http/protobuf", "grpc"] },
             "serviceName": { "type": "string", "minLength": 1 },
-            "sampleRatio": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+            "sampleRatio": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1
+            }
           }
         }
       }
@@ -75,11 +125,7 @@
           "pattern": "^$|^sha256:[0-9a-f]{64}$"
         },
         "pullPolicy": {
-          "enum": [
-            "Always",
-            "IfNotPresent",
-            "Never"
-          ]
+          "enum": ["Always", "IfNotPresent", "Never"]
         }
       }
     },
@@ -87,10 +133,7 @@
       "type": "object",
       "properties": {
         "backend": {
-          "enum": [
-            "disk",
-            "s3"
-          ]
+          "enum": ["disk", "s3"]
         },
         "s3": {
           "type": "object",
@@ -110,10 +153,7 @@
           "minItems": 1,
           "maxItems": 1,
           "items": {
-            "enum": [
-              "ReadWriteOnce",
-              "ReadWriteOncePod"
-            ]
+            "enum": ["ReadWriteOnce", "ReadWriteOncePod"]
           }
         }
       }
@@ -168,9 +208,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": [
-              "name"
-            ],
+            "required": ["name"],
             "properties": {
               "name": {
                 "type": "string",
@@ -222,10 +260,7 @@
   "definitions": {
     "provider": {
       "type": "object",
-      "required": [
-        "existingSecret",
-        "configKey"
-      ],
+      "required": ["existingSecret", "configKey"],
       "additionalProperties": false,
       "properties": {
         "existingSecret": {
