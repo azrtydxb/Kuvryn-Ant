@@ -6,6 +6,7 @@ Self-hosted artifact platform: Go service (`cmd/ant`, `internal/*`), React conso
 
 - `go build ./... && go vet ./...`
 - `scripts/test-postgres.sh [packages]` — DB-backed tests against a disposable local PostgreSQL (requires `initdb`/`pg_ctl`).
+- `go run ./scripts/ocismoke` — real-client OCI smoke test (needs `crane` and PostgreSQL binaries); `go run ./cmd/qafixture start|stop` — real-backend browser QA harness.
 - `scripts/check-generated.sh` — `api/openapi.yaml` must match `api/generated.go` and `web/src/generated.ts`. After any API change, run the Go generator and `cd web && npm run generate`; never hand-edit generated files.
 - `cd web && npm ci && npm test && npm run build` — `build` includes the API contract check and `tsc`. Rebuild `internal/console/dist` when `web/` changes.
 

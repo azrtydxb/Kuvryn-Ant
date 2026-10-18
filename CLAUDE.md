@@ -14,7 +14,7 @@ The shared agent contract (build/verify commands, conventions, delivery rules) l
 - Single Go test against real PostgreSQL: `scripts/test-postgres.sh ./internal/oci/... -run TestName` (args pass straight to `go test -race -count=1`). Without `ANT_TEST_DATABASE_URL`, DB tests skip silently; `ANT_REQUIRE_INTEGRATION=1` makes them fail instead.
 - Single web test: `cd web && npx vitest run src/App.test.tsx`.
 - Regenerate API code: `go generate ./api` (oapi-codegen via `api/codegen.yaml`) and `cd web && npm run generate`; `scripts/check-generated.sh` verifies without rewriting.
-- Real-client smoke test for OCI: `scripts/test-oci-client.py` (needs crane + PostgreSQL binaries). Real-backend browser QA fixture: `python3 web/scripts/qa-fixture.py start|stop`.
+- Real-client smoke test for OCI: `go run ./scripts/ocismoke` (needs crane + PostgreSQL binaries). Real-backend browser QA fixture: `go run ./cmd/qafixture start|stop`.
 
 ## Architecture
 

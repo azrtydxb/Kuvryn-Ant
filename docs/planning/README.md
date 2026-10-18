@@ -13,4 +13,4 @@ Engineering planning is complete. Publication and readiness evidence are in [ver
 
 PostgreSQL only; license undecided; OCI/Docker → Go → Helm → Cargo → Raw first; all 26 formats in Phase 1; OIDC/SAML/LDAP in first GA. No calendar or staffing promises. Installed infrastructure versions and secrets are recorded when deployment tasks need them, without blocking core development.
 
-GitHub body checklists and links provide the task hierarchy. No separate Project board is implied. `publish_backlog.py` manages the initial manifest; finalized issue bodies/states are preserved in `planning-resolutions.json`. `finalize_planning.py` publishes those resolutions and verifies remote state without reopening completed planning work.
+GitHub body checklists and links provide the task hierarchy. No separate Project board is implied. The one-shot Python publishers that created the GitHub backlog were removed (planning is frozen; see `implementation-started.json`); finalized issue bodies/states are preserved in `planning-resolutions.json`. The recorded manifests are kept as history.

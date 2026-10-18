@@ -16,21 +16,21 @@ Storage can use local disk or S3 with mounted credentials and custom CA roots. S
 
 Local disposable PostgreSQL17 fixtures and installed clients exercised:
 
-| Workflow | Actual client | Evidence |
-|---|---|---|
-| OCI image push/pull, digest checks, restart/resume, multi-platform index | crane v0.21.6 | `scripts/test-oci-client.py` |
-| Go module ingestion and native download | Go1.27.1 | `internal/goproxy` PostgreSQL tests |
-| Classic chart index, pull and dependency resolution | Helm v4.1.1 | `internal/helmrepo` PostgreSQL tests |
-| Crate publication, fetch and offline build | Cargo1.97.1 | `internal/cargo` PostgreSQL tests |
-| Raw immutable upload, conditions/ranges and isolation | Go HTTP fixtures | `internal/rawrepo` PostgreSQL tests |
-| npm publish, view, initial dist-tags, install and offline CI | npm10.9.8 | `internal/npmregistry` PostgreSQL tests |
-| Python hash-verified download/install and requires-python rejection | pip26.2.1 | `internal/pypi` PostgreSQL tests |
-| Maven release parent-POM resolution | Maven3.9.16 | `internal/maven` PostgreSQL tests |
-| NuGet push and restore | .NET8.0.131 | `internal/nuget` PostgreSQL tests |
-| Git LFS object push/pull and byte-range reads | Git HTTP fixtures | `internal/gitlfs` PostgreSQL tests |
-| Composer install, locked install and package metadata | Composer2.9.7/PHP8.5.6 | `internal/composer` PostgreSQL tests |
-| Pub version fetch, archive install and offline checks | Dart fixtures | `internal/pubrepo` PostgreSQL tests |
-| RubyGems push, compact index, install and checksums | RubyGems fixtures | `internal/rubygems` PostgreSQL tests |
+| Workflow                                                                 | Actual client          | Evidence                                |
+| ------------------------------------------------------------------------ | ---------------------- | --------------------------------------- |
+| OCI image push/pull, digest checks, restart/resume, multi-platform index | crane v0.21.6          | `scripts/ocismoke`                      |
+| Go module ingestion and native download                                  | Go1.27.1               | `internal/goproxy` PostgreSQL tests     |
+| Classic chart index, pull and dependency resolution                      | Helm v4.1.1            | `internal/helmrepo` PostgreSQL tests    |
+| Crate publication, fetch and offline build                               | Cargo1.97.1            | `internal/cargo` PostgreSQL tests       |
+| Raw immutable upload, conditions/ranges and isolation                    | Go HTTP fixtures       | `internal/rawrepo` PostgreSQL tests     |
+| npm publish, view, initial dist-tags, install and offline CI             | npm10.9.8              | `internal/npmregistry` PostgreSQL tests |
+| Python hash-verified download/install and requires-python rejection      | pip26.2.1              | `internal/pypi` PostgreSQL tests        |
+| Maven release parent-POM resolution                                      | Maven3.9.16            | `internal/maven` PostgreSQL tests       |
+| NuGet push and restore                                                   | .NET8.0.131            | `internal/nuget` PostgreSQL tests       |
+| Git LFS object push/pull and byte-range reads                            | Git HTTP fixtures      | `internal/gitlfs` PostgreSQL tests      |
+| Composer install, locked install and package metadata                    | Composer2.9.7/PHP8.5.6 | `internal/composer` PostgreSQL tests    |
+| Pub version fetch, archive install and offline checks                    | Dart fixtures          | `internal/pubrepo` PostgreSQL tests     |
+| RubyGems push, compact index, install and checksums                      | RubyGems fixtures      | `internal/rubygems` PostgreSQL tests    |
 
 Conan, ansible-galaxy, conda and CRAN adapters are implemented and mounted with
 boundary-tested local fixtures (`internal/conan`, `internal/ansiblerepo`,
