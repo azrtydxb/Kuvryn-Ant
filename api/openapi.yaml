@@ -12730,6 +12730,331 @@
           }
         }
       }
+    },
+    "/api/v1/transfer/export": {
+      "post": {
+        "operationId": "exportTransfer",
+        "description": "All transfer and migration endpoints require instance admin. Returns the portable definition document of the selected feeds (all when none is named): sources, ordered feed sources, anonymous-read and publish policies, retention, remote configuration without credential IDs, and optionally the local content inventory (digests and metadata, not bytes). Credential values are never included. Use `ant export` for a bundle that also contains content bytes.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/transfer/import": {
+      "post": {
+        "operationId": "importTransfer",
+        "description": "All transfer and migration endpoints require instance admin. Imports a definition document. dry_run defaults to true and reports created/updated/unchanged/skipped/conflict per object, unmapped configuration and integrity failures without changing anything; the apply produces the same report. Apply is idempotent and never overwrites existing content. Assets are imported only when their content already exists in the target store; use `ant import` for bundles with content.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/transfer/runs": {
+      "get": {
+        "operationId": "listTransferRuns",
+        "description": "All transfer and migration endpoints require instance admin. Most recent export, import, migration and compare runs with count summaries only (no reports, no credentials).",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferRunPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/migrations/nexus": {
+      "post": {
+        "operationId": "migrateNexus",
+        "description": "All transfer and migration endpoints require instance admin. Inventories a Sonatype Nexus 3 instance through its REST API and maps hosted repositories to local sources, proxy to remote sources, groups to feeds with ordered sources and cleanup policies to retention. Credentials are used for this request only and never stored. dry_run defaults to true. Applying maps definitions only; copy content with `ant migrate nexus --copy-content --apply`. The server connects to the supplied URL (http or https, no redirects to other hosts).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NexusMigrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/migrations/compare": {
+      "post": {
+        "operationId": "compareMigration",
+        "description": "All transfer and migration endpoints require instance admin. Staged adoption: for each coordinate (a path in a Nexus repository), reports the content a client would receive from Nexus and from the Ant feed (first source in feed order holding the path) with checksums and a status. Read only; credentials are used for this request only.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrationCompareRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationCompareReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -20830,6 +21155,527 @@
           "received_at",
           "applied",
           "document"
+        ]
+      },
+      "TransferExportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feeds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "include_content": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TransferDocument": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "format_version",
+          "sources",
+          "feeds",
+          "components"
+        ],
+        "properties": {
+          "format_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "selection": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "feeds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "skipped_content": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Portable definitions of feeds, sources, policies, remote configuration (without credential values; only a credential_ref) and an optional content inventory."
+      },
+      "TransferImportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/TransferDocument"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "document"
+        ]
+      },
+      "TransferItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "created",
+              "updated",
+              "unchanged",
+              "skipped",
+              "conflict"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "action"
+        ]
+      },
+      "TransferUnmapped": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "reason"
+        ]
+      },
+      "TransferFailure": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "digest": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "digest",
+          "reason"
+        ]
+      },
+      "TransferReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferItem"
+            }
+          },
+          "items_truncated": {
+            "type": "boolean"
+          },
+          "unmapped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferUnmapped"
+            }
+          },
+          "integrity_failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferFailure"
+            }
+          }
+        },
+        "required": [
+          "dry_run",
+          "summary",
+          "items",
+          "unmapped",
+          "integrity_failures"
+        ]
+      },
+      "MigrationRepository": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "ant_format": {
+            "type": "string"
+          },
+          "mapped_to": {
+            "type": "string"
+          },
+          "assets": {
+            "type": "integer"
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "format",
+          "mapped_to"
+        ]
+      },
+      "MigrationReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferItem"
+            }
+          },
+          "items_truncated": {
+            "type": "boolean"
+          },
+          "unmapped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferUnmapped"
+            }
+          },
+          "integrity_failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferFailure"
+            }
+          },
+          "manager": {
+            "type": "string"
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationRepository"
+            }
+          }
+        },
+        "required": [
+          "dry_run",
+          "summary",
+          "items",
+          "unmapped",
+          "integrity_failures",
+          "manager",
+          "repositories"
+        ]
+      },
+      "NexusMigrationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "token": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "count_assets": {
+            "type": "boolean"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "MigrationCompareItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "repository": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "feed": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository",
+          "path"
+        ]
+      },
+      "MigrationCompareRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "token": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 500,
+            "items": {
+              "$ref": "#/components/schemas/MigrationCompareItem"
+            }
+          }
+        },
+        "required": [
+          "url",
+          "items"
+        ]
+      },
+      "MigrationCompareSide": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "found": {
+            "type": "boolean"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "found"
+        ]
+      },
+      "MigrationCompareResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "repository": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "feed": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "identical",
+              "differs",
+              "missing_in_ant",
+              "missing_in_source",
+              "missing_in_both",
+              "error"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/MigrationCompareSide"
+          },
+          "ant": {
+            "$ref": "#/components/schemas/MigrationCompareSide"
+          }
+        },
+        "required": [
+          "repository",
+          "path",
+          "feed",
+          "status",
+          "source",
+          "ant"
+        ]
+      },
+      "MigrationCompareReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "manager": {
+            "type": "string"
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCompareResult"
+            }
+          }
+        },
+        "required": [
+          "manager",
+          "counts",
+          "results"
+        ]
+      },
+      "TransferRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "export",
+              "import",
+              "migration",
+              "compare"
+            ]
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "dry_run",
+          "summary",
+          "created_at"
+        ]
+      },
+      "TransferRunPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransferRun"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }

@@ -127,7 +127,7 @@ export type ReplicationTrigger = { "job_id": string; "state": string };
 export type ReplicationDeletionEntry = { "source": "held" | "pending"; "kind": string; "coordinate": string; "version"?: string; "key"?: string; "seq": number; "disposition": "would_delete" | "protected" | "absent" };
 export type ReplicationDeletionPreview = { "policy": string; "applies": boolean; "entries": Array<ReplicationDeletionEntry>; "counts": { "would_delete"?: number; "protected"?: number; "absent"?: number }; "truncated": boolean; "reseed_required"?: boolean };
 export type ReplicationOrigin = { "source_id": string; "name": string; "kind": string; "priority": number };
-export type ReplicationSubject = { "digest": string; "size": number; "media_type": string; "artifact_type": string; "annotations"?: {  } };
+export type ReplicationSubject = { "digest": string; "size": number; "media_type": string; "artifact_type": string; "annotations"?: Record<string, string> };
 export type ReplicationItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "version": string; "asset_key": string; "media_type": string; "digest": string; "size": number; "component_metadata"?: {  }; "subject"?: ReplicationSubject };
 export type ReplicationTagItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "tag": string; "version": string };
 export type ReplicationComponentItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "metadata"?: {  } };
@@ -218,23 +218,40 @@ export type FederationSyncStatus = { "last_attempt_at"?: string; "last_success_a
 export type FederationCertificateStatus = { "serial": string; "expires_at"?: string };
 export type FederationMemberCounts = { "active": number; "suspended": number; "removed": number };
 export type FederationStatus = { "instance_id": string; "state": "none" | "joining" | "active" | "left" | "removed"; "role"?: "member" | "authority"; "health": "disabled" | "ok" | "degraded"; "federation_id"?: string; "federation_name"?: string; "authority_epoch"?: number; "authority_instance_id"?: string; "authority_url"?: string; "listener_configured": boolean; "listen_address"?: string; "federation_url"?: string; "ca_sha256"?: string; "recovery_key_fingerprint"?: string; "membership"?: FederationDocumentHead; "certificate"?: FederationCertificateStatus; "sync": FederationSyncStatus; "members": FederationMemberCounts; "software_version": string; "protocol": FederationProtocolRange };
-export type FederationMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url"?: string; "federation_url": string; "cert_sha256"?: string; "cert_serial"?: string; "labels": {  }; "software_version"?: string; "protocol": FederationProtocolRange; "joined_at"?: string; "authority": boolean; "self": boolean; "last_seen_at"?: string; "rtt_ms"?: number; "skew_ms"?: number; "membership_generation": number };
+export type FederationMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url"?: string; "federation_url": string; "cert_sha256"?: string; "cert_serial"?: string; "labels": Record<string, string>; "software_version"?: string; "protocol": FederationProtocolRange; "joined_at"?: string; "authority": boolean; "self": boolean; "last_seen_at"?: string; "rtt_ms"?: number; "skew_ms"?: number; "membership_generation": number };
 export type FederationMemberList = { "items": Array<FederationMember> };
-export type FoundFederation = { "name": string; "member_name"?: string; "labels"?: {  } };
+export type FoundFederation = { "name": string; "member_name"?: string; "labels"?: Record<string, string> };
 export type FederationFoundResult = { "status": FederationStatus; "recovery_key": string; "recovery_public_key": string; "ca_sha256": string };
-export type JoinFederation = { "authority_url": string; "ca_sha256": string; "invitation": string; "labels"?: {  } };
+export type JoinFederation = { "authority_url": string; "ca_sha256": string; "invitation": string; "labels"?: Record<string, string> };
 export type LeaveFederation = { "confirm": boolean; "force"?: boolean };
-export type FederationInvitation = { "id": string; "name": string; "labels": {  }; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked" };
+export type FederationInvitation = { "id": string; "name": string; "labels": Record<string, string>; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked" };
 export type FederationInvitationList = { "items": Array<FederationInvitation> };
-export type CreateFederationInvitation = { "name": string; "labels"?: {  }; "ttl_seconds"?: number };
-export type FederationIssuedInvitation = { "id": string; "name": string; "labels": {  }; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked"; "secret": string; "ca_sha256": string; "authority_url": string };
+export type CreateFederationInvitation = { "name": string; "labels"?: Record<string, string>; "ttl_seconds"?: number };
+export type FederationIssuedInvitation = { "id": string; "name": string; "labels": Record<string, string>; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked"; "secret": string; "ca_sha256": string; "authority_url": string };
 export type RotateFederationRecoveryKey = { "recovery_key": string };
-export type FederationDocumentMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url": string; "federation_url": string; "cert_sha256": string; "cert_serial": string; "signing_key": string; "labels": {  }; "software_version": string; "protocol": FederationProtocolRange; "joined_at": string };
+export type FederationDocumentMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url": string; "federation_url": string; "cert_sha256": string; "cert_serial": string; "signing_key": string; "labels": Record<string, string>; "software_version": string; "protocol": FederationProtocolRange; "joined_at": string };
 export type FederationAuthorityCertificate = { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery" | "previous_epoch"; "signature": string };
 export type FederationRecoveryRotation = { "previous_key": string; "new_key": string; "generation": number; "signature": string };
 export type FederationSignature = { "key_id": string; "alg": string; "value": string };
 export type FederationMembershipDocument = { "kind": "membership"; "federation_id": string; "federation_name": string; "generation": number; "authority_epoch": number; "prev_hash": string; "protocol": FederationProtocolRange; "authority": FederationAuthorityCertificate; "recovery_public_key": string; "recovery_rotation"?: FederationRecoveryRotation; "ca_certificates": Array<string>; "members": Array<FederationDocumentMember>; "revoked_cert_serials": Array<string>; "issued_at": string; "issued_by": string; "signature"?: FederationSignature };
 export type FederationStoredDocument = { "kind": "membership"; "generation": number; "hash": string; "received_at": string; "applied": boolean; "document": FederationMembershipDocument };
+export type TransferExportRequest = { "feeds"?: Array<string>; "namespaces"?: Array<string>; "include_content"?: boolean };
+export type TransferDocument = { "format_version": number; "created_at"?: string; "selection"?: {  }; "sources": Array<{  }>; "feeds": Array<{  }>; "components": Array<{  }>; "skipped_content"?: Array<string> };
+export type TransferImportRequest = { "document": TransferDocument; "dry_run"?: boolean };
+export type TransferItem = { "kind": string; "name": string; "action": "created" | "updated" | "unchanged" | "skipped" | "conflict"; "reason"?: string };
+export type TransferUnmapped = { "kind": string; "name": string; "reason": string };
+export type TransferFailure = { "digest": string; "reason": string };
+export type TransferReport = { "dry_run": boolean; "summary": Record<string, Record<string, number>>; "items": Array<TransferItem>; "items_truncated"?: boolean; "unmapped": Array<TransferUnmapped>; "integrity_failures": Array<TransferFailure> };
+export type MigrationRepository = { "name": string; "type": string; "format": string; "ant_format"?: string; "mapped_to": string; "assets"?: number; "bytes"?: number };
+export type MigrationReport = { "dry_run": boolean; "summary": Record<string, Record<string, number>>; "items": Array<TransferItem>; "items_truncated"?: boolean; "unmapped": Array<TransferUnmapped>; "integrity_failures": Array<TransferFailure>; "manager": string; "repositories": Array<MigrationRepository> };
+export type NexusMigrationRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "repositories"?: Array<string>; "count_assets"?: boolean; "dry_run"?: boolean };
+export type MigrationCompareItem = { "repository": string; "path": string; "feed"?: string };
+export type MigrationCompareRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "items": Array<MigrationCompareItem> };
+export type MigrationCompareSide = { "found": boolean; "sha256"?: string; "size"?: number; "detail"?: string };
+export type MigrationCompareResult = { "repository": string; "path": string; "feed": string; "status": "identical" | "differs" | "missing_in_ant" | "missing_in_source" | "missing_in_both" | "error"; "source": MigrationCompareSide; "ant": MigrationCompareSide };
+export type MigrationCompareReport = { "manager": string; "counts": Record<string, number>; "results": Array<MigrationCompareResult> };
+export type TransferRun = { "id": string; "kind": "export" | "import" | "migration" | "compare"; "dry_run": boolean; "summary": {  }; "created_at": string };
+export type TransferRunPage = { "items": Array<TransferRun> };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -404,6 +421,11 @@ revokeFederationInvitation: { body: undefined; response: undefined };
 getFederationDocument: { body: undefined; response: FederationStoredDocument };
 getFederationDocumentGeneration: { body: undefined; response: FederationStoredDocument };
 rotateFederationRecoveryKey: { body: RotateFederationRecoveryKey; response: FederationFoundResult };
+exportTransfer: { body: TransferExportRequest; response: TransferDocument };
+importTransfer: { body: TransferImportRequest; response: TransferReport };
+listTransferRuns: { body: undefined; response: TransferRunPage };
+migrateNexus: { body: NexusMigrationRequest; response: MigrationReport };
+compareMigration: { body: MigrationCompareRequest; response: MigrationCompareReport };
 }
 export const routes = {
   "getStatus": {
@@ -1238,6 +1260,31 @@ export const routes = {
   },
   "rotateFederationRecoveryKey": {
     "path": "/api/v1/federation/recovery-key/rotate",
+    "method": "POST",
+    "idempotent": false
+  },
+  "exportTransfer": {
+    "path": "/api/v1/transfer/export",
+    "method": "POST",
+    "idempotent": false
+  },
+  "importTransfer": {
+    "path": "/api/v1/transfer/import",
+    "method": "POST",
+    "idempotent": false
+  },
+  "listTransferRuns": {
+    "path": "/api/v1/transfer/runs",
+    "method": "GET",
+    "idempotent": false
+  },
+  "migrateNexus": {
+    "path": "/api/v1/migrations/nexus",
+    "method": "POST",
+    "idempotent": false
+  },
+  "compareMigration": {
+    "path": "/api/v1/migrations/compare",
     "method": "POST",
     "idempotent": false
   }
