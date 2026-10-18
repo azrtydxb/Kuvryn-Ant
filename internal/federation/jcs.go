@@ -219,3 +219,7 @@ func formatNumber(n json.Number) (string, error) {
 	}
 	return sign + s, nil
 }
+
+// maxSafeInteger is the largest integer every JSON number parser represents
+// exactly (2^53 - 1, ECMAScript Number.MAX_SAFE_INTEGER).
+const maxSafeInteger = 1<<53 - 1

@@ -17,8 +17,10 @@ import (
 // Federation management API (docs/planning/phase-2-federation.md §12.1, P2-M1).
 // Reads need read on the instance; every mutation needs instance admin, and
 // authority-only operations answer 409 not_authority on other members.
-// Founding, invitations and recovery-key rotation return a secret exactly
-// once and reject Idempotency-Key (like token issuance). Suspend, resume,
+// Founding and invitations return a secret exactly once and reject
+// Idempotency-Key (like token issuance); recovery-key rotation accepts only
+// statements signed offline, bound to one membership generation, and rejects
+// it too (a repeat answers 409 stale_generation). Suspend, resume,
 // remove and invitation revocation require Idempotency-Key and replay from
 // the shared store. Join and leave call another member; they are guarded by
 // the federation state instead (a repeat answers 409).
@@ -48,6 +50,7 @@ func RegisterFederation(mux *http.ServeMux, pool *pgxpool.Pool, svc *federation.
 		"DELETE /api/v1/federation/invitations/{id}":                h.revokeInvitation,
 		"GET /api/v1/federation/documents/{kind}":                   h.document,
 		"GET /api/v1/federation/documents/{kind}/{generation}":      h.document,
+		"GET /api/v1/federation/recovery-key/rotation":              h.recoveryTemplate,
 		"POST /api/v1/federation/recovery-key/rotate":               h.rotateRecovery,
 		"GET /api/v1/federation/policy":                             h.getPolicy,
 		"GET /api/v1/federation/policy/draft":                       h.getDraft,
@@ -137,6 +140,8 @@ func federationError(w http.ResponseWriter, r *http.Request, err error) {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "recovery key does not match the federation recovery key")
 	case errors.Is(err, federation.ErrRevisionMismatch):
 		Error(w, r, 412, api.ErrorCodePreconditionFailed, "revision changed; reload and retry")
+	case errors.Is(err, federation.ErrRotationStale):
+		Error(w, r, 409, api.ErrorCodeStaleGeneration, "the rotation is signed for another membership generation; fetch a new template and sign again")
 	case errors.Is(err, federation.ErrStaleBase):
 		Error(w, r, 409, api.ErrorCodeStaleGeneration, "base_generation is not the applied policy generation; review the latest policy and retry")
 	case errors.Is(err, federation.ErrNotFederated):
@@ -358,7 +363,7 @@ func (h federationHandlers) setMember(w http.ResponseWriter, r *http.Request, ac
 // a replay could never return the original secret again.
 func noReplay(w http.ResponseWriter, r *http.Request) bool {
 	if len(r.Header.Values("Idempotency-Key")) > 0 {
-		Error(w, r, 400, api.ErrorCodeInvalidRequest, "this operation returns a secret once and is not replayable; omit Idempotency-Key")
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "this operation is not replayable; omit Idempotency-Key")
 		return false
 	}
 	return true
@@ -494,6 +499,29 @@ func (h federationHandlers) document(w http.ResponseWriter, r *http.Request) {
 	JSON(w, 200, d)
 }
 
+// recoveryTemplate returns the public input of the offline rotation signer.
+func (h federationHandlers) recoveryTemplate(w http.ResponseWriter, r *http.Request) {
+	p, ok := h.admin(w, r)
+	if !ok {
+		return
+	}
+	svc, ok := h.service(w, r, p)
+	if !ok {
+		return
+	}
+	ctx, cancel := h.ctx(r, 10*time.Second)
+	defer cancel()
+	out, err := svc.RecoveryTemplate(ctx)
+	if err != nil {
+		federationError(w, r, err)
+		return
+	}
+	JSON(w, 200, out)
+}
+
+// rotateRecovery publishes a recovery-key rotation signed offline (`ant
+// federation recovery sign-rotation` / `sign-authority-cert`). No recovery
+// private key is ever sent to the server.
 func (h federationHandlers) rotateRecovery(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
 	if !ok {
@@ -506,15 +534,13 @@ func (h federationHandlers) rotateRecovery(w http.ResponseWriter, r *http.Reques
 	if !noReplay(w, r) {
 		return
 	}
-	var in struct {
-		RecoveryKey string `json:"recovery_key"`
-	}
-	if !sourceJSON(w, r, &in, "recovery_key") {
+	var in federation.SignedRecoveryRotation
+	if !sourceJSON(w, r, &in, "rotation", "authority_certificate") {
 		return
 	}
 	ctx, cancel := h.ctx(r, 30*time.Second)
 	defer cancel()
-	out, err := svc.RotateRecoveryKey(ctx, p.PrincipalID, in.RecoveryKey)
+	out, err := svc.RotateRecoveryKey(ctx, p.PrincipalID, in)
 	if err != nil {
 		federationError(w, r, err)
 		return

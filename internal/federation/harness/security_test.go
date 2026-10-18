@@ -189,3 +189,56 @@ func TestFederationJoinRejectsBeforeLocking(t *testing.T) {
 		t.Fatal("join endpoint not rate-limited")
 	}
 }
+
+// rotateRecovery runs the offline rotation flow (template, offline signing,
+// signed submission) and checks that the server refuses a private key, a
+// statement signed by another key and a statement for another generation.
+func rotateRecovery(t *testing.T, authority *instance, current string) federation.RecoveryRotationResult {
+	t.Helper()
+	var tpl federation.RecoveryTemplate
+	if code := authority.call("GET", "/api/v1/federation/recovery-key/rotation", nil, &tpl); code != 200 {
+		t.Fatalf("rotation template: %d", code)
+	}
+	newKey, newPub, err := federation.NewRecoveryKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rot, err := federation.SignRecoveryRotation(tpl, current, newPub)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cert, err := federation.SignAuthorityCertificate(tpl, newKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The private key is never accepted by the API (no recovery_key field).
+	req, _ := newJSONRequest("POST", authority.api.URL+"/api/v1/federation/recovery-key/rotate", []byte(`{"recovery_key":"`+current+`"}`))
+	req.Header.Set("Authorization", "Bearer "+authority.token)
+	if resp, err := httpDo(req); err != nil || resp.status != 400 {
+		t.Fatalf("rotation with a private key: %+v %v", resp, err)
+	}
+	// Signed by a key that is not the current recovery key.
+	stranger, _, _ := federation.NewRecoveryKey()
+	forgedTpl := tpl
+	forgedTpl.PreviousKey, _ = federation.RecoveryPublicKey(stranger)
+	forged, _ := federation.SignRecoveryRotation(forgedTpl, stranger, newPub)
+	forged.PreviousKey = tpl.PreviousKey
+	if code := authority.call("POST", "/api/v1/federation/recovery-key/rotate", federation.SignedRecoveryRotation{Rotation: forged, AuthorityCertificate: cert}, nil); code != 400 {
+		t.Fatalf("rotation signed by another key: %d", code)
+	}
+	// Signed for another generation.
+	staleTpl := tpl
+	staleTpl.Generation++
+	stale, _ := federation.SignRecoveryRotation(staleTpl, current, newPub)
+	if code := authority.call("POST", "/api/v1/federation/recovery-key/rotate", federation.SignedRecoveryRotation{Rotation: stale, AuthorityCertificate: cert}, nil); code != 409 {
+		t.Fatalf("rotation for another generation: %d", code)
+	}
+	var out federation.RecoveryRotationResult
+	if code := authority.call("POST", "/api/v1/federation/recovery-key/rotate", federation.SignedRecoveryRotation{Rotation: rot, AuthorityCertificate: cert}, &out); code != 200 {
+		t.Fatalf("rotate recovery key: %d", code)
+	}
+	if out.RecoveryPublicKey != newPub {
+		t.Fatalf("rotated to %s, want %s", out.RecoveryPublicKey, newPub)
+	}
+	return out
+}

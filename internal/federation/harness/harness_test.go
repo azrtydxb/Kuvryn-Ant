@@ -478,14 +478,8 @@ func TestFederationMembershipScenarios(t *testing.T) {
 
 	// --- recovery-key rotation, relay through a non-authority member ---
 	gamma.stop()
-	var rotated federation.FoundResult
-	if code := alpha.call("POST", "/api/v1/federation/recovery-key/rotate", map[string]any{"recovery_key": "ant-recovery-v1:wrong"}, nil); code != 400 {
-		t.Fatalf("rotation with wrong key: %d", code)
-	}
-	if code := alpha.call("POST", "/api/v1/federation/recovery-key/rotate", map[string]any{"recovery_key": founded.RecoveryKey}, &rotated); code != 200 {
-		t.Fatalf("rotate recovery key: %d", code)
-	}
-	if rotated.RecoveryKey == founded.RecoveryKey || rotated.Status.Membership.Generation != 4 {
+	rotated := rotateRecovery(t, alpha, founded.RecoveryKey)
+	if rotated.Status.Membership.Generation != 4 || rotated.Status.RecoveryKeyFingerprint != federation.KeyFingerprint(rotated.RecoveryPublicKey) {
 		t.Fatalf("rotation result: %+v", rotated.Status)
 	}
 	if err := beta.svc.SyncOnce(ctx); err != nil || beta.generation() != 4 {

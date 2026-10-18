@@ -228,7 +228,9 @@ export type FederationInvitation = { "id": string; "name": string; "labels": Rec
 export type FederationInvitationList = { "items": Array<FederationInvitation> };
 export type CreateFederationInvitation = { "name": string; "labels"?: Record<string, string>; "ttl_seconds"?: number };
 export type FederationIssuedInvitation = { "id": string; "name": string; "labels": Record<string, string>; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked"; "secret": string; "ca_sha256": string; "authority_url": string };
-export type RotateFederationRecoveryKey = { "recovery_key": string };
+export type RotateFederationRecoveryKey = { "rotation": FederationRecoveryRotation; "authority_certificate": FederationAuthorityCertificate };
+export type FederationRecoveryTemplate = { "federation_id": string; "generation": number; "previous_key": string; "authority": { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery"; "signature"?: string } };
+export type FederationRecoveryRotationResult = { "status": FederationStatus; "recovery_public_key": string };
 export type FederationDocumentMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url": string; "federation_url": string; "cert_sha256": string; "cert_serial": string; "signing_key": string; "labels": Record<string, string>; "software_version": string; "protocol": FederationProtocolRange; "joined_at": string };
 export type FederationAuthorityCertificate = { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery" | "previous_epoch"; "signature": string };
 export type FederationRecoveryRotation = { "previous_key": string; "new_key": string; "generation": number; "signature": string };
@@ -479,7 +481,8 @@ createFederationInvitation: { body: CreateFederationInvitation; response: Federa
 revokeFederationInvitation: { body: undefined; response: undefined };
 getFederationDocument: { body: undefined; response: FederationStoredDocument };
 getFederationDocumentGeneration: { body: undefined; response: FederationStoredDocument };
-rotateFederationRecoveryKey: { body: RotateFederationRecoveryKey; response: FederationFoundResult };
+getFederationRecoveryTemplate: { body: undefined; response: FederationRecoveryTemplate };
+rotateFederationRecoveryKey: { body: RotateFederationRecoveryKey; response: FederationRecoveryRotationResult };
 exportTransfer: { body: TransferExportRequest; response: TransferDocument };
 importTransfer: { body: TransferImportRequest; response: TransferReport };
 listTransferRuns: { body: undefined; response: TransferRunPage };
@@ -1343,6 +1346,11 @@ export const routes = {
   },
   "getFederationDocumentGeneration": {
     "path": "/api/v1/federation/documents/{kind}/{generation}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getFederationRecoveryTemplate": {
+    "path": "/api/v1/federation/recovery-key/rotation",
     "method": "GET",
     "idempotent": false
   },
