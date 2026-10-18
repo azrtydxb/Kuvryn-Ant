@@ -51,7 +51,7 @@ func TestWebDAVSubset(t *testing.T) {
 	if w := f.request("PROPFIND", "a/bb/", "", nil); w.Code != 404 {
 		t.Fatalf("prefix is not a collection: %d", w.Code)
 	}
-	if w := f.request("DELETE", "a/b/key", "", nil); w.Code != 405 {
+	if w := f.request("DELETE", "a/b/key", "", nil); w.Code != 403 { // token lacks the delete action
 		t.Fatalf("delete %d", w.Code)
 	}
 	// Basic authentication carries the token as password (WebDAV clients).

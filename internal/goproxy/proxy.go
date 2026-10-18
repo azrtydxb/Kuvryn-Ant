@@ -170,7 +170,7 @@ func (s *Proxy) serve(w http.ResponseWriter, r *http.Request) {
 		fail(w, artifact.ErrInput)
 		return
 	}
-	if (target.kind == "bundle" && r.Method != "PUT") || (target.kind != "bundle" && r.Method != "GET" && r.Method != "HEAD") {
+	if (target.kind == "bundle" && r.Method != "PUT" && r.Method != "DELETE") || (target.kind != "bundle" && r.Method != "GET" && r.Method != "HEAD") {
 		http.Error(w, "method not allowed", 405)
 		return
 	}
@@ -187,6 +187,17 @@ func (s *Proxy) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	switch target.kind {
 	case "bundle":
+		if r.Method == "DELETE" {
+			// GOPROXY has no delete verb (module authors retract via go.mod);
+			// DELETE on the same /@v/{version} resource the bundle is PUT to is a
+			// Kuvryn Ant management extension, policy-gated by the artifact core.
+			if _, err := s.service.Delete(r.Context(), p, artifact.Target{FeedID: feed, Namespace: path.Dir(target.module), Coordinate: target.module, Version: target.version}); err != nil {
+				fail(w, err)
+				return
+			}
+			w.WriteHeader(204)
+			return
+		}
 		s.ingest(w, r, p, target, feed)
 	case "list", "latest":
 		s.index(w, r, p, target, feed)

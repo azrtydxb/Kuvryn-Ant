@@ -159,11 +159,21 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if (a[2] == "yank" && r.Method == "DELETE") || (a[2] == "unyank" && r.Method == "PUT") {
-				if _, e = s.service.Prepare(r.Context(), p, feed, "", a[0], "index"); e != nil {
+				// Yank is the shared core's unlist (policy-gated, audited, replicated);
+				// unyank is relist. Yanked versions stay downloadable by exact
+				// version, as with crates.io, and the index marks them yanked.
+				t := artifact.Target{FeedID: feed, Coordinate: pub.Coordinate, Version: pub.Version}
+				if a[2] == "yank" {
+					_, e = s.service.Unlist(r.Context(), p, t)
+				} else {
+					_, e = s.service.Relist(r.Context(), p, t)
+				}
+				if e != nil {
 					failService(w, e)
 					return
 				}
-				failure(w, 403, "registry policy disables yank and unyank")
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"ok":true}`))
 				return
 			}
 		}
@@ -301,6 +311,11 @@ func (s *Registry) index(w http.ResponseWriter, r *http.Request, p identity.Prin
 		failure(w, 503, "crate index exceeds configured limit")
 		return
 	}
+	yanked, e := s.service.UnlistedVersions(ctx, p.InstanceID, feed, name)
+	if e != nil {
+		failService(w, e)
+		return
+	}
 	var result bytes.Buffer
 	for _, v := range entries {
 		record, body, e := s.service.Open(ctx, p, artifact.Publication{FeedID: feed, Coordinate: name, Version: v.version, AssetKey: "index"}, 0, -1)
@@ -313,11 +328,17 @@ func (s *Registry) index(w http.ResponseWriter, r *http.Request, p identity.Prin
 			failure(w, 503, "crate index changed or exceeds configured limit")
 			return
 		}
-		_, e = io.Copy(&result, io.LimitReader(body, maxMetadata+1))
+		var line bytes.Buffer
+		_, e = io.Copy(&line, io.LimitReader(body, maxMetadata+1))
 		body.Close()
 		if e != nil {
 			failService(w, e)
 			return
+		}
+		if yanked[v.version] {
+			result.Write(bytes.Replace(line.Bytes(), []byte(`"yanked":false`), []byte(`"yanked":true`), 1))
+		} else {
+			result.Write(line.Bytes())
 		}
 	}
 	etag := `"` + string(bytesInfo(result.Bytes()).Digest) + `"`

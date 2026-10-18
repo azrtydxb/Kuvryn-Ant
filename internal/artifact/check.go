@@ -47,3 +47,28 @@ func (s *Service) DeletePolicy(ctx context.Context, instance, feed, namespace st
 	defer cancel()
 	return EffectiveDeletePolicy(ctx, s.DB, instance, feed, namespace)
 }
+
+// UnlistedVersions returns the unlisted versions of the package owner for a
+// coordinate (highest-priority source containing it), for adapters that
+// surface yank/unlist state in their indexes. It does not authorize; callers
+// have already authorized the read of the package they are describing.
+func (s *Service) UnlistedVersions(ctx context.Context, instance, feed, coordinate string) (map[string]bool, error) {
+	if s == nil || s.DB == nil {
+		return nil, ErrUnavailable
+	}
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var list []string
+	err := s.DB.QueryRow(ctx, `WITH owner AS (SELECT c.metadata FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT COALESCE(ARRAY(SELECT jsonb_array_elements_text(CASE WHEN jsonb_typeof(metadata->'unlisted')='array' THEN metadata->'unlisted' ELSE '[]'::jsonb END)),ARRAY[]::text[]) FROM owner`, instance, feed, coordinate).Scan(&list)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return map[string]bool{}, nil
+	}
+	if err != nil {
+		return nil, ErrUnavailable
+	}
+	out := make(map[string]bool, len(list))
+	for _, v := range list {
+		out[v] = true
+	}
+	return out, nil
+}

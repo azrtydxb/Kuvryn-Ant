@@ -96,6 +96,17 @@ func (h *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		h.ingest(w, r, p, pub)
 		return
 	}
+	if len(parts) == 6 && r.Method == "DELETE" {
+		// ChartMuseum-style `DELETE charts/{name}/{version}`, policy-gated by the
+		// shared core; the index is generated from stored versions.
+		if _, err := h.service.Delete(r.Context(), p, artifact.Target{FeedID: feed, Coordinate: parts[4], Version: parts[5]}); err != nil {
+			fail(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"deleted":true}`))
+		return
+	}
 	if (len(parts) == 7 || len(parts) == 9) && (r.Method == "GET" || r.Method == "HEAD") {
 		filename := parts[len(parts)-1]
 		if filename != pub.AssetKey && filename != pub.AssetKey+".prov" {
@@ -113,7 +124,7 @@ func (h *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		h.download(w, r, p, pub, filename, source, digest)
 		return
 	}
-	w.Header().Set("Allow", "GET, HEAD, POST")
+	w.Header().Set("Allow", "GET, HEAD, POST, DELETE")
 	http.Error(w, "method or route not supported", 405)
 }
 func digestInfo(data []byte) blob.Info {

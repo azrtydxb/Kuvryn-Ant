@@ -79,7 +79,7 @@ func (s *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Vary", "Authorization, X-NuGet-ApiKey")
 	// Explicitly replace any browser principal. Only machine credentials enter.
 	r = r.WithContext(identity.WithAuthenticatedPrincipal(r.Context(), identity.Principal{}))
-	if r.Method == "PUT" {
+	if r.Method == "PUT" || r.Method == "DELETE" || r.Method == "POST" {
 		keys := r.Header.Values("X-NuGet-ApiKey")
 		if len(keys) != 1 || keys[0] == "" || len(keys[0]) > 1000 || strings.ContainsAny(keys[0], " \t\r\n") {
 			w.Header().Set("WWW-Authenticate", `Basic realm="NuGet"`)
@@ -120,6 +120,19 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if (route == "v2/package" || route == "v2/package/") && r.Method == "PUT" {
 		s.push(w, r, p, feed)
+		return
+	}
+	if (r.Method == "DELETE" || r.Method == "POST") && len(a) == 6 && a[3] == "v2" && a[4] == "package" && idPattern.MatchString(a[5]) {
+		http.Error(w, "method unsupported", 405)
+		return
+	}
+	if (r.Method == "DELETE" || r.Method == "POST") && len(a) == 7 && a[3] == "v2" && a[4] == "package" && idPattern.MatchString(a[5]) {
+		v, e := normalizeVersion(a[6])
+		if e != nil {
+			failure(w, errInvalid)
+			return
+		}
+		s.remove(w, r, p, feed, strings.ToLower(a[5]), v)
 		return
 	}
 	if r.Method != "GET" && r.Method != "HEAD" {
@@ -359,4 +372,32 @@ func (w *challengeWriter) WriteHeader(status int) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="NuGet"`)
 	}
 	w.ResponseWriter.WriteHeader(status)
+}
+
+// remove implements `dotnet nuget delete` (DELETE v2/package/{id}/{version})
+// and relist (POST). Delete is policy-gated by the shared core; where policy
+// protects the version (unlist-only feed, immutable release) NuGet's own
+// semantics apply and the version is unlisted instead of deleted.
+func (s *Repository) remove(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, version string) {
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	t := artifact.Target{FeedID: feed, Coordinate: id, Version: version}
+	if r.Method == "POST" {
+		if _, e := s.service.Relist(ctx, p, t); e != nil {
+			failure(w, e)
+			return
+		}
+		w.WriteHeader(200)
+		return
+	}
+	_, e := s.service.Delete(ctx, p, t)
+	if errors.Is(e, artifact.ErrUnlistOnly) || errors.Is(e, artifact.ErrImmutable) {
+		w.Header().Set("X-Ant-Action", "unlist")
+		_, e = s.service.Unlist(ctx, p, t)
+	}
+	if e != nil {
+		failure(w, e)
+		return
+	}
+	w.WriteHeader(204)
 }

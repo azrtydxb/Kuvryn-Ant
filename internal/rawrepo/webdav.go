@@ -27,8 +27,8 @@ import (
 //   - MKCOL: authorizes publishing under the path and answers 201 without
 //     creating state (the directory appears with its first file).
 //
-// OPTIONS advertises the methods. DELETE, COPY, MOVE and locking stay
-// unsupported: cache entries are immutable (a PUT with different bytes for an
+// OPTIONS advertises the methods. DELETE is the plain raw DELETE (policy-gated
+// by the artifact core). COPY, MOVE and locking stay unsupported: cache entries are immutable (a PUT with different bytes for an
 // existing key is rejected with 409, which sccache treats as a non-fatal
 // cache-write failure).
 

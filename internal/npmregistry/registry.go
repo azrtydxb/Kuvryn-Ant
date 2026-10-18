@@ -144,8 +144,12 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 		failure(w, 404, "route not found")
 		return
 	}
+	if kind, file, ok := unpublishRoute(tail); ok && !tags && (r.Method == "DELETE" || r.Method == "PUT") {
+		s.unpublish(w, r, p, feed, name, kind, file)
+		return
+	}
 	if r.Method == "DELETE" || (tags && r.Method != "GET" && r.Method != "HEAD") {
-		failure(w, 501, "mutable dist-tags and withdrawals require shared CAS lifecycle support")
+		failure(w, 501, "mutable dist-tags are not supported")
 		return
 	}
 	if !tags && tail == "" && r.Method == "PUT" {
@@ -329,7 +333,7 @@ func (s *Registry) localPackument(w http.ResponseWriter, r *http.Request, p iden
 			tags[tag] = v
 		}
 	}
-	s.respond(w, r, map[string]any{"name": name, "_id": name, "versions": versions, "dist-tags": tags}, versions, tags, tail, tagsOnly, "application/json")
+	s.respond(w, r, map[string]any{"name": name, "_id": name, "_rev": "1-ant", "versions": versions, "dist-tags": tags}, versions, tags, tail, tagsOnly, "application/json")
 }
 
 // respond selects the full document, the dist-tags map or one version (by
