@@ -25,13 +25,16 @@ import (
 func run(ctx context.Context, logger *slog.Logger) int { return execute(ctx, logger, nil, os.Stdout) }
 
 func execute(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
+	if len(args) > 0 && (args[0] == "backup" || args[0] == "restore") {
+		return backupCommand(ctx, logger, args, output)
+	}
 	mode := "serve"
 	name := "local"
 	if len(args) > 0 {
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | backup | restore]")
 		return 1
 	}
 	if len(args) == 2 {
