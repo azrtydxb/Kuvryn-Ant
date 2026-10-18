@@ -176,3 +176,22 @@ func TestManagerBlockedRenewalSignalsBeforeCleanup(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestStartWaitOutlastsAbandonedLease(t *testing.T) {
+	pool, instance := fixture(t)
+	ctx := context.Background()
+	// A previous owner that never released (evicted/killed) leaves a live lease.
+	if _, err := Acquire(ctx, pool, instance, ownerA, time.Second); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := StartWait(ctx, pool, instance, ownerB, time.Second, 0); !errors.Is(err, ErrHeld) {
+		t.Fatal("zero wait must fail fast", err)
+	}
+	m, err := StartWait(ctx, pool, instance, ownerB, time.Second, 10*time.Second)
+	if err != nil {
+		t.Fatal("did not wait for expiry", err)
+	}
+	if err = m.Close(); err != nil {
+		t.Fatal(err)
+	}
+}

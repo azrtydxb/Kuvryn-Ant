@@ -93,6 +93,9 @@ func TestArtifactRuntimeBootstrapLeaseAndDrainLifetime(t *testing.T) {
 	if response.Code != 401 || response.Header().Get("Docker-Distribution-API-Version") != "registry/2.0" {
 		t.Fatal("artifact route not registered or unprotected")
 	}
+	savedWait := leaseAcquireWait
+	leaseAcquireWait = 0
+	defer func() { leaseAcquireWait = savedWait }()
 	if duplicate, err := openArtifacts(ctx, pool, cfg); !errors.Is(err, ownership.ErrHeld) || duplicate != nil {
 		t.Fatal("second process acquired same instance", err)
 	}

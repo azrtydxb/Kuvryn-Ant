@@ -10,6 +10,10 @@ publicURL: https://ant.example.invalid
 instanceID: "" # Empty resolves the bootstrapped instance from PostgreSQL.
 shutdownSeconds: 15
 terminationGracePeriodSeconds: 45
+# Upload staging (os.CreateTemp) goes here, on the data volume, not the small /tmp emptyDir.
+stagingDir: /var/lib/ant/tmp
+tmp:
+  sizeLimit: 256Mi # Scratch only; large writes use stagingDir.
 maxRequests: 128
 postgres:
   existingSecret: ant-postgres

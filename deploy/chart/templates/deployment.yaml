@@ -52,6 +52,8 @@ spec:
               value: "0.0.0.0:8080"
             - name: ANT_DATA_DIR
               value: /var/lib/ant/data
+            - name: TMPDIR
+              value: {{ .Values.stagingDir | quote }}
             - name: ANT_DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -206,7 +208,7 @@ spec:
             claimName: {{ default (include "ant.name" .) .Values.persistence.existingClaim | quote }}
         - name: tmp
           emptyDir:
-            sizeLimit: 64Mi
+            sizeLimit: {{ .Values.tmp.sizeLimit | quote }}
         - name: root-key
           secret:
             secretName: {{ required "rootKey.existingSecret required" .Values.rootKey.existingSecret | quote }}

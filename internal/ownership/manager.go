@@ -122,3 +122,23 @@ func (m *Manager) Close() error {
 	defer m.mu.RUnlock()
 	return m.cleanupErr
 }
+
+// StartWait is Start that tolerates a previous owner that did not release (a
+// SIGKILLed or evicted pod): while the lease is held it polls until the old
+// lease expires, for at most wait, instead of failing immediately. Any other
+// error, or ctx cancellation, returns at once. As with Start, the returned
+// Manager's lifetime is not tied to ctx; ctx only bounds the wait.
+func StartWait(ctx context.Context, pool *pgxpool.Pool, instanceID, ownerUUID string, ttl, wait time.Duration) (*Manager, error) {
+	deadline := time.Now().Add(wait)
+	for {
+		m, err := Start(context.WithoutCancel(ctx), pool, instanceID, ownerUUID, ttl)
+		if !errors.Is(err, ErrHeld) || !time.Now().Before(deadline) {
+			return m, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
+	}
+}
