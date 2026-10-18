@@ -6,3 +6,6 @@ __pycache__/
 
 # Local AI coding hosts (procoder init); .procoder/ stays trackable.
 /.claude/
+
+# Locally built service binary
+/ant
