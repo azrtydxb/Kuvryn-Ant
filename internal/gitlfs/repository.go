@@ -108,6 +108,19 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.batch(w, r, p, feed, a[2])
 		return
 	}
+	if len(a) == 6 && a[4] == "objects" && blob.Digest(a[5]).Valid() && r.Method == "DELETE" {
+		// The Git LFS batch API defines no delete. DELETE objects/{oid} is a
+		// Kuvryn Ant management method, policy-gated by the artifact core; the
+		// bytes are reclaimed later by garbage collection.
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		defer cancel()
+		if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Namespace: "git-lfs", Coordinate: a[5], Version: "sha256"}); e != nil {
+			fail(w, e)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	}
 	if len(a) != 7 || a[4] != "objects" || !blob.Digest(a[5]).Valid() {
 		fail(w, artifact.ErrNotFound)
 		return

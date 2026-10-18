@@ -84,6 +84,18 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.publish(w, r, p, feed, base)
 		return
 	}
+	if parts := strings.Split(route, "/"); r.Method == "DELETE" && len(parts) == 6 && parts[0] == "v3" && parts[1] == "collections" && namePattern.MatchString(parts[2]) && namePattern.MatchString(parts[3]) && parts[4] == "versions" && validVersion(parts[5]) {
+		// Galaxy NG collection-version delete, policy-gated by the artifact core.
+		// The collection indexes are generated from stored versions.
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		defer cancel()
+		if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Namespace: parts[2], Coordinate: parts[2] + "." + parts[3], Version: parts[5]}); e != nil {
+			failure(w, e)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	}
 	if r.Method != "GET" && r.Method != "HEAD" {
 		w.WriteHeader(405)
 		return

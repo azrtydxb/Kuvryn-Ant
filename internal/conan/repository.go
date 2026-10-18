@@ -93,7 +93,7 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if a[3] != "v2" || a[4] != "conans" || len(a) < 10 {
+	if a[3] != "v2" || a[4] != "conans" || len(a) < 9 || (len(a) == 9 && r.Method != "DELETE") {
 		failure(w, artifact.ErrNotFound)
 		return
 	}
@@ -136,6 +136,10 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	if r.Method == "DELETE" && len(tail) == 0 {
+		s.remove(w, r, p, feed, v)
+		return
+	}
 	if len(tail) == 2 && tail[0] == "files" && v.rrev != "" && (v.pid == "" || v.prev != "") {
 		if !allowedFile(v, tail[1]) {
 			failure(w, errInvalid)
@@ -168,4 +172,47 @@ func allowedFile(v reference, key string) bool {
 		return key == "conaninfo.txt" || key == "conan_package.tgz"
 	}
 	return key == "conanfile.py" || key == "conan_export.tgz" || key == "conan_sources.tgz"
+}
+
+// remove implements the Conan v2 REST deletes: a reference (all revisions), one
+// recipe revision with its packages, the revisions of one package id, or one
+// package revision. Each stored version is removed through the policy-gated
+// artifact core (authorization, delete policy, audit, outbox, tombstones).
+func (s *Repository) remove(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string, v reference) {
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
+	prefix := ""
+	switch {
+	case v.pid == "" && v.rrev != "":
+		prefix = v.rrev
+	case v.pid != "" && v.prev == "":
+		prefix = v.rrev + ":" + v.pid + ":"
+	case v.prev != "":
+		prefix = v.version()
+	}
+	all, e := s.service.ListVersions(ctx, p.InstanceID, feed, v.coordinate, prefix, 10000)
+	if e != nil {
+		failure(w, e)
+		return
+	}
+	var versions []string
+	for _, ver := range all {
+		switch {
+		case v.rrev == "", v.pid != "":
+			versions = append(versions, ver)
+		case ver == v.rrev || strings.HasPrefix(ver, v.rrev+":"):
+			versions = append(versions, ver)
+		}
+	}
+	if len(versions) == 0 {
+		failure(w, artifact.ErrNotFound)
+		return
+	}
+	for _, ver := range versions {
+		if _, e = s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Namespace: v.namespace, Coordinate: v.coordinate, Version: ver}); e != nil {
+			failure(w, e)
+			return
+		}
+	}
+	w.WriteHeader(200)
 }

@@ -96,6 +96,30 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	base += "/feeds/" + url.PathEscape(a[1]) + "/pub/"
 	route := strings.Join(a[3:], "/")
+	if (r.Method == "DELETE" || r.Method == "PUT") && len(a) >= 8 && a[3] == "api" && a[4] == "packages" && namePattern.MatchString(a[5]) && a[6] == "versions" && validVersion(a[7]) {
+		// pub.dev has no client-side delete. DELETE removes the version and
+		// PUT/DELETE .../retract retracts (unlists) / restores it; all are
+		// policy-gated by the shared artifact core.
+		t := artifact.Target{FeedID: feed, Coordinate: a[5], Version: a[7]}
+		var e error
+		switch {
+		case len(a) == 8 && r.Method == "DELETE":
+			_, e = s.service.Delete(ctx, p, t)
+		case len(a) == 9 && a[8] == "retract" && r.Method == "PUT":
+			_, e = s.service.Unlist(ctx, p, t)
+		case len(a) == 9 && a[8] == "retract" && r.Method == "DELETE":
+			_, e = s.service.Relist(ctx, p, t)
+		default:
+			w.WriteHeader(405)
+			return
+		}
+		if e != nil {
+			failure(w, e)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	}
 	if r.Method != "GET" && r.Method != "HEAD" {
 		w.WriteHeader(405)
 		return

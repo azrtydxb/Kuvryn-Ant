@@ -72,3 +72,32 @@ func (s *Service) UnlistedVersions(ctx context.Context, instance, feed, coordina
 	}
 	return out, nil
 }
+
+// ListVersions returns up to limit versions of the package owner for a
+// coordinate whose version starts with prefix (empty matches all), ordered by
+// version. It does not authorize; callers pass the result to Delete or Unlist,
+// which authorize and apply policy per version.
+func (s *Service) ListVersions(ctx context.Context, instance, feed, coordinate, prefix string, limit int) ([]string, error) {
+	if s == nil || s.DB == nil || limit < 1 || limit > 100000 {
+		return nil, ErrInput
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	rows, err := s.DB.Query(ctx, `WITH owner AS (SELECT c.id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT v.version FROM owner o JOIN versions v ON v.component_id=o.id WHERE starts_with(v.version,$4) ORDER BY v.version LIMIT $5`, instance, feed, coordinate, prefix, limit+1)
+	if err != nil {
+		return nil, ErrUnavailable
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var v string
+		if rows.Scan(&v) != nil {
+			return nil, ErrUnavailable
+		}
+		out = append(out, v)
+	}
+	if rows.Err() != nil || len(out) > limit {
+		return nil, ErrUnavailable
+	}
+	return out, nil
+}

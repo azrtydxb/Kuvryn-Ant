@@ -201,7 +201,7 @@ func TestProvider(t *testing.T) {
 	assertCode(t, f.request("GET", base+"1.2.3/files/terraform-provider-demo_1.2.3_freebsd_386.zip", nil, nil), 404)
 	assertCode(t, f.request("GET", base+"1.2.3/files/evil.zip", nil, nil), 404)
 	assertCode(t, f.request("GET", base+"9.9.9/download/linux/amd64", nil, nil), 404)
-	assertCode(t, f.request("DELETE", base+"1.2.3", nil, nil), 405)
+	assertCode(t, f.request("DELETE", base+"1.2.3", nil, nil), 403) // fixture token has no delete action
 
 	// Different bytes for an immutable version conflict, even if self-consistent.
 	q := newProvider(t, "demo", "1.2.3", "linux/amd64", "darwin/arm64")

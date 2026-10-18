@@ -70,8 +70,11 @@ const (
 // Target addresses a version (AssetKey empty) or one asset of a version of a
 // package in a feed. SourceID optionally pins the owning source; otherwise the
 // highest-priority source containing the coordinate owns it, as for reads.
+//
+// A non-empty Tag addresses only that mutable tag pointer (OCI tag delete): the
+// version it points to and its bytes are untouched and Version must be empty.
 type Target struct {
-	FeedID, SourceID, Namespace, Coordinate, Version, AssetKey string
+	FeedID, SourceID, Namespace, Coordinate, Version, AssetKey, Tag string
 }
 
 // Outcome reports what a mutation changed. Unchanged is set when an unlist or
@@ -111,6 +114,10 @@ func Unlisted(metadata map[string]any, version string) bool {
 }
 
 func validTarget(t Target) bool {
+	if t.Tag != "" {
+		return bounded(t.FeedID, 36) && bounded(t.Coordinate, 256) && bounded(t.Tag, 128) && t.Version == "" && t.AssetKey == "" &&
+			len(t.Namespace) <= 256 && (t.SourceID == "" || bounded(t.SourceID, 36))
+	}
 	return bounded(t.FeedID, 36) && bounded(t.Coordinate, 256) && bounded(t.Version, 256) &&
 		(t.AssetKey == "" || bounded(t.AssetKey, 2048)) && len(t.Namespace) <= 256 && (t.SourceID == "" || bounded(t.SourceID, 36))
 }
@@ -253,15 +260,30 @@ func MutateTx(ctx context.Context, tx pgx.Tx, p identity.Principal, policy ident
 		return Outcome{}, ErrPolicy
 	case action == ActionDelete && dp.Mode == DeleteUnlistOnly:
 		return Outcome{}, ErrUnlistOnly
-	case action == ActionDelete && dp.ImmutableReleases && !IsSnapshot(t.Version):
+	case action == ActionDelete && t.Tag == "" && dp.ImmutableReleases && !IsSnapshot(t.Version):
 		return Outcome{}, ErrImmutable
+	}
+	resource := ""
+	if t.Tag != "" {
+		if action != ActionDelete {
+			return Outcome{}, ErrInput
+		}
+		// Tag scope: drop the pointer only. The version and its bytes stay.
+		if err = tx.QueryRow(ctx, `DELETE FROM tags WHERE component_id=$1 AND name=$2 RETURNING version_id::text`, out.ComponentID, t.Tag).Scan(&out.VersionID); errors.Is(err, pgx.ErrNoRows) {
+			return Outcome{}, ErrNotFound
+		} else if err != nil {
+			return Outcome{}, dbErr(err)
+		}
+		out.TagsRemoved = 1
+		resource = out.VersionID
+		return finishMutation(ctx, tx, p, t, dp, action, resource, out)
 	}
 	if err = tx.QueryRow(ctx, `SELECT id::text FROM versions WHERE instance_id=$1 AND component_id=$2 AND version=$3 FOR UPDATE`, p.InstanceID, out.ComponentID, t.Version).Scan(&out.VersionID); errors.Is(err, pgx.ErrNoRows) {
 		return Outcome{}, ErrNotFound
 	} else if err != nil {
 		return Outcome{}, dbErr(err)
 	}
-	resource := out.VersionID
+	resource = out.VersionID
 	switch action {
 	case ActionUnlist, ActionRelist:
 		var tag int64
@@ -302,7 +324,13 @@ func MutateTx(ctx context.Context, tx pgx.Tx, p identity.Principal, policy ident
 			return Outcome{}, err
 		}
 	}
-	detailJSON, err := json.Marshal(map[string]any{"feed_id": t.FeedID, "source_id": out.SourceID, "namespace": t.Namespace, "coordinate": t.Coordinate, "version": t.Version, "asset_key": t.AssetKey, "policy_mode": dp.Mode, "immutable_releases": dp.ImmutableReleases})
+	return finishMutation(ctx, tx, p, t, dp, action, resource, out)
+}
+
+// finishMutation records the audit event and outbox event in the caller's
+// transaction.
+func finishMutation(ctx context.Context, tx pgx.Tx, p identity.Principal, t Target, dp DeletePolicy, action Action, resource string, out Outcome) (Outcome, error) {
+	detailJSON, err := json.Marshal(map[string]any{"feed_id": t.FeedID, "source_id": out.SourceID, "namespace": t.Namespace, "coordinate": t.Coordinate, "version": t.Version, "asset_key": t.AssetKey, "tag": t.Tag, "policy_mode": dp.Mode, "immutable_releases": dp.ImmutableReleases})
 	if err != nil {
 		return Outcome{}, ErrInput
 	}
@@ -311,7 +339,7 @@ func MutateTx(ctx context.Context, tx pgx.Tx, p identity.Principal, policy ident
 	if err = tx.QueryRow(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,$3,$4,$5::jsonb) RETURNING id`, p.InstanceID, p.PrincipalID, topic, resource, details).Scan(&out.AuditID); err != nil {
 		return Outcome{}, dbErr(err)
 	}
-	if _, err = tx.Exec(ctx, `INSERT INTO outbox_events(audit_id,topic,payload) VALUES($1,$2,$3::jsonb||jsonb_build_object('version_id',$4::text,'assets_removed',$5::bigint,'version_removed',$6::boolean))`, out.AuditID, topic, details, out.VersionID, out.AssetsRemoved, out.VersionRemoved); err != nil {
+	if _, err = tx.Exec(ctx, `INSERT INTO outbox_events(audit_id,topic,payload) VALUES($1,$2,$3::jsonb||jsonb_build_object('version_id',$4::text,'assets_removed',$5::bigint,'tags_removed',$6::bigint,'version_removed',$7::boolean))`, out.AuditID, topic, details, out.VersionID, out.AssetsRemoved, out.TagsRemoved, out.VersionRemoved); err != nil {
 		return Outcome{}, dbErr(err)
 	}
 	return out, nil

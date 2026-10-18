@@ -23,7 +23,12 @@ func (s *Repository) modules(w http.ResponseWriter, r *http.Request, p identity.
 	coordinate := "modules/" + rest[0] + "/" + rest[1] + "/" + rest[2]
 	pub := artifact.Publication{FeedID: feed, Namespace: moduleNamespace, Coordinate: coordinate, AssetKey: moduleArchive, MediaType: "application/gzip"}
 	if len(rest) == 4 {
-		if rest[3] == "versions" && r.Method != "PUT" {
+		if r.Method == "DELETE" && validVersion(rest[3]) {
+			pub.Version = rest[3]
+			s.deleteVersion(w, r, p, pub)
+			return
+		}
+		if rest[3] == "versions" && r.Method != "PUT" && r.Method != "DELETE" {
 			s.moduleVersions(w, r, p, pub, rest)
 			return
 		}
@@ -40,7 +45,7 @@ func (s *Repository) modules(w http.ResponseWriter, r *http.Request, p identity.
 		return
 	}
 	pub.Version = rest[3]
-	if r.Method == "PUT" {
+	if r.Method == "PUT" || r.Method == "DELETE" {
 		failureStatus(w, 405)
 		return
 	}
