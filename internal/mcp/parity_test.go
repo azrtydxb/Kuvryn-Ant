@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/denyaudit"
 )
 
 const (
@@ -52,6 +55,8 @@ func TestMCPAndAPIDenyAndAuditIdentically(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
 	for i, tc := range parityCases() {
+		// Leave the denial recorder's per-principal window so each case is admitted.
+		*f.clock = f.clock.Add(2 * time.Minute)
 		hdr := []string{}
 		if tc.method != "GET" {
 			hdr = []string{"Idempotency-Key", fmt.Sprintf("parity-%d", i)}
@@ -71,6 +76,18 @@ func TestMCPAndAPIDenyAndAuditIdentically(t *testing.T) {
 		if o.Result["isError"] != true || !strings.Contains(text(o), apiErr.Code+":") || !strings.Contains(text(o), fmt.Sprintf("status %d", api.Code)) {
 			t.Errorf("%s: parity broken: api=%d %s mcp=%v", tc.tool, api.Code, api.Body.String(), o.Result)
 		}
+		// The API request itself leaves a denied audit row (the in-process MCP
+		// dispatch does not pass through the HTTP layer, so it adds none).
+		f.deny.Wait()
+		// Only 401/403 are authorization denials; a 404 for an id that does not
+		// exist (or is hidden) is deliberately indistinguishable and not audited.
+		want := 0
+		if api.Code == 401 || api.Code == 403 {
+			want = 1
+		}
+		if n := f.apiDenials(tc.method, tc.path, api.Code); n != want {
+			t.Errorf("%s: API denial audit rows=%d (status %d), want %d", tc.tool, n, api.Code, want)
+		}
 		var errs int
 		_ = f.pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action='mcp.tool.call' AND details->>'name'=$1 AND details->>'outcome'='error' AND (details->>'status')::int=$2`, tc.tool, api.Code).Scan(&errs)
 		if errs != 1 {
@@ -81,6 +98,45 @@ func TestMCPAndAPIDenyAndAuditIdentically(t *testing.T) {
 	_ = f.pool.QueryRow(ctx, `SELECT count(*) FROM feeds`).Scan(&feeds)
 	if feeds != 0 {
 		t.Fatalf("denied calls created %d feeds", feeds)
+	}
+	var mcpSurface int
+	_ = f.pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action=$1 AND details->>'surface'='mcp'`, denyaudit.Action).Scan(&mcpSurface)
+	if mcpSurface != 0 {
+		t.Fatalf("MCP tool denials produced %d HTTP-layer denial rows; MCP audits them itself", mcpSurface)
+	}
+}
+
+// apiDenials counts denied audit rows the HTTP layer wrote for one request shape.
+func (f *fixture) apiDenials(method, path string, status int) int {
+	f.t.Helper()
+	var n int
+	err := f.pool.QueryRow(context.Background(), `SELECT count(*) FROM audit_events WHERE action=$1 AND result='denied' AND details->>'surface'='management' AND details->>'method'=$2 AND details->>'path'=$3 AND (details->>'status')::int=$4 AND principal_id IS NOT NULL`, denyaudit.Action, method, path, status).Scan(&n)
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	return n
+}
+
+// TestAPIDenialAuditIsRateLimited: a principal hammering a forbidden endpoint
+// leaves one row per window, with the suppressed count carried on the next one.
+func TestAPIDenialAuditIsRateLimited(t *testing.T) {
+	f := newFixture(t)
+	for range 25 {
+		if w := f.do("GET", "/api/v1/tokens", "", f.reader); w.Code != 403 {
+			t.Fatalf("status %d", w.Code)
+		}
+	}
+	f.deny.Wait()
+	if n := f.apiDenials("GET", "/api/v1/tokens", 403); n != 1 {
+		t.Fatalf("rows within one window=%d, want 1", n)
+	}
+	*f.clock = f.clock.Add(2 * time.Minute)
+	f.do("GET", "/api/v1/tokens", "", f.reader)
+	f.deny.Wait()
+	var suppressed int
+	_ = f.pool.QueryRow(context.Background(), `SELECT COALESCE(max((details->>'suppressed_since_last')::int),0) FROM audit_events WHERE action=$1`, denyaudit.Action).Scan(&suppressed)
+	if f.apiDenials("GET", "/api/v1/tokens", 403) != 2 || suppressed != 24 {
+		t.Fatalf("after window: rows=%d suppressed=%d", f.apiDenials("GET", "/api/v1/tokens", 403), suppressed)
 	}
 }
 
