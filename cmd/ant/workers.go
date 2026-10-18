@@ -19,6 +19,7 @@ func (s webhookSecrets) Resolve(ctx context.Context, instance, record string) ([
 }
 
 type backgroundWorkers struct {
+	ctx        context.Context
 	cancel     context.CancelFunc
 	done       sync.WaitGroup
 	dispatcher *events.Dispatcher
@@ -38,7 +39,7 @@ func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, k
 		return nil, err
 	}
 	workCtx, cancel := context.WithCancel(ctx)
-	workers := &backgroundWorkers{cancel: cancel, dispatcher: dispatcher, workCtx: workCtx}
+	workers := &backgroundWorkers{ctx: workCtx, workCtx: workCtx, cancel: cancel, dispatcher: dispatcher}
 	if len(browser) > 0 && browser[0] != nil {
 		workers.done.Add(1)
 		go func() {
@@ -69,6 +70,16 @@ func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, k
 		}
 	}()
 	return workers, nil
+}
+
+// StartReplication runs the replication scheduler under the same context as the
+// other workers, which is cancelled when the instance writer lease is lost.
+func (w *backgroundWorkers) StartReplication(rr *replicationRuntime) {
+	if w == nil || rr == nil {
+		return
+	}
+	w.done.Add(1)
+	go func() { defer w.done.Done(); rr.service.Run(w.ctx) }()
 }
 func (w *backgroundWorkers) Close() {
 	if w != nil {

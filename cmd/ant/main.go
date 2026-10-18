@@ -122,6 +122,12 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	}
 	defer workers.Close()
 	workers.startRetention(pool, artifacts, cfg.Retention, logger)
+	replicationRT, err := openReplication(pool, artifacts, cfg)
+	if err != nil {
+		logger.Error("replication startup rejected")
+		return 1
+	}
+	workers.StartReplication(replicationRT)
 	serveCtx, stopServing := context.WithCancel(ctx)
 	defer stopServing()
 	if artifacts != nil {
@@ -177,6 +183,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterRemoteSources(mux, pool, cfg.SecretKeys, caRefs, cfg.RootKey)
 		management.RegisterIdentities(mux, pool)
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
+		replicationRT.Register(mux)
 		artifacts.Register(mux)
 		browser.Register(mux)
 		mcp.Register(mux, pool, logger)
