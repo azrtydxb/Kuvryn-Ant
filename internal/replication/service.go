@@ -2,6 +2,7 @@ package replication
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"time"
@@ -31,12 +32,18 @@ type Config struct {
 	ContinuousDelay time.Duration // pause between continuous passes (default 2s)
 	LeaseTTL        time.Duration // per-job claim lease (default 60s)
 	MaxBackoff      time.Duration // retry backoff cap (default 5m)
+
+	// FingerprintKey keys the MAC that fingerprints idempotent requests carrying
+	// a peer token. When empty a random per-process key is used, so such a
+	// request can only be replayed within one process lifetime.
+	FingerprintKey []byte
 }
 
 // Service owns peers, jobs, the scheduler and the apply path.
 type Service struct {
-	cfg   Config
-	owner string
+	cfg            Config
+	owner          string
+	fingerprintKey []byte
 }
 
 func New(cfg Config) (*Service, error) {
@@ -67,7 +74,34 @@ func New(cfg Config) (*Service, error) {
 	if err := cfg.DB.QueryRow(ctx, "SELECT gen_random_uuid()::text").Scan(&owner); err != nil {
 		return nil, ErrUnavailable
 	}
-	return &Service{cfg: cfg, owner: owner}, nil
+	key := cfg.FingerprintKey
+	if len(key) < 16 {
+		key = make([]byte, 32)
+		if _, err := rand.Read(key); err != nil {
+			return nil, ErrUnavailable
+		}
+	}
+	return &Service{cfg: cfg, owner: owner, fingerprintKey: append([]byte(nil), key...)}, nil
+}
+
+// inTx runs fn in one read-committed transaction with a bounded lifetime.
+func inTx[T any](ctx context.Context, s *Service, fn func(context.Context, pgx.Tx) (T, error)) (T, error) {
+	var zero T
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return zero, ErrUnavailable
+	}
+	defer rollback(tx)
+	v, err := fn(ctx, tx)
+	if err != nil {
+		return zero, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return zero, ErrUnavailable
+	}
+	return v, nil
 }
 
 func rollback(tx pgx.Tx) {
@@ -143,18 +177,12 @@ func scanPeer(row pgx.Row) (Peer, error) {
 	return p, err
 }
 
-func (s *Service) CreatePeer(ctx context.Context, instance, actor string, in PeerInput) (Peer, error) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
+// CreatePeerTx creates a peer inside the caller's transaction.
+func (s *Service) CreatePeerTx(ctx context.Context, tx pgx.Tx, instance, actor string, in PeerInput) (Peer, error) {
 	u, err := ValidatePeerURL(in.URL)
 	if err != nil || in.Name == "" || len(in.Token) < 16 || len(in.Token) > 4096 || !s.validCARef(in.CARef) {
 		return Peer{}, ErrInput
 	}
-	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return Peer{}, ErrUnavailable
-	}
-	defer rollback(tx)
 	var id string
 	if err = tx.QueryRow(ctx, "SELECT gen_random_uuid()::text").Scan(&id); err != nil {
 		return Peer{}, ErrUnavailable
@@ -176,10 +204,13 @@ func (s *Service) CreatePeer(ctx context.Context, instance, actor string, in Pee
 	if err = audit(ctx, tx, instance, actor, "replication.peer.create", peer.ID, map[string]any{"name": peer.Name}); err != nil {
 		return Peer{}, ErrUnavailable
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return Peer{}, ErrUnavailable
-	}
 	return peer, nil
+}
+
+func (s *Service) CreatePeer(ctx context.Context, instance, actor string, in PeerInput) (Peer, error) {
+	return inTx(ctx, s, func(ctx context.Context, tx pgx.Tx) (Peer, error) {
+		return s.CreatePeerTx(ctx, tx, instance, actor, in)
+	})
 }
 
 func (s *Service) ListPeers(ctx context.Context, instance string) ([]Peer, error) {
@@ -220,17 +251,12 @@ type PeerPatch struct {
 	Token    *string `json:"token"`
 }
 
-func (s *Service) UpdatePeer(ctx context.Context, instance, actor, id string, in PeerPatch) (Peer, error) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
+// UpdatePeerTx updates a peer inside the caller's transaction.
+func (s *Service) UpdatePeerTx(ctx context.Context, tx pgx.Tx, instance, actor, id string, in PeerPatch) (Peer, error) {
 	if in.Revision < 1 {
 		return Peer{}, ErrInput
 	}
-	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return Peer{}, ErrUnavailable
-	}
-	defer rollback(tx)
+	var err error
 	var rev int64
 	var secretID, url string
 	var ca *string
@@ -276,20 +302,18 @@ func (s *Service) UpdatePeer(ctx context.Context, instance, actor, id string, in
 	if err = audit(ctx, tx, instance, actor, "replication.peer.update", id, map[string]any{"token_rotated": in.Token != nil}); err != nil {
 		return Peer{}, ErrUnavailable
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return Peer{}, ErrUnavailable
-	}
 	return peer, nil
 }
 
-func (s *Service) DeletePeer(ctx context.Context, instance, actor, id string) error {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return ErrUnavailable
-	}
-	defer rollback(tx)
+func (s *Service) UpdatePeer(ctx context.Context, instance, actor, id string, in PeerPatch) (Peer, error) {
+	return inTx(ctx, s, func(ctx context.Context, tx pgx.Tx) (Peer, error) {
+		return s.UpdatePeerTx(ctx, tx, instance, actor, id, in)
+	})
+}
+
+// DeletePeerTx deletes a peer inside the caller's transaction.
+func (s *Service) DeletePeerTx(ctx context.Context, tx pgx.Tx, instance, actor, id string) error {
+	var err error
 	var secretID string
 	err = tx.QueryRow(ctx, `DELETE FROM replication_peers WHERE instance_id=$1 AND id=$2 RETURNING token_secret_id::text`, instance, id).Scan(&secretID)
 	if err != nil {
@@ -301,10 +325,14 @@ func (s *Service) DeletePeer(ctx context.Context, instance, actor, id string) er
 	if err = audit(ctx, tx, instance, actor, "replication.peer.delete", id, map[string]any{}); err != nil {
 		return ErrUnavailable
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return ErrUnavailable
-	}
 	return nil
+}
+
+func (s *Service) DeletePeer(ctx context.Context, instance, actor, id string) error {
+	_, err := inTx(ctx, s, func(ctx context.Context, tx pgx.Tx) (struct{}, error) {
+		return struct{}{}, s.DeletePeerTx(ctx, tx, instance, actor, id)
+	})
+	return err
 }
 
 // Status is the queryable progress, lag, failure and last-success report.
@@ -330,6 +358,20 @@ type Status struct {
 	DeletionsApplied    int64      `json:"deletions_applied"`
 	DeletionsHeld       int64      `json:"deletions_held"`
 	Conflicts           int64      `json:"conflicts"`
+	// FailuresTotal counts every failed run since the job was created.
+	FailuresTotal int64 `json:"failures_total"`
+	// Reseeds counts automatic full reseeds after the peer purged history this
+	// job still needed; Reseeding is true while one is in progress.
+	Reseeds        int64      `json:"reseeds"`
+	Reseeding      bool       `json:"reseeding"`
+	LastReseedAt   *time.Time `json:"last_reseed_at,omitempty"`
+	SourceLowWater *int64     `json:"source_low_water,omitempty"`
+	// BackfillsPending / BackfillsCompleted track sources attached to the remote
+	// feed after the seed whose existing content is copied separately.
+	BackfillsPending   int64 `json:"backfills_pending"`
+	BackfillsCompleted int64 `json:"backfills_completed"`
+	// ResumedBytes counts staged bytes a resumed blob transfer did not re-fetch.
+	ResumedBytes int64 `json:"resumed_bytes"`
 }
 
 // Job is a replication job for one destination feed.
@@ -362,12 +404,16 @@ type jobRow struct {
 	leaseOwner         *string
 	leaseUntil         *time.Time
 	held               int64
+	seedGeneration     int64
+	backfillsPending   int64
+	reseeding          bool
 }
 
 const jobColumns = `j.id::text,j.name,j.peer_id::text,j.remote_feed_id::text,j.dest_feed_id::text,j.replica_source_id::text,j.mode,j.interval_seconds,j.include_cached,j.filters,j.deletion_policy,j.enabled,j.revision,j.created_at,
  j.phase,j.seed_head,j.seed_cursor,j.seed_total,j.seed_done,j.checkpoint,j.checkpoint_change_at,j.remote_head,j.remote_head_at,j.remote_checked_at,j.next_run_at,j.run_requested,j.lease_owner::text,j.lease_until,
  j.last_attempt_at,j.last_success_at,COALESCE(j.last_error,''),j.consecutive_failures,j.assets_applied,j.blobs_transferred,j.blobs_deduplicated,j.bytes_transferred,j.deletions_applied,j.conflicts,
- (SELECT count(*) FROM replication_held_deletions h WHERE h.job_id=j.id),clock_timestamp()`
+ (SELECT count(*) FROM replication_held_deletions h WHERE h.job_id=j.id),clock_timestamp(),
+ j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id)`
 
 func scanJob(row pgx.Row) (jobRow, error) {
 	var j jobRow
@@ -377,10 +423,13 @@ func scanJob(row pgx.Row) (jobRow, error) {
 	err := row.Scan(&j.ID, &j.Name, &j.PeerID, &j.RemoteFeedID, &j.DestFeedID, &j.ReplicaSourceID, &j.Mode, &j.IntervalSeconds, &j.IncludeCached, &filters, &j.DeletionPolicy, &j.Enabled, &j.Revision, &j.CreatedAt,
 		&st.Phase, &j.seedHead, &j.seedCursor, &st.SeedTotal, &st.SeedDone, &st.Checkpoint, &j.checkpointChangeAt, &st.RemoteHead, &j.remoteHeadAt, &st.RemoteCheckedAt, &st.NextRunAt, &j.runRequested, &j.leaseOwner, &j.leaseUntil,
 		&st.LastAttemptAt, &st.LastSuccessAt, &st.LastError, &st.ConsecutiveFailures, &st.AssetsApplied, &st.BlobsTransferred, &st.BlobsDeduplicated, &st.BytesTransferred, &st.DeletionsApplied, &st.Conflicts,
-		&j.held, &now)
+		&j.held, &now,
+		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending)
 	if err != nil {
 		return jobRow{}, err
 	}
+	st.Reseeding = j.reseeding
+	st.BackfillsPending = j.backfillsPending
 	_ = json.Unmarshal(filters, &j.Filters)
 	st.DeletionsHeld = j.held
 	st.Running = j.leaseUntil != nil && j.leaseUntil.After(now)
@@ -432,9 +481,8 @@ func validPolicy(p string) bool {
 // CreateJob attaches a new replica-kind source (never writable through any
 // publish path) at the lowest precedence of the destination feed and creates the
 // job. Existing destination content and configuration are never modified.
-func (s *Service) CreateJob(ctx context.Context, instance, actor string, in JobInput) (Job, error) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
+// CreateJobTx creates a job inside the caller's transaction.
+func (s *Service) CreateJobTx(ctx context.Context, tx pgx.Tx, instance, actor string, in JobInput) (Job, error) {
 	if in.Mode == "" {
 		in.Mode = "continuous"
 	}
@@ -458,11 +506,7 @@ func (s *Service) CreateJob(ctx context.Context, instance, actor string, in JobI
 		return Job{}, ErrInput
 	}
 	encoded, _ := json.Marshal(filters)
-	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return Job{}, ErrUnavailable
-	}
-	defer rollback(tx)
+	var err error
 	var format string
 	if err = tx.QueryRow(ctx, `SELECT format FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, in.DestFeedID).Scan(&format); err != nil {
 		return Job{}, dbError(err)
@@ -500,10 +544,20 @@ func (s *Service) CreateJob(ctx context.Context, instance, actor string, in JobI
 	if err = audit(ctx, tx, instance, actor, "replication.job.create", id, map[string]any{"name": in.Name, "dest_feed_id": in.DestFeedID}); err != nil {
 		return Job{}, ErrUnavailable
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return Job{}, ErrUnavailable
+	return jobInTx(ctx, tx, instance, id)
+}
+
+func (s *Service) CreateJob(ctx context.Context, instance, actor string, in JobInput) (Job, error) {
+	return inTx(ctx, s, func(ctx context.Context, tx pgx.Tx) (Job, error) { return s.CreateJobTx(ctx, tx, instance, actor, in) })
+}
+
+// jobInTx reads a job through the caller's transaction so it sees its own writes.
+func jobInTx(ctx context.Context, tx pgx.Tx, instance, id string) (Job, error) {
+	j, err := scanJob(tx.QueryRow(ctx, `SELECT `+jobColumns+` FROM replication_jobs j WHERE j.instance_id=$1 AND j.id=$2`, instance, id))
+	if err != nil {
+		return Job{}, dbError(err)
 	}
-	return s.GetJob(ctx, instance, id)
+	return j.Job, nil
 }
 
 func (s *Service) GetJob(ctx context.Context, instance, id string) (Job, error) {
@@ -551,17 +605,12 @@ type JobPatch struct {
 	Enabled         *bool    `json:"enabled"`
 }
 
-func (s *Service) UpdateJob(ctx context.Context, instance, actor, id string, in JobPatch) (Job, error) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
+// UpdateJobTx updates a job inside the caller's transaction.
+func (s *Service) UpdateJobTx(ctx context.Context, tx pgx.Tx, instance, actor, id string, in JobPatch) (Job, error) {
 	if in.Revision < 1 {
 		return Job{}, ErrInput
 	}
-	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return Job{}, ErrUnavailable
-	}
-	defer rollback(tx)
+	var err error
 	cur, err := scanJob(tx.QueryRow(ctx, `SELECT `+jobColumns+` FROM replication_jobs j WHERE j.instance_id=$1 AND j.id=$2 FOR UPDATE OF j`, instance, id))
 	if err != nil {
 		return Job{}, dbError(err)
@@ -603,22 +652,20 @@ func (s *Service) UpdateJob(ctx context.Context, instance, actor, id string, in 
 	if err = audit(ctx, tx, instance, actor, "replication.job.update", id, map[string]any{"deletion_policy": policy, "mode": mode, "enabled": enabled}); err != nil {
 		return Job{}, ErrUnavailable
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return Job{}, ErrUnavailable
-	}
-	return s.GetJob(ctx, instance, id)
+	return jobInTx(ctx, tx, instance, id)
+}
+
+func (s *Service) UpdateJob(ctx context.Context, instance, actor, id string, in JobPatch) (Job, error) {
+	return inTx(ctx, s, func(ctx context.Context, tx pgx.Tx) (Job, error) {
+		return s.UpdateJobTx(ctx, tx, instance, actor, id, in)
+	})
 }
 
 // DeleteJob removes the job only. Replicated content and the replica source stay
 // in place so the destination keeps serving it; remove them separately.
-func (s *Service) DeleteJob(ctx context.Context, instance, actor, id string) error {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	tx, err := s.cfg.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return ErrUnavailable
-	}
-	defer rollback(tx)
+// DeleteJobTx deletes a job inside the caller's transaction.
+func (s *Service) DeleteJobTx(ctx context.Context, tx pgx.Tx, instance, actor, id string) error {
+	var err error
 	var running bool
 	err = tx.QueryRow(ctx, `SELECT COALESCE(lease_until>clock_timestamp(),false) FROM replication_jobs WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&running)
 	if err != nil {
@@ -633,8 +680,24 @@ func (s *Service) DeleteJob(ctx context.Context, instance, actor, id string) err
 	if err = audit(ctx, tx, instance, actor, "replication.job.delete", id, map[string]any{}); err != nil {
 		return ErrUnavailable
 	}
-	if err = tx.Commit(ctx); err != nil {
+	return nil
+}
+
+func (s *Service) DeleteJob(ctx context.Context, instance, actor, id string) error {
+	_, err := inTx(ctx, s, func(ctx context.Context, tx pgx.Tx) (struct{}, error) {
+		return struct{}{}, s.DeleteJobTx(ctx, tx, instance, actor, id)
+	})
+	return err
+}
+
+// TriggerTx is Trigger inside the caller's transaction.
+func (s *Service) TriggerTx(ctx context.Context, tx pgx.Tx, instance, actor, id string) error {
+	tag, err := tx.Exec(ctx, `UPDATE replication_jobs SET run_requested=true,next_run_at=clock_timestamp() WHERE instance_id=$1 AND id=$2 AND enabled`, instance, id)
+	if err != nil {
 		return ErrUnavailable
+	}
+	if tag.RowsAffected() != 1 {
+		return ErrNotFound
 	}
 	return nil
 }

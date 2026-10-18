@@ -2,6 +2,7 @@ package replication
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -25,6 +26,9 @@ type DeletionPreview struct {
 	Entries   []DeletionEntry `json:"entries"`
 	Counts    map[string]int  `json:"counts"`
 	Truncated bool            `json:"truncated"`
+	// ReseedRequired is set when the peer purged the history the job needs, so
+	// tombstones between the checkpoint and the head cannot be listed.
+	ReseedRequired bool `json:"reseed_required,omitempty"`
 }
 
 const previewLimit = 1000
@@ -81,7 +85,12 @@ func (s *Service) PreviewDeletions(ctx context.Context, instance, id string) (De
 	}
 	after := jr.Status.Checkpoint
 	for {
-		page, err := client.Changes(ctx, jr.RemoteFeedID, after, s.cfg.PageSize, jr.IncludeCached)
+		page, err := client.Changes(ctx, jr.RemoteFeedID, after, s.cfg.PageSize, jr.IncludeCached, jr.Filters)
+		if errors.Is(err, ErrHistoryPurged) {
+			// Pending tombstones are gone; the next run reseeds instead.
+			out.ReseedRequired = true
+			return out, nil
+		}
 		if err != nil {
 			return DeletionPreview{}, err
 		}

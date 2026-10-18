@@ -112,6 +112,7 @@ func (s *Service) applyAsset(ctx context.Context, tx pgx.Tx, rt *run, it Item, d
 	provenance, _ := json.Marshal(map[string]any{
 		"replication_job": rt.job.ID, "peer_id": rt.job.PeerID, "origin_source_id": it.Origin.SourceID,
 		"origin_kind": it.Origin.Kind, "origin_priority": it.Origin.Priority, "cached": it.Origin.Kind == "remote",
+		"seed_generation": rt.job.seedGeneration,
 	})
 	var assetID, owner, oldDigest string
 	var oldPriority int
@@ -137,6 +138,11 @@ func (s *Service) applyAsset(ctx context.Context, tx pgx.Tx, rt *run, it Item, d
 			oldPriority, _ = strconv.Atoi(*oldPriorityText)
 		}
 		if oldDigest != it.Digest && oldPriority < it.Origin.Priority {
+			// The held asset wins, but the peer still lists the item: re-confirm
+			// it so a finished reseed does not mistake it for a vanished one.
+			if _, err = tx.Exec(ctx, `UPDATE assets SET provenance=provenance||jsonb_build_object('seed_generation',$2::bigint) WHERE id=$1`, assetID, rt.job.seedGeneration); err != nil {
+				return err
+			}
 			d.conflicts++
 			return nil
 		}
@@ -206,6 +212,15 @@ func (s *Service) applyChange(ctx context.Context, tx pgx.Tx, rt *run, c Change,
 				_, err := s.upsertComponent(ctx, tx, rt, c.Component.Namespace, c.Component.Coordinate, c.Component.Metadata, true)
 				return err
 			}
+		}
+	case c.Kind == "attachment":
+		// A source attached to the remote feed after the seed: queue a back-fill
+		// of its current content. A detach changes nothing at the destination:
+		// replicated content stays and deletions follow the deletion policy.
+		if c.Op == "put" && c.Attachment != nil && s.originWanted(rt, c.Attachment.Origin) {
+			_, err := tx.Exec(ctx, `INSERT INTO replication_backfills(job_id,source_id,origin_name,seq) VALUES($1,$2,$3,$4)
+ ON CONFLICT(job_id,source_id) DO UPDATE SET phase='assets',cursor='',done=0,seq=EXCLUDED.seq`, rt.job.ID, c.Attachment.Origin.SourceID, c.Attachment.Origin.Name, c.Seq)
+			return err
 		}
 	case c.Op == "delete":
 		key := heldKey(c.Kind, c.Version)

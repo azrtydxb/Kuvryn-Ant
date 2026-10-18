@@ -20,9 +20,10 @@ const exportBase = "/api/v1/replication/export/feeds/{feed}"
 // bearer token whose scopes and role grants permit "replicate" on the feed.
 //
 //	GET {base}/head
-//	GET {base}/manifest?kind=asset|tag&after=&limit=&include_cached=&namespace=&package=&version_prefix=
-//	GET {base}/changes?after=&limit=&include_cached=
+//	GET {base}/manifest?kind=asset|tag&after=&limit=&include_cached=&namespace=&package=&version_prefix=&source=
+//	GET {base}/changes?after=&limit=&include_cached=&namespace=&package=&version_prefix=   (410 below the low-water mark)
 //	GET {base}/blobs/{digest}   (single Range supported)
+//	GET {base}/template         (non-secret feed configuration template)
 func RegisterExport(mux *http.ServeMux, pool *pgxpool.Pool, e Exporter) {
 	bearer := identity.NewBearer(identity.Tokens{DB: pool})
 	h := exportHandlers{e: e, roles: identity.Roles{DB: pool}}
@@ -30,6 +31,7 @@ func RegisterExport(mux *http.ServeMux, pool *pgxpool.Pool, e Exporter) {
 	mux.Handle("GET "+exportBase+"/manifest", bearer.Wrap(http.HandlerFunc(h.manifest)))
 	mux.Handle("GET "+exportBase+"/changes", bearer.Wrap(http.HandlerFunc(h.changes)))
 	mux.Handle("GET "+exportBase+"/blobs/{digest}", bearer.Wrap(http.HandlerFunc(h.blob)))
+	mux.Handle("GET "+exportBase+"/template", bearer.Wrap(http.HandlerFunc(h.template)))
 }
 
 type exportHandlers struct {
@@ -56,7 +58,13 @@ func (h exportHandlers) authorize(w http.ResponseWriter, r *http.Request) (ident
 	return p, feed, true
 }
 func exportError(w http.ResponseWriter, r *http.Request, err error) {
+	var purged *HistoryPurgedError
 	switch {
+	case errors.As(err, &purged):
+		// 410 tells a consumer its cursor can no longer be served: it must
+		// reseed from the manifest. The mark is in a header for the client.
+		w.Header().Set("X-Replication-Low-Water", strconv.FormatInt(purged.LowWater, 10))
+		management.Error(w, r, http.StatusGone, api.ErrorCodeConflict, "change history purged below cursor; reseed required")
 	case errors.Is(err, ErrInput):
 		management.Error(w, r, http.StatusBadRequest, api.ErrorCodeInvalidRequest, "invalid replication request")
 	case errors.Is(err, ErrNotFound):
@@ -101,7 +109,7 @@ func (h exportHandlers) manifest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page, err := h.e.Manifest(r.Context(), p.InstanceID, feed, ManifestQuery{
-		Kind: q.Get("kind"), After: q.Get("after"), Limit: int(limit), IncludeCached: includeCached(r),
+		Kind: q.Get("kind"), After: q.Get("after"), Limit: int(limit), IncludeCached: includeCached(r), SourceID: q.Get("source"),
 		Filters: Filters{Namespaces: q["namespace"], Packages: q["package"], VersionPrefixes: q["version_prefix"]},
 	})
 	if err != nil {
@@ -121,7 +129,11 @@ func (h exportHandlers) changes(w http.ResponseWriter, r *http.Request) {
 		exportError(w, r, ErrInput)
 		return
 	}
-	page, err := h.e.Changes(r.Context(), p.InstanceID, feed, after, int(limit), includeCached(r))
+	q := r.URL.Query()
+	page, err := h.e.Changes(r.Context(), p.InstanceID, feed, ChangeQuery{
+		After: after, Limit: int(limit), IncludeCached: includeCached(r),
+		Filters: Filters{Namespaces: q["namespace"], Packages: q["package"], VersionPrefixes: q["version_prefix"]},
+	})
 	if err != nil {
 		exportError(w, r, err)
 		return
@@ -191,4 +203,17 @@ func parseRange(v string) (offset, length int64, ranged, valid bool) {
 		return 0, 0, false, false
 	}
 	return start, end - start + 1, true, true
+}
+
+func (h exportHandlers) template(w http.ResponseWriter, r *http.Request) {
+	p, feed, ok := h.authorize(w, r)
+	if !ok {
+		return
+	}
+	t, err := h.e.Template(r.Context(), p.InstanceID, feed)
+	if err != nil {
+		exportError(w, r, err)
+		return
+	}
+	management.JSON(w, http.StatusOK, t)
 }

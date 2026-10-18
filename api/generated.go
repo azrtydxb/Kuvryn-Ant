@@ -1084,6 +1084,36 @@ func (e ReplicationStatusPhase) Valid() bool {
 	}
 }
 
+// Defines values for ReplicationTemplateDiffAction.
+const (
+	Add       ReplicationTemplateDiffAction = "add"
+	Blocked   ReplicationTemplateDiffAction = "blocked"
+	Change    ReplicationTemplateDiffAction = "change"
+	Info      ReplicationTemplateDiffAction = "info"
+	Preserved ReplicationTemplateDiffAction = "preserved"
+	Unchanged ReplicationTemplateDiffAction = "unchanged"
+)
+
+// Valid indicates whether the value is a known member of the ReplicationTemplateDiffAction enum.
+func (e ReplicationTemplateDiffAction) Valid() bool {
+	switch e {
+	case Add:
+		return true
+	case Blocked:
+		return true
+	case Change:
+		return true
+	case Info:
+		return true
+	case Preserved:
+		return true
+	case Unchanged:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResolveCacheState.
 const (
 	ResolveCacheStateFresh         ResolveCacheState = "fresh"
@@ -2780,10 +2810,16 @@ type ReorderSources struct {
 	SourceIds []openapi_types.UUID `json:"source_ids"`
 }
 
+// ReplicationAttachment defines model for ReplicationAttachment.
+type ReplicationAttachment struct {
+	Origin ReplicationOrigin `json:"origin"`
+}
+
 // ReplicationChange defines model for ReplicationChange.
 type ReplicationChange struct {
 	Asset      *ReplicationItem          `json:"asset,omitempty"`
 	At         time.Time                 `json:"at"`
+	Attachment *ReplicationAttachment    `json:"attachment,omitempty"`
 	Component  *ReplicationComponentItem `json:"component,omitempty"`
 	Coordinate string                    `json:"coordinate"`
 	Key        *string                   `json:"key,omitempty"`
@@ -2797,11 +2833,12 @@ type ReplicationChange struct {
 
 // ReplicationChangePage defines model for ReplicationChangePage.
 type ReplicationChangePage struct {
-	Changes []ReplicationChange `json:"changes"`
-	Head    int64               `json:"head"`
-	HeadAt  *time.Time          `json:"head_at,omitempty"`
-	More    bool                `json:"more"`
-	Next    int64               `json:"next"`
+	Changes  []ReplicationChange `json:"changes"`
+	Head     int64               `json:"head"`
+	HeadAt   *time.Time          `json:"head_at,omitempty"`
+	LowWater int64               `json:"low_water"`
+	More     bool                `json:"more"`
+	Next     int64               `json:"next"`
 }
 
 // ReplicationComponentItem defines model for ReplicationComponentItem.
@@ -2837,9 +2874,10 @@ type ReplicationDeletionPreview struct {
 		Protected   *int32 `json:"protected,omitempty"`
 		WouldDelete *int32 `json:"would_delete,omitempty"`
 	} `json:"counts"`
-	Entries   []ReplicationDeletionEntry `json:"entries"`
-	Policy    string                     `json:"policy"`
-	Truncated bool                       `json:"truncated"`
+	Entries        []ReplicationDeletionEntry `json:"entries"`
+	Policy         string                     `json:"policy"`
+	ReseedRequired *bool                      `json:"reseed_required,omitempty"`
+	Truncated      bool                       `json:"truncated"`
 }
 
 // ReplicationFilters defines model for ReplicationFilters.
@@ -2853,6 +2891,7 @@ type ReplicationFilters struct {
 type ReplicationHead struct {
 	ChangedAt *time.Time `json:"changed_at,omitempty"`
 	Format    string     `json:"format"`
+	LowWater  int64      `json:"low_water"`
 	Now       time.Time  `json:"now"`
 	Seq       int64      `json:"seq"`
 }
@@ -2992,6 +3031,8 @@ type ReplicationPeerPatch struct {
 // ReplicationStatus defines model for ReplicationStatus.
 type ReplicationStatus struct {
 	AssetsApplied       int64                  `json:"assets_applied"`
+	BackfillsCompleted  int64                  `json:"backfills_completed"`
+	BackfillsPending    int64                  `json:"backfills_pending"`
 	BlobsDeduplicated   int64                  `json:"blobs_deduplicated"`
 	BlobsTransferred    int64                  `json:"blobs_transferred"`
 	BytesTransferred    int64                  `json:"bytes_transferred"`
@@ -3001,17 +3042,23 @@ type ReplicationStatus struct {
 	ConsecutiveFailures int32                  `json:"consecutive_failures"`
 	DeletionsApplied    int64                  `json:"deletions_applied"`
 	DeletionsHeld       int64                  `json:"deletions_held"`
+	FailuresTotal       int64                  `json:"failures_total"`
 	LagSeconds          *float32               `json:"lag_seconds,omitempty"`
 	LastAttemptAt       *time.Time             `json:"last_attempt_at,omitempty"`
 	LastError           *string                `json:"last_error,omitempty"`
+	LastReseedAt        *time.Time             `json:"last_reseed_at,omitempty"`
 	LastSuccessAt       *time.Time             `json:"last_success_at,omitempty"`
 	NextRunAt           *time.Time             `json:"next_run_at,omitempty"`
 	Phase               ReplicationStatusPhase `json:"phase"`
 	RemoteCheckedAt     *time.Time             `json:"remote_checked_at,omitempty"`
 	RemoteHead          *int64                 `json:"remote_head,omitempty"`
+	Reseeding           bool                   `json:"reseeding"`
+	Reseeds             int64                  `json:"reseeds"`
+	ResumedBytes        int64                  `json:"resumed_bytes"`
 	Running             bool                   `json:"running"`
 	SeedDone            int64                  `json:"seed_done"`
 	SeedTotal           *int64                 `json:"seed_total,omitempty"`
+	SourceLowWater      *int64                 `json:"source_low_water,omitempty"`
 }
 
 // ReplicationStatusPhase defines model for ReplicationStatus.Phase.
@@ -3047,6 +3094,89 @@ type ReplicationTagItem struct {
 	Origin     ReplicationOrigin `json:"origin"`
 	Tag        string            `json:"tag"`
 	Version    string            `json:"version"`
+}
+
+// ReplicationTemplate defines model for ReplicationTemplate.
+type ReplicationTemplate struct {
+	Excluded      []string                      `json:"excluded"`
+	Format        string                        `json:"format"`
+	RemoteSources []ReplicationTemplateRemote   `json:"remote_sources"`
+	Retention     *ReplicationTemplateRetention `json:"retention,omitempty"`
+	Sources       []ReplicationTemplateSource   `json:"sources"`
+	Version       int32                         `json:"version"`
+}
+
+// ReplicationTemplateApplyRequest defines model for ReplicationTemplateApplyRequest.
+type ReplicationTemplateApplyRequest struct {
+	Digest   string               `json:"digest"`
+	Template *ReplicationTemplate `json:"template,omitempty"`
+}
+
+// ReplicationTemplateApplyResult defines model for ReplicationTemplateApplyResult.
+type ReplicationTemplateApplyResult struct {
+	Applied int32                     `json:"applied"`
+	Diffs   []ReplicationTemplateDiff `json:"diffs"`
+	Digest  string                    `json:"digest"`
+}
+
+// ReplicationTemplateCache defines model for ReplicationTemplateCache.
+type ReplicationTemplateCache struct {
+	MaxBytes            int64 `json:"max_bytes"`
+	MaxEntries          int32 `json:"max_entries"`
+	MetadataTtlSeconds  int32 `json:"metadata_ttl_seconds"`
+	NegativeTtlSeconds  int32 `json:"negative_ttl_seconds"`
+	StaleIfErrorSeconds int32 `json:"stale_if_error_seconds"`
+}
+
+// ReplicationTemplateDiff defines model for ReplicationTemplateDiff.
+type ReplicationTemplateDiff struct {
+	Action   ReplicationTemplateDiffAction `json:"action"`
+	Current  interface{}                   `json:"current,omitempty"`
+	Field    string                        `json:"field"`
+	Proposed interface{}                   `json:"proposed,omitempty"`
+	Reason   *string                       `json:"reason,omitempty"`
+	Section  string                        `json:"section"`
+}
+
+// ReplicationTemplateDiffAction defines model for ReplicationTemplateDiff.Action.
+type ReplicationTemplateDiffAction string
+
+// ReplicationTemplatePreview defines model for ReplicationTemplatePreview.
+type ReplicationTemplatePreview struct {
+	Applicable int32                     `json:"applicable"`
+	Blocked    int32                     `json:"blocked"`
+	Diffs      []ReplicationTemplateDiff `json:"diffs"`
+	Digest     string                    `json:"digest"`
+	Template   ReplicationTemplate       `json:"template"`
+}
+
+// ReplicationTemplateRemote defines model for ReplicationTemplateRemote.
+type ReplicationTemplateRemote struct {
+	Cache          ReplicationTemplateCache `json:"cache"`
+	Name           string                   `json:"name"`
+	TimeoutSeconds int32                    `json:"timeout_seconds"`
+}
+
+// ReplicationTemplateRequest defines model for ReplicationTemplateRequest.
+type ReplicationTemplateRequest struct {
+	Template *ReplicationTemplate `json:"template,omitempty"`
+}
+
+// ReplicationTemplateRetention defines model for ReplicationTemplateRetention.
+type ReplicationTemplateRetention struct {
+	Enabled        bool   `json:"enabled"`
+	IncludeTagged  bool   `json:"include_tagged"`
+	KeepLast       *int32 `json:"keep_last,omitempty"`
+	MaxAgeSeconds  *int64 `json:"max_age_seconds,omitempty"`
+	MaxIdleSeconds *int64 `json:"max_idle_seconds,omitempty"`
+	MinKeep        int32  `json:"min_keep"`
+}
+
+// ReplicationTemplateSource defines model for ReplicationTemplateSource.
+type ReplicationTemplateSource struct {
+	Kind     string `json:"kind"`
+	Name     string `json:"name"`
+	Priority int32  `json:"priority"`
 }
 
 // ReplicationTrigger defines model for ReplicationTrigger.
@@ -3849,9 +3979,12 @@ type GetReplicationExportBlobParams struct {
 
 // GetReplicationExportChangesParams defines parameters for GetReplicationExportChanges.
 type GetReplicationExportChangesParams struct {
-	After         *int64 `form:"after,omitempty" json:"after,omitempty"`
-	Limit         *int   `form:"limit,omitempty" json:"limit,omitempty"`
-	IncludeCached *bool  `form:"include_cached,omitempty" json:"include_cached,omitempty"`
+	After         *int64    `form:"after,omitempty" json:"after,omitempty"`
+	Limit         *int      `form:"limit,omitempty" json:"limit,omitempty"`
+	IncludeCached *bool     `form:"include_cached,omitempty" json:"include_cached,omitempty"`
+	Namespace     *[]string `form:"namespace,omitempty" json:"namespace,omitempty"`
+	Package       *[]string `form:"package,omitempty" json:"package,omitempty"`
+	VersionPrefix *[]string `form:"version_prefix,omitempty" json:"version_prefix,omitempty"`
 }
 
 // GetReplicationExportManifestParams defines parameters for GetReplicationExportManifest.
@@ -3863,10 +3996,51 @@ type GetReplicationExportManifestParams struct {
 	Namespace     *[]string                               `form:"namespace,omitempty" json:"namespace,omitempty"`
 	Package       *[]string                               `form:"package,omitempty" json:"package,omitempty"`
 	VersionPrefix *[]string                               `form:"version_prefix,omitempty" json:"version_prefix,omitempty"`
+	Source        *openapi_types.UUID                     `form:"source,omitempty" json:"source,omitempty"`
 }
 
 // GetReplicationExportManifestParamsKind defines parameters for GetReplicationExportManifest.
 type GetReplicationExportManifestParamsKind string
+
+// CreateReplicationJobParams defines parameters for CreateReplicationJob.
+type CreateReplicationJobParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// DeleteReplicationJobParams defines parameters for DeleteReplicationJob.
+type DeleteReplicationJobParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// PatchReplicationJobParams defines parameters for PatchReplicationJob.
+type PatchReplicationJobParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// TriggerReplicationJobParams defines parameters for TriggerReplicationJob.
+type TriggerReplicationJobParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// ApplyReplicationTemplateParams defines parameters for ApplyReplicationTemplate.
+type ApplyReplicationTemplateParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// CreateReplicationPeerParams defines parameters for CreateReplicationPeer.
+type CreateReplicationPeerParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// DeleteReplicationPeerParams defines parameters for DeleteReplicationPeer.
+type DeleteReplicationPeerParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// PatchReplicationPeerParams defines parameters for PatchReplicationPeer.
+type PatchReplicationPeerParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
 
 // ListIntegrityFindingsParams defines parameters for ListIntegrityFindings.
 type ListIntegrityFindingsParams struct {
@@ -4095,6 +4269,12 @@ type CreateReplicationJobJSONRequestBody = ReplicationJobInput
 
 // PatchReplicationJobJSONRequestBody defines body for PatchReplicationJob for application/json ContentType.
 type PatchReplicationJobJSONRequestBody = ReplicationJobPatch
+
+// ApplyReplicationTemplateJSONRequestBody defines body for ApplyReplicationTemplate for application/json ContentType.
+type ApplyReplicationTemplateJSONRequestBody = ReplicationTemplateApplyRequest
+
+// PreviewReplicationTemplateJSONRequestBody defines body for PreviewReplicationTemplate for application/json ContentType.
+type PreviewReplicationTemplateJSONRequestBody = ReplicationTemplateRequest
 
 // CreateReplicationPeerJSONRequestBody defines body for CreateReplicationPeer for application/json ContentType.
 type CreateReplicationPeerJSONRequestBody = ReplicationPeerInput
@@ -4477,7 +4657,7 @@ type ClientInterface interface {
 
 	// GetReplicationExportChanges performs a GET /api/v1/replication/export/feeds/{feed}/changes (the `GetReplicationExportChanges` operationId) request.
 	//
-	// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor.
+	// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor. Namespace, package and version prefix are filtered on the server. 410 means the cursor is below the change-history low-water mark (header X-Replication-Low-Water): the consumer must reseed from the manifest.
 	GetReplicationExportChanges(ctx context.Context, feed openapi_types.UUID, params *GetReplicationExportChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReplicationExportHead performs a GET /api/v1/replication/export/feeds/{feed}/head (the `GetReplicationExportHead` operationId) request.
@@ -4490,6 +4670,11 @@ type ClientInterface interface {
 	// Replication export (authoritative side). Requires replicate on the feed. Current-state manifest of assets or tags in stable key order.
 	GetReplicationExportManifest(ctx context.Context, feed openapi_types.UUID, params *GetReplicationExportManifestParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetReplicationExportTemplate performs a GET /api/v1/replication/export/feeds/{feed}/template (the `GetReplicationExportTemplate` operationId) request.
+	//
+	// Replication export (authoritative side). Requires replicate on the feed. Non-secret feed configuration template: retention tunables and remote-source cache/timeout tunables. Endpoints, credentials, identity and access policy are never included.
+	GetReplicationExportTemplate(ctx context.Context, feed openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListReplicationJobs performs a GET /api/v1/replication/jobs (the `ListReplicationJobs` operationId) request.
 	//
 	// Replication (destination side). Jobs whose destination feed the caller may replicate or configure.
@@ -4498,19 +4683,19 @@ type ClientInterface interface {
 	// CreateReplicationJobWithBody performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires configure and replicate on the destination feed.
-	CreateReplicationJobWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	CreateReplicationJobWithBody(ctx context.Context, params *CreateReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateReplicationJob performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Replication (destination side). Requires configure and replicate on the destination feed.
-	CreateReplicationJob(ctx context.Context, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	CreateReplicationJob(ctx context.Context, params *CreateReplicationJobParams, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteReplicationJob performs a DELETE /api/v1/replication/jobs/{id} (the `DeleteReplicationJob` operationId) request.
 	//
-	// Replication (destination side). Requires configure on the destination feed.
-	DeleteReplicationJob(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires configure on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	DeleteReplicationJob(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationJobParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReplicationJob performs a GET /api/v1/replication/jobs/{id} (the `GetReplicationJob` operationId) request.
 	//
@@ -4520,14 +4705,14 @@ type ClientInterface interface {
 	// PatchReplicationJobWithBody performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
-	PatchReplicationJobWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	PatchReplicationJobWithBody(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PatchReplicationJob performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
-	PatchReplicationJob(ctx context.Context, id openapi_types.UUID, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	PatchReplicationJob(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PreviewReplicationDeletions performs a GET /api/v1/replication/jobs/{id}/deletions (the `PreviewReplicationDeletions` operationId) request.
 	//
@@ -4536,13 +4721,37 @@ type ClientInterface interface {
 
 	// TriggerReplicationJob performs a POST /api/v1/replication/jobs/{id}/runs (the `TriggerReplicationJob` operationId) request.
 	//
-	// Replication (destination side). Requests a run now. Requires replicate on the destination feed.
-	TriggerReplicationJob(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requests a run now. Requires replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	TriggerReplicationJob(ctx context.Context, id openapi_types.UUID, params *TriggerReplicationJobParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReplicationJobStatus performs a GET /api/v1/replication/jobs/{id}/status (the `GetReplicationJobStatus` operationId) request.
 	//
 	// Replication (destination side). Progress, lag and failures of one job.
 	GetReplicationJobStatus(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApplyReplicationTemplateWithBody performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+	ApplyReplicationTemplateWithBody(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApplyReplicationTemplate performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+	ApplyReplicationTemplate(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, body ApplyReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewReplicationTemplateWithBody performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+	PreviewReplicationTemplateWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewReplicationTemplate performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+	PreviewReplicationTemplate(ctx context.Context, id openapi_types.UUID, body PreviewReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListReplicationPeers performs a GET /api/v1/replication/peers (the `ListReplicationPeers` operationId) request.
 	//
@@ -4552,19 +4761,19 @@ type ClientInterface interface {
 	// CreateReplicationPeerWithBody performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
-	CreateReplicationPeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	CreateReplicationPeerWithBody(ctx context.Context, params *CreateReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateReplicationPeer performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
-	CreateReplicationPeer(ctx context.Context, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	CreateReplicationPeer(ctx context.Context, params *CreateReplicationPeerParams, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteReplicationPeer performs a DELETE /api/v1/replication/peers/{id} (the `DeleteReplicationPeer` operationId) request.
 	//
-	// Replication (destination side). Requires instance admin.
-	DeleteReplicationPeer(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires instance admin. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	DeleteReplicationPeer(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationPeerParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReplicationPeer performs a GET /api/v1/replication/peers/{id} (the `GetReplicationPeer` operationId) request.
 	//
@@ -4574,14 +4783,14 @@ type ClientInterface interface {
 	// PatchReplicationPeerWithBody performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires instance admin. The expected revision is in the body.
-	PatchReplicationPeerWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	PatchReplicationPeerWithBody(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PatchReplicationPeer performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request.
 	// Takes a body of the `application/json` content type.
 	//
-	// Replication (destination side). Requires instance admin. The expected revision is in the body.
-	PatchReplicationPeer(ctx context.Context, id openapi_types.UUID, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	PatchReplicationPeer(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListReplicationStatus performs a GET /api/v1/replication/status (the `ListReplicationStatus` operationId) request.
 	//
@@ -5639,7 +5848,7 @@ func (c *Client) GetReplicationExportBlob(ctx context.Context, feed openapi_type
 
 // GetReplicationExportChanges performs a GET /api/v1/replication/export/feeds/{feed}/changes (the `GetReplicationExportChanges` operationId) request.
 //
-// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor.
+// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor. Namespace, package and version prefix are filtered on the server. 410 means the cursor is below the change-history low-water mark (header X-Replication-Low-Water): the consumer must reseed from the manifest.
 func (c *Client) GetReplicationExportChanges(ctx context.Context, feed openapi_types.UUID, params *GetReplicationExportChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReplicationExportChangesRequest(c.Server, feed, params)
 	if err != nil {
@@ -5682,6 +5891,21 @@ func (c *Client) GetReplicationExportManifest(ctx context.Context, feed openapi_
 	return c.Client.Do(req)
 }
 
+// GetReplicationExportTemplate performs a GET /api/v1/replication/export/feeds/{feed}/template (the `GetReplicationExportTemplate` operationId) request.
+//
+// Replication export (authoritative side). Requires replicate on the feed. Non-secret feed configuration template: retention tunables and remote-source cache/timeout tunables. Endpoints, credentials, identity and access policy are never included.
+func (c *Client) GetReplicationExportTemplate(ctx context.Context, feed openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetReplicationExportTemplateRequest(c.Server, feed)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListReplicationJobs performs a GET /api/v1/replication/jobs (the `ListReplicationJobs` operationId) request.
 //
 // Replication (destination side). Jobs whose destination feed the caller may replicate or configure.
@@ -5700,9 +5924,9 @@ func (c *Client) ListReplicationJobs(ctx context.Context, reqEditors ...RequestE
 // CreateReplicationJobWithBody performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires configure and replicate on the destination feed.
-func (c *Client) CreateReplicationJobWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateReplicationJobRequestWithBody(c.Server, contentType, body)
+// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) CreateReplicationJobWithBody(ctx context.Context, params *CreateReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateReplicationJobRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5716,9 +5940,9 @@ func (c *Client) CreateReplicationJobWithBody(ctx context.Context, contentType s
 // CreateReplicationJob performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Replication (destination side). Requires configure and replicate on the destination feed.
-func (c *Client) CreateReplicationJob(ctx context.Context, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateReplicationJobRequest(c.Server, body)
+// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) CreateReplicationJob(ctx context.Context, params *CreateReplicationJobParams, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateReplicationJobRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5731,9 +5955,9 @@ func (c *Client) CreateReplicationJob(ctx context.Context, body CreateReplicatio
 
 // DeleteReplicationJob performs a DELETE /api/v1/replication/jobs/{id} (the `DeleteReplicationJob` operationId) request.
 //
-// Replication (destination side). Requires configure on the destination feed.
-func (c *Client) DeleteReplicationJob(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteReplicationJobRequest(c.Server, id)
+// Replication (destination side). Requires configure on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) DeleteReplicationJob(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationJobParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteReplicationJobRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5762,9 +5986,9 @@ func (c *Client) GetReplicationJob(ctx context.Context, id openapi_types.UUID, r
 // PatchReplicationJobWithBody performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
-func (c *Client) PatchReplicationJobWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchReplicationJobRequestWithBody(c.Server, id, contentType, body)
+// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) PatchReplicationJobWithBody(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchReplicationJobRequestWithBody(c.Server, id, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5778,9 +6002,9 @@ func (c *Client) PatchReplicationJobWithBody(ctx context.Context, id openapi_typ
 // PatchReplicationJob performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
-func (c *Client) PatchReplicationJob(ctx context.Context, id openapi_types.UUID, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchReplicationJobRequest(c.Server, id, body)
+// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) PatchReplicationJob(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchReplicationJobRequest(c.Server, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5808,9 +6032,9 @@ func (c *Client) PreviewReplicationDeletions(ctx context.Context, id openapi_typ
 
 // TriggerReplicationJob performs a POST /api/v1/replication/jobs/{id}/runs (the `TriggerReplicationJob` operationId) request.
 //
-// Replication (destination side). Requests a run now. Requires replicate on the destination feed.
-func (c *Client) TriggerReplicationJob(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewTriggerReplicationJobRequest(c.Server, id)
+// Replication (destination side). Requests a run now. Requires replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) TriggerReplicationJob(ctx context.Context, id openapi_types.UUID, params *TriggerReplicationJobParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTriggerReplicationJobRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5826,6 +6050,70 @@ func (c *Client) TriggerReplicationJob(ctx context.Context, id openapi_types.UUI
 // Replication (destination side). Progress, lag and failures of one job.
 func (c *Client) GetReplicationJobStatus(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReplicationJobStatusRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ApplyReplicationTemplateWithBody performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+func (c *Client) ApplyReplicationTemplateWithBody(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApplyReplicationTemplateRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ApplyReplicationTemplate performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+func (c *Client) ApplyReplicationTemplate(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, body ApplyReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApplyReplicationTemplateRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewReplicationTemplateWithBody performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+func (c *Client) PreviewReplicationTemplateWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewReplicationTemplateRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewReplicationTemplate performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+func (c *Client) PreviewReplicationTemplate(ctx context.Context, id openapi_types.UUID, body PreviewReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewReplicationTemplateRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5854,9 +6142,9 @@ func (c *Client) ListReplicationPeers(ctx context.Context, reqEditors ...Request
 // CreateReplicationPeerWithBody performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
-func (c *Client) CreateReplicationPeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateReplicationPeerRequestWithBody(c.Server, contentType, body)
+// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) CreateReplicationPeerWithBody(ctx context.Context, params *CreateReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateReplicationPeerRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5870,9 +6158,9 @@ func (c *Client) CreateReplicationPeerWithBody(ctx context.Context, contentType 
 // CreateReplicationPeer performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
-func (c *Client) CreateReplicationPeer(ctx context.Context, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateReplicationPeerRequest(c.Server, body)
+// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) CreateReplicationPeer(ctx context.Context, params *CreateReplicationPeerParams, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateReplicationPeerRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5885,9 +6173,9 @@ func (c *Client) CreateReplicationPeer(ctx context.Context, body CreateReplicati
 
 // DeleteReplicationPeer performs a DELETE /api/v1/replication/peers/{id} (the `DeleteReplicationPeer` operationId) request.
 //
-// Replication (destination side). Requires instance admin.
-func (c *Client) DeleteReplicationPeer(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteReplicationPeerRequest(c.Server, id)
+// Replication (destination side). Requires instance admin. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) DeleteReplicationPeer(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationPeerParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteReplicationPeerRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5916,9 +6204,9 @@ func (c *Client) GetReplicationPeer(ctx context.Context, id openapi_types.UUID, 
 // PatchReplicationPeerWithBody performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires instance admin. The expected revision is in the body.
-func (c *Client) PatchReplicationPeerWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchReplicationPeerRequestWithBody(c.Server, id, contentType, body)
+// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) PatchReplicationPeerWithBody(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchReplicationPeerRequestWithBody(c.Server, id, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5932,9 +6220,9 @@ func (c *Client) PatchReplicationPeerWithBody(ctx context.Context, id openapi_ty
 // PatchReplicationPeer performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request.
 // Takes a body of the `application/json` content type.
 //
-// Replication (destination side). Requires instance admin. The expected revision is in the body.
-func (c *Client) PatchReplicationPeer(ctx context.Context, id openapi_types.UUID, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPatchReplicationPeerRequest(c.Server, id, body)
+// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *Client) PatchReplicationPeer(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchReplicationPeerRequest(c.Server, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9438,6 +9726,42 @@ func NewGetReplicationExportChangesRequest(server string, feed openapi_types.UUI
 
 		}
 
+		if params.Namespace != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "namespace", *params.Namespace, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Package != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "package", *params.Package, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.VersionPrefix != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "version_prefix", *params.VersionPrefix, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -9605,10 +9929,56 @@ func NewGetReplicationExportManifestRequest(server string, feed openapi_types.UU
 
 		}
 
+		if params.Source != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source", *params.Source, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetReplicationExportTemplateRequest constructs an http.Request for the GetReplicationExportTemplate method
+func NewGetReplicationExportTemplateRequest(server string, feed openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "feed", feed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/replication/export/feeds/%s/template", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9647,18 +10017,18 @@ func NewListReplicationJobsRequest(server string) (*http.Request, error) {
 }
 
 // NewCreateReplicationJobRequest calls the generic CreateReplicationJob builder with application/json body
-func NewCreateReplicationJobRequest(server string, body CreateReplicationJobJSONRequestBody) (*http.Request, error) {
+func NewCreateReplicationJobRequest(server string, params *CreateReplicationJobParams, body CreateReplicationJobJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateReplicationJobRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateReplicationJobRequestWithBody(server, params, "application/json", bodyReader)
 }
 
 // NewCreateReplicationJobRequestWithBody constructs an http.Request for the CreateReplicationJob method, with any body, and a specified content type
-func NewCreateReplicationJobRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateReplicationJobRequestWithBody(server string, params *CreateReplicationJobParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9683,11 +10053,24 @@ func NewCreateReplicationJobRequestWithBody(server string, contentType string, b
 
 	req.Header.Add("Content-Type", contentType)
 
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
 	return req, nil
 }
 
 // NewDeleteReplicationJobRequest constructs an http.Request for the DeleteReplicationJob method
-func NewDeleteReplicationJobRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+func NewDeleteReplicationJobRequest(server string, id openapi_types.UUID, params *DeleteReplicationJobParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9715,6 +10098,19 @@ func NewDeleteReplicationJobRequest(server string, id openapi_types.UUID) (*http
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
 	}
 
 	return req, nil
@@ -9755,18 +10151,18 @@ func NewGetReplicationJobRequest(server string, id openapi_types.UUID) (*http.Re
 }
 
 // NewPatchReplicationJobRequest calls the generic PatchReplicationJob builder with application/json body
-func NewPatchReplicationJobRequest(server string, id openapi_types.UUID, body PatchReplicationJobJSONRequestBody) (*http.Request, error) {
+func NewPatchReplicationJobRequest(server string, id openapi_types.UUID, params *PatchReplicationJobParams, body PatchReplicationJobJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPatchReplicationJobRequestWithBody(server, id, "application/json", bodyReader)
+	return NewPatchReplicationJobRequestWithBody(server, id, params, "application/json", bodyReader)
 }
 
 // NewPatchReplicationJobRequestWithBody constructs an http.Request for the PatchReplicationJob method, with any body, and a specified content type
-func NewPatchReplicationJobRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+func NewPatchReplicationJobRequestWithBody(server string, id openapi_types.UUID, params *PatchReplicationJobParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9797,6 +10193,19 @@ func NewPatchReplicationJobRequestWithBody(server string, id openapi_types.UUID,
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
 
 	return req, nil
 }
@@ -9836,7 +10245,7 @@ func NewPreviewReplicationDeletionsRequest(server string, id openapi_types.UUID)
 }
 
 // NewTriggerReplicationJobRequest constructs an http.Request for the TriggerReplicationJob method
-func NewTriggerReplicationJobRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+func NewTriggerReplicationJobRequest(server string, id openapi_types.UUID, params *TriggerReplicationJobParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9864,6 +10273,19 @@ func NewTriggerReplicationJobRequest(server string, id openapi_types.UUID) (*htt
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
 	}
 
 	return req, nil
@@ -9903,6 +10325,113 @@ func NewGetReplicationJobStatusRequest(server string, id openapi_types.UUID) (*h
 	return req, nil
 }
 
+// NewApplyReplicationTemplateRequest calls the generic ApplyReplicationTemplate builder with application/json body
+func NewApplyReplicationTemplateRequest(server string, id openapi_types.UUID, params *ApplyReplicationTemplateParams, body ApplyReplicationTemplateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApplyReplicationTemplateRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewApplyReplicationTemplateRequestWithBody constructs an http.Request for the ApplyReplicationTemplate method, with any body, and a specified content type
+func NewApplyReplicationTemplateRequestWithBody(server string, id openapi_types.UUID, params *ApplyReplicationTemplateParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/replication/jobs/%s/template/apply", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewPreviewReplicationTemplateRequest calls the generic PreviewReplicationTemplate builder with application/json body
+func NewPreviewReplicationTemplateRequest(server string, id openapi_types.UUID, body PreviewReplicationTemplateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPreviewReplicationTemplateRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPreviewReplicationTemplateRequestWithBody constructs an http.Request for the PreviewReplicationTemplate method, with any body, and a specified content type
+func NewPreviewReplicationTemplateRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/replication/jobs/%s/template/preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListReplicationPeersRequest constructs an http.Request for the ListReplicationPeers method
 func NewListReplicationPeersRequest(server string) (*http.Request, error) {
 	var err error
@@ -9931,18 +10460,18 @@ func NewListReplicationPeersRequest(server string) (*http.Request, error) {
 }
 
 // NewCreateReplicationPeerRequest calls the generic CreateReplicationPeer builder with application/json body
-func NewCreateReplicationPeerRequest(server string, body CreateReplicationPeerJSONRequestBody) (*http.Request, error) {
+func NewCreateReplicationPeerRequest(server string, params *CreateReplicationPeerParams, body CreateReplicationPeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateReplicationPeerRequestWithBody(server, "application/json", bodyReader)
+	return NewCreateReplicationPeerRequestWithBody(server, params, "application/json", bodyReader)
 }
 
 // NewCreateReplicationPeerRequestWithBody constructs an http.Request for the CreateReplicationPeer method, with any body, and a specified content type
-func NewCreateReplicationPeerRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateReplicationPeerRequestWithBody(server string, params *CreateReplicationPeerParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9967,11 +10496,24 @@ func NewCreateReplicationPeerRequestWithBody(server string, contentType string, 
 
 	req.Header.Add("Content-Type", contentType)
 
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
 	return req, nil
 }
 
 // NewDeleteReplicationPeerRequest constructs an http.Request for the DeleteReplicationPeer method
-func NewDeleteReplicationPeerRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+func NewDeleteReplicationPeerRequest(server string, id openapi_types.UUID, params *DeleteReplicationPeerParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9999,6 +10541,19 @@ func NewDeleteReplicationPeerRequest(server string, id openapi_types.UUID) (*htt
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
 	}
 
 	return req, nil
@@ -10039,18 +10594,18 @@ func NewGetReplicationPeerRequest(server string, id openapi_types.UUID) (*http.R
 }
 
 // NewPatchReplicationPeerRequest calls the generic PatchReplicationPeer builder with application/json body
-func NewPatchReplicationPeerRequest(server string, id openapi_types.UUID, body PatchReplicationPeerJSONRequestBody) (*http.Request, error) {
+func NewPatchReplicationPeerRequest(server string, id openapi_types.UUID, params *PatchReplicationPeerParams, body PatchReplicationPeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPatchReplicationPeerRequestWithBody(server, id, "application/json", bodyReader)
+	return NewPatchReplicationPeerRequestWithBody(server, id, params, "application/json", bodyReader)
 }
 
 // NewPatchReplicationPeerRequestWithBody constructs an http.Request for the PatchReplicationPeer method, with any body, and a specified content type
-func NewPatchReplicationPeerRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+func NewPatchReplicationPeerRequestWithBody(server string, id openapi_types.UUID, params *PatchReplicationPeerParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10081,6 +10636,19 @@ func NewPatchReplicationPeerRequestWithBody(server string, id openapi_types.UUID
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
 
 	return req, nil
 }
@@ -12869,7 +13437,7 @@ type ClientWithResponsesInterface interface {
 
 	// GetReplicationExportChangesWithResponse performs a GET /api/v1/replication/export/feeds/{feed}/changes (the `GetReplicationExportChanges` operationId) request.
 	//
-	// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor.
+	// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor. Namespace, package and version prefix are filtered on the server. 410 means the cursor is below the change-history low-water mark (header X-Replication-Low-Water): the consumer must reseed from the manifest.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetReplicationExportChangesWithResponse(ctx context.Context, feed openapi_types.UUID, params *GetReplicationExportChangesParams, reqEditors ...RequestEditorFn) (*GetReplicationExportChangesResponse, error)
@@ -12888,6 +13456,13 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetReplicationExportManifestWithResponse(ctx context.Context, feed openapi_types.UUID, params *GetReplicationExportManifestParams, reqEditors ...RequestEditorFn) (*GetReplicationExportManifestResponse, error)
 
+	// GetReplicationExportTemplateWithResponse performs a GET /api/v1/replication/export/feeds/{feed}/template (the `GetReplicationExportTemplate` operationId) request.
+	//
+	// Replication export (authoritative side). Requires replicate on the feed. Non-secret feed configuration template: retention tunables and remote-source cache/timeout tunables. Endpoints, credentials, identity and access policy are never included.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetReplicationExportTemplateWithResponse(ctx context.Context, feed openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReplicationExportTemplateResponse, error)
+
 	// ListReplicationJobsWithResponse performs a GET /api/v1/replication/jobs (the `ListReplicationJobs` operationId) request.
 	//
 	// Replication (destination side). Jobs whose destination feed the caller may replicate or configure.
@@ -12898,23 +13473,23 @@ type ClientWithResponsesInterface interface {
 	// CreateReplicationJobWithBodyWithResponse performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires configure and replicate on the destination feed.
+	// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	CreateReplicationJobWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error)
+	CreateReplicationJobWithBodyWithResponse(ctx context.Context, params *CreateReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error)
 
 	// CreateReplicationJobWithResponse performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Replication (destination side). Requires configure and replicate on the destination feed.
-	CreateReplicationJobWithResponse(ctx context.Context, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error)
+	// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	CreateReplicationJobWithResponse(ctx context.Context, params *CreateReplicationJobParams, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error)
 
 	// DeleteReplicationJobWithResponse performs a DELETE /api/v1/replication/jobs/{id} (the `DeleteReplicationJob` operationId) request.
 	//
-	// Replication (destination side). Requires configure on the destination feed.
+	// Replication (destination side). Requires configure on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	DeleteReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteReplicationJobResponse, error)
+	DeleteReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationJobParams, reqEditors ...RequestEditorFn) (*DeleteReplicationJobResponse, error)
 
 	// GetReplicationJobWithResponse performs a GET /api/v1/replication/jobs/{id} (the `GetReplicationJob` operationId) request.
 	//
@@ -12926,16 +13501,16 @@ type ClientWithResponsesInterface interface {
 	// PatchReplicationJobWithBodyWithResponse performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
+	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	PatchReplicationJobWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error)
+	PatchReplicationJobWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error)
 
 	// PatchReplicationJobWithResponse performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
-	PatchReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error)
+	// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	PatchReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error)
 
 	// PreviewReplicationDeletionsWithResponse performs a GET /api/v1/replication/jobs/{id}/deletions (the `PreviewReplicationDeletions` operationId) request.
 	//
@@ -12946,10 +13521,10 @@ type ClientWithResponsesInterface interface {
 
 	// TriggerReplicationJobWithResponse performs a POST /api/v1/replication/jobs/{id}/runs (the `TriggerReplicationJob` operationId) request.
 	//
-	// Replication (destination side). Requests a run now. Requires replicate on the destination feed.
+	// Replication (destination side). Requests a run now. Requires replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	TriggerReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*TriggerReplicationJobResponse, error)
+	TriggerReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, params *TriggerReplicationJobParams, reqEditors ...RequestEditorFn) (*TriggerReplicationJobResponse, error)
 
 	// GetReplicationJobStatusWithResponse performs a GET /api/v1/replication/jobs/{id}/status (the `GetReplicationJobStatus` operationId) request.
 	//
@@ -12957,6 +13532,34 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetReplicationJobStatusWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReplicationJobStatusResponse, error)
+
+	// ApplyReplicationTemplateWithBodyWithResponse performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ApplyReplicationTemplateWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApplyReplicationTemplateResponse, error)
+
+	// ApplyReplicationTemplateWithResponse performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+	ApplyReplicationTemplateWithResponse(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, body ApplyReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*ApplyReplicationTemplateResponse, error)
+
+	// PreviewReplicationTemplateWithBodyWithResponse performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PreviewReplicationTemplateWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewReplicationTemplateResponse, error)
+
+	// PreviewReplicationTemplateWithResponse performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+	PreviewReplicationTemplateWithResponse(ctx context.Context, id openapi_types.UUID, body PreviewReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewReplicationTemplateResponse, error)
 
 	// ListReplicationPeersWithResponse performs a GET /api/v1/replication/peers (the `ListReplicationPeers` operationId) request.
 	//
@@ -12968,23 +13571,23 @@ type ClientWithResponsesInterface interface {
 	// CreateReplicationPeerWithBodyWithResponse performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
+	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	CreateReplicationPeerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error)
+	CreateReplicationPeerWithBodyWithResponse(ctx context.Context, params *CreateReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error)
 
 	// CreateReplicationPeerWithResponse performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
-	CreateReplicationPeerWithResponse(ctx context.Context, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error)
+	// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	CreateReplicationPeerWithResponse(ctx context.Context, params *CreateReplicationPeerParams, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error)
 
 	// DeleteReplicationPeerWithResponse performs a DELETE /api/v1/replication/peers/{id} (the `DeleteReplicationPeer` operationId) request.
 	//
-	// Replication (destination side). Requires instance admin.
+	// Replication (destination side). Requires instance admin. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	DeleteReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteReplicationPeerResponse, error)
+	DeleteReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationPeerParams, reqEditors ...RequestEditorFn) (*DeleteReplicationPeerResponse, error)
 
 	// GetReplicationPeerWithResponse performs a GET /api/v1/replication/peers/{id} (the `GetReplicationPeer` operationId) request.
 	//
@@ -12996,16 +13599,16 @@ type ClientWithResponsesInterface interface {
 	// PatchReplicationPeerWithBodyWithResponse performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request,
 	// with any type of body and a specified content type.
 	//
-	// Replication (destination side). Requires instance admin. The expected revision is in the body.
+	// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 	//
 	// Returns a wrapper object for the known response body format(s).
-	PatchReplicationPeerWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error)
+	PatchReplicationPeerWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error)
 
 	// PatchReplicationPeerWithResponse performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
-	// Replication (destination side). Requires instance admin. The expected revision is in the body.
-	PatchReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error)
+	// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+	PatchReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error)
 
 	// ListReplicationStatusWithResponse performs a GET /api/v1/replication/status (the `ListReplicationStatus` operationId) request.
 	//
@@ -19943,6 +20546,11 @@ type GetReplicationExportChangesResponse404Headers struct {
 	XRequestID *string
 }
 
+// GetReplicationExportChangesResponse410Headers the declared response headers of an HTTP 410 response for GetReplicationExportChanges
+type GetReplicationExportChangesResponse410Headers struct {
+	XRequestID *string
+}
+
 // GetReplicationExportChangesResponse429Headers the declared response headers of an HTTP 429 response for GetReplicationExportChanges
 type GetReplicationExportChangesResponse429Headers struct {
 	XRequestID *string
@@ -19971,6 +20579,8 @@ type GetReplicationExportChangesResponse struct {
 	JSON403 *Error
 	// JSON404 the response for an HTTP 404 `application/json` response
 	JSON404 *Error
+	// JSON410 the response for an HTTP 410 `application/json` response
+	JSON410 *Error
 	// JSON429 the response for an HTTP 429 `application/json` response
 	JSON429 *Error
 	// JSON500 the response for an HTTP 500 `application/json` response
@@ -19987,6 +20597,8 @@ type GetReplicationExportChangesResponse struct {
 	Headers403 *GetReplicationExportChangesResponse403Headers
 	// Headers404 the parsed response headers for an HTTP 404 response
 	Headers404 *GetReplicationExportChangesResponse404Headers
+	// Headers410 the parsed response headers for an HTTP 410 response
+	Headers410 *GetReplicationExportChangesResponse410Headers
 	// Headers429 the parsed response headers for an HTTP 429 response
 	Headers429 *GetReplicationExportChangesResponse429Headers
 	// Headers500 the parsed response headers for an HTTP 500 response
@@ -20018,6 +20630,11 @@ func (r GetReplicationExportChangesResponse) GetJSON403() *Error {
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
 func (r GetReplicationExportChangesResponse) GetJSON404() *Error {
 	return r.JSON404
+}
+
+// GetJSON410 returns the response for an HTTP 410 `application/json` response
+func (r GetReplicationExportChangesResponse) GetJSON410() *Error {
+	return r.JSON410
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
@@ -20350,6 +20967,152 @@ func (r GetReplicationExportManifestResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetReplicationExportManifestResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetReplicationExportTemplateResponse200Headers the declared response headers of an HTTP 200 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse400Headers the declared response headers of an HTTP 400 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse401Headers the declared response headers of an HTTP 401 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse403Headers the declared response headers of an HTTP 403 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse404Headers the declared response headers of an HTTP 404 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse429Headers the declared response headers of an HTTP 429 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse500Headers the declared response headers of an HTTP 500 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetReplicationExportTemplateResponse503Headers the declared response headers of an HTTP 503 response for GetReplicationExportTemplate
+type GetReplicationExportTemplateResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetReplicationExportTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ReplicationTemplate
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetReplicationExportTemplateResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetReplicationExportTemplateResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetReplicationExportTemplateResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetReplicationExportTemplateResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetReplicationExportTemplateResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetReplicationExportTemplateResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetReplicationExportTemplateResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetReplicationExportTemplateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON200() *ReplicationTemplate {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetReplicationExportTemplateResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetReplicationExportTemplateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetReplicationExportTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetReplicationExportTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetReplicationExportTemplateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -21791,6 +22554,396 @@ func (r GetReplicationJobStatusResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetReplicationJobStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ApplyReplicationTemplateResponse200Headers the declared response headers of an HTTP 200 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse200Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse400Headers the declared response headers of an HTTP 400 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse400Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse401Headers the declared response headers of an HTTP 401 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse401Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse403Headers the declared response headers of an HTTP 403 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse403Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse404Headers the declared response headers of an HTTP 404 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse404Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse409Headers the declared response headers of an HTTP 409 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse409Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse412Headers the declared response headers of an HTTP 412 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse412Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse413Headers the declared response headers of an HTTP 413 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse413Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse415Headers the declared response headers of an HTTP 415 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse415Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse428Headers the declared response headers of an HTTP 428 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse428Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse429Headers the declared response headers of an HTTP 429 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse429Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse500Headers the declared response headers of an HTTP 500 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse500Headers struct {
+	XRequestID *string
+}
+
+// ApplyReplicationTemplateResponse503Headers the declared response headers of an HTTP 503 response for ApplyReplicationTemplate
+type ApplyReplicationTemplateResponse503Headers struct {
+	XRequestID *string
+}
+
+type ApplyReplicationTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ReplicationTemplateApplyResult
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ApplyReplicationTemplateResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ApplyReplicationTemplateResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ApplyReplicationTemplateResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ApplyReplicationTemplateResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ApplyReplicationTemplateResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ApplyReplicationTemplateResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *ApplyReplicationTemplateResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *ApplyReplicationTemplateResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *ApplyReplicationTemplateResponse415Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *ApplyReplicationTemplateResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ApplyReplicationTemplateResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ApplyReplicationTemplateResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ApplyReplicationTemplateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON200() *ReplicationTemplateApplyResult {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ApplyReplicationTemplateResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ApplyReplicationTemplateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ApplyReplicationTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApplyReplicationTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ApplyReplicationTemplateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PreviewReplicationTemplateResponse200Headers the declared response headers of an HTTP 200 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse200Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse400Headers the declared response headers of an HTTP 400 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse400Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse401Headers the declared response headers of an HTTP 401 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse401Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse403Headers the declared response headers of an HTTP 403 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse403Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse404Headers the declared response headers of an HTTP 404 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse404Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse413Headers the declared response headers of an HTTP 413 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse413Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse415Headers the declared response headers of an HTTP 415 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse415Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse429Headers the declared response headers of an HTTP 429 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse429Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse500Headers the declared response headers of an HTTP 500 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse500Headers struct {
+	XRequestID *string
+}
+
+// PreviewReplicationTemplateResponse503Headers the declared response headers of an HTTP 503 response for PreviewReplicationTemplate
+type PreviewReplicationTemplateResponse503Headers struct {
+	XRequestID *string
+}
+
+type PreviewReplicationTemplateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ReplicationTemplatePreview
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PreviewReplicationTemplateResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PreviewReplicationTemplateResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PreviewReplicationTemplateResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PreviewReplicationTemplateResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PreviewReplicationTemplateResponse404Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PreviewReplicationTemplateResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PreviewReplicationTemplateResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PreviewReplicationTemplateResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PreviewReplicationTemplateResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PreviewReplicationTemplateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON200() *ReplicationTemplatePreview {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PreviewReplicationTemplateResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PreviewReplicationTemplateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewReplicationTemplateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewReplicationTemplateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PreviewReplicationTemplateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -31212,7 +32365,7 @@ func (c *ClientWithResponses) GetReplicationExportBlobWithResponse(ctx context.C
 
 // GetReplicationExportChangesWithResponse performs a GET /api/v1/replication/export/feeds/{feed}/changes (the `GetReplicationExportChanges` operationId) request.
 //
-// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor.
+// Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor. Namespace, package and version prefix are filtered on the server. 410 means the cursor is below the change-history low-water mark (header X-Replication-Low-Water): the consumer must reseed from the manifest.
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *ClientWithResponses) GetReplicationExportChangesWithResponse(ctx context.Context, feed openapi_types.UUID, params *GetReplicationExportChangesParams, reqEditors ...RequestEditorFn) (*GetReplicationExportChangesResponse, error) {
@@ -31249,6 +32402,19 @@ func (c *ClientWithResponses) GetReplicationExportManifestWithResponse(ctx conte
 	return ParseGetReplicationExportManifestResponse(rsp)
 }
 
+// GetReplicationExportTemplateWithResponse performs a GET /api/v1/replication/export/feeds/{feed}/template (the `GetReplicationExportTemplate` operationId) request.
+//
+// Replication export (authoritative side). Requires replicate on the feed. Non-secret feed configuration template: retention tunables and remote-source cache/timeout tunables. Endpoints, credentials, identity and access policy are never included.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetReplicationExportTemplateWithResponse(ctx context.Context, feed openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetReplicationExportTemplateResponse, error) {
+	rsp, err := c.GetReplicationExportTemplate(ctx, feed, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetReplicationExportTemplateResponse(rsp)
+}
+
 // ListReplicationJobsWithResponse performs a GET /api/v1/replication/jobs (the `ListReplicationJobs` operationId) request.
 //
 // Replication (destination side). Jobs whose destination feed the caller may replicate or configure.
@@ -31265,11 +32431,11 @@ func (c *ClientWithResponses) ListReplicationJobsWithResponse(ctx context.Contex
 // CreateReplicationJobWithBodyWithResponse performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires configure and replicate on the destination feed.
+// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) CreateReplicationJobWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error) {
-	rsp, err := c.CreateReplicationJobWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateReplicationJobWithBodyWithResponse(ctx context.Context, params *CreateReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error) {
+	rsp, err := c.CreateReplicationJobWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31279,9 +32445,9 @@ func (c *ClientWithResponses) CreateReplicationJobWithBodyWithResponse(ctx conte
 // CreateReplicationJobWithResponse performs a POST /api/v1/replication/jobs (the `CreateReplicationJob` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Replication (destination side). Requires configure and replicate on the destination feed.
-func (c *ClientWithResponses) CreateReplicationJobWithResponse(ctx context.Context, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error) {
-	rsp, err := c.CreateReplicationJob(ctx, body, reqEditors...)
+// Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *ClientWithResponses) CreateReplicationJobWithResponse(ctx context.Context, params *CreateReplicationJobParams, body CreateReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationJobResponse, error) {
+	rsp, err := c.CreateReplicationJob(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31290,11 +32456,11 @@ func (c *ClientWithResponses) CreateReplicationJobWithResponse(ctx context.Conte
 
 // DeleteReplicationJobWithResponse performs a DELETE /api/v1/replication/jobs/{id} (the `DeleteReplicationJob` operationId) request.
 //
-// Replication (destination side). Requires configure on the destination feed.
+// Replication (destination side). Requires configure on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) DeleteReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteReplicationJobResponse, error) {
-	rsp, err := c.DeleteReplicationJob(ctx, id, reqEditors...)
+func (c *ClientWithResponses) DeleteReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationJobParams, reqEditors ...RequestEditorFn) (*DeleteReplicationJobResponse, error) {
+	rsp, err := c.DeleteReplicationJob(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31317,11 +32483,11 @@ func (c *ClientWithResponses) GetReplicationJobWithResponse(ctx context.Context,
 // PatchReplicationJobWithBodyWithResponse performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
+// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) PatchReplicationJobWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error) {
-	rsp, err := c.PatchReplicationJobWithBody(ctx, id, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PatchReplicationJobWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error) {
+	rsp, err := c.PatchReplicationJobWithBody(ctx, id, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31331,9 +32497,9 @@ func (c *ClientWithResponses) PatchReplicationJobWithBodyWithResponse(ctx contex
 // PatchReplicationJobWithResponse performs a PATCH /api/v1/replication/jobs/{id} (the `PatchReplicationJob` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.
-func (c *ClientWithResponses) PatchReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error) {
-	rsp, err := c.PatchReplicationJob(ctx, id, body, reqEditors...)
+// Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *ClientWithResponses) PatchReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationJobParams, body PatchReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationJobResponse, error) {
+	rsp, err := c.PatchReplicationJob(ctx, id, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31355,11 +32521,11 @@ func (c *ClientWithResponses) PreviewReplicationDeletionsWithResponse(ctx contex
 
 // TriggerReplicationJobWithResponse performs a POST /api/v1/replication/jobs/{id}/runs (the `TriggerReplicationJob` operationId) request.
 //
-// Replication (destination side). Requests a run now. Requires replicate on the destination feed.
+// Replication (destination side). Requests a run now. Requires replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) TriggerReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*TriggerReplicationJobResponse, error) {
-	rsp, err := c.TriggerReplicationJob(ctx, id, reqEditors...)
+func (c *ClientWithResponses) TriggerReplicationJobWithResponse(ctx context.Context, id openapi_types.UUID, params *TriggerReplicationJobParams, reqEditors ...RequestEditorFn) (*TriggerReplicationJobResponse, error) {
+	rsp, err := c.TriggerReplicationJob(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31379,6 +32545,58 @@ func (c *ClientWithResponses) GetReplicationJobStatusWithResponse(ctx context.Co
 	return ParseGetReplicationJobStatusResponse(rsp)
 }
 
+// ApplyReplicationTemplateWithBodyWithResponse performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ApplyReplicationTemplateWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApplyReplicationTemplateResponse, error) {
+	rsp, err := c.ApplyReplicationTemplateWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApplyReplicationTemplateResponse(rsp)
+}
+
+// ApplyReplicationTemplateWithResponse performs a POST /api/v1/replication/jobs/{id}/template/apply (the `ApplyReplicationTemplate` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.
+func (c *ClientWithResponses) ApplyReplicationTemplateWithResponse(ctx context.Context, id openapi_types.UUID, params *ApplyReplicationTemplateParams, body ApplyReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*ApplyReplicationTemplateResponse, error) {
+	rsp, err := c.ApplyReplicationTemplate(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApplyReplicationTemplateResponse(rsp)
+}
+
+// PreviewReplicationTemplateWithBodyWithResponse performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PreviewReplicationTemplateWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewReplicationTemplateResponse, error) {
+	rsp, err := c.PreviewReplicationTemplateWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewReplicationTemplateResponse(rsp)
+}
+
+// PreviewReplicationTemplateWithResponse performs a POST /api/v1/replication/jobs/{id}/template/preview (the `PreviewReplicationTemplate` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.
+func (c *ClientWithResponses) PreviewReplicationTemplateWithResponse(ctx context.Context, id openapi_types.UUID, body PreviewReplicationTemplateJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewReplicationTemplateResponse, error) {
+	rsp, err := c.PreviewReplicationTemplate(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewReplicationTemplateResponse(rsp)
+}
+
 // ListReplicationPeersWithResponse performs a GET /api/v1/replication/peers (the `ListReplicationPeers` operationId) request.
 //
 // Replication (destination side). Requires instance admin.
@@ -31395,11 +32613,11 @@ func (c *ClientWithResponses) ListReplicationPeersWithResponse(ctx context.Conte
 // CreateReplicationPeerWithBodyWithResponse performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
+// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) CreateReplicationPeerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error) {
-	rsp, err := c.CreateReplicationPeerWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateReplicationPeerWithBodyWithResponse(ctx context.Context, params *CreateReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error) {
+	rsp, err := c.CreateReplicationPeerWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31409,9 +32627,9 @@ func (c *ClientWithResponses) CreateReplicationPeerWithBodyWithResponse(ctx cont
 // CreateReplicationPeerWithResponse performs a POST /api/v1/replication/peers (the `CreateReplicationPeer` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.
-func (c *ClientWithResponses) CreateReplicationPeerWithResponse(ctx context.Context, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error) {
-	rsp, err := c.CreateReplicationPeer(ctx, body, reqEditors...)
+// Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *ClientWithResponses) CreateReplicationPeerWithResponse(ctx context.Context, params *CreateReplicationPeerParams, body CreateReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReplicationPeerResponse, error) {
+	rsp, err := c.CreateReplicationPeer(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31420,11 +32638,11 @@ func (c *ClientWithResponses) CreateReplicationPeerWithResponse(ctx context.Cont
 
 // DeleteReplicationPeerWithResponse performs a DELETE /api/v1/replication/peers/{id} (the `DeleteReplicationPeer` operationId) request.
 //
-// Replication (destination side). Requires instance admin.
+// Replication (destination side). Requires instance admin. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) DeleteReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteReplicationPeerResponse, error) {
-	rsp, err := c.DeleteReplicationPeer(ctx, id, reqEditors...)
+func (c *ClientWithResponses) DeleteReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteReplicationPeerParams, reqEditors ...RequestEditorFn) (*DeleteReplicationPeerResponse, error) {
+	rsp, err := c.DeleteReplicationPeer(ctx, id, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31447,11 +32665,11 @@ func (c *ClientWithResponses) GetReplicationPeerWithResponse(ctx context.Context
 // PatchReplicationPeerWithBodyWithResponse performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request,
 // with any type of body and a specified content type.
 //
-// Replication (destination side). Requires instance admin. The expected revision is in the body.
+// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) PatchReplicationPeerWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error) {
-	rsp, err := c.PatchReplicationPeerWithBody(ctx, id, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PatchReplicationPeerWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error) {
+	rsp, err := c.PatchReplicationPeerWithBody(ctx, id, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -31461,9 +32679,9 @@ func (c *ClientWithResponses) PatchReplicationPeerWithBodyWithResponse(ctx conte
 // PatchReplicationPeerWithResponse performs a PATCH /api/v1/replication/peers/{id} (the `PatchReplicationPeer` operationId) request.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
-// Replication (destination side). Requires instance admin. The expected revision is in the body.
-func (c *ClientWithResponses) PatchReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error) {
-	rsp, err := c.PatchReplicationPeer(ctx, id, body, reqEditors...)
+// Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.
+func (c *ClientWithResponses) PatchReplicationPeerWithResponse(ctx context.Context, id openapi_types.UUID, params *PatchReplicationPeerParams, body PatchReplicationPeerJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchReplicationPeerResponse, error) {
+	rsp, err := c.PatchReplicationPeer(ctx, id, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -39593,6 +40811,13 @@ func ParseGetReplicationExportChangesResponse(rsp *http.Response) (*GetReplicati
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON410 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -39667,6 +40892,16 @@ func ParseGetReplicationExportChangesResponse(rsp *http.Response) (*GetReplicati
 			headers.XRequestID = &value
 		}
 		response.Headers404 = &headers
+	case rsp.StatusCode == 410:
+		var headers GetReplicationExportChangesResponse410Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers410 = &headers
 	case rsp.StatusCode == 429:
 		var headers GetReplicationExportChangesResponse429Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
@@ -40005,6 +41240,164 @@ func ParseGetReplicationExportManifestResponse(rsp *http.Response) (*GetReplicat
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetReplicationExportManifestResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetReplicationExportTemplateResponse parses an HTTP response from a GetReplicationExportTemplateWithResponse call
+func ParseGetReplicationExportTemplateResponse(rsp *http.Response) (*GetReplicationExportTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetReplicationExportTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReplicationTemplate
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetReplicationExportTemplateResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetReplicationExportTemplateResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetReplicationExportTemplateResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetReplicationExportTemplateResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetReplicationExportTemplateResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetReplicationExportTemplateResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetReplicationExportTemplateResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetReplicationExportTemplateResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -41605,6 +42998,441 @@ func ParseGetReplicationJobStatusResponse(rsp *http.Response) (*GetReplicationJo
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetReplicationJobStatusResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseApplyReplicationTemplateResponse parses an HTTP response from a ApplyReplicationTemplateWithResponse call
+func ParseApplyReplicationTemplateResponse(rsp *http.Response) (*ApplyReplicationTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApplyReplicationTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReplicationTemplateApplyResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ApplyReplicationTemplateResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ApplyReplicationTemplateResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ApplyReplicationTemplateResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ApplyReplicationTemplateResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ApplyReplicationTemplateResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ApplyReplicationTemplateResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers ApplyReplicationTemplateResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers ApplyReplicationTemplateResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers ApplyReplicationTemplateResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 428:
+		var headers ApplyReplicationTemplateResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers ApplyReplicationTemplateResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ApplyReplicationTemplateResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ApplyReplicationTemplateResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePreviewReplicationTemplateResponse parses an HTTP response from a PreviewReplicationTemplateWithResponse call
+func ParsePreviewReplicationTemplateResponse(rsp *http.Response) (*PreviewReplicationTemplateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewReplicationTemplateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ReplicationTemplatePreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PreviewReplicationTemplateResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PreviewReplicationTemplateResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PreviewReplicationTemplateResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PreviewReplicationTemplateResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PreviewReplicationTemplateResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 413:
+		var headers PreviewReplicationTemplateResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PreviewReplicationTemplateResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PreviewReplicationTemplateResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PreviewReplicationTemplateResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PreviewReplicationTemplateResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -51452,304 +53280,324 @@ func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretR
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"8Jkvi89UC6l9GrkyfWcpAtfvH24/3P7fAQA=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -6373,7 +6373,7 @@
       },
       "post": {
         "operationId": "createReplicationPeer",
-        "description": "Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned.",
+        "description": "Replication (destination side). Requires instance admin. The peer token is stored encrypted and never returned. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "requestBody": {
           "required": true,
           "content": {
@@ -6440,7 +6440,19 @@
           "503": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
       }
     },
     "/api/v1/replication/peers/{id}": {
@@ -6503,7 +6515,7 @@
       },
       "patch": {
         "operationId": "patchReplicationPeer",
-        "description": "Replication (destination side). Requires instance admin. The expected revision is in the body.",
+        "description": "Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -6512,6 +6524,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -6585,7 +6607,7 @@
       },
       "delete": {
         "operationId": "deleteReplicationPeer",
-        "description": "Replication (destination side). Requires instance admin.",
+        "description": "Replication (destination side). Requires instance admin. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -6594,6 +6616,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -6698,7 +6730,7 @@
       },
       "post": {
         "operationId": "createReplicationJob",
-        "description": "Replication (destination side). Requires configure and replicate on the destination feed.",
+        "description": "Replication (destination side). Requires configure and replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "requestBody": {
           "required": true,
           "content": {
@@ -6765,7 +6797,19 @@
           "503": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
       }
     },
     "/api/v1/replication/jobs/{id}": {
@@ -6828,7 +6872,7 @@
       },
       "patch": {
         "operationId": "patchReplicationJob",
-        "description": "Replication (destination side). Requires configure on the destination feed. The expected revision is in the body.",
+        "description": "Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -6837,6 +6881,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -6910,7 +6964,7 @@
       },
       "delete": {
         "operationId": "deleteReplicationJob",
-        "description": "Replication (destination side). Requires configure on the destination feed.",
+        "description": "Replication (destination side). Requires configure on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -6919,6 +6973,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -7036,7 +7100,7 @@
     "/api/v1/replication/jobs/{id}/runs": {
       "post": {
         "operationId": "triggerReplicationJob",
-        "description": "Replication (destination side). Requests a run now. Requires replicate on the destination feed.",
+        "description": "Replication (destination side). Requests a run now. Requires replicate on the destination feed. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -7045,6 +7109,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ],
@@ -7358,6 +7432,15 @@
                 "type": "string"
               }
             }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -7407,7 +7490,7 @@
     "/api/v1/replication/export/feeds/{feed}/changes": {
       "get": {
         "operationId": "getReplicationExportChanges",
-        "description": "Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor.",
+        "description": "Replication export (authoritative side). Requires replicate on the feed. Ordered changes after a cursor. Namespace, package and version prefix are filtered on the server. 410 means the cursor is below the change-history low-water mark (header X-Replication-Low-Water): the consumer must reseed from the manifest.",
         "parameters": [
           {
             "name": "feed",
@@ -7444,6 +7527,39 @@
             "required": false,
             "schema": {
               "type": "boolean"
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "package",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "version_prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         ],
@@ -7486,6 +7602,9 @@
             "$ref": "#/components/responses/Error"
           },
           "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "410": {
             "$ref": "#/components/responses/Error"
           }
         }
@@ -7978,6 +8097,234 @@
             "$ref": "#/components/responses/Error"
           },
           "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/export/feeds/{feed}/template": {
+      "get": {
+        "operationId": "getReplicationExportTemplate",
+        "description": "Replication export (authoritative side). Requires replicate on the feed. Non-secret feed configuration template: retention tunables and remote-source cache/timeout tunables. Endpoints, credentials, identity and access policy are never included.",
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs/{id}/template/preview": {
+      "post": {
+        "operationId": "previewReplicationTemplate",
+        "description": "Replication (destination side). Read-only diff of a feed configuration template (supplied, or fetched from the job's peer) against the destination feed. Requires configure on the destination feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationTemplatePreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplicationTemplateRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/replication/jobs/{id}/template/apply": {
+      "post": {
+        "operationId": "applyReplicationTemplate",
+        "description": "Replication (destination side). Applies a reviewed template: the digest must be the one returned by the preview that was reviewed, and applying fails with 409 if the template or the destination configuration changed since. Only retention and remote-source cache/timeout tunables are written; endpoint, credentials, identity, access policy and the release-delete switch are never overwritten. Requires configure on the destination feed and its remote sources. Requires an Idempotency-Key header.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplicationTemplateApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationTemplateApplyResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
             "$ref": "#/components/responses/Error"
           },
           "429": {
@@ -11945,7 +12292,13 @@
           "bytes_transferred",
           "deletions_applied",
           "deletions_held",
-          "conflicts"
+          "conflicts",
+          "failures_total",
+          "reseeds",
+          "reseeding",
+          "backfills_pending",
+          "backfills_completed",
+          "resumed_bytes"
         ],
         "properties": {
           "phase": {
@@ -12031,6 +12384,37 @@
             "format": "int64"
           },
           "conflicts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failures_total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reseeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reseeding": {
+            "type": "boolean"
+          },
+          "last_reseed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source_low_water": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "backfills_pending": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "backfills_completed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "resumed_bytes": {
             "type": "integer",
             "format": "int64"
           }
@@ -12381,6 +12765,9 @@
           },
           "truncated": {
             "type": "boolean"
+          },
+          "reseed_required": {
+            "type": "boolean"
           }
         }
       },
@@ -12544,7 +12931,8 @@
         "required": [
           "seq",
           "now",
-          "format"
+          "format",
+          "low_water"
         ],
         "properties": {
           "seq": {
@@ -12561,6 +12949,10 @@
           },
           "format": {
             "type": "string"
+          },
+          "low_water": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -12646,6 +13038,9 @@
           },
           "component": {
             "$ref": "#/components/schemas/ReplicationComponentItem"
+          },
+          "attachment": {
+            "$ref": "#/components/schemas/ReplicationAttachment"
           }
         }
       },
@@ -12656,7 +13051,8 @@
           "changes",
           "next",
           "more",
-          "head"
+          "head",
+          "low_water"
         ],
         "properties": {
           "changes": {
@@ -12679,6 +13075,10 @@
           "head_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "low_water": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -12915,6 +13315,290 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          }
+        }
+      },
+      "ReplicationAttachment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "origin"
+        ],
+        "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/ReplicationOrigin"
+          }
+        }
+      },
+      "ReplicationTemplateRetention": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "min_keep",
+          "include_tagged",
+          "enabled"
+        ],
+        "properties": {
+          "keep_last": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "max_age_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "min_keep": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_tagged": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReplicationTemplateCache": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "metadata_ttl_seconds",
+          "negative_ttl_seconds",
+          "stale_if_error_seconds",
+          "max_entries",
+          "max_bytes"
+        ],
+        "properties": {
+          "metadata_ttl_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "negative_ttl_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stale_if_error_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "max_entries": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ReplicationTemplateRemote": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "timeout_seconds",
+          "cache"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cache": {
+            "$ref": "#/components/schemas/ReplicationTemplateCache"
+          }
+        }
+      },
+      "ReplicationTemplateSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "kind",
+          "priority"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReplicationTemplate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "format",
+          "remote_sources",
+          "sources",
+          "excluded"
+        ],
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 1
+          },
+          "format": {
+            "type": "string"
+          },
+          "retention": {
+            "$ref": "#/components/schemas/ReplicationTemplateRetention"
+          },
+          "remote_sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationTemplateRemote"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationTemplateSource"
+            }
+          },
+          "excluded": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReplicationTemplateDiff": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "section",
+          "field",
+          "action"
+        ],
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "add",
+              "change",
+              "unchanged",
+              "preserved",
+              "blocked",
+              "info"
+            ]
+          },
+          "current": {},
+          "proposed": {},
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ReplicationTemplateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "template": {
+            "$ref": "#/components/schemas/ReplicationTemplate"
+          }
+        }
+      },
+      "ReplicationTemplatePreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "digest",
+          "template",
+          "diffs",
+          "applicable",
+          "blocked"
+        ],
+        "properties": {
+          "digest": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "template": {
+            "$ref": "#/components/schemas/ReplicationTemplate"
+          },
+          "diffs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationTemplateDiff"
+            }
+          },
+          "applicable": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReplicationTemplateApplyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "digest"
+        ],
+        "properties": {
+          "digest": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "template": {
+            "$ref": "#/components/schemas/ReplicationTemplate"
+          }
+        }
+      },
+      "ReplicationTemplateApplyResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "digest",
+          "applied",
+          "diffs"
+        ],
+        "properties": {
+          "digest": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "applied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "diffs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplicationTemplateDiff"
+            }
           }
         }
       }
