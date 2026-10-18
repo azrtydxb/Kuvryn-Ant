@@ -440,3 +440,83 @@ func TestThrottleLimitsRate(t *testing.T) {
 		t.Fatal("cancelled throttle must stop")
 	}
 }
+
+func TestJobStateChangesParticipateInCallerTransaction(t *testing.T) {
+	f := newMigFixture(t)
+	ctx := context.Background()
+	f.seed(t, 3)
+	count := func() int {
+		var n int
+		if err := f.pool.QueryRow(ctx, `SELECT count(*) FROM storage_migrations`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	opts := StartOptions{Kind: KindMigrate, To: "s3"}
+
+	// A start inside a transaction that does not commit leaves nothing behind,
+	// so a retry cannot find a running job that no runner owns.
+	tx, err := f.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, _, err := f.m.StartIn(ctx, tx, opts)
+	if err != nil || job.State != StateRunning {
+		t.Fatalf("%+v %v", job, err)
+	}
+	if err = tx.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(); n != 0 {
+		t.Fatalf("rolled-back start left %d jobs", n)
+	}
+
+	// Committed, it is one job; a second uncommitted start cannot create another.
+	tx, err = f.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, _, err := f.m.StartIn(ctx, tx, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	tx, err = f.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = f.m.StartIn(ctx, tx, opts); !errors.Is(err, ErrBusy) {
+		t.Fatalf("second start: %v", err)
+	}
+	_ = tx.Rollback(ctx)
+	if n := count(); n != 1 {
+		t.Fatalf("jobs=%d", n)
+	}
+
+	// Pause is idempotent and resume in a rolled-back transaction changes nothing.
+	for range 2 {
+		tx, err = f.pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if j, err := f.m.PauseIn(ctx, tx, first.ID); err != nil || j.State != StatePaused {
+			t.Fatalf("pause %+v %v", j, err)
+		}
+		if err = tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tx, err = f.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if j, err := f.m.ResumeIn(ctx, tx, first.ID); err != nil || j.State != StateRunning {
+		t.Fatalf("resume %+v %v", j, err)
+	}
+	_ = tx.Rollback(ctx)
+	if j, err := f.m.Get(ctx, first.ID); err != nil || j.State != StatePaused {
+		t.Fatalf("rolled-back resume leaked: %+v %v", j, err)
+	}
+}

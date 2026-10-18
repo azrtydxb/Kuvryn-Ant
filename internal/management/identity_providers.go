@@ -3,6 +3,7 @@ package management
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/idpadmin"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/localadmin"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -393,6 +395,34 @@ func (h idpHandlers) reload(ctx context.Context, p identity.Principal) {
 	}
 }
 
+// idem runs a provider/policy/local-account mutation under the shared
+// Idempotency-Key store. The stores below own their transactions and the
+// candidate checks do network I/O, so apply runs while the store holds the
+// per-key advisory lock: concurrent identical requests execute once and a
+// replay returns the stored non-secret result. Secrets are never part of the
+// result; first-time responses that carry one are written by the caller.
+func (h idpHandlers) idem(w http.ResponseWriter, r *http.Request, p identity.Principal, operation, resource string, input any, apply func(context.Context) (any, error)) (idempotentOutcome, bool) {
+	key, ok := mutationKey(w, r)
+	if !ok {
+		return idempotentOutcome{}, false
+	}
+	out, callErr, storeErr := idempotent(r, h.db, p, key, operation, resource, input, func(ctx context.Context, _ pgx.Tx) (any, error) { return apply(ctx) })
+	if callErr != nil {
+		var re reqError
+		if errors.As(callErr, &re) {
+			Error(w, r, re.status, re.code, re.message)
+		} else {
+			h.idpError(w, r, callErr)
+		}
+		return out, false
+	}
+	if storeErr != nil {
+		storeError(w, r, storeErr)
+		return out, false
+	}
+	return out, true
+}
+
 func (h idpHandlers) list(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
 	if !ok || !h.ready(w, r) {
@@ -470,15 +500,17 @@ func (h idpHandlers) create(w http.ResponseWriter, r *http.Request) {
 		h.idpError(w, r, err)
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	pr, err := h.store(p).Create(ctx, p.PrincipalID, idpadmin.Input{Kind: kind, Name: in.Name, Enabled: in.Enabled, Config: raw, Secret: in.Secret}, h.builder(p).Check)
-	if err != nil {
-		h.idpError(w, r, err)
-		return
+	out, ok := h.idem(w, r, p, "identity_provider.create", "identity-providers", in, func(ctx context.Context) (any, error) {
+		pr, err := h.store(p).Create(ctx, p.PrincipalID, idpadmin.Input{Kind: kind, Name: in.Name, Enabled: in.Enabled, Config: raw, Secret: in.Secret}, h.builder(p).Check)
+		if err != nil {
+			return nil, err
+		}
+		h.reload(ctx, p)
+		return h.rendered(pr), nil
+	})
+	if ok {
+		replayWrite(w, r, out, 201)
 	}
-	h.reload(ctx, p)
-	h.one(w, r, p, pr, 201)
 }
 
 func (h idpHandlers) update(w http.ResponseWriter, r *http.Request) {
@@ -514,13 +546,20 @@ func (h idpHandlers) update(w http.ResponseWriter, r *http.Request) {
 		h.idpError(w, r, err)
 		return
 	}
-	pr, err := h.store(p).Update(ctx, p.PrincipalID, cur.ID, revision, idpadmin.Input{Name: in.Name, Enabled: in.Enabled, Config: raw, Secret: in.Secret, RotateSPCertificate: in.RotateSPCertificate}, h.builder(p).Check)
-	if err != nil {
-		h.idpError(w, r, err)
-		return
+	out, ok := h.idem(w, r, p, "identity_provider.update", cur.ID, struct {
+		Revision int64
+		In       IdentityProviderInput
+	}{revision, in}, func(ctx context.Context) (any, error) {
+		pr, err := h.store(p).Update(ctx, p.PrincipalID, cur.ID, revision, idpadmin.Input{Name: in.Name, Enabled: in.Enabled, Config: raw, Secret: in.Secret, RotateSPCertificate: in.RotateSPCertificate}, h.builder(p).Check)
+		if err != nil {
+			return nil, err
+		}
+		h.reload(ctx, p)
+		return h.rendered(pr), nil
+	})
+	if ok {
+		replayWrite(w, r, out, 200)
 	}
-	h.reload(ctx, p)
-	h.one(w, r, p, pr, 200)
 }
 
 func (h idpHandlers) remove(w http.ResponseWriter, r *http.Request) {
@@ -533,14 +572,17 @@ func (h idpHandlers) remove(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 428, api.ErrorCodePreconditionFailed, "If-Match revision required")
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	if err := h.store(p).Delete(ctx, p.PrincipalID, r.PathValue("id"), revision); err != nil {
-		h.idpError(w, r, err)
-		return
+	id := r.PathValue("id")
+	out, ok := h.idem(w, r, p, "identity_provider.delete", id, struct{ Revision int64 }{revision}, func(ctx context.Context) (any, error) {
+		if err := h.store(p).Delete(ctx, p.PrincipalID, id, revision); err != nil {
+			return nil, err
+		}
+		h.reload(ctx, p)
+		return struct{}{}, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 204)
 	}
-	h.reload(ctx, p)
-	w.WriteHeader(204)
 }
 
 func (h idpHandlers) toggle(w http.ResponseWriter, r *http.Request, enabled bool) {
@@ -563,13 +605,20 @@ func (h idpHandlers) toggle(w http.ResponseWriter, r *http.Request, enabled bool
 	if enabled && !h.needsOrigin(w, r, cur.Kind) {
 		return
 	}
-	pr, err := h.store(p).SetEnabled(ctx, p.PrincipalID, cur.ID, revision, enabled, h.builder(p).Check)
-	if err != nil {
-		h.idpError(w, r, err)
-		return
+	out, ok := h.idem(w, r, p, "identity_provider.enabled", cur.ID, struct {
+		Revision int64
+		Enabled  bool
+	}{revision, enabled}, func(ctx context.Context) (any, error) {
+		pr, err := h.store(p).SetEnabled(ctx, p.PrincipalID, cur.ID, revision, enabled, h.builder(p).Check)
+		if err != nil {
+			return nil, err
+		}
+		h.reload(ctx, p)
+		return h.rendered(pr), nil
+	})
+	if ok {
+		replayWrite(w, r, out, 200)
 	}
-	h.reload(ctx, p)
-	h.one(w, r, p, pr, 200)
 }
 func (h idpHandlers) enable(w http.ResponseWriter, r *http.Request)  { h.toggle(w, r, true) }
 func (h idpHandlers) disable(w http.ResponseWriter, r *http.Request) { h.toggle(w, r, false) }
@@ -819,13 +868,15 @@ func (h idpHandlers) putPolicy(w http.ResponseWriter, r *http.Request) {
 	if !h.decode(w, r, &in) {
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	if err := h.store(p).SetSSOMandatory(ctx, p.PrincipalID, in.SSOMandatory); err != nil {
-		h.idpError(w, r, err)
-		return
+	out, ok := h.idem(w, r, p, "identity_policy.put", "identity-policy", in, func(ctx context.Context) (any, error) {
+		if err := h.store(p).SetSSOMandatory(ctx, p.PrincipalID, in.SSOMandatory); err != nil {
+			return nil, err
+		}
+		return in, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 200)
 	}
-	JSON(w, 200, in)
 }
 
 func (h idpHandlers) localStatus(w http.ResponseWriter, r *http.Request) {
@@ -848,14 +899,16 @@ func (h idpHandlers) localUnlock(w http.ResponseWriter, r *http.Request) {
 	if !ok || !h.ready(w, r) {
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	if err := h.local(p).Unlock(ctx); err != nil {
-		Error(w, r, 503, api.ErrorCodeUnavailable, "local account unavailable")
-		return
+	out, ok := h.idem(w, r, p, "local_account.unlock", "local-account", struct{}{}, func(ctx context.Context) (any, error) {
+		if err := h.local(p).Unlock(ctx); err != nil {
+			return nil, reqError{503, api.ErrorCodeUnavailable, "local account unavailable"}
+		}
+		h.event(ctx, p, "auth.local.unlocked", "", nil)
+		return struct{}{}, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 204)
 	}
-	h.event(ctx, p, "auth.local.unlocked", "", nil)
-	w.WriteHeader(204)
 }
 
 // own authorizes TOTP changes: only the break-glass account itself may manage
@@ -880,11 +933,21 @@ func (h idpHandlers) totpBegin(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	uri, err := h.local(p).BeginTOTP(ctx, p.PrincipalID)
-	if err != nil {
-		Error(w, r, 409, api.ErrorCodeConflict, "cannot start TOTP enrollment (already enabled?)")
+	// The otpauth URI embeds the TOTP secret, so it is returned to the first
+	// caller only; the replay store keeps nothing and a retry gets a 409.
+	var uri string
+	out, ok := h.idem(w, r, p, "local_account.totp.begin", "local-account/totp", struct{}{}, func(ctx context.Context) (any, error) {
+		var err error
+		if uri, err = h.local(p).BeginTOTP(ctx, p.PrincipalID); err != nil {
+			return nil, reqError{409, api.ErrorCodeConflict, "cannot start TOTP enrollment (already enabled?)"}
+		}
+		return struct{}{}, nil
+	})
+	if !ok {
+		return
+	}
+	if out.Replayed {
+		Error(w, r, 409, api.ErrorCodeConflict, "already started, secret not retrievable")
 		return
 	}
 	JSON(w, 200, TOTPEnrollment{uri})
@@ -899,13 +962,19 @@ func (h idpHandlers) totpConfirm(w http.ResponseWriter, r *http.Request) {
 	if !h.decode(w, r, &in) {
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	if err := h.local(p).ConfirmTOTP(ctx, p.PrincipalID, strings.TrimSpace(in.Code)); err != nil {
-		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid code or no enrollment in progress")
-		return
+	code := strings.TrimSpace(in.Code)
+	// Only a digest of the one-time code is fingerprinted; replaying a
+	// confirmed enrollment must not re-verify an expired code.
+	sum := sha256.Sum256([]byte(code))
+	out, ok := h.idem(w, r, p, "local_account.totp.confirm", "local-account/totp", struct{ Code [32]byte }{sum}, func(ctx context.Context) (any, error) {
+		if err := h.local(p).ConfirmTOTP(ctx, p.PrincipalID, code); err != nil {
+			return nil, reqError{400, api.ErrorCodeInvalidRequest, "invalid code or no enrollment in progress"}
+		}
+		return struct{}{}, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 204)
 	}
-	w.WriteHeader(204)
 }
 
 func (h idpHandlers) totpDisable(w http.ResponseWriter, r *http.Request) {
@@ -913,13 +982,21 @@ func (h idpHandlers) totpDisable(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx, cancel := h.ctx(r)
-	defer cancel()
-	if err := h.local(p).DisableTOTP(ctx, p.PrincipalID); err != nil {
-		Error(w, r, 503, api.ErrorCodeUnavailable, "local account unavailable")
-		return
+	out, ok := h.idem(w, r, p, "local_account.totp.disable", "local-account/totp", struct{}{}, func(ctx context.Context) (any, error) {
+		if err := h.local(p).DisableTOTP(ctx, p.PrincipalID); err != nil {
+			return nil, reqError{503, api.ErrorCodeUnavailable, "local account unavailable"}
+		}
+		return struct{}{}, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 204)
 	}
-	w.WriteHeader(204)
 }
 
 var _ = bytes.MinRead
+
+// rendered is the replay-safe (secret-free) representation of a provider.
+func (h idpHandlers) rendered(pr idpadmin.Provider) IdentityProvider {
+	active, fileKinds, _ := h.activeSets()
+	return h.render(pr, active, fileKinds)
+}

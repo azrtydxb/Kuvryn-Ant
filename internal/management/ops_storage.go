@@ -149,11 +149,12 @@ func (h opsHandlers) startStorageJob(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	// The migrator persists its job row on its own connection; the idempotency
-	// record commits afterwards, so a crash in between surfaces as ErrBusy on
-	// retry rather than a duplicate job.
+	// The job row, its audit event and the idempotency record share one
+	// transaction: a retry either replays the committed job or finds nothing, so
+	// it can neither double-start nor leave a running job nobody executes. The
+	// runner starts only after the commit.
 	out, callErr, storeErr := idempotent(r, h.db, principal, key, "storage."+in.Action, "storage/migrations", in, func(ctx context.Context, tx pgx.Tx) (any, error) {
-		job, _, err := m.Start(ctx, opts)
+		job, _, err := m.StartIn(ctx, tx, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -200,9 +201,9 @@ func (h opsHandlers) storageJobAction(w http.ResponseWriter, r *http.Request) {
 	}
 	out, callErr, storeErr := idempotent(r, h.db, principal, key, "storage.job."+action, id, map[string]string{"id": id, "action": action}, func(ctx context.Context, tx pgx.Tx) (any, error) {
 		if action == "pause" {
-			return m.Pause(ctx, id)
+			return m.PauseIn(ctx, tx, id)
 		}
-		return m.Resume(ctx, id)
+		return m.ResumeIn(ctx, tx, id)
 	})
 	if callErr != nil {
 		h.storageError(w, r, callErr)
@@ -211,6 +212,9 @@ func (h opsHandlers) storageJobAction(w http.ResponseWriter, r *http.Request) {
 	if storeErr != nil {
 		storeError(w, r, storeErr)
 		return
+	}
+	if action == "pause" && !out.Replayed {
+		m.StopRun(id)
 	}
 	if action == "resume" {
 		if !out.Replayed {

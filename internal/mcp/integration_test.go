@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/denyaudit"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/jackc/pgx/v5"
@@ -26,6 +27,8 @@ type fixture struct {
 	admin   string // full-scope token
 	reader  string // read-only token
 	secret  []byte
+	deny    *denyaudit.Recorder
+	clock   *time.Time // the denial recorder's clock; advance it to leave a rate-limit window
 }
 
 func newPool(t *testing.T) *pgxpool.Pool {
@@ -98,7 +101,11 @@ func newFixture(t *testing.T) *fixture {
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
 	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
 	Register(mux, pool, nil)
-	return &fixture{t: t, pool: pool, handler: management.WithRequestID(mux),
+	// Same outermost wrapper the server installs, so API-side denial audit rows
+	// are produced exactly as in production.
+	clock := time.Now()
+	deny := &denyaudit.Recorder{DB: pool, InstanceID: boot.InstanceID, Now: func() time.Time { return clock }}
+	return &fixture{t: t, pool: pool, handler: deny.Middleware(management.WithRequestID(mux)), deny: deny, clock: &clock,
 		admin:  issue(identity.Read, identity.Publish, identity.Delete, identity.Configure, identity.Replicate, identity.Admin),
 		reader: issue(identity.Read)}
 }

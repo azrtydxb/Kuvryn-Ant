@@ -1006,7 +1006,7 @@ export const routes = {
   "createIdentityProvider": {
     "path": "/api/v1/identity-providers",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "testIdentityProvider": {
     "path": "/api/v1/identity-providers/test",
@@ -1026,22 +1026,22 @@ export const routes = {
   "updateIdentityProvider": {
     "path": "/api/v1/identity-providers/{id}",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "deleteIdentityProvider": {
     "path": "/api/v1/identity-providers/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "enableIdentityProvider": {
     "path": "/api/v1/identity-providers/{id}/enable",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "disableIdentityProvider": {
     "path": "/api/v1/identity-providers/{id}/disable",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "getSamlSpMetadata": {
     "path": "/api/v1/identity-providers/{id}/metadata",
@@ -1061,7 +1061,7 @@ export const routes = {
   "putIdentityPolicy": {
     "path": "/api/v1/identity-policy",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "getLocalAccount": {
     "path": "/api/v1/local-account",
@@ -1071,22 +1071,22 @@ export const routes = {
   "unlockLocalAccount": {
     "path": "/api/v1/local-account/unlock",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "beginLocalTotp": {
     "path": "/api/v1/local-account/totp",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "disableLocalTotp": {
     "path": "/api/v1/local-account/totp",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "confirmLocalTotp": {
     "path": "/api/v1/local-account/totp/confirm",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "ingestSecurityResult": {
     "path": "/api/v1/assets/{id}/security-results",
@@ -1101,7 +1101,7 @@ export const routes = {
   "putClientAuthPolicy": {
     "path": "/api/v1/auth/policy",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "getFeedClientAuthPolicy": {
     "path": "/api/v1/feeds/{id}/auth-policy",
@@ -1111,12 +1111,12 @@ export const routes = {
   "putFeedClientAuthPolicy": {
     "path": "/api/v1/feeds/{id}/auth-policy",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "deleteFeedClientAuthPolicy": {
     "path": "/api/v1/feeds/{id}/auth-policy",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "listNetworkGroups": {
     "path": "/api/v1/auth/network-groups",
@@ -1126,17 +1126,17 @@ export const routes = {
   "createNetworkGroup": {
     "path": "/api/v1/auth/network-groups",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "putNetworkGroup": {
     "path": "/api/v1/auth/network-groups/{id}",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "deleteNetworkGroup": {
     "path": "/api/v1/auth/network-groups/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "getGitHubOIDCConfig": {
     "path": "/api/v1/auth/github-oidc/config",
@@ -1146,7 +1146,7 @@ export const routes = {
   "putGitHubOIDCConfig": {
     "path": "/api/v1/auth/github-oidc/config",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "listGitHubTrustRules": {
     "path": "/api/v1/auth/github-oidc/trust-rules",
@@ -1156,17 +1156,17 @@ export const routes = {
   "createGitHubTrustRule": {
     "path": "/api/v1/auth/github-oidc/trust-rules",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "putGitHubTrustRule": {
     "path": "/api/v1/auth/github-oidc/trust-rules/{id}",
     "method": "PUT",
-    "idempotent": false
+    "idempotent": true
   },
   "deleteGitHubTrustRule": {
     "path": "/api/v1/auth/github-oidc/trust-rules/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "exchangeGitHubOIDCToken": {
     "path": "/api/v1/auth/github-oidc/exchange",
@@ -1186,7 +1186,7 @@ export const routes = {
   "revokePersonalAccessToken": {
     "path": "/api/v1/auth/personal-access-tokens/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "foundFederation": {
     "path": "/api/v1/federation",

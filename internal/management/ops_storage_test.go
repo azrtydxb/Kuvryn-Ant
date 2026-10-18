@@ -70,6 +70,16 @@ func TestStorageMigrationAPI(t *testing.T) {
 	w := o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, idk(), "")
 	expectSourceStatus(t, w, 202)
 	dry := wait(decodeJSON[storage.Job](t, w).ID)
+	// A retry with the same key replays the job instead of starting another.
+	jobs := o.count(`SELECT count(*) FROM storage_migrations`)
+	first := o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, "start-replay", "")
+	expectSourceStatus(t, first, 202)
+	replay := o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"s3","dry_run":true}`, "start-replay", "")
+	expectSourceStatus(t, replay, 202)
+	if decodeJSON[storage.Job](t, first).ID != decodeJSON[storage.Job](t, replay).ID || o.count(`SELECT count(*) FROM storage_migrations`) != jobs+1 {
+		t.Fatal("replayed start created a second job")
+	}
+	wait(decodeJSON[storage.Job](t, first).ID)
 	if dry.State != storage.StateCompleted || dry.Copied != 5 || stores["s3"].Len() != 0 {
 		t.Fatalf("dry run %+v", dry)
 	}
@@ -88,7 +98,7 @@ func TestStorageMigrationAPI(t *testing.T) {
 	}
 	expectSourceStatus(t, o.request("POST", "/api/v1/storage/migrations", `{"action":"migrate","to":"disk","dry_run":false}`, idk(), ""), 409)
 	list := decodeJSON[StorageJobPage](t, o.get("/api/v1/storage/migrations"))
-	if len(list.Items) != 2 {
+	if len(list.Items) != 3 {
 		t.Fatalf("jobs %d", len(list.Items))
 	}
 
@@ -103,10 +113,10 @@ func TestStorageMigrationAPI(t *testing.T) {
 	}
 	expectSourceStatus(t, o.get("/api/v1/storage/migrations/00000000-0000-4000-8000-000000000000"), 404)
 	var audits int
-	if err := o.db.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action IN ('storage.migrate','storage.cleanup')`).Scan(&audits); err != nil || audits != 3 {
+	if err := o.db.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action IN ('storage.migrate','storage.cleanup')`).Scan(&audits); err != nil || audits != 4 {
 		t.Fatalf("audit events %d %v", audits, err)
 	}
-	if n := o.count(`SELECT count(*) FROM outbox_events WHERE topic='storage.migration.completed'`); n != 3 {
+	if n := o.count(`SELECT count(*) FROM outbox_events WHERE topic='storage.migration.completed'`); n != 4 {
 		t.Fatalf("completion events %d", n)
 	}
 }
