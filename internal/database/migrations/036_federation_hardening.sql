@@ -13,3 +13,9 @@ BEGIN
  END IF;
  RAISE EXCEPTION 'federation_documents is append-only';
 END $$;
+
+-- A federated artifact or feed allow without a feed key selects every local
+-- feed; like a federated instance-admin allow it stays inert until the member
+-- sets accept_admin_grants.
+ALTER TABLE role_grants DROP CONSTRAINT role_grants_inert_check;
+ALTER TABLE role_grants ADD CONSTRAINT role_grants_inert_check CHECK(inert IS NULL OR inert IN ('unresolved_feed','admin_not_accepted','wildcard_not_accepted'));

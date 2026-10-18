@@ -242,3 +242,38 @@ func rotateRecovery(t *testing.T, authority *instance, current string) federatio
 	}
 	return out
 }
+
+// A federated all-feed allow is inert on a member until it accepts admin
+// grants locally.
+func TestFederationWildcardGrantsGated(t *testing.T) {
+	alpha, beta := newInstance(t, "alpha"), newInstance(t, "beta")
+	found(t, alpha, beta)
+	body := policyBody()
+	body["roles"] = append(body["roles"].([]any), map[string]any{"key": "fed:everything", "revision": 1, "grants": []any{
+		map[string]any{"kind": "feed", "effect": "allow", "actions": []string{"read", "publish"}},
+	}})
+	if code := alpha.call("POST", "/api/v1/federation/policy/publish", map[string]any{"base_generation": 0, "confirm": true, "policy": body}, nil); code != 200 {
+		t.Fatalf("publish: %d", code)
+	}
+	eventually(t, "policy on beta", func() bool { return beta.policyGeneration() == 1 })
+	inert := func() string {
+		var v string
+		if err := beta.pool.QueryRow(context.Background(), `SELECT coalesce(g.inert,'') FROM role_grants g JOIN roles r ON (r.instance_id,r.id)=(g.instance_id,g.role_id)
+WHERE g.instance_id=$1 AND r.name='fed:everything'`, beta.id).Scan(&v); err != nil {
+			t.Fatal(err)
+		}
+		return v
+	}
+	if got := inert(); got != "wildcard_not_accepted" {
+		t.Fatalf("all-feed grant before acceptance: %q", got)
+	}
+	if r := beta.policyView().Status.Report; r.InertAdminGrants != 2 {
+		t.Fatalf("inert grants reported: %d, want 2 (instance admin and all-feed)", r.InertAdminGrants)
+	}
+	if code := beta.call("PUT", "/api/v1/federation/settings", map[string]any{"accept_admin_grants": true, "policy_max_age_seconds": nil}, nil); code != 200 {
+		t.Fatalf("accept admin grants: %d", code)
+	}
+	if got := inert(); got != "" {
+		t.Fatalf("all-feed grant after acceptance: %q", got)
+	}
+}

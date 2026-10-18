@@ -17,7 +17,8 @@ import (
 //     sessions revoked;
 //   - roles with origin federation (names are the fed: keys);
 //   - grants resolved through federated_feed_bindings; an unbound feed key is
-//     stored inert and never matched; federated instance-admin allows are inert
+//     stored inert and never matched; federated instance-admin allows and
+//     artifact/feed allows without a feed key (every feed) are inert
 //     unless the member accepts admin grants locally (rule 4);
 //   - federated service accounts and bound principals materialized (never over
 //     a local principal with the same identity: rule 5, reported as a
@@ -80,6 +81,14 @@ func planGrants(body *PolicyBody, bindings map[string]string, acceptAdmin bool) 
 					row.Inert = "unresolved_feed"
 					unresolved[g.FeedKey] = true
 				}
+			} else if g.Kind != "instance" && g.Effect == "allow" && !acceptAdmin {
+				// An artifact or feed allow without a feed key selects every
+				// feed of the member, including feeds that are not federated:
+				// gated like instance admin (rule 4). Denies only restrict.
+				inertAdmin++
+				row.Inert = "wildcard_not_accepted"
+				rows = append(rows, row)
+				continue
 			}
 			// Rule 4: a federated instance-admin allow is inert unless accepted
 			// locally. Denies stay active: they can only restrict.

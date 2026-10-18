@@ -16133,7 +16133,8 @@
             "type": "string",
             "enum": [
               "unresolved_feed",
-              "admin_not_accepted"
+              "admin_not_accepted",
+              "wildcard_not_accepted"
             ],
             "readOnly": true,
             "description": "Federated grants only: an inert grant never matches."
@@ -24601,7 +24602,8 @@
           },
           "inert_admin_grants": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Federated grants inert until the member sets accept_admin_grants: instance-admin allows and artifact or feed allows without a feed key (every feed)."
           },
           "conflicts": {
             "type": "array",
