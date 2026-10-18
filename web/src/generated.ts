@@ -194,6 +194,24 @@ export type TotpEnrollment = { "otpauth_uri": string };
 export type TotpConfirm = { "code": string };
 export type SecurityResultInput = { "scanner": string; "status": "passed" | "failed" | "warning"; "summary"?: {  } };
 export type SecurityResult = { "id": string; "asset_id": string; "scanner": string; "status": "passed" | "failed" | "warning"; "summary": {  }; "created_at": string };
+export type ClientAuthMethod = "anonymous" | "token" | "basic-directory" | "pat" | "github-oidc";
+export type ClientAuthPolicy = { "feed_id"?: string; "methods": Array<ClientAuthMethod>; "anonymous_network_group_ids": Array<string>; "inherited": boolean; "revision": number };
+export type PutClientAuthPolicy = { "methods": Array<ClientAuthMethod>; "anonymous_network_group_ids": Array<string> };
+export type NetworkGroup = { "id": string; "name": string; "cidrs": Array<string>; "revision": number };
+export type NetworkGroupInput = { "name": string; "cidrs": Array<string> };
+export type NetworkGroupList = { "items": Array<NetworkGroup> };
+export type GitHubOIDCConfig = { "issuer": string; "audience": string; "revision": number };
+export type PutGitHubOIDCConfig = { "audience": string };
+export type TokenScope = { "feed_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete"> };
+export type GitHubTrustRule = { "id": string; "name": string; "org": string; "repo": string; "ref": string; "environment": string; "workflow": string; "principal_id": string; "scopes": Array<TokenScope>; "ttl_seconds": number; "enabled": boolean; "revision": number };
+export type GitHubTrustRuleInput = { "name": string; "org": string; "repo": string; "ref"?: string; "environment"?: string; "workflow"?: string; "principal_id": string; "scopes": Array<TokenScope>; "ttl_seconds"?: number; "enabled"?: boolean };
+export type GitHubTrustRuleList = { "items": Array<GitHubTrustRule> };
+export type GitHubExchangeRequest = { "token": string };
+export type GitHubExchangeResponse = { "access_token": string; "token_type": "Bearer"; "expires_at": string; "trust_rule_id": string };
+export type PersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string };
+export type PersonalAccessTokenList = { "items": Array<PersonalAccessToken> };
+export type CreatePersonalAccessToken = { "name": string; "scopes": Array<TokenScope>; "expires_in_days": number };
+export type CreatedPersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string; "token": string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -329,6 +347,25 @@ beginLocalTotp: { body: undefined; response: TotpEnrollment };
 disableLocalTotp: { body: undefined; response: undefined };
 confirmLocalTotp: { body: TotpConfirm; response: undefined };
 ingestSecurityResult: { body: SecurityResultInput; response: SecurityResult };
+getClientAuthPolicy: { body: undefined; response: ClientAuthPolicy };
+putClientAuthPolicy: { body: PutClientAuthPolicy; response: ClientAuthPolicy };
+getFeedClientAuthPolicy: { body: undefined; response: ClientAuthPolicy };
+putFeedClientAuthPolicy: { body: PutClientAuthPolicy; response: ClientAuthPolicy };
+deleteFeedClientAuthPolicy: { body: undefined; response: undefined };
+listNetworkGroups: { body: undefined; response: NetworkGroupList };
+createNetworkGroup: { body: NetworkGroupInput; response: NetworkGroup };
+putNetworkGroup: { body: NetworkGroupInput; response: NetworkGroup };
+deleteNetworkGroup: { body: undefined; response: undefined };
+getGitHubOIDCConfig: { body: undefined; response: GitHubOIDCConfig };
+putGitHubOIDCConfig: { body: PutGitHubOIDCConfig; response: GitHubOIDCConfig };
+listGitHubTrustRules: { body: undefined; response: GitHubTrustRuleList };
+createGitHubTrustRule: { body: GitHubTrustRuleInput; response: GitHubTrustRule };
+putGitHubTrustRule: { body: GitHubTrustRuleInput; response: GitHubTrustRule };
+deleteGitHubTrustRule: { body: undefined; response: undefined };
+exchangeGitHubOIDCToken: { body: GitHubExchangeRequest; response: GitHubExchangeResponse };
+listPersonalAccessTokens: { body: undefined; response: PersonalAccessTokenList };
+createPersonalAccessToken: { body: CreatePersonalAccessToken; response: CreatedPersonalAccessToken };
+revokePersonalAccessToken: { body: undefined; response: undefined };
 }
 export const routes = {
   "getStatus": {
@@ -995,5 +1032,100 @@ export const routes = {
     "path": "/api/v1/assets/{id}/security-results",
     "method": "POST",
     "idempotent": true
+  },
+  "getClientAuthPolicy": {
+    "path": "/api/v1/auth/policy",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putClientAuthPolicy": {
+    "path": "/api/v1/auth/policy",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "getFeedClientAuthPolicy": {
+    "path": "/api/v1/feeds/{id}/auth-policy",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putFeedClientAuthPolicy": {
+    "path": "/api/v1/feeds/{id}/auth-policy",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "deleteFeedClientAuthPolicy": {
+    "path": "/api/v1/feeds/{id}/auth-policy",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "listNetworkGroups": {
+    "path": "/api/v1/auth/network-groups",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createNetworkGroup": {
+    "path": "/api/v1/auth/network-groups",
+    "method": "POST",
+    "idempotent": false
+  },
+  "putNetworkGroup": {
+    "path": "/api/v1/auth/network-groups/{id}",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "deleteNetworkGroup": {
+    "path": "/api/v1/auth/network-groups/{id}",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "getGitHubOIDCConfig": {
+    "path": "/api/v1/auth/github-oidc/config",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putGitHubOIDCConfig": {
+    "path": "/api/v1/auth/github-oidc/config",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "listGitHubTrustRules": {
+    "path": "/api/v1/auth/github-oidc/trust-rules",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createGitHubTrustRule": {
+    "path": "/api/v1/auth/github-oidc/trust-rules",
+    "method": "POST",
+    "idempotent": false
+  },
+  "putGitHubTrustRule": {
+    "path": "/api/v1/auth/github-oidc/trust-rules/{id}",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "deleteGitHubTrustRule": {
+    "path": "/api/v1/auth/github-oidc/trust-rules/{id}",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "exchangeGitHubOIDCToken": {
+    "path": "/api/v1/auth/github-oidc/exchange",
+    "method": "POST",
+    "idempotent": false
+  },
+  "listPersonalAccessTokens": {
+    "path": "/api/v1/auth/personal-access-tokens",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createPersonalAccessToken": {
+    "path": "/api/v1/auth/personal-access-tokens",
+    "method": "POST",
+    "idempotent": true
+  },
+  "revokePersonalAccessToken": {
+    "path": "/api/v1/auth/personal-access-tokens/{id}",
+    "method": "DELETE",
+    "idempotent": false
   }
 } as const;

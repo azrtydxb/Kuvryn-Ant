@@ -65,6 +65,7 @@ export class Client {
       options.query,
       options.body,
       options.etag,
+      "empty",
     );
   }
   // Endpoints that are not in the generated contract yet (see gaps.ts). Same

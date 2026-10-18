@@ -14,6 +14,7 @@ import {
   Table,
 } from "./ds/bundle";
 import { LimitsPane } from "./Limits";
+import { AccessPane, PersonalTokensPane } from "./ClientAuth";
 import { RetentionPane } from "./Retention";
 import { StorageMigrationSection } from "./StorageMigration";
 import { TemplatesPane } from "./Templates";
@@ -44,12 +45,14 @@ const nav = [
     icon: "layers",
     group: "Content",
   },
+  { id: "access", label: "Access", icon: "shield-check", group: "Instance" },
   {
     id: "retention",
     label: "Retention & cleanup",
     icon: "trash-2",
     group: "Content",
   },
+  { id: "tokens", label: "Tokens", icon: "key-round", group: "Profile" },
   { id: "about", label: "About", icon: "info", group: "System" },
 ];
 
@@ -79,6 +82,10 @@ export function SettingsPage({
             <LimitsPane client={client} />
           ) : tab === "templates" ? (
             <TemplatesPane client={client} />
+          ) : tab === "access" ? (
+            <AccessPane client={client} />
+          ) : tab === "tokens" ? (
+            <PersonalTokensPane client={client} />
           ) : tab === "retention" ? (
             <RetentionPane client={client} />
           ) : (

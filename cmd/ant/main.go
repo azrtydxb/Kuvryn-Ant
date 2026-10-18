@@ -209,6 +209,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
 	// Loopback development: let the login runtime learn its own origin.
 	browser.SetDefaultOrigin(serveCtx, publicURL)
+	clientAuth, githubOIDC := newClientAuth(pool, artifacts, browser)
 	logger.Info("service listening", "address", listener.Addr().String())
 	svc := server.New(pool, cfg.MaxRequests, cfg.ShutdownTimeout, logger, func(mux *http.ServeMux) {
 		management.RegisterFeeds(mux, pool, management.NewCursorCodec(cfg.RootKey))
@@ -223,6 +224,11 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterRemoteSources(mux, pool, cfg.SecretKeys, caRefs, cfg.RootKey)
 		management.RegisterIdentities(mux, pool)
 		management.RegisterIdentityProviders(mux, management.IdentityAdminDeps{Pool: pool, Keys: cfg.SecretKeys, Origin: browser.Origin(), Reload: browser.Reload, Active: browser.Active, FileProviders: browser.FileProviders()})
+		clientAuthDeps := management.ClientAuthDeps{Pool: pool, GitHub: githubOIDC}
+		if clientAuth != nil {
+			clientAuthDeps.Invalidate = clientAuth.Invalidate
+		}
+		management.RegisterClientAuth(mux, clientAuthDeps)
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
 		replicationRT.Register(mux)
@@ -236,6 +242,9 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	// are visible to per-principal limits.
 	svc.WrapHTTP(ops.limiter.Middleware)
 	svc.WrapHTTP(browser.Middleware)
+	if clientAuth != nil {
+		svc.WrapHTTP(clientAuth.Middleware)
+	}
 	svc.WrapHTTP(ops.traffic.Middleware)
 	if servingInstance != "" {
 		// Outermost: records 401/403 outcomes (rate limited) for management, MCP and package protocols.

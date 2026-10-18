@@ -32,7 +32,7 @@ func (r Roles) Resolve(ctx context.Context, p Principal) (Policy, error) {
 	// machine-token lifetime here so revocation during staging cannot publish.
 	if p.TokenID != "" {
 		var active bool
-		err := r.DB.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM service_tokens WHERE instance_id=$1 AND id=$2 AND principal_id=$3 AND revoked_at IS NULL AND expires_at>clock_timestamp())", p.InstanceID, p.TokenID, p.PrincipalID).Scan(&active)
+		err := r.DB.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM service_tokens WHERE instance_id=$1 AND id=$2 AND principal_id=$3 AND revoked_at IS NULL AND expires_at>clock_timestamp()) OR EXISTS(SELECT 1 FROM personal_access_tokens WHERE instance_id=$1 AND id=$2 AND principal_id=$3 AND revoked_at IS NULL AND expires_at>clock_timestamp())", p.InstanceID, p.TokenID, p.PrincipalID).Scan(&active)
 		if err != nil {
 			return Policy{}, ErrUnavailable
 		}

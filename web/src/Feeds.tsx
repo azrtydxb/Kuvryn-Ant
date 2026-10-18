@@ -1,3 +1,4 @@
+import { FeedAccess } from "./ClientAuth";
 import { useEffect, useState } from "react";
 import { requireETag, type Client } from "./api";
 import type { Go } from "./App";
@@ -716,7 +717,9 @@ function Connect({ feed }: { feed: Feed }) {
           }
         />
         <p className="muted small">
-          Use a service token for CI. Tokens are issued under Access.
+          Authenticate with a service token, a personal access token (Settings,
+          Tokens), a directory password or a GitHub Actions identity, as this
+          feed allows.
         </p>
       </Card>
       <Card title="2 · Pull and publish">
@@ -804,6 +807,7 @@ function FeedSettings({
           <Failure error={action.error} />
         </SettingsSection>
       </form>
+      <FeedAccess client={client} feedId={feed.id} />
       <SettingsSection
         title="Delete feed"
         description="Removes the endpoint. Sources and their stored content are kept."
