@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -47,7 +48,18 @@ func (s *Repository) modules(w http.ResponseWriter, r *http.Request, p identity.
 	case "download":
 		// Resolve (and authorize) the exact version first; Terraform then fetches
 		// the immutable archive URL named by X-Terraform-Get.
-		if _, e := s.service.Lookup(r.Context(), p, pub); e != nil {
+		subdir := ""
+		_, e := s.service.Lookup(r.Context(), p, pub)
+		if errors.Is(e, artifact.ErrNotFound) {
+			// Local miss: cache the archive from the remote owner (a local
+			// owner or an unknown version stays a 404).
+			if subdir, e = s.fillModule(r.Context(), p, pub); e == nil {
+				_, e = s.service.Lookup(r.Context(), p, pub)
+			}
+		} else if e == nil {
+			subdir = s.moduleSubdir(r.Context(), p, pub)
+		}
+		if e != nil {
 			failure(w, e)
 			return
 		}
@@ -56,9 +68,19 @@ func (s *Repository) modules(w http.ResponseWriter, r *http.Request, p identity.
 			failure(w, artifact.ErrUnavailable)
 			return
 		}
-		w.Header().Set("X-Terraform-Get", base+"/v1/modules/"+rest[0]+"/"+rest[1]+"/"+rest[2]+"/"+rest[3]+"/archive.tar.gz")
+		get := base + "/v1/modules/" + rest[0] + "/" + rest[1] + "/" + rest[2] + "/" + rest[3] + "/archive.tar.gz"
+		if subdir != "" {
+			get += "//" + subdir
+		}
+		w.Header().Set("X-Terraform-Get", get)
 		w.WriteHeader(http.StatusNoContent)
 	case "archive.tar.gz":
+		if _, e := s.service.Lookup(r.Context(), p, pub); errors.Is(e, artifact.ErrNotFound) {
+			if _, e = s.fillModule(r.Context(), p, pub); e != nil && !errors.Is(e, artifact.ErrNotFound) {
+				failure(w, e)
+				return
+			}
+		}
 		s.serveAsset(w, r, p, pub)
 	default:
 		failure(w, artifact.ErrNotFound)
@@ -68,8 +90,17 @@ func (s *Repository) modules(w http.ResponseWriter, r *http.Request, p identity.
 func (s *Repository) moduleVersions(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication, rest []string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	// Remote-owned (or unowned) modules are answered from upstream; a local
+	// owner, or an upstream outage, falls through to the local composition.
+	served, remoteErr := s.serveRemoteModuleVersions(w, r, p, pub, rest)
+	if served {
+		return
+	}
 	versions, e := s.listVersions(ctx, p, pub.FeedID, pub.Namespace, pub.Coordinate, moduleArchive)
 	if e != nil {
+		if remoteErr != nil && errors.Is(e, artifact.ErrNotFound) {
+			e = artifact.ErrUnavailable
+		}
 		failure(w, e)
 		return
 	}

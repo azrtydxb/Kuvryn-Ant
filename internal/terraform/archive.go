@@ -89,9 +89,19 @@ func safeName(n string) bool {
 // one root-level Terraform configuration file (the closure Terraform needs to
 // load the module). Nothing in the archive is executed.
 func inspectModule(ctx context.Context, f io.Reader) error {
+	config, e := inspectTar(ctx, f)
+	if e != nil || !config {
+		return errInvalid
+	}
+	return nil
+}
+
+// inspectTar applies the module archive checks of inspectModule and reports
+// whether a root-level Terraform configuration file exists.
+func inspectTar(ctx context.Context, f io.Reader) (bool, error) {
 	g, e := gzip.NewReader(contextReader{ctx, f})
 	if e != nil {
-		return errInvalid
+		return false, errInvalid
 	}
 	limited := &io.LimitedReader{R: contextReader{ctx, g}, N: maxModuleExpanded + 1}
 	t := tar.NewReader(limited)
@@ -103,11 +113,11 @@ func inspectModule(ctx context.Context, f io.Reader) error {
 			break
 		}
 		if e != nil || limited.N <= 0 {
-			return errInvalid
+			return false, errInvalid
 		}
 		entries++
 		if entries > maxModuleEntries || !safeName(h.Name) {
-			return errInvalid
+			return false, errInvalid
 		}
 		clean := path.Clean(h.Name)
 		switch h.Typeflag {
@@ -119,24 +129,21 @@ func inspectModule(ctx context.Context, f io.Reader) error {
 		case tar.TypeSymlink:
 			target := h.Linkname
 			if target == "" || strings.HasPrefix(target, "/") || strings.ContainsAny(target, "\x00\\") {
-				return errInvalid
+				return false, errInvalid
 			}
 			if joined := path.Join(path.Dir(clean), target); joined == ".." || strings.HasPrefix(joined, "../") {
-				return errInvalid
+				return false, errInvalid
 			}
 		case tar.TypeXGlobalHeader:
 		default:
-			return errInvalid
+			return false, errInvalid
 		}
 	}
 	// Drain trailing bytes so the gzip trailer/CRC is verified.
 	if _, e = io.Copy(io.Discard, limited); e != nil || limited.N <= 0 {
-		return errInvalid
+		return false, errInvalid
 	}
-	if !config {
-		return errInvalid
-	}
-	return nil
+	return config, nil
 }
 
 // inspectProviderZip checks the zip structure and that it contains the plugin
