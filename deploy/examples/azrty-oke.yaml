@@ -1,0 +1,36 @@
+# Kuvryn Ant on azrty-oke: Gateway API HTTPRoute on Gateway edge, OCI Object Storage (S3 compat).
+# No secrets here; all credentials are referenced by existing Secret name.
+# Replace <namespace> with the OCI Object Storage namespace.
+publicURL: https://ant.azrty.com
+image:
+  repository: dxb.ocir.io/axmcgpqk0w0z/azrty/kuvryn-ant
+  tag: "0.1.0"
+imagePullSecrets:
+  - name: ocir-pull
+persistence:
+  size: 120Gi
+  storageClass: oci-bv
+storage:
+  backend: s3
+  s3:
+    endpoint: https://axmcgpqk0w0z.compat.objectstorage.me-dubai-1.oraclecloud.com
+    region: me-dubai-1
+    bucket: kuvryn-ant
+    prefix: ant/
+    pathStyle: true
+    credentialsExistingSecret: ant-s3
+postgres:
+  existingSecret: ant-postgres
+  tlsExistingSecret: ant-pg-rootcert
+rootKey:
+  existingSecret: ant-root-key
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: edge
+      namespace: envoy-gateway-system
+      sectionName: ant-https
+  hostnames: [ant.azrty.com]
+  timeouts:
+    request: "0s"
+    backendRequest: "0s"

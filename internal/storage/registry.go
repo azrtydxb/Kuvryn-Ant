@@ -26,7 +26,7 @@ var uuid = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 
 type Config struct {
 	Backend, Directory, Endpoint, Region, Bucket, Prefix, CredentialsFile, CAFile string
-	PathStyle                                                                     bool
+	PathStyle, AllowInsecureHTTP                                                  bool
 }
 type Registry struct {
 	mu     sync.Mutex
@@ -213,7 +213,7 @@ func (r *Registry) Close() {
 	}
 }
 func (r *Registry) s3(domain string) (*blob.S3, error) {
-	return blob.NewS3(blob.S3Config{Endpoint: r.config.Endpoint, Region: r.config.Region, Bucket: r.config.Bucket, Prefix: strings.Trim(r.config.Prefix, "/") + "/" + domain, PathStyle: r.config.PathStyle, HTTPClient: r.client, Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) { return credentials(r.config.CredentialsFile) })})
+	return blob.NewS3(blob.S3Config{Endpoint: r.config.Endpoint, Region: r.config.Region, Bucket: r.config.Bucket, Prefix: strings.Trim(r.config.Prefix, "/") + "/" + domain, PathStyle: r.config.PathStyle, AllowHTTP: r.config.AllowInsecureHTTP, HTTPClient: r.client, Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) { return credentials(r.config.CredentialsFile) })})
 }
 func readBoundedFile(path string, limit int64) ([]byte, error) {
 	f, err := os.Open(path)

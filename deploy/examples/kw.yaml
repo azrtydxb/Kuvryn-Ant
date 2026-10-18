@@ -1,0 +1,36 @@
+# Kuvryn Ant on kw: ingress-nginx, TrueNAS SCALE MinIO. No secrets here.
+publicURL: https://ant.kw.watteel.lab
+image:
+  repository: 192.168.10.131/azrtydxb/kuvryn-ant
+  tag: "0.1.0"
+imagePullSecrets:
+  - name: nexus-pull
+persistence:
+  size: 120Gi
+  storageClass: longhorn
+storage:
+  backend: s3
+  s3:
+    endpoint: http://192.168.10.253:9000 # TrueNAS MinIO (plaintext, trusted LAN only)
+    region: us-east-1
+    bucket: kuvryn-ant
+    prefix: ant/
+    pathStyle: true
+    credentialsExistingSecret: ant-s3
+    allowInsecureHTTP: true
+postgres:
+  existingSecret: ant-postgres
+  tlsExistingSecret: ant-pg-rootcert
+rootKey:
+  existingSecret: ant-root-key
+ingress:
+  enabled: true
+  className: nginx
+  host: ant.kw.watteel.lab
+  tlsSecret: ant-ingress-tls
+  annotations:
+    cert-manager.io/cluster-issuer: cluster-ca
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
