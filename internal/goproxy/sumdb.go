@@ -76,6 +76,11 @@ func (s *Proxy) sumdb(w http.ResponseWriter, r *http.Request, p identity.Princip
 	}
 	body, err := s.service.RemoteMetadata(r.Context(), p, pub, artifact.Origin{Path: path.Join("sumdb", name, doc), Representation: "text/plain"})
 	if errors.Is(err, artifact.ErrNotFound) {
+		// A GOPROXY upstream such as proxy.golang.org does not serve the checksum
+		// database under /sumdb/; fetch the (signed, public) database itself.
+		body, err = s.service.RemoteMetadata(r.Context(), p, pub, artifact.Origin{URL: s.sumdbBase() + "/" + doc, Representation: "text/plain"})
+	}
+	if errors.Is(err, artifact.ErrNotFound) {
 		http.Error(w, "checksum database entry not found", 404)
 		return
 	}
@@ -94,4 +99,15 @@ func (s *Proxy) sumdb(w http.ResponseWriter, r *http.Request, p identity.Princip
 	if r.Method != http.MethodHead {
 		_, _ = w.Write(body.Body)
 	}
+}
+
+const defaultSumdbOrigin = "https://" + sumdbName
+
+// sumdbBase is the checksum database origin used when the feed's remote source
+// does not mirror it under /sumdb/.
+func (s *Proxy) sumdbBase() string {
+	if s.sumdbOrigin != "" {
+		return s.sumdbOrigin
+	}
+	return defaultSumdbOrigin
 }

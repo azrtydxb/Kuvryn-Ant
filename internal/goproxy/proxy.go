@@ -28,6 +28,8 @@ type Proxy struct {
 	auth      *identity.Bearer
 	instance  string
 	transfers chan struct{}
+	// sumdbOrigin overrides the checksum database origin (tests only).
+	sumdbOrigin string
 }
 
 // New constructs a handler for /feeds/{slug}/go/. Basic passwords and Bearer
@@ -161,13 +163,20 @@ func (s *Proxy) serve(w http.ResponseWriter, r *http.Request) {
 		s.sumdb(w, r, p, slug, rest)
 		return
 	}
+	read := r.Method == http.MethodGet || r.Method == http.MethodHead
 	target, err := parseRoute(r.URL.Path)
-	if err != nil {
-		fail(w, err)
-		return
+	if err == nil && (strings.Contains(strings.ToLower(r.URL.RawPath), "%2f") || strings.Contains(strings.ToLower(r.URL.RawPath), "%5c")) {
+		err = artifact.ErrInput
 	}
-	if strings.Contains(strings.ToLower(r.URL.RawPath), "%2f") || strings.Contains(strings.ToLower(r.URL.RawPath), "%5c") {
-		fail(w, artifact.ErrInput)
+	if err != nil {
+		if read {
+			// The go command probes path prefixes and branch names; GOPROXY
+			// requires 404 or 410 for anything that is not a module version so
+			// it moves on instead of aborting on 400.
+			failure404(w)
+			return
+		}
+		fail(w, err)
 		return
 	}
 	if (target.kind == "bundle" && r.Method != "PUT" && r.Method != "DELETE") || (target.kind != "bundle" && r.Method != "GET" && r.Method != "HEAD") {
@@ -296,4 +305,9 @@ type progressReader struct {
 func (r *progressReader) Read(data []byte) (int, error) {
 	_ = r.controller.SetReadDeadline(time.Now().Add(30 * time.Second))
 	return r.ReadCloser.Read(data)
+}
+
+func failure404(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "private, no-store")
+	http.Error(w, "not found: not a module path or version", 404)
 }

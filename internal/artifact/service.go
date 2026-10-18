@@ -31,6 +31,9 @@ var (
 	ErrNotFound    = errors.New("artifact not found")
 	ErrConflict    = errors.New("immutable artifact conflicts")
 	ErrUnavailable = errors.New("artifact service unavailable")
+	// ErrTooLarge is an unavailable result for a remote metadata document that
+	// exceeds the cache bound; callers able to stream may retry with RemoteStream.
+	ErrTooLarge = fmt.Errorf("%w: remote metadata document too large to cache", ErrUnavailable)
 )
 
 // Router and Storage are trusted configuration resolvers, not caller-provided

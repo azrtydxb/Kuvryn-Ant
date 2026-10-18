@@ -1,9 +1,13 @@
 package npmregistry
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -36,7 +40,21 @@ func (s *Registry) remotePackument(w http.ResponseWriter, r *http.Request, p ide
 	if strings.Contains(r.Header.Get("Accept"), abbreviated) {
 		representation = abbreviated
 	}
-	doc, err := s.service.RemoteMetadata(ctx, p, artifact.Publication{FeedID: feed, Namespace: namespace(name), Coordinate: name}, artifact.Origin{Path: artifact.EscapePath(name), Representation: representation})
+	pub := artifact.Publication{FeedID: feed, Namespace: namespace(name), Coordinate: name}
+	origin := artifact.Origin{Path: artifact.EscapePath(name), Representation: representation}
+	doc, err := s.service.RemoteMetadata(ctx, p, pub, origin)
+	var stream *artifact.StreamDocument
+	if errors.Is(err, artifact.ErrTooLarge) && tail == "" && !tagsOnly {
+		// Too large for the metadata cache: stream it through the rewriter
+		// without holding the document in memory.
+		var scancel context.CancelFunc
+		ctx, scancel = context.WithTimeout(r.Context(), 15*time.Minute)
+		defer scancel()
+		stream, err = s.service.RemoteStream(ctx, p, pub, origin)
+		if stream != nil {
+			defer stream.Body.Close()
+		}
+	}
 	if errors.Is(err, artifact.ErrNotFound) {
 		return nil
 	}
@@ -45,6 +63,18 @@ func (s *Registry) remotePackument(w http.ResponseWriter, r *http.Request, p ide
 			return err // degrade to whatever is cached locally
 		}
 		failService(w, err)
+		return errServed
+	}
+	if tail == "" && !tagsOnly {
+		var src io.Reader
+		var sourceID, validator string
+		if stream != nil {
+			src, sourceID, validator = stream.Body, stream.SourceID, stream.ETag
+		} else {
+			sum := sha256.Sum256(doc.Body)
+			src, sourceID, validator = bytes.NewReader(doc.Body), doc.SourceID, hex.EncodeToString(sum[:])
+		}
+		s.streamPackument(w, r, src, sourceID, validator, doc.Stale, name, slug, representation)
 		return errServed
 	}
 	var packument map[string]json.RawMessage
@@ -99,4 +129,42 @@ func (s *Registry) remotePackument(w http.ResponseWriter, r *http.Request, p ide
 	}
 	s.respond(w, r, full, versions, tags, tail, tagsOnly, representation)
 	return errServed
+}
+
+// streamPackument writes the rewritten packument as it reads src. A document
+// that turns out to be invalid before any byte is sent is a 502; one that
+// fails afterwards aborts the connection so the client never sees a truncated
+// document as complete.
+func (s *Registry) streamPackument(w http.ResponseWriter, r *http.Request, src io.Reader, sourceID, validator string, stale bool, name, slug, representation string) {
+	etag := documentETag(validator, s.publicURL, slug, name, sourceID, representation)
+	w.Header().Set("ETag", etag)
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(304)
+		return
+	}
+	lw := &lazyWriter{w: w, rc: http.NewResponseController(w)}
+	lw.start = func() {
+		if stale {
+			for k, v := range artifact.StaleHeaders() {
+				w.Header().Set(k, v)
+			}
+		}
+		w.Header().Set("Content-Type", representation)
+		w.WriteHeader(200)
+	}
+	base := s.publicURL + "/feeds/" + url.PathEscape(slug) + "/npm/" + name + "/-/" + pathBase(name) + "-"
+	suffix := ".tgz?source=" + url.QueryEscape(sourceID)
+	if r.Method == http.MethodHead {
+		w.Header().Set("Content-Type", representation)
+		w.WriteHeader(200)
+		return
+	}
+	if err := rewritePackument(lw, src, name, func(version string) string { return base + version + suffix }); err != nil {
+		if !lw.started {
+			w.Header().Del("ETag")
+			failure(w, 502, "invalid upstream metadata")
+			return
+		}
+		panic(http.ErrAbortHandler)
+	}
 }

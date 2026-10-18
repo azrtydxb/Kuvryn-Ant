@@ -56,3 +56,9 @@ including the native client download. Toolchain: go1.27.1 darwin/arm64. The F10
 contract's go1.27.2 baseline, transitive-dependency client matrix, MinIO backend,
 remote/replica flows and full format conformance remain unverified; this local
 implementation is not a full F10 conformance claim.
+
+Checksum database: `/sumdb/sum.golang.org/*` is first requested from the remote
+source under `/sumdb/` (for upstreams that mirror it) and otherwise fetched from
+`https://sum.golang.org` itself (signed; clients verify it). Read requests for
+anything that is not a module path or version answer 404 so the go command can
+probe path prefixes and branch names.
