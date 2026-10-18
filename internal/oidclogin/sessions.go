@@ -140,7 +140,7 @@ func (s Sessions) issue(ctx context.Context, issuer, subject string) (Session, s
 	e = tx.QueryRow(ctx, `INSERT INTO browser_sessions(verifier,csrf_hash,instance_id,issuer,subject,principal_id,created_at,last_seen_at,expires_at,idle_seconds)
  SELECT $1,$2,b.instance_id,b.issuer,b.subject,b.principal_id,statement_timestamp(),statement_timestamp(),statement_timestamp()+$6*interval '1 second',$7
  FROM oidc_identity_bindings b JOIN principals p ON (p.instance_id,p.id)=(b.instance_id,b.principal_id)
- WHERE b.instance_id=$3 AND b.issuer=$4 AND b.subject=$5 AND NOT p.disabled AND p.kind='user'
+ WHERE b.instance_id=$3 AND b.issuer=$4 AND b.subject=$5 AND NOT p.disabled AND p.kind IN ('user','emergency')
  RETURNING instance_id,principal_id,expires_at`, hash(raw), hash(csrf), s.InstanceID, issuer, subject, int64(max/time.Second), int64(idle/time.Second)).Scan(&result.InstanceID, &result.PrincipalID, &result.ExpiresAt)
 	if errors.Is(e, pgx.ErrNoRows) {
 		return Session{}, "", "", ErrAuthentication
@@ -170,7 +170,7 @@ func (s Sessions) Authenticate(ctx context.Context, raw, csrf string, mutation b
  FROM principals p,oidc_identity_bindings b WHERE s.verifier=$1 AND s.instance_id=$2
  AND (NOT $3 OR s.csrf_hash=$4) AND s.expires_at>clock_timestamp()
  AND s.last_seen_at+ s.idle_seconds*interval '1 second'>clock_timestamp()
- AND (p.instance_id,p.id)=(s.instance_id,s.principal_id) AND NOT p.disabled AND p.kind='user'
+ AND (p.instance_id,p.id)=(s.instance_id,s.principal_id) AND NOT p.disabled AND p.kind IN ('user','emergency')
  AND (b.instance_id,b.issuer,b.subject,b.principal_id)=(s.instance_id,s.issuer,s.subject,s.principal_id)
  RETURNING s.instance_id,s.principal_id,s.expires_at`, hash(raw), s.InstanceID, mutation, hash(csrf)).Scan(&result.InstanceID, &result.PrincipalID, &result.ExpiresAt)
 	if errors.Is(e, pgx.ErrNoRows) {

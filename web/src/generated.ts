@@ -169,6 +169,29 @@ export type PutFeedPolicyBinding = { "publish_template_id"?: string; "read_templ
 export type EffectivePublishRule = { "id": string; "priority": number; "selector": PublishSelector; "target_source_id"?: string; "deny": boolean; "origin": string };
 export type EffectiveReadOrigins = { "local_first"?: string; "fallback_on_not_found"?: string; "failover_on_upstream_error"?: string };
 export type EffectivePolicy = { "feed_id": string; "revision": number; "publish_template_chain": Array<string>; "read_template_chain": Array<string>; "default_source_id": string; "default_origin": string; "rules": Array<EffectivePublishRule>; "read": ReadPolicySettings; "read_origins": EffectiveReadOrigins };
+export type CertificateStatus = { "subject": string; "use"?: string; "not_before": string; "not_after": string; "days_left": number; "status": "ok" | "expiring" | "expired" | "not_yet_valid"; "sha256": string };
+export type GroupRoleMapping = { "group_id": string; "role_ids": Array<string> };
+export type IdentityProviderConfig = { "issuer"?: string; "client_id"?: string; "groups_claim"?: string; "entity_id"?: string; "idp_entity_id"?: string; "idp_metadata_xml"?: string; "sp_certificate_pem"?: string; "groups_attribute"?: string; "email_attribute"?: string; "provider_id"?: string; "url"?: string; "bind_dn"?: string; "ca_pem"?: string; "user_base_dn"?: string; "group_base_dn"?: string; "login_attribute"?: string; "user_id_attribute"?: string; "group_id_attribute"?: string; "user_class"?: string; "group_class"?: string; "member_attribute"?: string; "allowed_endpoints"?: Array<string>; "group_roles"?: Array<GroupRoleMapping> };
+export type IdentityProvider = { "id": string; "kind": "oidc" | "saml" | "ldap"; "name": string; "enabled": boolean; "config": IdentityProviderConfig; "has_secret": boolean; "revision": number; "last_error"?: string; "created_at": string; "updated_at": string; "active": boolean; "shadowed_by_file": boolean; "certificates": Array<CertificateStatus> };
+export type IdentityProviderInput = { "kind": "oidc" | "saml" | "ldap"; "name": string; "enabled": boolean; "config": IdentityProviderConfig; "secret"?: string; "rotate_sp_certificate"?: boolean };
+export type UpdateIdentityProvider = { "kind"?: "oidc" | "saml" | "ldap"; "name": string; "enabled": boolean; "config": IdentityProviderConfig; "secret"?: string; "rotate_sp_certificate"?: boolean };
+export type FileIdentityProvider = { "kind": "oidc" | "saml" | "ldap"; "label": string; "detail": string };
+export type ActiveIdentityProvider = { "kind": "oidc" | "saml" | "ldap"; "source": "file" | "database"; "provider_id"?: string };
+export type LocalAccount = { "exists": boolean; "username"?: string; "totp_enabled": boolean; "locked_until"?: string; "last_login_at"?: string };
+export type IdentityProviderList = { "items": Array<IdentityProvider>; "file_items": Array<FileIdentityProvider>; "active": Array<ActiveIdentityProvider>; "sso_mandatory": boolean; "origin": string; "local_account": LocalAccount };
+export type IdentityProviderTestRequest = { "id"?: string; "kind": "oidc" | "saml" | "ldap"; "config": IdentityProviderConfig; "secret"?: string };
+export type IdentityTestCheck = { "name": string; "ok": boolean; "detail": string };
+export type IdentityProviderTest = { "kind": "oidc" | "saml" | "ldap"; "ok": boolean; "checks": Array<IdentityTestCheck>; "warnings": Array<string>; "clock_skew_seconds"?: number; "suggested_allowed_endpoints"?: Array<string>; "tls_mode"?: "ldaps" | "starttls"; "certificates": Array<CertificateStatus> };
+export type SamlMetadataImportRequest = { "xml": string };
+export type SamlEndpoint = { "binding": string; "location": string };
+export type SamlMetadataImport = { "entity_id": string; "sso_endpoints": Array<SamlEndpoint>; "slo_endpoints": Array<SamlEndpoint>; "certificates": Array<CertificateStatus>; "valid_until"?: string; "errors": Array<string>; "warnings": Array<string>; "ok": boolean };
+export type MappingPreviewRequest = { "sample"?: string; "login"?: string };
+export type MappingSubject = { "issuer": string; "subject": string; "email"?: string; "groups": Array<string>; "audience"?: Array<string> };
+export type MappingBinding = { "found": boolean; "principal_id"?: string; "disabled"?: boolean; "roles": Array<string> };
+export type MappingPreview = { "identity": MappingSubject; "signature_verified": boolean; "binding": MappingBinding; "proposed_roles": Array<string>; "would_sign_in": boolean; "problems": Array<string>; "warnings": Array<string>; "clock_skew_seconds"?: number };
+export type IdentityPolicy = { "sso_mandatory": boolean };
+export type TotpEnrollment = { "otpauth_uri": string };
+export type TotpConfirm = { "code": string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -285,6 +308,24 @@ deletePolicyTemplate: { body: undefined; response: undefined };
 getFeedPolicyTemplates: { body: undefined; response: FeedPolicyBinding };
 putFeedPolicyTemplates: { body: PutFeedPolicyBinding; response: FeedPolicyBinding };
 getEffectivePolicy: { body: undefined; response: EffectivePolicy };
+listIdentityProviders: { body: undefined; response: IdentityProviderList };
+createIdentityProvider: { body: IdentityProviderInput; response: IdentityProvider };
+testIdentityProvider: { body: IdentityProviderTestRequest; response: IdentityProviderTest };
+importSamlMetadata: { body: SamlMetadataImportRequest; response: SamlMetadataImport };
+getIdentityProvider: { body: undefined; response: IdentityProvider };
+updateIdentityProvider: { body: UpdateIdentityProvider; response: IdentityProvider };
+deleteIdentityProvider: { body: undefined; response: undefined };
+enableIdentityProvider: { body: undefined; response: IdentityProvider };
+disableIdentityProvider: { body: undefined; response: IdentityProvider };
+getSamlSpMetadata: { body: undefined; response: undefined };
+previewIdentityMapping: { body: MappingPreviewRequest; response: MappingPreview };
+getIdentityPolicy: { body: undefined; response: IdentityPolicy };
+putIdentityPolicy: { body: IdentityPolicy; response: IdentityPolicy };
+getLocalAccount: { body: undefined; response: LocalAccount };
+unlockLocalAccount: { body: undefined; response: undefined };
+beginLocalTotp: { body: undefined; response: TotpEnrollment };
+disableLocalTotp: { body: undefined; response: undefined };
+confirmLocalTotp: { body: TotpConfirm; response: undefined };
 }
 export const routes = {
   "getStatus": {
@@ -855,6 +896,96 @@ export const routes = {
   "getEffectivePolicy": {
     "path": "/api/v1/feeds/{id}/effective-policy",
     "method": "GET",
+    "idempotent": false
+  },
+  "listIdentityProviders": {
+    "path": "/api/v1/identity-providers",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createIdentityProvider": {
+    "path": "/api/v1/identity-providers",
+    "method": "POST",
+    "idempotent": false
+  },
+  "testIdentityProvider": {
+    "path": "/api/v1/identity-providers/test",
+    "method": "POST",
+    "idempotent": false
+  },
+  "importSamlMetadata": {
+    "path": "/api/v1/identity-providers/saml/import-metadata",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getIdentityProvider": {
+    "path": "/api/v1/identity-providers/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "updateIdentityProvider": {
+    "path": "/api/v1/identity-providers/{id}",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "deleteIdentityProvider": {
+    "path": "/api/v1/identity-providers/{id}",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "enableIdentityProvider": {
+    "path": "/api/v1/identity-providers/{id}/enable",
+    "method": "POST",
+    "idempotent": false
+  },
+  "disableIdentityProvider": {
+    "path": "/api/v1/identity-providers/{id}/disable",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getSamlSpMetadata": {
+    "path": "/api/v1/identity-providers/{id}/metadata",
+    "method": "GET",
+    "idempotent": false
+  },
+  "previewIdentityMapping": {
+    "path": "/api/v1/identity-providers/{id}/preview",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getIdentityPolicy": {
+    "path": "/api/v1/identity-policy",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putIdentityPolicy": {
+    "path": "/api/v1/identity-policy",
+    "method": "PUT",
+    "idempotent": false
+  },
+  "getLocalAccount": {
+    "path": "/api/v1/local-account",
+    "method": "GET",
+    "idempotent": false
+  },
+  "unlockLocalAccount": {
+    "path": "/api/v1/local-account/unlock",
+    "method": "POST",
+    "idempotent": false
+  },
+  "beginLocalTotp": {
+    "path": "/api/v1/local-account/totp",
+    "method": "POST",
+    "idempotent": false
+  },
+  "disableLocalTotp": {
+    "path": "/api/v1/local-account/totp",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "confirmLocalTotp": {
+    "path": "/api/v1/local-account/totp/confirm",
+    "method": "POST",
     "idempotent": false
   }
 } as const;

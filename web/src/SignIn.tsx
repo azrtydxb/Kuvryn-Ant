@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Failure } from "./ui";
 import {
+  MfaRequired,
   getProviders,
   ldapLogin,
+  localLogin,
   type BrowserSession,
   type Providers,
 } from "./auth";
@@ -24,6 +26,11 @@ export function SignIn({
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
+  const [showLocal, setShowLocal] = useState(false);
+  const [localUser, setLocalUser] = useState("break-glass");
+  const [localPassword, setLocalPassword] = useState("");
+  const [localCode, setLocalCode] = useState("");
+  const [needCode, setNeedCode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>();
   const [controller] = useState(() => new AbortController());
@@ -155,6 +162,94 @@ export function SignIn({
                 <Failure error={error} />
               </form>
             </>
+          )}
+        </>
+      )}
+      {providers?.local && (
+        <>
+          <button
+            type="button"
+            className="linkbtn"
+            aria-expanded={showLocal}
+            onClick={() => setShowLocal((v) => !v)}
+          >
+            {showLocal ? "Hide emergency access" : "Emergency access"}
+          </button>
+          {showLocal && (
+            <form
+              className="stack"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (busy) return;
+                let submitted = localPassword;
+                setLocalPassword("");
+                setBusy(true);
+                setError(undefined);
+                try {
+                  const request = localLogin(
+                    localUser,
+                    submitted,
+                    localCode,
+                    controller.signal,
+                  );
+                  submitted = "";
+                  const session = await request;
+                  if (!controller.signal.aborted) onSession(session);
+                } catch (e) {
+                  if (e instanceof MfaRequired) setNeedCode(true);
+                  if (!controller.signal.aborted) setError(e);
+                } finally {
+                  if (!controller.signal.aborted) setBusy(false);
+                }
+              }}
+            >
+              <p className="muted small">
+                For the break-glass administrator when single sign-on is
+                unavailable.
+                {providers.ssoMandatory &&
+                  " SSO is mandatory; only this account may use a password."}
+              </p>
+              <fieldset disabled={busy} className="plain">
+                <Input
+                  label="Username"
+                  required
+                  autoComplete="username"
+                  maxLength={64}
+                  value={localUser}
+                  onChange={(e: { target: { value: string } }) =>
+                    setLocalUser(e.target.value)
+                  }
+                />
+                <Input
+                  label="Password"
+                  required
+                  type="password"
+                  autoComplete="current-password"
+                  maxLength={256}
+                  value={localPassword}
+                  onChange={(e: { target: { value: string } }) =>
+                    setLocalPassword(e.target.value)
+                  }
+                />
+                {needCode && (
+                  <Input
+                    label="Authenticator code"
+                    required
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={localCode}
+                    onChange={(e: { target: { value: string } }) =>
+                      setLocalCode(e.target.value)
+                    }
+                  />
+                )}
+                <Button type="submit" variant="secondary">
+                  {busy ? "Signing in…" : "Sign in"}
+                </Button>
+              </fieldset>
+              <Failure error={error} />
+            </form>
           )}
         </>
       )}

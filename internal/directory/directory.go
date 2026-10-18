@@ -55,6 +55,8 @@ type Provider struct {
 	tls    *tls.Config
 	secret SecretSource
 	dial   Dialer
+	// defaultDial is true when the real network transport is in use.
+	defaultDial bool
 }
 
 type ExternalIdentity struct {
@@ -126,10 +128,11 @@ func New(c Config, secret SecretSource, dial Dialer) (*Provider, error) {
 	}
 	c.GroupRoles = mappings
 	c.CAPEM = nil
-	if dial == nil {
+	isDefault := dial == nil
+	if isDefault {
 		dial = dialLDAP
 	}
-	return &Provider{c, &tls.Config{MinVersion: tls.VersionTLS12, ServerName: u.Hostname(), RootCAs: roots}, secret, dial}, nil
+	return &Provider{c, &tls.Config{MinVersion: tls.VersionTLS12, ServerName: u.Hostname(), RootCAs: roots}, secret, dial, isDefault}, nil
 }
 func validDN(s string) bool {
 	if len(s) == 0 || len(s) > 4096 {

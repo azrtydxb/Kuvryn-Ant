@@ -12,6 +12,7 @@ import type {
   IdentityRoleGrant,
 } from "./generated";
 import { GrantEditor } from "./Grants";
+import { ProviderAdmin } from "./SignInProviders";
 import { TokenIssuer, TokensTab } from "./Tokens";
 import {
   Alert,
@@ -944,6 +945,7 @@ function ProvidersTab({
       active = false;
     };
   }, []);
+  const admin = useOptionalCall(client, "listIdentityProviders");
   const bindings = useOptionalCall(client, "listIdentityBindings", {
     query: { limit: "200" },
   });
@@ -959,8 +961,18 @@ function ProvidersTab({
   ];
   return (
     <>
-      {providers === undefined && <Loading what="sign-in providers" />}
-      {providers === null && (
+      {admin.state === "ready" && (
+        <ProviderAdmin
+          client={client}
+          data={admin.data}
+          reload={admin.reload}
+        />
+      )}
+      {admin.state === "error" && <Failure error={admin.error} />}
+      {admin.state !== "ready" && providers === undefined && (
+        <Loading what="sign-in providers" />
+      )}
+      {admin.state !== "ready" && providers === null && (
         <Alert
           tone="warn"
           title="Provider availability could not be determined"
@@ -968,7 +980,7 @@ function ProvidersTab({
           Configured providers are discovered from the authentication service.
         </Alert>
       )}
-      {providers && (
+      {admin.state !== "ready" && providers && (
         <div className="grid-auto grid-auto--280">
           {cards.map(([label, key]) => (
             <Card

@@ -34,6 +34,16 @@ type Provider struct {
 func NewProvider(ctx context.Context, cfg ProviderConfig) (*Provider, error) {
 	return newProvider(ctx, cfg, http.DefaultTransport, false)
 }
+
+// NewProviderWithTransport is NewProvider with an explicit outbound transport,
+// used by administrator diagnostics and tests to control name resolution and
+// trust. HTTPS remains mandatory and the approved-endpoint bound still applies.
+func NewProviderWithTransport(ctx context.Context, cfg ProviderConfig, transport http.RoundTripper) (*Provider, error) {
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	return newProvider(ctx, cfg, transport, false)
+}
 func newProvider(ctx context.Context, cfg ProviderConfig, transport http.RoundTripper, testHTTP bool) (*Provider, error) {
 	valid := func(raw string) bool {
 		u, e := url.Parse(raw)
