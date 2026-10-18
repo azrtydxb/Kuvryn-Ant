@@ -27,6 +27,9 @@ type GCReport struct {
 	SkippedReferenced  int       `json:"skipped_referenced"`
 	Failed             int       `json:"failed"`
 	ListingUnsupported []string  `json:"listing_unsupported,omitempty"`
+	// StaleUploadsAborted counts abandoned multipart uploads (idle longer than
+	// Options.StaleUploadAge) that were aborted, or in dry-run would be.
+	StaleUploadsAborted int `json:"stale_uploads_aborted"`
 }
 
 const storeTimeout = 2 * time.Minute
@@ -61,6 +64,7 @@ func (s *Service) CollectGarbage(ctx context.Context, dryRun bool) (GCReport, er
 	errs = append(errs, s.sweep(ctx, runStart, dryRun, &report))
 	errs = append(errs, s.markRows(ctx, dryRun, &report))
 	errs = append(errs, s.markObjects(ctx, runStart, dryRun, &report))
+	errs = append(errs, s.abortStaleUploads(ctx, dryRun, &report))
 	return report, errors.Join(errs...)
 }
 
@@ -304,4 +308,52 @@ func (s *Service) markDomainObjects(ctx context.Context, domain string, runStart
 	}
 	_, err = s.DB.Exec(ctx, `INSERT INTO retention_cursors(instance_id,name,position) VALUES($1,$2,$3) ON CONFLICT(instance_id,name) DO UPDATE SET position=excluded.position,updated_at=now()`, s.InstanceID, cursor, next)
 	return err
+}
+
+// abortStaleUploads reaps multipart uploads abandoned by crashed or interrupted
+// writers on stores that support it (S3). Uploads with recent persisted progress
+// are never touched; see blob.S3.AbortStaleUploads.
+func (s *Service) abortStaleUploads(ctx context.Context, dryRun bool, report *GCReport) error {
+	rows, err := s.DB.Query(ctx, `SELECT id::text FROM dedup_domains WHERE instance_id=$1 ORDER BY id`, s.InstanceID)
+	if err != nil {
+		return err
+	}
+	var domains []string
+	for rows.Next() {
+		var d string
+		if err = rows.Scan(&d); err != nil {
+			rows.Close()
+			return err
+		}
+		domains = append(domains, d)
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return err
+	}
+	var errs []error
+	if !dryRun {
+		if err = s.requireLease(ctx); err != nil {
+			return err
+		}
+	}
+	for _, domain := range domains {
+		store, err := s.Stores(ctx, domain)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("resolve domain %s: %w", domain, err))
+			continue
+		}
+		aborter, ok := store.(blob.StaleUploadAborter)
+		if !ok {
+			continue
+		}
+		callCtx, cancel := context.WithTimeout(ctx, storeTimeout)
+		n, err := aborter.AbortStaleUploads(callCtx, s.opts().StaleUploadAge, dryRun)
+		cancel()
+		report.StaleUploadsAborted += n
+		if err != nil {
+			errs = append(errs, fmt.Errorf("abort stale uploads %s: %w", domain, err))
+		}
+	}
+	return errors.Join(errs...)
 }

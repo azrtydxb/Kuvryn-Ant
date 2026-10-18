@@ -40,6 +40,9 @@ type Options struct {
 	// IntegrityBatch and IntegrityMaxBytes bound re-hashing per run.
 	IntegrityBatch    int
 	IntegrityMaxBytes int64
+	// StaleUploadAge is how long a multipart upload may sit idle before GC
+	// aborts it (default 24h).
+	StaleUploadAge time.Duration
 }
 
 const (
@@ -48,6 +51,7 @@ const (
 	DefaultObjectScanLimit   = 1000
 	DefaultIntegrityBatch    = 200
 	DefaultIntegrityMaxBytes = int64(1 << 30)
+	DefaultStaleUploadAge    = 24 * time.Hour
 )
 
 func (o Options) withDefaults() Options {
@@ -65,6 +69,9 @@ func (o Options) withDefaults() Options {
 	}
 	if o.IntegrityMaxBytes <= 0 {
 		o.IntegrityMaxBytes = DefaultIntegrityMaxBytes
+	}
+	if o.StaleUploadAge <= 0 {
+		o.StaleUploadAge = DefaultStaleUploadAge
 	}
 	return o
 }

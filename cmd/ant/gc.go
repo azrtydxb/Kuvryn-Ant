@@ -14,7 +14,6 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
-	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -38,7 +37,7 @@ func runGC(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, dryRun bo
 	if cfg.InstanceID != "" && !strings.EqualFold(cfg.InstanceID, owner.InstanceID) {
 		return errors.New("gc instance does not match local recovery identity")
 	}
-	stores, err := storage.New(cfg.Storage)
+	stores, _, err := openStores(pool, cfg, owner.InstanceID)
 	if err != nil {
 		return err
 	}

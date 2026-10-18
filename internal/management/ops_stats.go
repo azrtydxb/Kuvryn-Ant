@@ -189,6 +189,13 @@ func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "storage usage unavailable")
 		return
 	}
+	if h.d.StorageMigrator != nil {
+		if m := h.d.StorageMigrator(p.InstanceID); m != nil {
+			if rt, rerr := m.Route(ctx); rerr == nil {
+				out.Backend = rt.Active
+			}
+		}
+	}
 	out.DedupSavedBytes = max(0, out.LogicalBytes-(out.BlobBytes-out.UnreferencedBytes))
 	rows, err := h.db.Query(ctx, `SELECT d.id::text,d.name,count(b.id),COALESCE(sum(b.size_bytes),0)::bigint FROM dedup_domains d LEFT JOIN blobs b ON b.dedup_domain_id=d.id WHERE d.instance_id=$1 GROUP BY d.id,d.name ORDER BY 4 DESC,d.id LIMIT 100`, p.InstanceID)
 	if err != nil {

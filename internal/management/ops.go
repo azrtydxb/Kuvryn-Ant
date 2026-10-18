@@ -11,6 +11,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteruntime"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -67,6 +68,8 @@ type OpsDeps struct {
 	Env []EnvSetting
 	// Retention returns the maintenance service for the serving instance, or nil.
 	Retention func(instance string) *retention.Service
+	// StorageMigrator returns the storage migration service for the serving instance, or nil.
+	StorageMigrator func(instance string) *storage.Migrator
 }
 
 type opsHandlers struct {
@@ -110,6 +113,11 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"GET /api/v1/stats/feeds":                       h.feedStats,
 		"GET /api/v1/stats/sources":                     h.sourceStats,
 		"GET /api/v1/storage/usage":                     h.storageUsage,
+		"GET /api/v1/storage/migration":                 h.storageMigrationStatus,
+		"GET /api/v1/storage/migrations":                h.listStorageJobs,
+		"POST /api/v1/storage/migrations":               h.startStorageJob,
+		"GET /api/v1/storage/migrations/{id}":           h.getStorageJob,
+		"POST /api/v1/storage/migrations/{id}/{action}": h.storageJobAction,
 		"GET /api/v1/metrics/traffic":                   h.traffic,
 		"GET /api/v1/assets/{id}/provenance":            h.provenance,
 		"GET /api/v1/webhooks/stats":                    h.webhookStats,

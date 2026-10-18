@@ -12,7 +12,6 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/backup"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
-	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 )
 
 const backupUsage = "usage: ant backup [--concurrency N] <new-or-empty-dir> | ant backup verify [--expect-manifest-sha256 HEX] <dir> | ant restore [--force] [--expect-manifest-sha256 HEX] [--concurrency N] <dir>"
@@ -58,7 +57,7 @@ func backupCommand(ctx context.Context, logger *slog.Logger, args []string, outp
 		return 1
 	}
 	defer pool.Close()
-	stores, err := storage.New(cfg.Storage)
+	stores, _, err := openStores(pool, cfg, cfg.InstanceID)
 	if err != nil {
 		logger.Error("storage configuration rejected", "reason", err)
 		return 1

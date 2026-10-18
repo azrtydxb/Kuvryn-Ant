@@ -68,6 +68,7 @@ type artifactRuntime struct {
 	npm         *npmregistry.Registry
 	manager     *ownership.Manager
 	stores      *storage.Registry
+	migrator    *storage.Migrator
 	registry    *oci.Registry
 	goProxy     *goproxy.Proxy
 	service     *artifact.Service
@@ -107,7 +108,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 		_ = manager.Close()
 		return nil, err
 	}
-	stores, err := storage.New(cfg.Storage)
+	stores, router, err := openStores(pool, cfg, instance)
 	if err != nil {
 		manager.Close()
 		return nil, err
@@ -314,7 +315,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 		}
 		service.Remote = remote
 	}
-	return &artifactRuntime{remote: remote, apk: apkRepository, apt: aptRepository, rpm: rpmRepository, terraform: terraformRepository, swift: swiftRepository, cocoapods: cocoapodsRepository, huggingface: huggingfaceRepository, p2: p2Repository, conan: conanRepository, conda: condaRepository, ansible: ansibleRepository, cran: cranRepository, rubygems: rubygemsRepository, gitlfs: gitlfsRepository, composer: composerRepository, pubrepo: pubrepoRepository, instanceID: instance, nuget: nugetRepository, maven: mavenRepository, pypi: pypiRepository, manager: manager, stores: stores, registry: registry, goProxy: goProxy, service: service, cargo: cargoRegistry, helm: helmrepo.New(pool, service), raw: rawRepository, npm: npmRegistry}, nil
+	return &artifactRuntime{remote: remote, apk: apkRepository, apt: aptRepository, rpm: rpmRepository, terraform: terraformRepository, swift: swiftRepository, cocoapods: cocoapodsRepository, huggingface: huggingfaceRepository, p2: p2Repository, conan: conanRepository, conda: condaRepository, ansible: ansibleRepository, cran: cranRepository, rubygems: rubygemsRepository, gitlfs: gitlfsRepository, composer: composerRepository, pubrepo: pubrepoRepository, instanceID: instance, nuget: nugetRepository, maven: mavenRepository, pypi: pypiRepository, manager: manager, stores: stores, migrator: newMigrator(pool, cfg, instance, stores, router), registry: registry, goProxy: goProxy, service: service, cargo: cargoRegistry, helm: helmrepo.New(pool, service), raw: rawRepository, npm: npmRegistry}, nil
 }
 func (r *artifactRuntime) Register(mux *http.ServeMux) {
 	if r != nil {

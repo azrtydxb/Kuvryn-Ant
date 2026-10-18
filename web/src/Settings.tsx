@@ -14,6 +14,7 @@ import {
   Table,
 } from "./ds/bundle";
 import { RetentionPane } from "./Retention";
+import { StorageMigrationSection } from "./StorageMigration";
 import {
   Failure,
   Loading,
@@ -276,6 +277,7 @@ function StoragePane({ client }: { client: Client }) {
           ]}
         />
       </SettingsSection>
+      <StorageMigrationSection client={client} />
       {s.domains.length > 0 && (
         <Table
           rowKey="domain_id"

@@ -23,8 +23,9 @@ import (
 )
 
 type fixtureMultipart struct {
-	key   string
-	parts map[int32][]byte
+	key       string
+	parts     map[int32][]byte
+	initiated time.Time
 }
 type s3Fixture struct {
 	mu                                               sync.Mutex
@@ -33,6 +34,40 @@ type s3Fixture struct {
 	sequence, partCalls, copyCalls, conditionalCalls int
 	failPart, failCopy, failConditional, failDelete  bool
 	ignoreRange, allowPublishedDelete                bool
+	now                                              func() time.Time
+}
+
+func (f *s3Fixture) clock() time.Time {
+	if f.now != nil {
+		return f.now()
+	}
+	return time.Now()
+}
+func (f *s3Fixture) ListParts(ctx context.Context, in *s3.ListPartsInput, _ ...func(*s3.Options)) (*s3.ListPartsOutput, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	up := f.uploads[aws.ToString(in.UploadId)]
+	if up == nil {
+		return nil, apiError("NoSuchUpload")
+	}
+	out := &s3.ListPartsOutput{}
+	for n := int32(1); n <= 10000; n++ {
+		if _, ok := up.parts[n]; ok {
+			out.Parts = append(out.Parts, types.Part{PartNumber: aws.Int32(n), ETag: aws.String(fmt.Sprintf("opaque-part-%d", n))})
+		}
+	}
+	return out, nil
+}
+func (f *s3Fixture) ListMultipartUploads(ctx context.Context, in *s3.ListMultipartUploadsInput, _ ...func(*s3.Options)) (*s3.ListMultipartUploadsOutput, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	out := &s3.ListMultipartUploadsOutput{}
+	for id, up := range f.uploads {
+		if strings.HasPrefix(up.key, aws.ToString(in.Prefix)) {
+			out.Uploads = append(out.Uploads, types.MultipartUpload{Key: aws.String(up.key), UploadId: aws.String(id), Initiated: aws.Time(up.initiated)})
+		}
+	}
+	return out, nil
 }
 
 func fixture(t *testing.T) (*S3, *s3Fixture) {
@@ -53,7 +88,7 @@ func (f *s3Fixture) CreateMultipartUpload(ctx context.Context, in *s3.CreateMult
 	}
 	f.sequence++
 	id := strconv.Itoa(f.sequence)
-	f.uploads[id] = &fixtureMultipart{key: aws.ToString(in.Key), parts: map[int32][]byte{}}
+	f.uploads[id] = &fixtureMultipart{key: aws.ToString(in.Key), parts: map[int32][]byte{}, initiated: f.clock()}
 	return &s3.CreateMultipartUploadOutput{UploadId: aws.String(id)}, nil
 }
 func (f *s3Fixture) UploadPart(ctx context.Context, in *s3.UploadPartInput, _ ...func(*s3.Options)) (*s3.UploadPartOutput, error) {
