@@ -15,7 +15,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
@@ -36,6 +38,9 @@ type Registry struct {
 	auth             *identity.Bearer
 	transfers        chan struct{}
 	instance, rootID string
+	mirror           Mirror
+	anonMu           sync.Mutex
+	anon             identity.Principal
 }
 
 func New(db *pgxpool.Pool, service *artifact.Service, uploadRoot string) (*Registry, error) {
@@ -74,6 +79,12 @@ func (r *Registry) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	// OCI clients discover authentication with an initial credential-free probe.
 	// This cheap challenge does not represent a failed credential verification.
 	if len(request.Header.Values("Authorization")) == 0 {
+		// Feeds with anonymous_read (typically a pull-through mirror used by
+		// dockerd, which never sends credentials to a mirror) are served without
+		// a challenge. Everything else, and every write, still gets the 401.
+		if r.serveAnonymous(w, request) {
+			return
+		}
 		w.Header().Set("WWW-Authenticate", `Basic realm="Kuvryn Ant"`)
 		failure(w, http.StatusUnauthorized, "UNAUTHORIZED", "registry authentication required")
 		return
@@ -125,7 +136,15 @@ func failure(w http.ResponseWriter, status int, code, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]string{{"code": code, "message": message}}})
 }
 func failService(w http.ResponseWriter, err error) {
+	var limited *artifact.RateLimitedError
 	switch {
+	case errors.As(err, &limited):
+		after := int(limited.RetryAfter.Seconds())
+		if after < 1 {
+			after = 30
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(after))
+		failure(w, 429, "TOOMANYREQUESTS", "upstream registry rate limit reached")
 	case errors.Is(err, artifact.ErrDenied):
 		failure(w, 403, "DENIED", "repository access denied")
 	case errors.Is(err, artifact.ErrNotFound), errors.Is(err, blob.ErrNotFound):
@@ -144,30 +163,169 @@ func failService(w http.ResponseWriter, err error) {
 var namePattern = regexp.MustCompile(`^[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*(\/[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*)*$`)
 var tagPattern = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9._-]{0,127}$`)
 
-type repository struct{ feed, name, namespace, full string }
+type repository struct {
+	feed, name, namespace, full string
+	mirror, anonymous           bool
+}
+
+// Mirror configures serving an OCI feed without the feed slug prefix so the
+// registry works as a pull-through mirror for dockerd, buildkit and containerd.
+// A prefixed path (/v2/<feed-slug>/...) always wins when its first segment is an
+// existing OCI feed slug. Otherwise the whole name is the upstream repository
+// and the feed is chosen by the containerd "ns" query parameter (Namespaces),
+// or DefaultFeed when no ns is sent. Mirror routes are read-only.
+type Mirror struct {
+	DefaultFeed string            // feed slug used when the client sends no ns
+	Namespaces  map[string]string // upstream registry host (ns=) -> feed slug
+}
+
+// SetMirror enables mirror routing. It must be called before serving.
+func (r *Registry) SetMirror(m Mirror) {
+	ns := make(map[string]string, len(m.Namespaces))
+	for host, slug := range m.Namespaces {
+		ns[strings.ToLower(host)] = slug
+	}
+	r.mirror = Mirror{DefaultFeed: m.DefaultFeed, Namespaces: ns}
+}
+
+// mirrorSlug picks the mirror feed for a request. With a namespace map, an
+// unlisted ns is refused rather than silently answered from the default feed.
+func (r *Registry) mirrorSlug(ns string) string {
+	ns = strings.ToLower(ns)
+	if ns != "" {
+		if slug, ok := r.mirror.Namespaces[ns]; ok {
+			return slug
+		}
+		if len(r.mirror.Namespaces) > 0 {
+			return ""
+		}
+	}
+	return r.mirror.DefaultFeed
+}
+
+func (r *Registry) feedBySlug(ctx context.Context, instance, slug string) (id string, anonymous bool, err error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err = r.db.QueryRow(ctx, `SELECT id,anonymous_read FROM feeds WHERE instance_id=$1 AND slug=$2 AND format IN ('oci','oci-artifacts')`, instance, slug).Scan(&id, &anonymous)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, artifact.ErrNotFound
+	}
+	if err != nil {
+		return "", false, artifact.ErrUnavailable
+	}
+	return id, anonymous, nil
+}
+
+// route resolves a client-visible repository name to a feed.
+func (r *Registry) route(ctx context.Context, instance, name, ns string) (repository, error) {
+	if len(name) > 256 || len(ns) > 255 || !namePattern.MatchString(name) {
+		return repository{}, artifact.ErrInput
+	}
+	if slug, repo, ok := strings.Cut(name, "/"); ok {
+		id, anonymous, err := r.feedBySlug(ctx, instance, slug)
+		if err == nil {
+			result := repository{feed: id, name: repo, full: name, anonymous: anonymous}
+			if i := strings.LastIndex(repo, "/"); i >= 0 {
+				result.namespace = repo[:i]
+			}
+			return result, nil
+		}
+		if !errors.Is(err, artifact.ErrNotFound) {
+			return repository{}, err
+		}
+	}
+	slug := r.mirrorSlug(ns)
+	if slug == "" {
+		return repository{}, artifact.ErrNotFound
+	}
+	id, anonymous, err := r.feedBySlug(ctx, instance, slug)
+	if err != nil {
+		return repository{}, err
+	}
+	result := repository{feed: id, name: name, full: name, mirror: true, anonymous: anonymous}
+	if i := strings.LastIndex(name, "/"); i >= 0 {
+		result.namespace = name[:i]
+	}
+	return result, nil
+}
 
 func (r *Registry) repository(ctx context.Context, p identity.Principal, name string) (repository, error) {
 	if p.InstanceID != r.instance {
 		return repository{}, artifact.ErrNotFound
 	}
-	feed, repo, ok := strings.Cut(name, "/")
-	if !ok || len(name) > 256 || !namePattern.MatchString(name) {
-		return repository{}, artifact.ErrInput
+	return r.route(ctx, p.InstanceID, name, "")
+}
+
+// anonymousPrincipal returns the internal anonymous-reader principal.
+func (r *Registry) anonymousPrincipal(ctx context.Context) (identity.Principal, error) {
+	r.anonMu.Lock()
+	defer r.anonMu.Unlock()
+	if r.anon.PrincipalID != "" {
+		return r.anon, nil
 	}
-	result := repository{name: repo, full: name}
-	if i := strings.LastIndex(repo, "/"); i >= 0 {
-		result.namespace = repo[:i]
-	}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	err := r.db.QueryRow(ctx, `SELECT id FROM feeds WHERE instance_id=$1 AND slug=$2 AND format IN ('oci','oci-artifacts')`, p.InstanceID, feed).Scan(&result.feed)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return repository{}, artifact.ErrNotFound
-	}
+	p, err := (identity.Roles{DB: r.db}).EnsureAnonymous(ctx, r.instance)
 	if err != nil {
-		return repository{}, artifact.ErrUnavailable
+		return identity.Principal{}, err
 	}
-	return result, nil
+	r.anon = p
+	return p, nil
+}
+
+// splitName separates "/v2/<name>/<action>/<reference>".
+func splitName(path string) (name, action, reference string) {
+	path = strings.TrimPrefix(path, "/v2/")
+	// Some clients omit the trailing slash when starting an upload.
+	if strings.HasSuffix(path, "/blobs/uploads") && len(path) > len("/blobs/uploads") {
+		path += "/"
+	}
+	bestIndex := 0
+	for _, candidate := range []string{"/blobs/uploads/", "/manifests/", "/referrers/", "/blobs/", "/tags/list"} {
+		if index := strings.LastIndex(path, candidate); index > bestIndex {
+			name = path[:index]
+			action = candidate
+			reference = path[index+len(candidate):]
+			bestIndex = index
+		}
+	}
+	return
+}
+
+// serveAnonymous serves an unauthenticated read of an anonymous_read feed. It
+// reports false (nothing written) when the caller must authenticate instead.
+func (r *Registry) serveAnonymous(w http.ResponseWriter, req *http.Request) bool {
+	if req.Method != http.MethodGet && req.Method != http.MethodHead {
+		return false
+	}
+	if !strings.HasPrefix(req.URL.Path, "/v2/") || strings.ContainsAny(req.URL.Path, "\\\x00") {
+		return false
+	}
+	ns := req.URL.Query().Get("ns")
+	anonymous := false
+	if req.URL.Path == "/v2/" {
+		slug := r.mirrorSlug(ns)
+		if slug == "" {
+			return false
+		}
+		_, a, err := r.feedBySlug(req.Context(), r.instance, slug)
+		anonymous = err == nil && a
+	} else {
+		name, _, _ := splitName(req.URL.Path)
+		if name == "" {
+			return false
+		}
+		rep, err := r.route(req.Context(), r.instance, name, ns)
+		anonymous = err == nil && rep.anonymous
+	}
+	if !anonymous {
+		return false
+	}
+	p, err := r.anonymousPrincipal(req.Context())
+	if err != nil {
+		failure(w, 503, "UNKNOWN", "registry unavailable")
+		return true
+	}
+	r.serve(w, req.WithContext(identity.WithAuthenticatedPrincipal(req.Context(), p)))
+	return true
 }
 func (rep repository) publication(version, key string) artifact.Publication {
 	return artifact.Publication{FeedID: rep.feed, Namespace: rep.namespace, Coordinate: rep.name, Version: version, AssetKey: key}
@@ -191,32 +349,41 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 		failure(w, 404, "NAME_UNKNOWN", "repository not found")
 		return
 	}
-	path := strings.TrimPrefix(req.URL.Path, "/v2/")
-	var name, action, reference string
-	bestIndex := 0
-	for _, candidate := range []string{"/blobs/uploads/", "/manifests/", "/referrers/", "/blobs/", "/tags/list"} {
-		if index := strings.LastIndex(path, candidate); index > bestIndex {
-			name = path[:index]
-			action = candidate
-			reference = path[index+len(candidate):]
-			bestIndex = index
-		}
-	}
+	name, action, reference := splitName(req.URL.Path)
 	if name == "" || strings.Contains(reference, "/") {
 		failure(w, 404, "NAME_UNKNOWN", "repository not found")
 		return
 	}
-	rep, err := r.repository(req.Context(), p, name)
+	if p.InstanceID != r.instance {
+		failService(w, artifact.ErrNotFound)
+		return
+	}
+	rep, err := r.route(req.Context(), p.InstanceID, name, req.URL.Query().Get("ns"))
 	if err != nil {
 		failService(w, err)
 		return
 	}
+	if rep.mirror && req.Method != http.MethodGet && req.Method != http.MethodHead {
+		failure(w, 405, "UNSUPPORTED", "mirror feeds are read-only")
+		return
+	}
+	if p.Anonymous && req.Method != http.MethodGet && req.Method != http.MethodHead {
+		failure(w, 401, "UNAUTHORIZED", "authentication required")
+		return
+	}
 	switch action {
 	case "/blobs/uploads/":
+		// Multi-platform pushes upload several blobs at once. Queue briefly for a
+		// slot instead of failing so the client does not have to retry-storm.
+		wait := time.NewTimer(15 * time.Second)
 		select {
 		case r.transfers <- struct{}{}:
+			wait.Stop()
 			defer func() { <-r.transfers }()
-		default:
+		case <-req.Context().Done():
+			wait.Stop()
+			return
+		case <-wait.C:
 			w.Header().Set("Retry-After", "1")
 			failure(w, 503, "UNKNOWN", "upload capacity exhausted")
 			return

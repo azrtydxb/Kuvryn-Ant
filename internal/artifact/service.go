@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/routing"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -193,11 +195,42 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 	if err = s.authorize(ctx, p, r, source); err != nil {
 		return Record{}, err
 	}
+	// Concurrent publishes (a multi-platform image pushes several blobs at once)
+	// contend on the feed/source rows and on foreign-key share locks taken by
+	// upload sessions; PostgreSQL may pick one as a deadlock victim. The bytes
+	// are already staged, so only the metadata transaction is retried.
+	var result Record
+	for attempt := 0; ; attempt++ {
+		result, err = s.publishTx(ctx, p, r, source, domain, feedRevision, store)
+		if err == nil || attempt >= 4 || !transientDB(err) || ctx.Err() != nil {
+			break
+		}
+		time.Sleep(time.Duration(20*(attempt+1)) * time.Millisecond)
+	}
+	return result, err
+}
+
+// dbErr reports a database failure as ErrUnavailable while keeping the cause
+// for retry decisions.
+func dbErr(err error) error {
+	if err == nil {
+		return ErrUnavailable
+	}
+	return fmt.Errorf("%w: %w", ErrUnavailable, err)
+}
+
+// transientDB reports a deadlock or serialization failure, safe to retry.
+func transientDB(err error) bool {
+	var pg *pgconn.PgError
+	return errors.As(err, &pg) && (pg.Code == "40P01" || pg.Code == "40001")
+}
+
+func (s *Service) publishTx(ctx context.Context, p identity.Principal, r Publication, source, domain string, feedRevision int64, store blob.Store) (Record, error) {
 	commitCtx, stop := context.WithTimeout(ctx, 15*time.Second)
 	defer stop()
 	tx, err := s.DB.BeginTx(commitCtx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, dbErr(err)
 	}
 	defer rollback(tx)
 	lease := s.Lease()
@@ -214,7 +247,7 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 		return Record{}, ErrNotFound
 	}
 	if err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, dbErr(err)
 	}
 	if currentRevision != feedRevision {
 		return Record{}, ErrConflict
@@ -223,7 +256,7 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 	// adapter-derived metadata; Coordinate must be the full normalized identity.
 	digest := sha256.Sum256([]byte(p.InstanceID + "\x00" + source + "\x00" + r.Coordinate))
 	if _, err = tx.Exec(commitCtx, "SELECT pg_advisory_xact_lock($1)", int64(binary.BigEndian.Uint64(digest[:8]))); err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, dbErr(err)
 	}
 	var component, version string
 	err = tx.QueryRow(commitCtx, `INSERT INTO components(instance_id,source_id,coordinate,namespace) VALUES($1,$2,$3,$4) ON CONFLICT(source_id,coordinate) DO UPDATE SET coordinate=excluded.coordinate WHERE components.namespace=excluded.namespace RETURNING id::text`, p.InstanceID, source, r.Coordinate, r.Namespace).Scan(&component)
@@ -231,18 +264,18 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 		return Record{}, ErrConflict
 	}
 	if err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, dbErr(err)
 	}
 	err = tx.QueryRow(commitCtx, `INSERT INTO versions(instance_id,component_id,version) VALUES($1,$2,$3) ON CONFLICT(component_id,version) DO UPDATE SET version=excluded.version RETURNING id::text`, p.InstanceID, component, r.Version).Scan(&version)
 	if err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, dbErr(err)
 	}
 	result, err := commitAsset(commitCtx, tx, store, p, r, source, domain, component, version, true)
 	if err != nil {
 		return Record{}, err
 	}
 	if err = tx.Commit(commitCtx); err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, dbErr(err)
 	}
 	return result, nil
 }

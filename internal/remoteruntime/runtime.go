@@ -180,6 +180,8 @@ func safeError(err error) error {
 		return context.DeadlineExceeded
 	case errors.Is(err, io.EOF):
 		return io.EOF
+	case errors.As(err, new(*upstream.RateLimitError)):
+		return err // typed so callers can surface 429 and Retry-After
 	case errors.Is(err, upstream.ErrPolicy), errors.Is(err, ErrPolicy):
 		return ErrPolicy
 	case errors.Is(err, cache.ErrCapacity), errors.Is(err, ErrCapacity):
