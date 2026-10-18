@@ -667,3 +667,36 @@ func (s *Service) PullThrough(ctx context.Context, p identity.Principal, r Publi
 	}
 	return m, false, nil
 }
+
+// CacheDocument stores small, already-verified bytes (for example an OCI
+// manifest obtained while resolving a tag) as an immutable asset of the remote
+// source that served them, so later reads by content address are local hits.
+// Failure to cache never affects the response the caller already has.
+func (s *Service) CacheDocument(ctx context.Context, p identity.Principal, r Publication, source string, data []byte) error {
+	if s == nil || s.Storage == nil || s.Lease == nil || !bounded(r.Version, 256) || !bounded(r.AssetKey, 2048) || !bounded(r.MediaType, 256) || int64(len(data)) > 16<<20 {
+		return ErrInput
+	}
+	sum := sha256.Sum256(data)
+	r.Info = blob.Info{Digest: blob.Digest(hex.EncodeToString(sum[:])), Size: int64(len(data))}
+	domain, err := s.remoteDomain(ctx, p, source)
+	if err != nil {
+		return err
+	}
+	store, err := s.Storage(ctx, domain)
+	if err != nil || store == nil {
+		return ErrUnavailable
+	}
+	upload, err := store.Stage(ctx)
+	if err != nil {
+		return ErrUnavailable
+	}
+	defer upload.Abort()
+	if _, err = upload.Write(data); err != nil {
+		return ErrUnavailable
+	}
+	if _, err = upload.Finalize(ctx, r.Info); err != nil {
+		return ErrUnavailable
+	}
+	_, err = s.commitMaterialized(ctx, p, r, source, domain)
+	return err
+}
