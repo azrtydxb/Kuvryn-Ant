@@ -130,6 +130,8 @@ type Manager struct {
 	done              chan struct{}
 	requests, network chan struct{}
 	closeOnce         sync.Once
+	health            *Health
+	cacheObserver     func(string, bool)
 }
 
 func (*Manager) String() string   { return "remoteruntime.Manager{redacted}" }
@@ -168,7 +170,7 @@ func New(pool *pgxpool.Pool, instanceID string, keys *secrets.Keyring, o Options
 		caFiles[ref] = path
 	}
 	o.CAFiles = caFiles
-	return &Manager{db: pool, instance: id.String(), keys: keys, options: o, entries: map[string]*entry{}, done: make(chan struct{}), requests: make(chan struct{}, o.MaxInflight), network: make(chan struct{}, o.MaxInflight)}, nil
+	return &Manager{db: pool, instance: id.String(), keys: keys, options: o, entries: map[string]*entry{}, done: make(chan struct{}), requests: make(chan struct{}, o.MaxInflight), network: make(chan struct{}, o.MaxInflight), health: NewHealth()}, nil
 }
 func safeError(err error) error {
 	switch {
@@ -513,6 +515,7 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 	if representation == "" {
 		representation = "*/*"
 	}
+	loaded := false
 	value, err := e.cache.Revalidate(ctx, cache.Key{Source: r.SourceID, Identity: r.identity(), Representation: representation, AuthorizationDomain: r.AuthorizationDomain}, cache.GetOptions{AllowStale: r.AllowStale}, func(ctx context.Context, previous *cache.Value) (cache.Value, error) {
 		if err := m.loadStart(e); err != nil {
 			return cache.Value{}, err
@@ -524,10 +527,14 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 			return cache.Value{}, err
 		}
 		defer func() { <-m.network }()
+		loaded = true
+		started := time.Now()
 		response, err := e.fetcher.Fetch(ctx, http.MethodGet, target(e, r), requestHeaders(r, previous))
 		if err != nil {
+			m.health.Record(r.SourceID, 0, time.Since(started), err)
 			return cache.Value{}, safeError(err)
 		}
+		m.health.Record(r.SourceID, response.StatusCode, time.Since(started), nil)
 		defer response.Body.Close()
 		if response.StatusCode != 200 && response.StatusCode != 304 && response.StatusCode != 404 {
 			return cache.Value{}, ErrUnavailable
@@ -547,6 +554,7 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 	if ctx.Err() != nil {
 		return cache.Value{}, ctx.Err()
 	}
+	m.observeCache(r.SourceID, !loaded)
 	return value, nil
 }
 
@@ -605,12 +613,16 @@ func (m *Manager) Fetch(ctx context.Context, r Request) (*Response, error) {
 		return nil, safeError(err)
 	}
 	finish := func() { cancel(); <-m.network; m.release(e); admit() }
+	started := time.Now()
 	response, err := e.fetcher.Fetch(ctx, http.MethodGet, target(e, r), requestHeaders(r, nil))
 	headerTimer.Stop()
+	m.observeCache(r.SourceID, false)
 	if err != nil {
+		m.health.Record(r.SourceID, 0, time.Since(started), err)
 		finish()
 		return nil, safeError(err)
 	}
+	m.health.Record(r.SourceID, response.StatusCode, time.Since(started), nil)
 	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
 		e.negativeStore(negative)
 	}

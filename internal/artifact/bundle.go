@@ -51,7 +51,8 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 		return nil, ErrUnavailable
 	}
 	source := ""
-	for _, item := range publications {
+	for i := range publications {
+		item := publications[i]
 		decision, err := router.Resolve(routing.Request{Namespace: item.Namespace, Package: item.Coordinate, Path: "/" + item.AssetKey, Principal: p.PrincipalID})
 		if err != nil {
 			return nil, ErrInput
@@ -66,6 +67,7 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 			return nil, ErrConflict
 		}
 		source = decision.TargetID
+		publications[i].MatchedRule = decision.RuleID
 	}
 	prepared, err := s.Prepare(ctx, p, base.FeedID, base.Namespace, base.Coordinate, base.AssetKey)
 	if err != nil {

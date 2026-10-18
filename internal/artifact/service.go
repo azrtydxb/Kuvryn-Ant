@@ -39,6 +39,8 @@ type Service struct {
 	Storage func(context.Context, string) (blob.Store, error)
 	// Remote enables pull-through reads (see remote.go). Nil disables them.
 	Remote RemoteBackend
+	// Downloads, when set, counts successful reads per asset (cheap, in-memory).
+	Downloads interface{ Download(assetID string) }
 	// MaxMaterializeBytes bounds one cached upstream artifact; zero means 8 GiB.
 	MaxMaterializeBytes int64
 
@@ -57,7 +59,9 @@ type Publication struct {
 	References                                                  []Reference
 	Tag                                                         string
 	FeedID, Namespace, Coordinate, Version, AssetKey, MediaType string
-	Info                                                        blob.Info
+	// MatchedRule is the publish-policy rule that selected the target, recorded as provenance.
+	MatchedRule string
+	Info        blob.Info
 }
 type Record struct {
 	ID, SourceID, VersionID, DomainID, MediaType string
@@ -134,6 +138,7 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 		return Record{}, ErrDenied
 	}
 	source := decision.TargetID
+	r.MatchedRule = decision.RuleID
 	if r.ExpectedSource != "" && r.ExpectedSource != source {
 		return Record{}, ErrConflict
 	}
@@ -323,7 +328,7 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p ident
 	if err = requireBlobBytes(commitCtx, store, r.Info); err != nil {
 		return Record{}, err
 	}
-	err = tx.QueryRow(commitCtx, `INSERT INTO assets(instance_id,version_id,asset_key,blob_id,media_type,provenance) VALUES($1,$2,$3,$4,$5,jsonb_build_object('source_id',$6::text,'principal_id',$7::text,'feed_id',$8::text)) RETURNING id::text`, p.InstanceID, version, r.AssetKey, blobID, r.MediaType, source, p.PrincipalID, r.FeedID).Scan(&result.ID)
+	err = tx.QueryRow(commitCtx, `INSERT INTO assets(instance_id,version_id,asset_key,blob_id,media_type,provenance) VALUES($1,$2,$3,$4,$5,jsonb_build_object('source_id',$6::text,'principal_id',$7::text,'feed_id',$8::text,'token_id',$9::text,'matched_rule',$10::text)) RETURNING id::text`, p.InstanceID, version, r.AssetKey, blobID, r.MediaType, source, p.PrincipalID, r.FeedID, p.TokenID, r.MatchedRule).Scan(&result.ID)
 	if err != nil {
 		return Record{}, ErrUnavailable
 	}
