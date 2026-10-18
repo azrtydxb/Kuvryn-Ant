@@ -37,6 +37,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -70,6 +71,11 @@ type Origin struct {
 	// Digest, when valid, is verified before the first byte is served: the
 	// artifact is fully staged and checked, then served from the store.
 	Digest blob.Digest
+	// Verify, when set, is an additional check for formats whose upstream
+	// integrity data is not a sha256 of the object (for example a Conan
+	// manifest). The object is fully staged, Verify reads it from the start,
+	// and an error aborts the cache entry; the client never sees the bytes.
+	Verify func(io.ReadSeeker) error
 }
 
 // Document is an upstream metadata response. Stale is true when it was served
@@ -368,13 +374,23 @@ func (s *Service) cacheStream(ctx context.Context, p identity.Principal, r Publi
 		}
 	}
 	t := &teeReader{want: o.Digest, svc: s, ctx: ctx, principal: p, pub: r, source: source, domain: domain, body: response.Body, upload: upload, hash: sha256.New(), expected: size, limit: s.materializeLimit(), release: release}
-	if o.Digest.Valid() {
+	if o.Digest.Valid() || o.Verify != nil {
 		// Verify before serving: stage everything, check, commit, then serve
 		// from the store. The client never sees unverified bytes.
 		defer release()
 		defer response.Body.Close()
 		if upload == nil {
 			return nil, ErrUnavailable
+		}
+		if o.Verify != nil {
+			spool, serr := os.CreateTemp("", "ant-remote-verify-*")
+			if serr != nil {
+				t.abort()
+				return nil, ErrUnavailable
+			}
+			defer os.Remove(spool.Name())
+			defer spool.Close()
+			t.spool, t.verify = spool, o.Verify
 		}
 		if _, err = io.Copy(io.Discard, t); err != nil {
 			t.abort()
@@ -411,6 +427,8 @@ type teeReader struct {
 	limit     int64
 	release   func()
 	want      blob.Digest
+	spool     *os.File
+	verify    func(io.ReadSeeker) error
 	finished  bool
 	err       error
 }
@@ -445,6 +463,14 @@ func (t *teeReader) Read(p []byte) (int, error) {
 			if _, werr := t.upload.Write(p[:n]); werr != nil {
 				t.abort()
 			}
+			if t.spool != nil {
+				if _, werr := t.spool.Write(p[:n]); werr != nil {
+					t.abort()
+					t.err = ErrUnavailable
+					t.finish()
+					return n, t.err
+				}
+			}
 		}
 	}
 	switch {
@@ -460,6 +486,14 @@ func (t *teeReader) Read(p []byte) (int, error) {
 			t.err = errDigestMismatch
 			t.finish()
 			return n, t.err
+		}
+		if t.verify != nil {
+			if _, serr := t.spool.Seek(0, io.SeekStart); serr != nil || t.verify(t.spool) != nil {
+				t.abort()
+				t.err = errDigestMismatch
+				t.finish()
+				return n, t.err
+			}
 		}
 		t.commit()
 		t.err = io.EOF
