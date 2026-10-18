@@ -69,23 +69,30 @@ func Compare(ctx context.Context, pool *pgxpool.Pool, instance string, m Manager
 			feed = Slug(it.Repository)
 		}
 		r := CompareResult{Repository: it.Repository, Path: it.Path, Feed: feed}
-		var err error
-		r.Source, err = sourceSide(ctx, m, it)
-		if err != nil {
+		src, srcErr := sourceSide(ctx, m, it)
+		var ant Side
+		var antErr error
+		if srcErr == nil {
+			ant, antErr = antSide(ctx, pool, instance, feed, it.Path)
+		}
+		switch {
+		case srcErr != nil:
 			r.Status = "error"
-			r.Source.Detail = "source manager: " + err.Error()
-		} else if r.Ant, err = antSide(ctx, pool, instance, feed, it.Path); err != nil {
+			r.Source = Side{Detail: "source manager: " + srcErr.Error()}
+		case antErr != nil:
 			r.Status = "error"
-			r.Ant.Detail = err.Error()
-		} else {
+			r.Source = src
+			r.Ant = Side{Detail: antErr.Error()}
+		default:
+			r.Source, r.Ant = src, ant
 			switch {
-			case r.Source.Found && r.Ant.Found && r.Source.SHA256 == r.Ant.SHA256:
+			case src.Found && ant.Found && src.SHA256 == ant.SHA256:
 				r.Status = "identical"
-			case r.Source.Found && r.Ant.Found:
+			case src.Found && ant.Found:
 				r.Status = "differs"
-			case r.Source.Found:
+			case src.Found:
 				r.Status = "missing_in_ant"
-			case r.Ant.Found:
+			case ant.Found:
 				r.Status = "missing_in_source"
 			default:
 				r.Status = "missing_in_both"
@@ -105,7 +112,7 @@ func sourceSide(ctx context.Context, m Manager, it CompareItem) (Side, error) {
 	if err != nil {
 		return Side{}, err
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 	h := sha256.New()
 	n, err := io.Copy(h, io.LimitReader(ctxReader{ctx, rc}, maxCompareBytes+1))
 	if err != nil {
