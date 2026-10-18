@@ -109,6 +109,11 @@ func TestPyPIPullThroughJSONIndexCDNAndCaching(t *testing.T) {
 	}
 
 	wheelURL := srv.URL + page.Files[0].URL
+	// Pip requests the PEP 658 sidecar before the wheel: a cold cache must pull
+	// it through on the first request (regression: first request returned 404).
+	if status, body, _ = f.Get(wheelURL + ".metadata"); status != 200 || body != core {
+		t.Fatalf("cold PEP 658 sidecar: %d %q", status, body)
+	}
 	if status, body, _ = f.Get(wheelURL); status != 200 || body != wheelBytes {
 		t.Fatalf("wheel via cdn: %d %q", status, body)
 	}
