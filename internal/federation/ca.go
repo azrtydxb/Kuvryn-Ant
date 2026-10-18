@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -15,6 +16,8 @@ import (
 	"net"
 	"net/url"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 )
 
 // Certificate lifetimes. Member certificates renew at two thirds of their life.
@@ -191,4 +194,39 @@ func tlsCertificate(certPEM, caPEM string, key *ecdsa.PrivateKey) (*tls.Certific
 		return nil, err
 	}
 	return &tls.Certificate{Certificate: [][]byte{leaf.Raw, ca.Raw}, PrivateKey: key, Leaf: leaf}, nil
+}
+
+// CSRRotationMessage is what the current certificate key signs to move a
+// member to a new TLS key at renewal.
+func CSRRotationMessage(csrPEM string) []byte {
+	sum := sha256.Sum256([]byte("kuvryn-ant/federation/csr-rotation/v1\n" + csrPEM))
+	return sum[:]
+}
+
+// checkRenewalKey accepts a renewal CSR only for the key of the certificate
+// the member authenticated with, or for a new key when the current key signed
+// the CSR (ASN.1 ECDSA over CSRRotationMessage, base64url). A stolen
+// certificate without its key therefore cannot be renewed onto another key.
+func checkRenewalKey(current *x509.Certificate, csrPEM, signature string) error {
+	block, _ := pem.Decode([]byte(csrPEM))
+	if block == nil || block.Type != "CERTIFICATE REQUEST" || len(csrPEM) > 16384 {
+		return errCSR
+	}
+	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil || csr.CheckSignature() != nil {
+		return errCSR
+	}
+	next, ok := csr.PublicKey.(*ecdsa.PublicKey)
+	cur, ok2 := current.PublicKey.(*ecdsa.PublicKey)
+	if !ok || !ok2 {
+		return errCSR
+	}
+	if next.Equal(cur) {
+		return nil
+	}
+	sig, err := peer.DecodeCanonical(signature)
+	if err != nil || !ecdsa.VerifyASN1(cur, CSRRotationMessage(csrPEM), sig) {
+		return errCSR
+	}
+	return nil
 }

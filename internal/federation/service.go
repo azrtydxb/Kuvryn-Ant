@@ -245,7 +245,7 @@ func (s *Service) Lookup(id string) (peer.Member, bool) {
 	if err != nil {
 		return peer.Member{}, false
 	}
-	return peer.Member{InstanceID: m.InstanceID, Name: m.Name, Status: m.Status, SigningKey: key}, true
+	return peer.Member{InstanceID: m.InstanceID, Name: m.Name, Status: m.Status, SigningKey: key, CertSHA256: m.AcceptedCerts(s.cfg.Now())}, true
 }
 func (s *Service) Now() time.Time { return s.cfg.Now() }
 

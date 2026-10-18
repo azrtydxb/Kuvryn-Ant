@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,6 +47,9 @@ type Member struct {
 	Name       string
 	Status     string
 	SigningKey ed25519.PublicKey
+	// CertSHA256 lists the certificate fingerprints accepted from the member
+	// (current, and previous during a renewal grace period).
+	CertSHA256 []string
 }
 
 // Trust is the current federation trust state, refreshed by the caller after
@@ -105,6 +109,9 @@ type Handler struct {
 	Reject func(r *http.Request, member, reason string)
 	// PublicRate and PublicBurst limit unauthenticated requests (public
 	// routes) per remote IP; zero selects DefaultPublicRate/DefaultPublicBurst.
+	// DeferPin lists routes ("METHOD /path") served even when the client
+	// certificate is not the member's accepted one (see PinPending).
+	DeferPin    map[string]bool
 	PublicRate  float64
 	PublicBurst int
 	nonces      nonceCache
@@ -175,8 +182,47 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.refuse(w, r, http.StatusUnauthorized, id, reason)
 		return
 	}
+	// Only the member's current certificate (or its previous one during a
+	// renewal grace period) is accepted: any other certificate the CA ever
+	// issued for this instance ID is refused. Routes in DeferPin carry
+	// self-authenticating documents that may announce the new fingerprint;
+	// they run with PinPending set and must re-check with Pinned.
+	ctx := context.WithValue(r.Context(), ctxKey{}, m)
+	if !slices.Contains(m.CertSHA256, LeafSHA256(r)) {
+		if !h.DeferPin[r.Method+" "+r.URL.Path] {
+			h.refuse(w, r, http.StatusForbidden, id, "certificate_not_current")
+			return
+		}
+		ctx = context.WithValue(ctx, pinKey{}, true)
+	}
 	r.Body = io.NopCloser(bytes.NewReader(body))
-	h.Mux.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, m)))
+	h.Mux.ServeHTTP(w, r.WithContext(ctx))
+}
+
+type pinKey struct{}
+
+// PinPending reports a request served under DeferPin whose client
+// certificate is not (yet) the member's accepted certificate.
+func PinPending(r *http.Request) bool {
+	v, _ := r.Context().Value(pinKey{}).(bool)
+	return v
+}
+
+// LeafSHA256 is the hex SHA-256 of the client's leaf certificate.
+func LeafSHA256(r *http.Request) string {
+	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+		return ""
+	}
+	sum := sha256.Sum256(r.TLS.PeerCertificates[0].Raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// Pinned reports whether the request's client certificate is accepted for
+// the member under the current trust state (after a DeferPin route applied
+// new documents).
+func Pinned(t Trust, r *http.Request, instanceID string) bool {
+	m, ok := t.Lookup(instanceID)
+	return ok && m.Status == "active" && slices.Contains(m.CertSHA256, LeafSHA256(r))
 }
 
 // signingString binds method, path and query, body digest, member, time and nonce.

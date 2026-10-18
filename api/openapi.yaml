@@ -23408,6 +23408,17 @@
           "cert_serial": {
             "type": "string"
           },
+          "previous_cert_sha256": {
+            "type": "string",
+            "description": "Previous certificate fingerprint, accepted until previous_cert_until after a renewal."
+          },
+          "previous_cert_serial": {
+            "type": "string"
+          },
+          "previous_cert_until": {
+            "type": "string",
+            "format": "date-time"
+          },
           "signing_key": {
             "type": "string"
           },

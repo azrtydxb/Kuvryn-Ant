@@ -2,13 +2,23 @@ package harness
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
+	"math/big"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 )
 
 // found founds federation "lab" on alpha and joins the other instances.
@@ -276,4 +286,168 @@ WHERE g.instance_id=$1 AND r.name='fed:everything'`, beta.id).Scan(&v); err != n
 	if got := inert(); got != "" {
 		t.Fatalf("all-feed grant after acceptance: %q", got)
 	}
+}
+
+// memberIdentity rebuilds an instance's peer identity from its database,
+// presenting certPEM (its current certificate when empty).
+func (in *instance) memberIdentity(certPEM string) peer.Identity {
+	in.t.Helper()
+	ctx := context.Background()
+	var secretID, current string
+	if err := in.pool.QueryRow(ctx, `SELECT member_secret_id::text,member_cert FROM federation_state WHERE instance_id=$1`, in.id).Scan(&secretID, &current); err != nil {
+		in.t.Fatal(err)
+	}
+	if certPEM == "" {
+		certPEM = current
+	}
+	_, plain, err := (secrets.Store{DB: in.pool, Keys: in.keys}).Open(ctx, in.id, secretID, "federation-member-key")
+	if err != nil {
+		in.t.Fatal(err)
+	}
+	var mat struct {
+		TLSKeyDER  []byte `json:"tls_key_der"`
+		SigningKey []byte `json:"signing_key"`
+	}
+	if err := json.Unmarshal(plain, &mat); err != nil {
+		in.t.Fatal(err)
+	}
+	key, err := x509.ParseECPrivateKey(mat.TLSKeyDER)
+	if err != nil {
+		in.t.Fatal(err)
+	}
+	block, _ := pem.Decode([]byte(certPEM))
+	doc := in.document(in.generation())
+	caBlock, _ := pem.Decode([]byte(doc.CACertificates[0]))
+	ca, _ := x509.ParseCertificate(caBlock.Bytes)
+	roots := x509.NewCertPool()
+	roots.AddCert(ca)
+	return peer.Identity{InstanceID: in.id, SigningKey: ed25519.NewKeyFromSeed(mat.SigningKey), Roots: roots,
+		Certificate: &tls.Certificate{Certificate: [][]byte{block.Bytes, ca.Raw}, PrivateKey: key}}
+}
+
+func (in *instance) memberCert() string {
+	in.t.Helper()
+	var c string
+	if err := in.pool.QueryRow(context.Background(), `SELECT member_cert FROM federation_state WHERE instance_id=$1`, in.id).Scan(&c); err != nil {
+		in.t.Fatal(err)
+	}
+	return c
+}
+
+// Peers accept only a member's current certificate, and its previous one
+// during the renewal grace period; the previous serial is revoked after the
+// grace period, and a renewal cannot move the member to a key it does not hold.
+func TestFederationCertificatePinning(t *testing.T) {
+	ctx := context.Background()
+	alpha, beta, gamma := newInstance(t, "alpha"), newInstance(t, "beta"), newInstance(t, "gamma")
+	found(t, alpha, beta, gamma)
+	if err := beta.svc.SyncOnce(ctx); err != nil {
+		t.Fatal(err)
+	}
+	status := func(id peer.Identity, to *instance) string {
+		_, err := (peer.Client{Now: beta.clock.Now}).Do(ctx, id, to.fedURL, "GET", "/federation/v1/status", nil, to.id)
+		return peerCode(err)
+	}
+	old := beta.memberCert()
+	if code := status(beta.memberIdentity(""), alpha); code != "" {
+		t.Fatalf("current certificate: %s", code)
+	}
+	// A certificate the CA issued for beta's instance ID that membership does
+	// not publish (here: issued directly with the CA key) is refused.
+	rogue := issueWithCA(t, alpha, beta)
+	if code := status(beta.memberIdentity(rogue), alpha); code != "certificate_not_current" {
+		t.Fatalf("unpublished certificate for the same instance: %q", code)
+	}
+
+	// Renewal: the old certificate stays accepted during the grace period.
+	if err := beta.svc.RenewCertificate(ctx); err != nil {
+		t.Fatalf("renew: %v", err)
+	}
+	if beta.memberCert() == old {
+		t.Fatal("certificate not renewed")
+	}
+	if err := gamma.svc.SyncOnce(ctx); err != nil {
+		t.Fatal(err)
+	}
+	for _, peerInst := range []*instance{alpha, gamma} {
+		if code := status(beta.memberIdentity(""), peerInst); code != "" {
+			t.Fatalf("renewed certificate at %s: %s", peerInst.name, code)
+		}
+		if code := status(beta.memberIdentity(old), peerInst); code != "" {
+			t.Fatalf("previous certificate during the grace period at %s: %s", peerInst.name, code)
+		}
+	}
+	// After the grace period the authority revokes the previous serial.
+	for _, in := range []*instance{alpha, beta, gamma} {
+		in.clock.Advance(25 * time.Hour)
+	}
+	if err := alpha.svc.RetireCertificates(ctx); err != nil {
+		t.Fatalf("retire: %v", err)
+	}
+	if err := gamma.svc.SyncOnce(ctx); err != nil {
+		t.Fatal(err)
+	}
+	head := alpha.document(alpha.generation())
+	if m, _ := head.Member(beta.id); m.PreviousCertSerial != "" || !head.Revoked(serialOf(t, old)) {
+		t.Fatalf("previous certificate not retired: %+v", m)
+	}
+	for _, peerInst := range []*instance{alpha, gamma} {
+		if code := status(beta.memberIdentity(old), peerInst); code != "certificate_revoked" {
+			t.Fatalf("previous certificate after the grace period at %s: %q", peerInst.name, code)
+		}
+		if code := status(beta.memberIdentity(""), peerInst); code != "" {
+			t.Fatalf("current certificate after retirement at %s: %s", peerInst.name, code)
+		}
+	}
+
+	// A renewal CSR for another key needs a signature by the current key.
+	other, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	der, _ := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: beta.id}}, other)
+	csr := string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE REQUEST", Bytes: der}))
+	body, _ := json.Marshal(map[string]string{"csr": csr})
+	if _, err := (peer.Client{Now: beta.clock.Now}).Do(ctx, beta.memberIdentity(""), alpha.fedURL, "POST", "/federation/v1/csr/renew", body, alpha.id); peerCode(err) != "csr_key_mismatch" {
+		t.Fatalf("renewal onto a foreign key: %v", err)
+	}
+}
+
+// issueWithCA signs a certificate for member's instance ID and key directly
+// with the authority's CA key, bypassing membership.
+func issueWithCA(t *testing.T, authority, member *instance) string {
+	t.Helper()
+	ctx := context.Background()
+	var caID string
+	if err := authority.pool.QueryRow(ctx, `SELECT ca_secret_id::text FROM federation_state WHERE instance_id=$1`, authority.id).Scan(&caID); err != nil {
+		t.Fatal(err)
+	}
+	_, plain, err := (secrets.Store{DB: authority.pool, Keys: authority.keys}).Open(ctx, authority.id, caID, "federation-ca")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ca struct {
+		KeyDER  []byte `json:"key_der"`
+		CertPEM string `json:"cert_pem"`
+	}
+	_ = json.Unmarshal(plain, &ca)
+	caKey, _ := x509.ParseECPrivateKey(ca.KeyDER)
+	caBlock, _ := pem.Decode([]byte(ca.CertPEM))
+	caCert, _ := x509.ParseCertificate(caBlock.Bytes)
+	curBlock, _ := pem.Decode([]byte(member.memberCert()))
+	cur, _ := x509.ParseCertificate(curBlock.Bytes)
+	tpl := &x509.Certificate{SerialNumber: big.NewInt(424242), Subject: pkix.Name{CommonName: member.id}, NotBefore: time.Now().Add(-time.Hour), NotAfter: time.Now().Add(time.Hour),
+		KeyUsage: x509.KeyUsageDigitalSignature, ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth}, IPAddresses: cur.IPAddresses, DNSNames: cur.DNSNames}
+	der, err := x509.CreateCertificate(rand.Reader, tpl, caCert, cur.PublicKey, caKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}))
+}
+
+func serialOf(t *testing.T, certPEM string) string {
+	t.Helper()
+	b, _ := pem.Decode([]byte(certPEM))
+	c, err := x509.ParseCertificate(b.Bytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c.SerialNumber.Text(16)
 }

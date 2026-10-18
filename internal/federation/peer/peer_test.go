@@ -5,10 +5,12 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/base64"
+	"encoding/hex"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -55,6 +57,9 @@ func TestHandlerAuthentication(t *testing.T) {
 		served++
 	})}
 	cert := leaf(t, memberID, 7)
+	m0 := trust.members[memberID]
+	m0.CertSHA256 = []string{certSHA(cert)}
+	trust.members[memberID] = m0
 	request := func(method, path, body string, certs bool, sign func(r *http.Request)) int {
 		r := httptest.NewRequest(method, path, strings.NewReader(body))
 		r.TLS = &tls.ConnectionState{}
@@ -135,5 +140,52 @@ func TestVerifyPinnedRequiresPinnedCA(t *testing.T) {
 	}
 	if err := verifyPinned(nil, strings.Repeat("0", 64), "127.0.0.1"); err == nil {
 		t.Fatal("empty chain accepted")
+	}
+}
+
+func certSHA(c *x509.Certificate) string {
+	sum := sha256.Sum256(c.Raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// Peer authentication accepts only the member's pinned certificate(s): a
+// certificate the CA issued for the same instance ID but not published as
+// current (or previous during the grace period) is refused, except on
+// DeferPin routes, which see PinPending and must re-check.
+func TestHandlerPinsMemberCertificate(t *testing.T) {
+	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
+	current, stale := leaf(t, memberID, 7), leaf(t, memberID, 8)
+	trust := &fakeTrust{members: map[string]Member{memberID: {InstanceID: memberID, Status: "active", SigningKey: pub, CertSHA256: []string{certSHA(current)}}},
+		revoked: map[string]bool{}, now: time.Now()}
+	var pending []bool
+	h := &Handler{Trust: trust, DeferPin: map[string]bool{"POST /nudge": true}, Mux: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pending = append(pending, PinPending(r))
+	})}
+	n := 0
+	request := func(method, path string, cert *x509.Certificate) int {
+		n++
+		r := httptest.NewRequest(method, path, nil)
+		r.TLS = &tls.ConnectionState{PeerCertificates: []*x509.Certificate{cert}, VerifiedChains: [][]*x509.Certificate{{cert}}}
+		ts := strconv.FormatInt(trust.now.Unix(), 10)
+		nonce := strings.Repeat(string(rune('a'+n)), 24)
+		r.Header.Set(HeaderMember, memberID)
+		r.Header.Set(HeaderTimestamp, ts)
+		r.Header.Set(HeaderNonce, nonce)
+		r.Header.Set(HeaderSignature, base64.RawURLEncoding.EncodeToString(ed25519.Sign(priv, signingString(method, path, memberID, ts, nonce, nil))))
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w.Code
+	}
+	if c := request("GET", "/heads", current); c != 200 {
+		t.Fatalf("current certificate: %d", c)
+	}
+	if c := request("GET", "/heads", stale); c != http.StatusForbidden {
+		t.Fatalf("certificate that is not the member's current one: %d", c)
+	}
+	if c := request("POST", "/nudge", stale); c != 200 || len(pending) != 2 || pending[0] || !pending[1] {
+		t.Fatalf("deferred pin: %d %v", c, pending)
+	}
+	if Pinned(trust, httptest.NewRequest("GET", "/", nil), memberID) {
+		t.Fatal("request without a certificate pinned")
 	}
 }
