@@ -1,0 +1,225 @@
+{
+  "docker": {
+    "version": "docker-v29.9.1",
+    "source": "https://api.github.com/repos/moby/moby/releases/latest",
+    "release": "https://github.com/moby/moby/releases/tag/docker-v29.9.1"
+  },
+  "helm": {
+    "version": "v4.3.1",
+    "source": "https://api.github.com/repos/helm/helm/releases/latest",
+    "release": "https://github.com/helm/helm/releases/tag/v4.3.1"
+  },
+  "cargo": {
+    "version": "1.99.1",
+    "source": "https://api.github.com/repos/rust-lang/rust/releases/latest",
+    "release": "https://github.com/rust-lang/rust/releases/tag/1.99.1"
+  },
+  "oras": {
+    "version": "v1.3.4",
+    "source": "https://api.github.com/repos/oras-project/oras/releases/latest",
+    "release": "https://github.com/oras-project/oras/releases/tag/v1.3.4"
+  },
+  "ansible": {
+    "version": "v2.21.5",
+    "source": "https://api.github.com/repos/ansible/ansible/releases/latest",
+    "release": "https://github.com/ansible/ansible/releases/tag/v2.21.5"
+  },
+  "cocoapods": {
+    "version": "1.17.0",
+    "source": "https://api.github.com/repos/CocoaPods/CocoaPods/releases/latest",
+    "release": "https://github.com/CocoaPods/CocoaPods/releases/tag/1.17.0"
+  },
+  "composer": {
+    "version": "2.10.3",
+    "source": "https://api.github.com/repos/composer/composer/releases/latest",
+    "release": "https://github.com/composer/composer/releases/tag/2.10.3"
+  },
+  "conan": {
+    "version": "2.33.0",
+    "source": "https://pypi.org/pypi/conan/json",
+    "release": "https://pypi.org/project/conan/"
+  },
+  "conda": {
+    "version": "26.9.3",
+    "source": "https://api.github.com/repos/conda/conda/releases/latest",
+    "release": "https://github.com/conda/conda/releases/tag/26.9.3"
+  },
+  "git-lfs": {
+    "version": "v3.8.0",
+    "source": "https://api.github.com/repos/git-lfs/git-lfs/releases/latest",
+    "release": "https://github.com/git-lfs/git-lfs/releases/tag/v3.8.0"
+  },
+  "maven": {
+    "version": "maven-3.10.0",
+    "source": "https://api.github.com/repos/apache/maven/releases/latest",
+    "release": "https://github.com/apache/maven/releases/tag/maven-3.10.0"
+  },
+  "npm": {
+    "version": "v12.2.1",
+    "source": "https://api.github.com/repos/npm/cli/releases/latest",
+    "release": "https://github.com/npm/cli/releases/tag/v12.2.1"
+  },
+  "chocolatey": {
+    "version": "2.7.4",
+    "source": "https://api.github.com/repos/chocolatey/choco/releases/latest",
+    "release": "https://github.com/chocolatey/choco/releases/tag/2.7.4"
+  },
+  "rubygems": {
+    "version": "v4.0.23",
+    "source": "https://api.github.com/repos/rubygems/rubygems/releases/latest",
+    "release": "https://github.com/ruby/rubygems/releases/tag/v4.0.23"
+  },
+  "swift": {
+    "version": "swift-6.4.1-RELEASE",
+    "source": "https://api.github.com/repos/swiftlang/swift/releases/latest",
+    "release": "https://github.com/swiftlang/swift/releases/tag/swift-6.4.1-RELEASE"
+  },
+  "terraform": {
+    "version": "v1.16.6",
+    "source": "https://api.github.com/repos/hashicorp/terraform/releases/latest",
+    "release": "https://github.com/hashicorp/terraform/releases/tag/v1.16.6"
+  },
+  "dnf5": {
+    "version": "5.4.6.0",
+    "source": "https://api.github.com/repos/rpm-software-management/dnf5/releases/latest",
+    "release": "https://github.com/rpm-software-management/dnf5/releases/tag/5.4.6.0"
+  },
+  "keycloak": {
+    "version": "26.8.1",
+    "source": "https://api.github.com/repos/keycloak/keycloak/releases/latest",
+    "release": "https://github.com/keycloak/keycloak/releases/tag/26.8.1"
+  },
+  "zitadel": {
+    "version": "v4.19.5",
+    "source": "https://api.github.com/repos/zitadel/zitadel/releases/latest",
+    "release": "https://github.com/zitadel/zitadel/releases/tag/v4.19.5"
+  },
+  "ceph": {
+    "version": "20.2.4",
+    "source": "https://docs.ceph.com/en/latest/releases/",
+    "selection": "documented planning baseline; not conformance-tested",
+    "role": "optional candidate only; superseded by OKE/MinIO as primary validation"
+  },
+  "pip": {
+    "version": "26.2.1",
+    "source": "https://pypi.org/pypi/pip/json",
+    "release": "https://pypi.org/project/pip/"
+  },
+  "twine": {
+    "version": "7.0.0",
+    "source": "https://pypi.org/pypi/twine/json",
+    "release": "https://pypi.org/project/twine/"
+  },
+  "huggingface-hub": {
+    "version": "2.2.0",
+    "source": "https://pypi.org/pypi/huggingface-hub/json",
+    "release": "https://pypi.org/project/huggingface-hub/"
+  },
+  "conda-index": {
+    "version": "0.13.0",
+    "source": "https://pypi.org/pypi/conda-index/json",
+    "release": "https://pypi.org/project/conda-index/"
+  },
+  "ansible-core": {
+    "version": "2.21.5",
+    "source": "https://pypi.org/pypi/ansible-core/json",
+    "release": "https://pypi.org/project/ansible-core/"
+  },
+  "go": {
+    "version": "go1.27.2",
+    "source": "https://go.dev/dl/?mode=json",
+    "release": "https://go.dev/dl/"
+  },
+  "dart": {
+    "version": "3.13.5",
+    "source": "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/VERSION",
+    "release": "https://storage.googleapis.com/dart-archive/channels/stable/release/latest/VERSION"
+  },
+  "flutter": {
+    "version": "3.47.0",
+    "source": "https://docs.flutter.dev/release/release-notes",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "dotnet": {
+    "version": "10.0.402",
+    "source": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json",
+    "release": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json"
+  },
+  "gradle": {
+    "version": "9.8.1",
+    "source": "https://services.gradle.org/versions/current"
+  },
+  "postgres-primary": {
+    "version": "18.6",
+    "source": "https://www.postgresql.org/support/versioning/",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "postgres-secondary": {
+    "version": "17.11",
+    "source": "https://www.postgresql.org/support/versioning/",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "kubernetes-primary": {
+    "version": "1.36.5",
+    "source": "https://kubernetes.io/releases/",
+    "selection": "documented planning baseline; not conformance-tested",
+    "role": "optional candidate only; superseded by OKE/MinIO as primary validation"
+  },
+  "kubernetes-secondary": {
+    "version": "1.37.1",
+    "source": "https://kubernetes.io/releases/",
+    "selection": "documented planning baseline; not conformance-tested",
+    "role": "optional candidate only; superseded by OKE/MinIO as primary validation"
+  },
+  "openldap": {
+    "version": "2.6.15",
+    "source": "https://www.openldap.org/software/download/",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "samba": {
+    "version": "4.24.5",
+    "source": "https://www.samba.org/samba/history/",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "apt": {
+    "version": "3.0.3",
+    "source": "https://packages.debian.org/trixie/apt",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "alpine": {
+    "version": "3.24.2",
+    "source": "https://alpinelinux.org/releases/",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "r": {
+    "version": "4.6.1",
+    "source": "https://cran.r-project.org/src/base/R-4/",
+    "selection": "documented planning baseline; not conformance-tested"
+  },
+  "compose": {
+    "version": "v5.6.0",
+    "source": "https://api.github.com/repos/docker/compose/releases/latest",
+    "release": "https://github.com/docker/compose/releases/tag/v5.6.0"
+  },
+  "curl": {
+    "version": "curl-8_23_0",
+    "source": "https://api.github.com/repos/curl/curl/releases/latest",
+    "release": "https://github.com/curl/curl/releases/tag/curl-8_23_0"
+  },
+  "eclipse": {
+    "version": "4.41.0 / R-4.41-202608281142",
+    "source": "https://www.eclipse.org/lists/eclipse-dev/msg12580.html"
+  },
+  "oke": {
+    "version": "1.36.4 reference target; inventory existing cluster before deployment",
+    "source": "https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengaboutk8sversions.htm"
+  },
+  "minio": {
+    "version": "RELEASE.2025-10-15T17-29-55Z reference; actual TrueNAS app image inventoried at setup",
+    "source": "https://github.com/minio/minio/releases/tag/RELEASE.2025-10-15T17-29-55Z"
+  },
+  "truenas": {
+    "version": "25.10.4 reference; existing installed release takes precedence after inventory",
+    "source": "https://update.truenas.com/"
+  }
+}

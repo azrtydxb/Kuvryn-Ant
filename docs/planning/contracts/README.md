@@ -1,0 +1,32 @@
+# Finalized format contracts
+
+All 26 planning contracts are defined; implementation/conformance remains pending. Shared rules apply to every row.
+
+[Shared rules](common.md)
+
+- [F01 — Alpine APK](F01.md)
+- [F02 — Ansible Galaxy](F02.md)
+- [F03 — APT / Debian](F03.md)
+- [F04 — CocoaPods](F04.md)
+- [F05 — Composer / PHP](F05.md)
+- [F06 — Conan](F06.md)
+- [F07 — Conda](F07.md)
+- [F08 — Docker / OCI](F08.md)
+- [F09 — Git LFS](F09.md)
+- [F10 — Go modules](F10.md)
+- [F11 — Helm](F11.md)
+- [F12 — Hugging Face](F12.md)
+- [F13 — Maven](F13.md)
+- [F14 — npm](F14.md)
+- [F15 — NuGet / Chocolatey](F15.md)
+- [F16 — OCI artifacts](F16.md)
+- [F17 — Eclipse p2](F17.md)
+- [F18 — Pub / Flutter](F18.md)
+- [F19 — PyPI](F19.md)
+- [F20 — R / CRAN](F20.md)
+- [F21 — Raw](F21.md)
+- [F22 — RubyGems](F22.md)
+- [F23 — Rust / Cargo](F23.md)
+- [F24 — Swift Package Manager](F24.md)
+- [F25 — Terraform](F25.md)
+- [F26 — Yum / RPM](F26.md)

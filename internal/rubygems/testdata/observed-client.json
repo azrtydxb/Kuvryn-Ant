@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-10-18",
+  "status": "installed-client smoke evidence; not F22 pinned-baseline conformance",
+  "ruby": "ruby 4.0.6 (2026-07-14 revision 03b6d3f889) +PRISM [arm64-darwin25]",
+  "rubygems": "4.0.16",
+  "bundler": "4.0.16",
+  "files": {
+    "ruby": {
+      "sha256": "341d69419d11b2706864868f08d987d1d0dfde226669f49f210f1d5e823e98e5",
+      "resolved_path": "/opt/homebrew/Cellar/ruby/4.0.6_1/bin/ruby"
+    },
+    "gem": {
+      "sha256": "cc26a9fd53dd5c977696dec30a8d43e80a99d2c5165a9ddde9740ff6d25f8506",
+      "resolved_path": "/opt/homebrew/Cellar/ruby/4.0.6_1/bin/gem"
+    },
+    "bundle": {
+      "sha256": "c12baef297003132329249039d4852cf258dc39d68de7059dd5552569488f920",
+      "resolved_path": "/opt/homebrew/Cellar/ruby/4.0.6_1/bin/bundle"
+    },
+    "specification": {
+      "sha256": "6561b6c7377d50bd9700eb7e4297ab5cdac9542cb4909b03cabae3dcfcfb8d19",
+      "resolved_path": "/opt/homebrew/Cellar/ruby/4.0.6_1/lib/ruby/4.0.0/rubygems/specification.rb"
+    },
+    "bundler": {
+      "sha256": "e01b1e411e532037ec3655138ff32b374dc9c3ed9e1da8882fb867e14c4adff8",
+      "resolved_path": "/opt/homebrew/Cellar/ruby/4.0.6_1/lib/ruby/4.0.0/bundler.rb"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "tested_at": "2026-10-18",
+  "client": "git-lfs",
+  "version": "3.8.0",
+  "platform": "darwin-arm64",
+  "origin": "preinstalled /opt/homebrew/bin/git-lfs; no download performed",
+  "binary_sha256": "8e4ed79ff8562870a7f3b88993c221994e2bf44f8c65b930764b3f0ab0fcefa5",
+  "scenarios": ["push --all origin", "remove local LFS object cache", "fetch origin HEAD", "checkout", "compare exact 2200000-byte content"],
+  "backend": "temporary PostgreSQL and local disk",
+  "limitations": ["Loopback HTTP fixture with scoped service token", "MinIO and AWS not exercised", "Proxy and replication not exercised"]
+}

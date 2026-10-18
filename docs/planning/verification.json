@@ -1,0 +1,24 @@
+{
+  "verified_at": "2026-10-18T09:10:02.639302+00:00",
+  "milestones": 11,
+  "stories": 56,
+  "tasks": 164,
+  "format_stories": 26,
+  "overview_issues": [
+    1,
+    2
+  ],
+  "closed_planning_tasks": 30,
+  "closed_planning_stories": 2,
+  "closed_overviews": 2,
+  "bodies_and_milestones": "matched remote read-back",
+  "dependency_graph": "acyclic",
+  "scope_coverage": "all functional sections and ten acceptance criteria",
+  "implementation": "ready; no application code or test environments built",
+  "ready": [
+    "C01",
+    "C01-T1"
+  ],
+  "primary_validation": "OKE + existing MinIO on TrueNAS SCALE",
+  "additional_compatibility": "AWS and other S3 providers, reusable suite without environment fleet"
+}

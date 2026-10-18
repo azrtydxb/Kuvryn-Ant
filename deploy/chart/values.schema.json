@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "image",
+    "replicaCount",
+    "publicURL",
+    "postgres",
+    "rootKey",
+    "persistence",
+    "storage",
+    "auth"
+  ],
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "const": 1
+    },
+    "publicURL": {
+      "type": "string",
+      "pattern": "^https://[^/?#@]+$"
+    },
+    "shutdownSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60
+    },
+    "terminationGracePeriodSeconds": {
+      "type": "integer",
+      "minimum": 11
+    },
+    "maxRequests": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^$|^sha256:[0-9a-f]{64}$"
+        },
+        "pullPolicy": {
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "backend": {
+          "enum": [
+            "disk",
+            "s3"
+          ]
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "accessModes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "enum": [
+              "ReadWriteOnce",
+              "ReadWriteOncePod"
+            ]
+          }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "oidc": {
+          "$ref": "#/definitions/provider"
+        },
+        "saml": {
+          "$ref": "#/definitions/provider"
+        },
+        "ldap": {
+          "$ref": "#/definitions/provider"
+        }
+      }
+    },
+    "rootKey": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "activeVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "previousKeysManifestKey": {
+          "type": "string",
+          "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        },
+        "existingSecret": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "definitions": {
+    "provider": {
+      "type": "object",
+      "required": [
+        "existingSecret",
+        "configKey"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "existingSecret": {
+          "type": "string"
+        },
+        "configKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+        }
+      }
+    }
+  }
+}

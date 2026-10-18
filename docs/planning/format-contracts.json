@@ -1,0 +1,539 @@
+[
+  {
+    "id": "F01",
+    "name": "Alpine APK",
+    "clients": [
+      "alpine"
+    ],
+    "protocol": "APK v2 package/index format consumed by apk-tools bundled with Alpine 3.24.2; v3 wire format is a separate future capability.",
+    "publish": "Admin ingestion of .apk files with architecture/channel metadata; generate and sign APKINDEX generations with the feed key. Package bytes/signatures are preserved.",
+    "read": "apk update/add/fetch from local, remote-cached or replica channels; architecture paths remain explicit.",
+    "policy": "snapshot-owner per channel/architecture",
+    "special": "Import trusted verification keys explicitly. Remote signed indexes are preserved; a composed local repository requires explicit regeneration and its own signing identity. Do not silently extend metadata expiry.",
+    "excluded": "No APK v3 wire-format generation claim; no operating-system image build or package compilation.",
+    "scenarios": [
+      "Publish two architectures; apk update/add selects the correct package and verifies signatures.",
+      "Corrupt index/signature is rejected; stale remote bytes never masquerade as newly signed metadata."
+    ],
+    "references": [
+      "https://wiki.alpinelinux.org/wiki/Apk_spec",
+      "https://wiki.alpinelinux.org/wiki/Apk",
+      "https://alpinelinux.org/releases/"
+    ]
+  },
+  {
+    "id": "F02",
+    "name": "Ansible Galaxy",
+    "clients": [
+      "ansible-core"
+    ],
+    "protocol": "Galaxy collection API v3 with API-root discovery and asynchronous import status.",
+    "publish": "ansible-galaxy collection publish uploads a built collection; validate namespace/name/version, archive inventory and dependencies; expose import status until commit.",
+    "read": "Collection version discovery, dependency resolution and archive delivery for ansible-galaxy collection install; local/remote/replica sources.",
+    "policy": "package-owner per namespace.collection",
+    "special": "Use a scoped Galaxy API token. Resolve download URLs through authorized source mappings; cancellation or failed import leaves no installable version.",
+    "excluded": "Legacy Galaxy roles, web-community/social APIs and executing collection code during ingestion are excluded.",
+    "scenarios": [
+      "Publish a collection with a dependency, wait for import, install via one configured server.",
+      "Invalid archive or unauthorized namespace fails import; a cancelled import is not advertised."
+    ],
+    "references": [
+      "https://docs.ansible.com/projects/ansible-core/devel/dev_guide/developing_collections_distributing.html"
+    ]
+  },
+  {
+    "id": "F03",
+    "name": "APT / Debian",
+    "clients": [
+      "apt"
+    ],
+    "protocol": "Debian dists/pool repository layout with InRelease, Release/Release.gpg, Packages/Sources and SHA-256 by-hash.",
+    "publish": "Admin ingestion of .deb and source bundles (.dsc and referenced files) into distribution/component/architecture; publish one signed index generation.",
+    "read": "apt update/install and apt source using local or byte-preserving remote/replica snapshots; support compressed index representations.",
+    "policy": "snapshot-owner per distribution/component/architecture",
+    "special": "Keep by-hash generations reachable while readers complete. Remote trust and local signing keys are distinct. Source bundle references must be complete before publishing.",
+    "excluded": "No arbitrary union of independently signed Release trees; translations/Contents generation and distro build-farm orchestration are not required initial workflows.",
+    "scenarios": [
+      "Ingest package/source bundle; update/install/source with trusted signing key and by-hash.",
+      "Index update during concurrent download cannot yield hash-sum mismatch; tampered or expired metadata fails."
+    ],
+    "references": [
+      "https://wiki.debian.org/DebianRepository/Format",
+      "https://www.debian.org/doc/manuals/debian-handbook/sect.package-authentication.en.html"
+    ]
+  },
+  {
+    "id": "F04",
+    "name": "CocoaPods",
+    "clients": [
+      "cocoapods"
+    ],
+    "protocol": "HTTP CDN-style podspec discovery and pod source/archive delivery for CocoaPods 1.17.0.",
+    "publish": "Admin ingestion of validated podspec JSON plus an immutable source archive or explicit external source reference; regenerate CDN metadata atomically.",
+    "read": "pod install/update resolves specs and downloads declared source archives; support local, remote CDN cache and replica feeds.",
+    "policy": "package-owner per pod name",
+    "special": "Keep source hashes and podspec version identity. Full offline seed must materialize referenced source archives; VCS-only references are visibly external and block a complete-offline claim.",
+    "excluded": "No CocoaPods Trunk account/API clone, general Git hosting or pod repo push endpoint. Publication uses documented admin ingestion; CDN consumption remains a real-client workflow.",
+    "scenarios": [
+      "Ingest podspec/archive; pod install on macOS fetches the selected version from the feed.",
+      "Conflicting pod version or mismatched archive hash fails; a source-only external dependency is reported in seed preflight."
+    ],
+    "references": [
+      "https://github.com/CocoaPods/cdn.cocoapods.org",
+      "https://guides.cocoapods.org/making/private-cocoapods.html"
+    ]
+  },
+  {
+    "id": "F05",
+    "name": "Composer / PHP",
+    "clients": [
+      "composer"
+    ],
+    "protocol": "Composer 2 repository packages.json and per-package metadata-url, dist archives and source references.",
+    "publish": "Admin ingestion of composer package metadata and dist archives; validate name/version/dependency metadata and checksums. Native Composer has no registry publish command requirement here.",
+    "read": "composer install/update with dist delivery and explicit source references through local/remote/replica feeds.",
+    "policy": "package-owner per vendor/package",
+    "special": "Rewrite permitted dist URLs to authorized immutable assets; preserve external VCS references as external. A full offline replica requires a usable dist closure. Generated metadata is coherent per package.",
+    "excluded": "Composer 1 provider-index compatibility and acting as a general VCS server are excluded initially.",
+    "scenarios": [
+      "Install a locked dependency set from a locally ingested dist and repeat offline from a seeded replica.",
+      "A duplicate private name never falls through to a public upstream; missing dist closure prevents full-offline completion."
+    ],
+    "references": [
+      "https://getcomposer.org/doc/05-repositories.md"
+    ]
+  },
+  {
+    "id": "F06",
+    "name": "Conan",
+    "clients": [
+      "conan"
+    ],
+    "protocol": "Conan 2 remote API with recipe revisions, package IDs and package revisions.",
+    "publish": "conan upload publishes recipes and binary packages with revisions/manifests; validate referenced files and immutable revision identity.",
+    "read": "conan list/install/download resolves revision-aware recipes and binaries via local, remote cache and replica.",
+    "policy": "package-owner per recipe reference",
+    "special": "Preserve revision chronology for latest resolution; auth tokens map to shared scopes. Retention cannot drop recipe/manifests needed by retained binaries.",
+    "excluded": "Conan 1 compatibility and binary compilation are excluded initially; not a claim of arbitrary custom server plugins.",
+    "scenarios": [
+      "Upload two revisions and two binary package IDs; resolve both pinned and latest revisions.",
+      "Manifest mismatch or conflicting revision bytes fail; replicated revision order matches source."
+    ],
+    "references": [
+      "https://docs.conan.io/2/reference/commands/upload.html"
+    ]
+  },
+  {
+    "id": "F07",
+    "name": "Conda",
+    "clients": [
+      "conda",
+      "conda-index"
+    ],
+    "protocol": "Conda channel subdirectories, .conda and .tar.bz2 packages, repodata.json and compressed representations.",
+    "publish": "Admin ingestion per channel/platform; extract package metadata without executing content; generate a coherent repodata generation including current_repodata where advertised.",
+    "read": "conda search/install with noarch and platform packages; proxy indexes and assets as one source snapshot.",
+    "policy": "snapshot-owner per channel/subdir",
+    "special": "Preserve patched upstream repodata relationships. Local indexing uses validated package metadata. Explicit priority prevents mixing incompatible channel snapshots.",
+    "excluded": "No conda-build execution or claim of arbitrary repodata patch authoring/signing extensions beyond the selected fixtures.",
+    "scenarios": [
+      "Ingest noarch and platform packages in both supported containers and install a dependency chain.",
+      "Malformed archive, stale repodata-to-asset mapping and mismatched package checksum fail safely."
+    ],
+    "references": [
+      "https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/create-custom-channels.html"
+    ]
+  },
+  {
+    "id": "F08",
+    "name": "Docker / OCI",
+    "clients": [
+      "docker",
+      "oras"
+    ],
+    "protocol": "OCI Distribution 1.1 API and Docker Registry HTTP API v2 compatibility for schema-2/OCI images and multi-platform indexes.",
+    "publish": "Docker push using scoped registry tokens; resumable blob upload, digest finalize and manifest/tag commit; validate referenced object closure.",
+    "read": "Docker pull/tag/list behavior and manifest negotiation from local, remote pull-through and replica repositories.",
+    "policy": "package-owner per OCI repository",
+    "special": "Manifest bytes are immutable by digest; tags are conditional mutable pointers. Cross-repository mount requires source read and destination publish permission. Return accurate upload offsets and range responses.",
+    "excluded": "Docker schema-1 manifests, implicit upstream push and cloud-registry administrative API emulation are excluded.",
+    "scenarios": [
+      "Push/pull a multi-platform image and interrupt/resume a blob upload without corrupting digest identity.",
+      "Reject unauthorized mount, missing referenced blob and conflicting immutable manifest; proxy preserves digest bytes."
+    ],
+    "references": [
+      "https://github.com/opencontainers/distribution-spec/blob/main/spec.md"
+    ]
+  },
+  {
+    "id": "F09",
+    "name": "Git LFS",
+    "clients": [
+      "git-lfs"
+    ],
+    "protocol": "Git LFS batch API using basic HTTP transfer, SHA-256 object IDs, upload verification and range downloads.",
+    "publish": "git lfs push uses batch upload actions bound to object identity and scoped credentials; verify size/hash before advertising existence.",
+    "read": "git lfs pull/fetch batch requests return authorized local/proxy/replica object URLs.",
+    "policy": "object-owner per LFS oid within feed",
+    "special": "Object authorization must not be inferred from global blob existence; action URLs expire and cannot leak credentials across origins. Ordinary Git metadata lives in the user Git server.",
+    "excluded": "LFS locking and custom transfer adapters are excluded initially; this is not a Git hosting service.",
+    "scenarios": [
+      "Push then pull a large object with pinned oid; resume download from a fresh authorized batch response.",
+      "Wrong size/hash and expired action URL fail; an inaccessible deduplicated object cannot be enumerated."
+    ],
+    "references": [
+      "https://github.com/git-lfs/git-lfs/blob/main/docs/api/batch.md"
+    ]
+  },
+  {
+    "id": "F10",
+    "name": "Go modules",
+    "clients": [
+      "go"
+    ],
+    "protocol": "GOPROXY list/info/mod/zip/latest semantics with escaped paths and canonical module zip validation.",
+    "publish": "Admin ingestion of immutable module version plus .mod/.info/.zip as one publish. There is no invented go publish command.",
+    "read": "go mod download/build resolves public or private modules through local/remote/replica sources.",
+    "policy": "package-owner per module path",
+    "special": "Preserve module path case escaping, version identity and checksums. Public clients retain their configured checksum database; private modules use documented GOPRIVATE/GONOSUMDB settings. Kuvryn Ant is not a checksum database.",
+    "excluded": "No sumdb authority or VCS hosting. Never disable checksum verification globally to make the proxy work.",
+    "scenarios": [
+      "Resolve a module with uppercase path escapes and a transitive dependency; repeat from warm cache/replica.",
+      "Reject invalid zip layout, conflicting immutable version or module checksum mismatch; no public fallback for private namespace."
+    ],
+    "references": [
+      "https://go.dev/ref/mod"
+    ]
+  },
+  {
+    "id": "F11",
+    "name": "Helm",
+    "clients": [
+      "helm"
+    ],
+    "protocol": "Classic chart repository index.yaml/.tgz/.prov plus OCI-hosted charts through the OCI adapter.",
+    "publish": "Classic charts use admin ingestion with provenance; OCI charts use helm push and the same registry credentials as helm pull.",
+    "read": "helm repo add/update, pull and install for classic feeds; OCI pull/install for named chart versions.",
+    "policy": "package-owner per chart; coherent classic index generation",
+    "special": "Preserve chart/provenance digests and OCI media types. Classic index is adapter-generated with source-bound entries; do not reinterpret OCI manifests as generic tarballs.",
+    "excluded": "No ChartMuseum-specific push API promise; chart execution is only in isolated conformance fixtures.",
+    "scenarios": [
+      "Install a chart and dependency via classic feed, then push/pull the equivalent OCI chart.",
+      "Provenance/hash mismatch or tag/version conflict fails; replica retains both chart and provenance assets."
+    ],
+    "references": [
+      "https://helm.sh/docs/topics/registries/",
+      "https://helm.sh/docs/topics/chart_repository/"
+    ]
+  },
+  {
+    "id": "F12",
+    "name": "Hugging Face",
+    "clients": [
+      "huggingface-hub"
+    ],
+    "protocol": "Hub-compatible model/dataset metadata and HTTP resolve/download subset used by hf_hub_download and snapshot_download.",
+    "publish": "Admin ingestion of a complete model/dataset file tree with immutable revision and optional branch/tag pointers; no Hub commit API claim.",
+    "read": "Repo info/tree and HEAD/GET resolve routes support standard model/dataset downloads, ETags, revision pinning and byte ranges across local/remote/replica sources.",
+    "policy": "package-owner per repo type/name; revision-bound file tree",
+    "special": "Cache authorized private/gated content only under the configured upstream entitlement and feed ACL. Resolve signed external URLs internally; advertise standard HTTP transfer instead of pretending to implement Xet.",
+    "excluded": "Hub social/inference/training/Spaces APIs, Git pushes, native Xet CAS and general Hub upload APIs are excluded. Models and datasets remain in scope.",
+    "scenarios": [
+      "snapshot_download a versioned multi-file model and dataset, then resume a large file from replica while source is offline.",
+      "Missing file or unauthorized gated content prevents complete snapshot success; no cross-credential cache disclosure."
+    ],
+    "references": [
+      "https://huggingface.co/docs/huggingface_hub/package_reference/file_download"
+    ]
+  },
+  {
+    "id": "F13",
+    "name": "Maven",
+    "clients": [
+      "maven",
+      "gradle"
+    ],
+    "protocol": "Maven2 repository layout with POMs, maven-metadata.xml, release and timestamped snapshot assets and checksums.",
+    "publish": "Maven deploy and Gradle maven-publish upload a staged coordinate set; commit a version/index generation only after required metadata/assets validate.",
+    "read": "Maven/Gradle resolve dependencies and plugins using local/remote/replica feeds and release/snapshot policy.",
+    "policy": "package-owner per groupId/artifactId; version-bound snapshot generation",
+    "special": "Preserve client-required legacy checksum files alongside internal SHA-256; checksum compatibility is not a cryptographic trust upgrade. Metadata update races use generation checks.",
+    "excluded": "No Maven Central account/staging API clone or build execution. Partial deployment must not look complete.",
+    "scenarios": [
+      "Deploy release and two timestamped snapshots, then resolve from Maven and Gradle with checksums.",
+      "Concurrent metadata update cannot lose a version; incomplete deployment and bad checksum remain invisible."
+    ],
+    "references": [
+      "https://maven.apache.org/repositories/layout.html"
+    ]
+  },
+  {
+    "id": "F14",
+    "name": "npm",
+    "clients": [
+      "npm"
+    ],
+    "protocol": "npm registry packuments, scoped packages, tarball attachments, dist-tags, publish/unpublish subset and token auth.",
+    "publish": "npm publish validates package metadata/tarball digest and atomically commits a version. Dist-tag changes and deletion require separate permissions/policy.",
+    "read": "npm install/view/dist-tag behavior with local/remote/replica packuments; rewrite tarball URLs to authorized feed assets.",
+    "policy": "package-owner per normalized scoped/unscoped name",
+    "special": "Return integrity metadata matching exact tarball bytes; serialize mutable tag/packument changes. Login/bootstrap provides a machine token compatible with npm configuration, not browser SSO at registry routes.",
+    "excluded": "Public npm organization/billing APIs, audit advisory service emulation and upstream publishing are excluded.",
+    "scenarios": [
+      "Publish scoped package, move a dist-tag and install a lockfile from cache and replica.",
+      "Private name cannot fall through upstream; conflicting version/tarball integrity and unauthorized unpublish fail."
+    ],
+    "references": [
+      "https://github.com/npm/registry/blob/main/docs/REGISTRY-API.md"
+    ]
+  },
+  {
+    "id": "F15",
+    "name": "NuGet / Chocolatey",
+    "clients": [
+      "dotnet",
+      "chocolatey"
+    ],
+    "protocol": "NuGet v3 service index/registration/flat-container/search/publish plus v2 OData package discovery/download/publish needed by Chocolatey.",
+    "publish": "dotnet nuget push and Chocolatey push accept nupkg; symbol ingestion supports snupkg and a documented legacy symbols.nupkg path, validating identity/PDB inventory.",
+    "read": "dotnet restore and choco install consume packages; symbol lookup/download is separately exercised with Windows debugging tooling.",
+    "policy": "package-owner per case-normalized package ID",
+    "special": "Normalize versions consistently across v2/v3; API keys and download auth share scopes. Symbol assets retain PDB identifiers, checksums and access policy; package scripts are never run on the server.",
+    "excluded": "NuGet.org account/gallery APIs and executing Chocolatey scripts server-side are excluded. Symbol workflow requires Windows client evidence before claim.",
+    "scenarios": [
+      "Push/restore package through v3, install via v2 Chocolatey, and retrieve matching symbols.",
+      "Mismatched symbol identity, unauthorized package/symbol request and version-normalization collision fail."
+    ],
+    "references": [
+      "https://learn.microsoft.com/en-us/nuget/api/overview",
+      "https://docs.chocolatey.org/en-us/features/host-packages/"
+    ]
+  },
+  {
+    "id": "F16",
+    "name": "OCI artifacts",
+    "clients": [
+      "oras"
+    ],
+    "protocol": "OCI Distribution 1.1 non-container artifacts with subject/referrers discovery and media-type preservation.",
+    "publish": "ORAS push/attach publishes manifests and referenced blobs; validate subject access and closure through the shared OCI core.",
+    "read": "ORAS pull/discover/copy consumes artifacts and referrers from local/remote/replica repositories.",
+    "policy": "package-owner per OCI repository; digest-bound subject graph",
+    "special": "Referrers are indexed without rewriting manifest bytes. GC and replication account for subject/referrer relationships. Distinguish artifact conformance from image conformance.",
+    "excluded": "No server-side execution of artifacts or assertion that stored attestations are trusted without external verification.",
+    "scenarios": [
+      "Attach an artifact to an image digest, discover and pull it, then verify replica subject graph.",
+      "Cross-scope subject access fails; deleting a subject cannot silently orphan protected retained attachments."
+    ],
+    "references": [
+      "https://github.com/opencontainers/distribution-spec/blob/main/spec.md"
+    ]
+  },
+  {
+    "id": "F17",
+    "name": "Eclipse p2",
+    "clients": [
+      "eclipse"
+    ],
+    "protocol": "p2 metadata/artifact repositories, XML/JAR index representations, composite repository descriptors and installable units.",
+    "publish": "Admin ingestion of a validated p2 repository or IU/artifact bundle; generate a consistent repository snapshot without changing signed JAR bytes.",
+    "read": "p2 director installs a selected IU and dependencies from local, remote mirror/cache or replica snapshots.",
+    "policy": "snapshot-owner per p2 repository",
+    "special": "Composite child references are scoped and materialized for offline full seed; retain classifier/id/version relationships. Preserve upstream signed artifacts and compressed index semantics.",
+    "excluded": "Legacy Pack200 transformation, general Eclipse marketplace APIs and building plugins are excluded initially; reject fixtures requiring unimplemented transforms.",
+    "scenarios": [
+      "Install an IU with dependencies using p2 director and repeat from seeded offline replica.",
+      "Broken child reference, unsigned substitution for a signed artifact or incomplete IU closure fails validation."
+    ],
+    "references": [
+      "https://help.eclipse.org/latest/topic/org.eclipse.platform.doc.isv/guide/p2_repositorytasks.htm",
+      "https://www.eclipse.org/lists/eclipse-dev/msg12580.html"
+    ]
+  },
+  {
+    "id": "F18",
+    "name": "Pub / Flutter",
+    "clients": [
+      "dart",
+      "flutter"
+    ],
+    "protocol": "Hosted Pub Repository Specification v2 with package/version metadata, archives, archive hashes and staged publish.",
+    "publish": "dart pub publish to publish_to uses token auth and upload/finalize behavior; validate pubspec and archive before visibility.",
+    "read": "dart pub get and flutter pub get resolve packages from local, remote and replica hosted repositories.",
+    "policy": "package-owner per package name",
+    "special": "Preserve archive SHA-256 and retraction/discontinuation metadata; do not silently replace a published version. Credentials remain tied to hosted origin.",
+    "excluded": "Pub.dev social/scoring/account APIs and server-side package execution are excluded.",
+    "scenarios": [
+      "Publish a dependency chain and resolve through Dart and Flutter with lockfile hashes.",
+      "Failed finalize, archive tampering and unauthorized token reuse cannot produce installable content."
+    ],
+    "references": [
+      "https://github.com/dart-lang/pub/blob/master/doc/repository-spec-v2.md",
+      "https://dart.dev/tools/pub/custom-package-repositories"
+    ]
+  },
+  {
+    "id": "F19",
+    "name": "PyPI",
+    "clients": [
+      "pip",
+      "twine"
+    ],
+    "protocol": "Simple Repository API HTML and JSON representations, normalized project names, wheel/sdist files, hashes, yanked and requires-python metadata.",
+    "publish": "Twine multipart uploads validate distribution filenames/project/version and payload integrity; atomically add the release file set with provenance.",
+    "read": "pip install/download from local/remote/replica Simple endpoints; serve metadata sidecars when advertised.",
+    "policy": "package-owner per normalized project name",
+    "special": "Rewrite file URLs while preserving hashes and sidecar relationships; authorization precedes enumeration. Distinct normalized names cannot bypass ownership.",
+    "excluded": "PyPI account/UI/XML-RPC emulation and building sdists on the server are excluded.",
+    "scenarios": [
+      "Upload wheel and sdist, then pip install with hashes and Python-version filtering from replica.",
+      "Reject normalized-name conflict, hash mismatch and unauthorized upload; yanked metadata survives replication."
+    ],
+    "references": [
+      "https://packaging.python.org/en/latest/specifications/simple-repository-api/"
+    ]
+  },
+  {
+    "id": "F20",
+    "name": "R / CRAN",
+    "clients": [
+      "r"
+    ],
+    "protocol": "CRAN-style source and Windows/macOS binary repository layouts with PACKAGES, PACKAGES.gz and PACKAGES.rds.",
+    "publish": "Admin ingestion of source/binary packages into explicit R-version/platform channels; generate package indexes after metadata validation.",
+    "read": "R available.packages/install.packages uses local, remote and replica indexes and package archives.",
+    "policy": "snapshot-owner per platform/R-version repository",
+    "special": "Keep source/binary identities distinct and preserve dependencies/MD5 metadata alongside internal SHA-256. Binary evidence must run on its native platform.",
+    "excluded": "CRAN submission/review services and server-side R package builds or install hooks are excluded.",
+    "scenarios": [
+      "Install source plus a dependency on Linux and binary fixtures on Windows/macOS.",
+      "Wrong R/platform placement or corrupt archive is rejected; index points only to committed assets."
+    ],
+    "references": [
+      "https://cran.r-project.org/doc/manuals/r-release/R-admin.html"
+    ]
+  },
+  {
+    "id": "F21",
+    "name": "Raw",
+    "clients": [
+      "curl"
+    ],
+    "protocol": "HTTP GET/HEAD/PUT/DELETE with range and conditional request semantics; management browse/search API.",
+    "publish": "PUT streams one path to its uniquely selected local source; optional expected SHA-256/size; immutable by default, overwrite requires policy and precondition.",
+    "read": "GET/HEAD, byte ranges, conditional retrieval and authorized listing for local/remote/replica paths.",
+    "policy": "path-owner per normalized path",
+    "special": "Normalize once and reject traversal/ambiguous encodings; distinguish content type from execution. Remote URLs use configured base mapping, never arbitrary client-directed proxy targets.",
+    "excluded": "No WebDAV, executable directory listing, archive expansion or claim that raw file storage constitutes another format.",
+    "scenarios": [
+      "PUT a large file, GET a range, HEAD/ETag revalidate and repeat through a replica.",
+      "Reject traversal, digest mismatch and concurrent conflicting immutable PUT; cancelled upload remains invisible."
+    ],
+    "references": [
+      "https://www.rfc-editor.org/rfc/rfc9110.html"
+    ]
+  },
+  {
+    "id": "F22",
+    "name": "RubyGems",
+    "clients": [
+      "rubygems"
+    ],
+    "protocol": "Gem push/download plus RubyGems indexes and Bundler compact-index dependency resolution.",
+    "publish": "gem push publishes validated gem metadata/archive under API-key authorization; yank is a policy-controlled metadata change.",
+    "read": "gem install and bundle install use compact and legacy dependency/index representations from local, remote and replica.",
+    "policy": "package-owner per gem name",
+    "special": "Preserve platform-specific versions and immutable gem bytes; index generation/yank changes are atomic. Never execute gemspec/Ruby hooks while indexing uploads.",
+    "excluded": "RubyGems.org account/organization APIs and server-side native extension builds are excluded.",
+    "scenarios": [
+      "Push platform variants and install a locked dependency set with gem/Bundler.",
+      "Yanked release handling remains consistent; malformed archive or conflicting version bytes fail."
+    ],
+    "references": [
+      "https://guides.rubygems.org/rubygems-org-api/",
+      "https://guides.rubygems.org/run-your-own-gem-server/"
+    ]
+  },
+  {
+    "id": "F23",
+    "name": "Rust / Cargo",
+    "clients": [
+      "cargo"
+    ],
+    "protocol": "Cargo alternate-registry Web API, sparse HTTP index and Git index transport; crate archives and checksums.",
+    "publish": "cargo publish commits crate bytes and index metadata, with scoped registry token and owner policy. Yank/unyank mutates availability, not crate bytes.",
+    "read": "cargo fetch/build consumes both sparse and Git index configurations from local/remote/replica feeds.",
+    "policy": "package-owner per canonical crate name",
+    "special": "Index config points to authorized crate/download/API routes; keep dependency features/schema fields. Git index is generated protocol state, not arbitrary user repository hosting.",
+    "excluded": "Public crates.io account/team/search ranking behavior and compiling crates server-side are excluded.",
+    "scenarios": [
+      "Publish and fetch a dependency chain with sparse and Git indexes, then verify checksum-preserving replica.",
+      "Invalid checksum, ambiguous crate normalization or unauthorized yank cannot corrupt index state."
+    ],
+    "references": [
+      "https://doc.rust-lang.org/cargo/reference/registry-index.html",
+      "https://doc.rust-lang.org/cargo/reference/registry-web-api.html"
+    ]
+  },
+  {
+    "id": "F24",
+    "name": "Swift Package Manager",
+    "clients": [
+      "swift"
+    ],
+    "protocol": "Swift package registry protocol v1, scoped identities, releases, manifests and source archives.",
+    "publish": "Swift registry publish uses authenticated immutable version upload and validates archive/checksum/manifest inventory; preserve signatures where supplied.",
+    "read": "Swift package resolve/download via a configured registry across local/remote/replica sources.",
+    "policy": "package-owner per scope.name",
+    "special": "Use protocol-supported authentication and retain signing/fingerprint metadata; run macOS and Linux clients against the selected SDK. Source archives are data, not server-executed code.",
+    "excluded": "General Git hosting and promising compatibility with arbitrary future registry protocol extensions are excluded.",
+    "scenarios": [
+      "Publish and resolve a scoped package with manifest/archive checksums on selected Swift clients.",
+      "Identity mismatch, corrupt archive and signer/fingerprint mismatch have explicit failures; replica preserves metadata."
+    ],
+    "references": [
+      "https://github.com/swiftlang/swift-package-manager/blob/main/Documentation/PackageRegistry/Registry.md"
+    ]
+  },
+  {
+    "id": "F25",
+    "name": "Terraform",
+    "clients": [
+      "terraform"
+    ],
+    "protocol": "Terraform provider and module registry protocols with host service discovery, versions, provider platform downloads and module source retrieval.",
+    "publish": "Admin ingestion of provider binaries/checksums/signatures and module archives; validate namespace/name/provider/version/platform coordinates.",
+    "read": "terraform init resolves provider and module dependencies through local/remote/replica registry endpoints.",
+    "policy": "package-owner per provider or module address",
+    "special": "Feed-specific hostname binds discovery and credentials. Preserve provider signing material; module download references resolve to authorized immutable archives. Full offline seeds require materialized referenced sources.",
+    "excluded": "Terraform Cloud workspace/state/run APIs and executing providers/modules server-side are excluded.",
+    "scenarios": [
+      "Initialize a configuration with one provider and one module for two platforms, including checksum/signature files.",
+      "Reject substituted provider bytes, incorrect signing metadata or incomplete module closure; replica works offline."
+    ],
+    "references": [
+      "https://developer.hashicorp.com/terraform/internals/provider-registry-protocol",
+      "https://developer.hashicorp.com/terraform/internals/module-registry-protocol"
+    ]
+  },
+  {
+    "id": "F26",
+    "name": "Yum / RPM",
+    "clients": [
+      "dnf5"
+    ],
+    "protocol": "RPM-MD repomd.xml and primary/filelists/other metadata with repository/package signing and compressed indexes.",
+    "publish": "Admin ingestion of RPMs by repository/architecture; generate and sign a coherent RPM-MD snapshot; retain existing package signatures.",
+    "read": "DNF and yum-compatible invocation consume local/remote/replica repositories; provide explicitly advertised auxiliary metadata consistently.",
+    "policy": "snapshot-owner per RPM repository",
+    "special": "Preserve updateinfo/comps and module metadata when present in mirrored snapshots; local module metadata can be ingested/validated rather than synthesized. Never mix a signed index from one generation with another generation\u2019s bytes.",
+    "excluded": "RPM build execution and automatic construction of distro modular streams are excluded; no legacy yum2 client claim.",
+    "scenarios": [
+      "Ingest signed RPMs, refresh metadata and install a dependency using DNF/yum-compatible client flow.",
+      "Tampered repomd or package signature fails; concurrent snapshot updates and replicas keep reference integrity."
+    ],
+    "references": [
+      "https://rpm-software-management.github.io/createrepo_c/"
+    ]
+  }
+]

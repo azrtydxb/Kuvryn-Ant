@@ -1,0 +1,2683 @@
+{
+  "schema_version": 1,
+  "milestones": [
+    {
+      "id": "M00",
+      "title": "M00 \u2014 Planning and readiness",
+      "description": "Outcome: an agreed, traceable, executable backlog.\n\nScope: resolve decisions; document architecture boundaries and data model; establish format ledger; define client matrix and release criteria; create GitHub milestones, stories, task issues, labels, dependencies, and planning index.\n\nEntry: product spec exists. Exit: planning gate satisfied. Blocks all implementation milestones."
+    },
+    {
+      "id": "M01",
+      "title": "M01 \u2014 Shared platform and secure administration",
+      "description": "Outcome: a runnable Go service with PostgreSQL metadata and authenticated, auditable management operations.\n\nScope: project conventions and CI; migrations and transaction boundaries; feed/source/asset/blob/identity models; API schema and generated client pipeline; service accounts and scoped tokens; authorization checks; audit transactions; health/readiness/logging/metrics; local development and shutdown behavior.\n\nExit: real PostgreSQL integration tests prove migration, rollback constraints, authorization denials, scoped token expiry/revocation, mutation idempotency, and atomic metadata/audit writes. Secrets do not appear in logs or API responses. Fresh installation and restart work.\n\nDependencies: M00. External identity provider work may begin once identity boundaries are stable, but browser UI authentication is not considered complete with a bootstrap token."
+    },
+    {
+      "id": "M02",
+      "title": "M02 \u2014 Artifact integrity, storage, and local publishing",
+      "description": "Outcome: correct local artifact lifecycle through explicit feed routing.\n\nScope: streaming disk/S3 blob interfaces; digest and size checks; multipart and cancellation; deduplication domain; transactional publication; protocol-neutral core fixtures; immutable/overwrite/delete policies; source precedence; explain resolution; reference-safe garbage-collection design; browsing/search/checksum lookup; provenance.\n\nExit: shared storage/lifecycle contract fixtures pass on both disk and selected S3 backend(s); real-client evidence is required in M04/M05; interrupted or corrupt uploads are not visible; concurrent publication cannot silently overwrite immutable releases; metadata references survive restart and cleanup; same-endpoint read/write routing is proven.\n\nDependencies: M01. S3 implementation is required for milestone completion, not a post-release optional feature."
+    },
+    {
+      "id": "M03",
+      "title": "M03 \u2014 Remote caching and build acceleration",
+      "description": "Outcome: runners reuse dependencies through predictable, observable pull-through feeds.\n\nScope: upstream credentials/TLS/network policy; per-resource cache keys; independent metadata/blob freshness; conditional revalidation; coalesced misses; bounded retry/circuit breaking; negative caching; stale-if-error/offline; safe fallback and source policies; prewarming and schedules; rate limits/quotas; cache diagnostics and savings metrics.\n\nExit: concurrent cold requests cause one upstream fetch per key under the agreed normal-operation model; outages and cancellation do not poison cache state; stale responses are diagnosable; credentials cannot cross origins; warm/cold and large-object workloads produce recorded evidence.\n\nDependencies: M02 and format-specific composition contracts. Cache savings calculations must distinguish measured bytes/time from estimates."
+    },
+    {
+      "id": "M04",
+      "title": "M04 \u2014 First ecosystem delivery wave",
+      "description": "Outcome: supported client workflows for the owner-selected first format wave.\n\nScope: per-format protocol, publish and delete semantics, metadata/indexing, source composition, auth, cache behavior, search fields, cleanup, client configuration, fixtures, conformance, and limitations. Confirmed wave order: Docker/OCI, Go modules, Helm, Rust/Cargo, then Raw. OCI artifact behavior shares the OCI platform but keeps its own conformance record. Remaining ecosystems follow this wave.\n\nExit: every enabled capability in each wave member has versioned real-client evidence on relevant sources/storage combinations; unsupported capabilities are visible. OCI artifact coverage remains distinct from container-image coverage even if the adapter is shared.\n\nDependencies: M01\u2013M03; specific work can proceed as the shared APIs stabilize. Completion is a development milestone, not Phase 1 completion."
+    },
+    {
+      "id": "M05",
+      "title": "M05 \u2014 Remaining ecosystem breadth",
+      "description": "Outcome: all remaining formats have accepted, evidence-backed capability records.\n\nScope: Alpine APK, Ansible Galaxy, APT/Debian, CocoaPods, Composer, Conan, Conda, Git LFS, Hugging Face, Maven, npm, NuGet/Chocolatey, Eclipse p2, Pub/Flutter, PyPI, R/CRAN, RubyGems, Swift Package Manager, Terraform, Yum/RPM.\n\nExit: all 26 spec entries satisfy their approved workflow matrices; signing and metadata-sensitive formats pass correctness and tamper/failure cases; no generic file storage is counted as format support.\n\nDependencies: M01\u2013M03 plus reusable work from M04. Sub-waves should group shared protocol/index/signing concerns and business priority; no arbitrary equal estimates per ecosystem."
+    },
+    {
+      "id": "M06",
+      "title": "M06 \u2014 Enterprise identity and complete operator interfaces",
+      "description": "Outcome: operators and automation can securely use the product through React, API, and MCP.\n\nScope: OIDC with Zitadel and a second provider; PKCE and session security; SAML and LDAP required for GA; group/role mappings; emergency admin; secret rotation; identity diagnostics and recovery; React overview/feed/package/identity/audit/cache/storage/replication screens; MCP discovery/lookups/health/admin tools; webhooks/event delivery.\n\nExit: provider and package-client authentication coexist; permission-denial and audit parity tests cover UI/API/MCP; destructive MCP actions carry the appropriate client confirmation semantics; accessibility and error/recovery flows pass; no UI-only administrative capabilities lack supported APIs.\n\nDependencies: M01 onward, with screens/tools delivered alongside their domain capabilities. Final exit also depends on M07\u2013M08 for replication and lifecycle interfaces. SCIM remains explicitly deferred unless scope changes."
+    },
+    {
+      "id": "M07",
+      "title": "M07 \u2014 Independent-instance replication",
+      "description": "Outcome: another site can seed a feed, keep it synchronized, and serve locally during source outage.\n\nScope: peer identity/TLS; manifests/checkpoints; full seed including cached artifacts by default; optional exclusion of transient cache entries; namespace/package/version filters; scheduled/manual/continuous increments; tags/indexes/metadata/checksums; restart/resume/dedup; conflict authority; deletion dry runs/tombstones; reviewed non-secret configuration templates; lag/progress/failure reporting.\n\nExit: two real instances across disk and S3 pass interrupted seed, incremental changes, corruption rejection, retries, deletion protection for destination-only content, source outage, and destination-specific configuration preservation. Replicas remain read-only by default.\n\nDependencies: M02\u2013M03 and stabilized format records. Representative tests do not replace replication compatibility coverage for every claimed format."
+    },
+    {
+      "id": "M08",
+      "title": "M08 \u2014 Adoption and operational lifecycle",
+      "description": "Outcome: users can deploy, migrate, operate, recover, and upgrade installations.\n\nScope: container/Compose and Helm; TLS/reverse proxy trust; import/export inventories and dry runs; selected repository-manager migration mappings; prewarm from lockfiles/package lists/images; storage migration; retention/eviction/GC; metadata repair/integrity checks; backup/restore; schema upgrades and rollback limitations; diagnostics; tracing; capacity planning and quotas.\n\nExit: documented fresh install, representative import, backup/restore, disk\u2194S3 migration, repair, and upgrade exercises pass with retained evidence. Images run non-root and expose only required services. Operators can detect and recover from full disks, DB failures, slow stores, and upstream outages.\n\nDependencies: M01\u2013M03; final coverage requires M05 and M07. Required source migration products and versions need an explicit acceptance matrix."
+    },
+    {
+      "id": "M09",
+      "title": "M09 \u2014 Phase 1 release qualification",
+      "description": "Outcome: broad availability supported by reproducible evidence.\n\nScope: all 10 spec acceptance criteria; complete format matrix; identity/provider matrix; backend compatibility; two-site replication; threat model/security verification; performance/resource limits; API compatibility; user documentation; usability/accessibility; upgrade/recovery rehearsal and release support policy.\n\nExit: all release blockers closed; no unsupported claims; numeric SLOs achieved on documented hardware/workloads; release checklist records client and server versions, test results, known limitations, artifact provenance, and outstanding non-blocking issues.\n\nDependencies: M01\u2013M08. Licensing/distribution remains an explicit unresolved commercial/legal choice; do not silently pick one to publish artifacts."
+    },
+    {
+      "id": "M10",
+      "title": "M10 \u2014 Federation discovery (Phase 2, not a Phase 1 dependency)",
+      "description": "Outcome: separately approved design and backlog for federation.\n\nScope: shared identity/policy, discovery, cross-site search, placement/routing, coordinated replication, and conflict semantics. Define requirements and design only after independently operable instances are proven.\n\nExit: a new approved scope, threat model, consistency model, migration strategy, and acceptance criteria. No Phase 1 task depends on federation services."
+    }
+  ],
+  "stories": [
+    {
+      "id": "P01",
+      "milestone": "M00",
+      "domain": "core",
+      "title": "Review architecture and unblock implementation",
+      "persona": "maintainer",
+      "want": "a reviewed architecture and complete backlog",
+      "benefit": "implementation starts with agreed boundaries",
+      "spec": "\u00a77, \u00a710, \u00a712",
+      "depends_on": [],
+      "tasks": [
+        {
+          "id": "P01-T1",
+          "title": "Record architecture decisions and threat boundaries",
+          "acceptance": [
+            "Resolve Q05\u2013Q09 in ADRs: built-in adapters, deterministic routing, secret encryption/rotation, API semantics",
+            "Specify artifact entities, uniqueness, transaction/outbox boundaries, failure recovery and trust boundaries",
+            "Record rejected alternatives and remaining blockers without writing product code"
+          ]
+        },
+        {
+          "id": "P01-T2",
+          "title": "Close planning gate and audit backlog coverage",
+          "acceptance": [
+            "All 26 capability contracts and deployment/client matrices are reviewed",
+            "Every spec acceptance criterion maps to stories and evidence tasks; no dangling or cyclic dependency exists",
+            "Engineering readiness audit is recorded under the owner instruction to complete planning autonomously; implementation becomes ready only after planning deliverables and GitHub publication are verified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "milestone": "M00",
+      "domain": "quality",
+      "title": "Define reference workloads and deployment compatibility",
+      "persona": "operator",
+      "want": "explicit workload and compatibility targets",
+      "benefit": "release claims are measurable",
+      "spec": "\u00a76.6, \u00a76.13, \u00a78, \u00a711",
+      "depends_on": [],
+      "tasks": [
+        {
+          "id": "P02-T1",
+          "title": "Define benchmark profiles and acceptance thresholds",
+          "acceptance": [
+            "Specify small single-site and multi-site high-fan-out workloads with object size distributions, concurrent clients and storage footprints",
+            "Record hardware/network assumptions, throughput/latency/memory and recovery objectives; label provisional values",
+            "Do not invent calendar dates or capacity commitments"
+          ]
+        },
+        {
+          "id": "P02-T2",
+          "title": "Select supported infrastructure and provider test matrix",
+          "acceptance": [
+            "Define PostgreSQL version/upgrade policy, OS/CPU targets, disk filesystem expectations and Compose/Helm baseline",
+            "Select real S3 backend/version targets and TLS/path-style/multipart/consistency cases",
+            "Choose Zitadel plus a second OIDC provider and SAML/LDAP/AD fixtures; no vendor choice is implied by this issue"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C01",
+      "milestone": "M01",
+      "domain": "core",
+      "title": "Run and evolve the service on PostgreSQL",
+      "persona": "operator",
+      "want": "reproducible installation and schema upgrades",
+      "benefit": "metadata remains consistent across restarts",
+      "spec": "\u00a76.6, \u00a76.13, \u00a77",
+      "depends_on": [
+        "P01",
+        "P02"
+      ],
+      "tasks": [
+        {
+          "id": "C01-T1",
+          "title": "Establish Go service lifecycle and CI",
+          "acceptance": [
+            "Provide configuration validation, graceful shutdown and bounded request handling",
+            "CI runs formatting, unit tests and real PostgreSQL integration tests",
+            "Development setup uses PostgreSQL only; startup rejects missing required secrets"
+          ]
+        },
+        {
+          "id": "C01-T2",
+          "title": "Implement schema migrations and domain invariants",
+          "acceptance": [
+            "Model feeds/sources, components/assets/blobs, tags/provenance and independent identities",
+            "Migrations are versioned and serialized; unsupported versions fail clearly",
+            "Test uniqueness, rollback-on-error, restart and upgrade constraints on PostgreSQL"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "milestone": "M01",
+      "domain": "api",
+      "title": "Operate a stable management API",
+      "persona": "automation engineer",
+      "want": "a versioned complete management contract",
+      "benefit": "automation can safely retry and upgrade",
+      "spec": "\u00a76.11",
+      "depends_on": [
+        "C01"
+      ],
+      "tasks": [
+        {
+          "id": "C02-T1",
+          "title": "Define and validate OpenAPI and generated clients",
+          "acceptance": [
+            "Describe /api/v1 routes, typed models, stable errors, cursor pagination and bounded filters",
+            "Generate client artifacts and run schema/request-response conformance in CI",
+            "Keep package protocol routing separate from management versioning"
+          ]
+        },
+        {
+          "id": "C02-T2",
+          "title": "Implement mutation retry and concurrent-update semantics",
+          "acceptance": [
+            "Idempotency keys are scoped to principal and operation, with expiry and payload conflict detection",
+            "Concurrent duplicate requests cause one effect; mismatched payload reuse is rejected",
+            "Conditional updates prevent lost configuration changes; failures expose no secrets"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "milestone": "M01",
+      "domain": "identity",
+      "title": "Use scoped machine identities and consistent permissions",
+      "persona": "administrator",
+      "want": "revocable scoped credentials and roles",
+      "benefit": "clients access only authorized resources",
+      "spec": "\u00a76.9, \u00a76.10",
+      "depends_on": [
+        "C01",
+        "C02"
+      ],
+      "tasks": [
+        {
+          "id": "C03-T1",
+          "title": "Implement service accounts and token lifecycle",
+          "acceptance": [
+            "Securely store token verifiers; return secrets only on issuance",
+            "Expiry/revocation immediately affect subsequent authorization",
+            "Test wrong/expired/revoked tokens, throttling and secret redaction"
+          ]
+        },
+        {
+          "id": "C03-T2",
+          "title": "Enforce resource and operation authorization",
+          "acceptance": [
+            "Separate read/publish/delete/configure/replicate/admin and namespace/feed scopes",
+            "Anonymous read is denied unless explicitly enabled; source administration is separately scoped",
+            "Run allow/deny/conflicting-role cases through shared policy checks used by all interfaces"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "milestone": "M01",
+      "domain": "core",
+      "title": "Audit changes and deliver durable events",
+      "persona": "security administrator",
+      "want": "reliable audit and event history",
+      "benefit": "mutations are accountable and integrations recover",
+      "spec": "\u00a76.9\u20136.11",
+      "depends_on": [
+        "C01",
+        "C03"
+      ],
+      "tasks": [
+        {
+          "id": "C04-T1",
+          "title": "Persist audit and outbox records with mutations",
+          "acceptance": [
+            "Publication and administrative metadata changes commit with audit/outbox records",
+            "Capture authentication success/failure and token/role/provider lifecycle without secrets",
+            "Failed transactions emit no success event; records retain actor and resource identity"
+          ]
+        },
+        {
+          "id": "C04-T2",
+          "title": "Deliver webhooks and integration events reliably",
+          "acceptance": [
+            "Retry with bounded backoff and durable checkpoints; expose delivery failures",
+            "Test duplicate delivery, recipient outage, signature verification and replay controls",
+            "Scanner/signing/provenance consumers are optional and cannot block core artifact serving"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "milestone": "M01",
+      "domain": "operations",
+      "title": "Diagnose service health and capacity",
+      "persona": "operator",
+      "want": "actionable operational signals",
+      "benefit": "failures are visible before build disruption",
+      "spec": "\u00a76.13, \u00a78",
+      "depends_on": [
+        "C01"
+      ],
+      "tasks": [
+        {
+          "id": "C05-T1",
+          "title": "Expose health, metrics and structured logs",
+          "acceptance": [
+            "Separate liveness/readiness; readiness reflects required dependencies",
+            "Prometheus signals cover requests, transfers, DB/storage errors and saturation",
+            "No credentials or unbounded resource identities appear in logs/metric labels"
+          ]
+        },
+        {
+          "id": "C05-T2",
+          "title": "Add tracing and safe diagnostics bundles",
+          "acceptance": [
+            "Trace API/protocol/storage/upstream boundaries with correlation IDs",
+            "Diagnostics redact secrets and limit sensitive content",
+            "Exercise DB outage, exhausted storage and slow transfers; document signals and recovery"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S01",
+      "milestone": "M02",
+      "domain": "storage",
+      "title": "Store immutable bytes safely on disk",
+      "persona": "publisher",
+      "want": "streamed verified durable objects",
+      "benefit": "large uploads stay correct and memory-bounded",
+      "spec": "\u00a76.1, \u00a76.4, \u00a76.6",
+      "depends_on": [
+        "C01",
+        "C03",
+        "C04"
+      ],
+      "tasks": [
+        {
+          "id": "S01-T1",
+          "title": "Implement streaming blob contract and disk backend",
+          "acceptance": [
+            "Hash and count bytes while streaming with cancellation and backpressure",
+            "Finalize atomically only after digest/size checks; staged bytes never appear as valid objects",
+            "Test traversal, truncated writes, disk-full, restart and deduplication-domain isolation"
+          ]
+        },
+        {
+          "id": "S01-T2",
+          "title": "Prove large-object and HTTP transfer semantics",
+          "acceptance": [
+            "Range/head/conditional retrieval preserves content and metadata",
+            "Concurrent identical uploads deduplicate without corrupting objects",
+            "Measure bounded memory for large files and verify cancelled upload cleanup"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "milestone": "M02",
+      "domain": "storage",
+      "title": "Use S3 without changing artifact semantics",
+      "persona": "operator",
+      "want": "a compatible object backend",
+      "benefit": "deployments can select storage without changing feed URLs",
+      "spec": "\u00a76.6, \u00a711.6",
+      "depends_on": [
+        "S01",
+        "P02"
+      ],
+      "tasks": [
+        {
+          "id": "S02-T1",
+          "title": "Implement S3 configuration and multipart lifecycle",
+          "acceptance": [
+            "Support endpoint/region/bucket/prefix/path style, TLS, encryption and credential/workload-identity choices",
+            "Multipart transfers resume/abort safely and verify full size/digest",
+            "Do not use object listings as metadata truth; redact credentials"
+          ]
+        },
+        {
+          "id": "S02-T2",
+          "title": "Run backend equivalence and failure tests",
+          "acceptance": [
+            "Run the disk contract suite against each selected S3 implementation",
+            "Exercise delayed visibility, interrupted multipart, throttling and integrity failures",
+            "Record backend/version limitations and prohibit unverified compatibility claims"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "milestone": "M02",
+      "domain": "core",
+      "title": "Publish atomically through deterministic feed policies",
+      "persona": "publisher",
+      "want": "one unambiguous local write destination",
+      "benefit": "the same feed URL can safely serve and publish",
+      "spec": "\u00a76.1, \u00a76.3",
+      "depends_on": [
+        "S01",
+        "C02",
+        "C03",
+        "C04"
+      ],
+      "tasks": [
+        {
+          "id": "S03-T1",
+          "title": "Implement feed policy validation and explain output",
+          "acceptance": [
+            "Separate read order from one default/rule-selected local publish target",
+            "Reject unknown sources, cycles and ambiguous routing; do not proxy writes upstream",
+            "Explain selected and skipped sources and effective namespace/identity constraints"
+          ]
+        },
+        {
+          "id": "S03-T2",
+          "title": "Commit artifact publication and lifecycle changes",
+          "acceptance": [
+            "Validate content before metadata visibility and commit provenance/audit/events atomically",
+            "Immutable releases reject conflicting writes; overwrite/delete policy is explicit",
+            "Test concurrent publishes, failure after blob finalize, cache invalidation and restart"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "S04",
+      "milestone": "M02",
+      "domain": "core",
+      "title": "Discover packages and inspect provenance",
+      "persona": "developer",
+      "want": "searchable artifact metadata and checksums",
+      "benefit": "dependencies can be inspected and downloaded",
+      "spec": "\u00a76.4, \u00a76.12",
+      "depends_on": [
+        "S03",
+        "C02"
+      ],
+      "tasks": [
+        {
+          "id": "S04-T1",
+          "title": "Implement indexed browse and search queries",
+          "acceptance": [
+            "Separate components, assets, versions, tags and format metadata",
+            "Provide bounded filters, stable cursor pagination and checksum lookup",
+            "Test empty pages, concurrent additions and unauthorized data isolation"
+          ]
+        },
+        {
+          "id": "S04-T2",
+          "title": "Expose provenance and client setup details",
+          "acceptance": [
+            "Return uploader, timestamps, size, digest, content type and source provenance",
+            "Preserve adapter-specific metadata while exposing generic fields",
+            "Provide format-owned copyable client configuration and authorized download links"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "K01",
+      "milestone": "M03",
+      "domain": "cache",
+      "title": "Fetch upstream content within explicit trust policy",
+      "persona": "administrator",
+      "want": "controlled upstream access",
+      "benefit": "caching does not leak credentials or bypass network policy",
+      "spec": "\u00a76.2, \u00a76.3",
+      "depends_on": [
+        "S03",
+        "C03"
+      ],
+      "tasks": [
+        {
+          "id": "K01-T1",
+          "title": "Implement upstream transports and credentials",
+          "acceptance": [
+            "Validate upstream URLs, TLS trust, headers and credential references",
+            "Recheck redirected destinations against network policy; credentials cannot cross unapproved origins",
+            "Test private-address/redirect restrictions, TLS failure and redaction"
+          ]
+        },
+        {
+          "id": "K01-T2",
+          "title": "Implement bounded upstream failure handling",
+          "acceptance": [
+            "Retry only safely retryable operations with bounded backoff and circuit breaking",
+            "Keep not-found fallback separate from error failover; cancellation stops work safely",
+            "Test 404/429/5xx, timeouts and stalled responses without request amplification"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "K02",
+      "milestone": "M03",
+      "domain": "cache",
+      "title": "Cache dependencies with predictable freshness",
+      "persona": "build engineer",
+      "want": "correct warm and cold reads",
+      "benefit": "builds reuse bytes without receiving poisoned metadata",
+      "spec": "\u00a76.2, \u00a76.3, \u00a78",
+      "depends_on": [
+        "K01",
+        "S02"
+      ],
+      "tasks": [
+        {
+          "id": "K02-T1",
+          "title": "Implement cache identity, freshness and revalidation",
+          "acceptance": [
+            "Adapter-defined keys separate metadata and blob policies; preserve provenance",
+            "Conditional revalidation and short negative-cache TTLs avoid stale missing-package results",
+            "Offline/stale-if-error is explicit and visible; unauthorized responses are never shared as cached content"
+          ]
+        },
+        {
+          "id": "K02-T2",
+          "title": "Coalesce misses and survive concurrent failures",
+          "acceptance": [
+            "One upstream fetch per key under the defined single-instance normal-operation model",
+            "Cancelled waiters do not corrupt shared fetches; failed partial fetches remain invisible",
+            "Verify concurrent cold requests, restart, stale races, integrity and bounded-memory streaming"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "K03",
+      "milestone": "M03",
+      "domain": "cache",
+      "title": "Prewarm and govern runner traffic",
+      "persona": "build engineer",
+      "want": "prewarming, quotas and cache diagnostics",
+      "benefit": "build sites remain fast and resource usage is controlled",
+      "spec": "\u00a76.5",
+      "depends_on": [
+        "K02",
+        "C05"
+      ],
+      "tasks": [
+        {
+          "id": "K03-T1",
+          "title": "Implement durable prewarm jobs and schedules",
+          "acceptance": [
+            "Accept package lists, supported lockfiles and image digests through adapter-owned parsers",
+            "Jobs expose progress/cancel/retry and resume with durable checkpoints",
+            "Schedules and partial failures are visible; document supported input types"
+          ]
+        },
+        {
+          "id": "K03-T2",
+          "title": "Enforce quotas and report cache effectiveness",
+          "acceptance": [
+            "Rate limits/quotas apply to user/service account/feed/namespace/site",
+            "Report hit ratio, cold/warm latency, upstream bytes avoided and clearly labeled time-saving estimates",
+            "Test concurrent quota enforcement and ensure metrics do not disclose inaccessible packages"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "I01",
+      "milestone": "M06",
+      "domain": "identity",
+      "title": "Sign in with OIDC and diagnose provider setup",
+      "persona": "administrator",
+      "want": "standards-based browser SSO",
+      "benefit": "enterprise identities work without breaking package clients",
+      "spec": "\u00a76.9",
+      "depends_on": [
+        "C03",
+        "C04",
+        "C02"
+      ],
+      "tasks": [
+        {
+          "id": "I01-T1",
+          "title": "Implement OIDC sessions and PKCE",
+          "acceptance": [
+            "Validate issuer/audience/signature/expiry/state/nonce/redirect and rotate JWKS safely",
+            "Test login/logout/session expiry, CSRF and replay failures",
+            "Pass end-to-end against Zitadel and the selected second provider"
+          ]
+        },
+        {
+          "id": "I01-T2",
+          "title": "Implement provider diagnostics and role mappings",
+          "acceptance": [
+            "Show connectivity/discovery/clock/key status without secrets",
+            "Preview claim/group mappings and define conflicts/fallback",
+            "Test denied roles and provider outage recovery while machine clients retain their auth flows"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "I02",
+      "milestone": "M06",
+      "domain": "identity",
+      "title": "Authenticate enterprise users through SAML and LDAP",
+      "persona": "enterprise administrator",
+      "want": "SAML and directory integration at first release",
+      "benefit": "required enterprise environments can adopt the product",
+      "spec": "\u00a76.9, \u00a711.3",
+      "depends_on": [
+        "I01",
+        "P02"
+      ],
+      "tasks": [
+        {
+          "id": "I02-T1",
+          "title": "Implement and validate SAML browser SSO",
+          "acceptance": [
+            "Import/export metadata; require trusted signed assertions with audience/recipient/time/replay validation",
+            "Configure NameID/attributes, certificate rollover and logout where supported",
+            "Run positive and tampered/expired/assertion-replay cases against selected provider fixtures"
+          ]
+        },
+        {
+          "id": "I02-T2",
+          "title": "Implement LDAP and Active Directory authentication",
+          "acceptance": [
+            "Require TLS/StartTLS; define bind/search/group and nested-group limits",
+            "Validate filters/escaping, connection health and directory-to-role mapping",
+            "Test invalid credentials, cycles in groups, timeout and AD fixtures; no passwords in logs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "I03",
+      "milestone": "M06",
+      "domain": "identity",
+      "title": "Recover access and protect stored secrets",
+      "persona": "operator",
+      "want": "safe emergency access and key rotation",
+      "benefit": "SSO outages and credential rotation are recoverable",
+      "spec": "\u00a76.9, \u00a76.10",
+      "depends_on": [
+        "C03",
+        "C04"
+      ],
+      "tasks": [
+        {
+          "id": "I03-T1",
+          "title": "Implement emergency administrator policy and recovery",
+          "acceptance": [
+            "Hash credentials using reviewed password hashing; rate-limit and audit attempts",
+            "Allow policy disabling/restricting emergency login when SSO is mandatory",
+            "Exercise documented recovery without allowing anonymous administrative access"
+          ]
+        },
+        {
+          "id": "I03-T2",
+          "title": "Encrypt and rotate application secrets",
+          "acceptance": [
+            "Keep root-key material external to stored ciphertext and support key versioning",
+            "Rotate upstream/IdP/peer credentials without logging plaintext",
+            "Test lost/missing keys and rotation interruption; external KMS requirements remain explicit"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U01",
+      "milestone": "M06",
+      "domain": "ui",
+      "title": "Navigate an accessible React console and instance overview",
+      "persona": "operator",
+      "want": "a usable console backed by supported APIs",
+      "benefit": "instance status is understandable",
+      "spec": "\u00a76.12",
+      "depends_on": [
+        "I01",
+        "C02",
+        "C05"
+      ],
+      "tasks": [
+        {
+          "id": "U01-T1",
+          "title": "Build console session, navigation and API client foundation",
+          "acceptance": [
+            "Use generated supported API clients and secure session integration",
+            "Handle loading/empty/permission-denied/offline states without exposing restricted actions",
+            "Keyboard navigation, labels, focus and responsive layout pass accessibility checks"
+          ]
+        },
+        {
+          "id": "U01-T2",
+          "title": "Build health and acceleration overview",
+          "acceptance": [
+            "Display real health, capacity, upstream and cache data with timestamps",
+            "Make estimates and stale/unavailable readings distinguishable",
+            "Link diagnostics and failures to actionable authorized views; no fabricated dashboard metrics"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U02",
+      "milestone": "M06",
+      "domain": "ui",
+      "title": "Configure feeds and investigate packages in the console",
+      "persona": "administrator",
+      "want": "format-aware feed forms and artifact browsing",
+      "benefit": "routing and package issues are diagnosable",
+      "spec": "\u00a76.3, \u00a76.12",
+      "depends_on": [
+        "U01",
+        "S04",
+        "K02",
+        "K03"
+      ],
+      "tasks": [
+        {
+          "id": "U02-T1",
+          "title": "Build feed/source/policy editor and explanation views",
+          "acceptance": [
+            "Forms reflect enabled adapter capabilities and server validation",
+            "Show effective read precedence and exact write target before save",
+            "Test ambiguous policies, credential redaction and authorization denials"
+          ]
+        },
+        {
+          "id": "U02-T2",
+          "title": "Build package browse and cache diagnosis views",
+          "acceptance": [
+            "Search/filter/paginate packages and inspect versions/assets/provenance/checksums",
+            "Provide copyable real client configuration and authorized downloads",
+            "Show source choice, stale/offline state, upstream failures and prewarm progress"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U03",
+      "milestone": "M06",
+      "domain": "ui",
+      "title": "Administer identity and governance through the console",
+      "persona": "security administrator",
+      "want": "provider, role, token and audit screens",
+      "benefit": "access policies are maintainable",
+      "spec": "\u00a76.9, \u00a76.10, \u00a76.12",
+      "depends_on": [
+        "U01",
+        "I02",
+        "I03"
+      ],
+      "tasks": [
+        {
+          "id": "U03-T1",
+          "title": "Build provider, principal and token administration",
+          "acceptance": [
+            "Expose OIDC/SAML/LDAP tests and mapping previews through supported APIs",
+            "Manage users/groups/service accounts/roles and expiry/revocation independently",
+            "Never redisplay issued token secrets; test privilege escalation attempts"
+          ]
+        },
+        {
+          "id": "U03-T2",
+          "title": "Build audit browsing and governance exports",
+          "acceptance": [
+            "Filter and paginate audit history with authorized export and retention controls",
+            "Show configuration/auth/token/package events with actor context",
+            "Validate forbidden exports and redaction; links do not expose inaccessible resources"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A01",
+      "milestone": "M06",
+      "domain": "mcp",
+      "title": "Operate the product through scoped MCP tools",
+      "persona": "automation agent",
+      "want": "discovery, inspection and administrative tools",
+      "benefit": "agent workflows enforce the same policies as humans",
+      "spec": "\u00a76.11, \u00a711.4",
+      "depends_on": [
+        "C02",
+        "C03",
+        "C04",
+        "S04",
+        "K03"
+      ],
+      "tasks": [
+        {
+          "id": "A01-T1",
+          "title": "Implement MCP discovery and diagnostic tools",
+          "acceptance": [
+            "Expose feeds/packages/artifacts/cache/health through supported management APIs",
+            "Use scoped credentials and preserve standard permission checks and error semantics",
+            "Test denied resources, pagination, cancellation and input validation"
+          ]
+        },
+        {
+          "id": "A01-T2",
+          "title": "Implement administrative parity and destructive-action semantics",
+          "acceptance": [
+            "Expose authorized feed/policy, identity/provider/role/token, governance, storage, replication and lifecycle actions through the same supported APIs",
+            "Mark destructive tools and support client confirmation without treating it as authorization",
+            "Compare API/UI/MCP mutations for identical permission and audit outcomes"
+          ],
+          "extra_dependencies": [
+            "R02",
+            "O02",
+            "D01",
+            "I02",
+            "I03"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R01",
+      "milestone": "M07",
+      "domain": "replication",
+      "title": "Seed an independently operable replica",
+      "persona": "site administrator",
+      "want": "restartable full-feed sync",
+      "benefit": "another site can serve content during source outage",
+      "spec": "\u00a76.7",
+      "depends_on": [
+        "S02",
+        "S03",
+        "K02",
+        "C04"
+      ],
+      "tasks": [
+        {
+          "id": "R01-T1",
+          "title": "Implement peer trust and complete feed manifests",
+          "acceptance": [
+            "Use TLS and scoped peer credentials; distinguish content from configuration",
+            "Manifest includes versions/tags/indexes/checksums/format metadata and cached bytes by default",
+            "Optional transient-cache exclusion is explicit; destination credentials/access policy remain local"
+          ]
+        },
+        {
+          "id": "R01-T2",
+          "title": "Implement restartable full seed transfers",
+          "acceptance": [
+            "Verify digests before destination visibility and persist per-object/checkpoint progress",
+            "Retry without retransferring already verified objects; publish consistent destination state",
+            "Test interruption and source outage across disk\u2194S3 with independently usable seeded content"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "R02",
+      "milestone": "M07",
+      "domain": "replication",
+      "title": "Keep replicas current without deleting local content",
+      "persona": "site administrator",
+      "want": "incremental selective sync and safe deletions",
+      "benefit": "replication is controlled and diagnosable",
+      "spec": "\u00a76.7",
+      "depends_on": [
+        "R01"
+      ],
+      "tasks": [
+        {
+          "id": "R02-T1",
+          "title": "Implement selective and incremental replication jobs",
+          "acceptance": [
+            "Filter by feed/namespace/package/version; support manual/scheduled/continuous modes",
+            "Persist checkpoints and apply metadata/tag changes idempotently",
+            "Report lag/progress/failures; retain authoritative writer and read-only replica defaults"
+          ]
+        },
+        {
+          "id": "R02-T2",
+          "title": "Implement conflict and tombstone policy with dry runs",
+          "acceptance": [
+            "Require explicit deletion propagation policy and inspectable dry-run results",
+            "Never remove destination-only content; conflicting ownership has a documented result",
+            "Review non-secret configuration templates separately; prove retries and out-of-order changes are safe"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "O01",
+      "milestone": "M08",
+      "domain": "operations",
+      "title": "Maintain references and repair storage safely",
+      "persona": "operator",
+      "want": "retention, eviction, integrity and repair tools",
+      "benefit": "maintenance cannot delete valid artifacts",
+      "spec": "\u00a76.4, \u00a76.13",
+      "depends_on": [
+        "S02",
+        "S03",
+        "K02",
+        "R02"
+      ],
+      "tasks": [
+        {
+          "id": "O01-T1",
+          "title": "Implement reference-safe retention and garbage collection",
+          "acceptance": [
+            "Account for live metadata, active reads/uploads, replica references and grace periods",
+            "Provide dry runs and separate cache eviction from published-content retention",
+            "Test delete/read races, orphan bytes and delayed object visibility"
+          ]
+        },
+        {
+          "id": "O01-T2",
+          "title": "Implement integrity scan and metadata/replication repair",
+          "acceptance": [
+            "Detect digest/size/reference mismatches and report affected assets",
+            "Repair jobs resume and audit changes without inventing missing content",
+            "Exercise interrupted repair and retain evidence of unrecoverable corruption"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "O02",
+      "milestone": "M08",
+      "domain": "operations",
+      "title": "Back up, restore and migrate storage",
+      "persona": "operator",
+      "want": "documented consistent recovery and storage movement",
+      "benefit": "failures and backend changes preserve feed URLs",
+      "spec": "\u00a76.6, \u00a76.13, \u00a711.9",
+      "depends_on": [
+        "O01"
+      ],
+      "tasks": [
+        {
+          "id": "O02-T1",
+          "title": "Implement consistent backup and restore workflows",
+          "acceptance": [
+            "Coordinate metadata snapshot and required blob coverage with a documented write policy",
+            "Restore into a clean installation and verify references/digests/auth configuration",
+            "Measure recovery time/data loss against agreed objectives and document key handling"
+          ]
+        },
+        {
+          "id": "O02-T2",
+          "title": "Implement disk/S3 migration and schema upgrade rehearsal",
+          "acceptance": [
+            "Copy and verify blobs with durable progress while preserving feed URLs",
+            "Define cutover, rollback and concurrent-write behavior; test disk\u2192S3 and S3\u2192disk",
+            "Rehearse supported schema upgrades and document irreversible rollback boundaries"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "O03",
+      "milestone": "M08",
+      "domain": "operations",
+      "title": "Deploy securely with Compose and Kubernetes",
+      "persona": "operator",
+      "want": "supported single-site and managed deployments",
+      "benefit": "installation does not require undocumented infrastructure",
+      "spec": "\u00a76.13",
+      "depends_on": [
+        "C01",
+        "C05",
+        "I03",
+        "P02"
+      ],
+      "tasks": [
+        {
+          "id": "O03-T1",
+          "title": "Package non-root image and Compose installation",
+          "acceptance": [
+            "Ship deterministic build configuration, PostgreSQL health dependencies and persistent data paths",
+            "Validate secrets/configuration and only expose required ports",
+            "Exercise fresh install, restart and documented trusted reverse-proxy/TLS behavior"
+          ]
+        },
+        {
+          "id": "O03-T2",
+          "title": "Provide Helm chart and managed-operation guidance",
+          "acceptance": [
+            "Document database/storage/secret dependencies, resource sizing and readiness behavior",
+            "Test install/upgrade/rollback constraints on selected Kubernetes baseline",
+            "Do not imply active-active federation or unsupported horizontal topology"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "D01",
+      "milestone": "M08",
+      "domain": "adoption",
+      "title": "Inventory and migrate existing repositories",
+      "persona": "repository administrator",
+      "want": "format-aware import/export and dry runs",
+      "benefit": "adoption preserves content and reports gaps",
+      "spec": "\u00a79, \u00a711.7",
+      "depends_on": [
+        "S04",
+        "R02"
+      ],
+      "tasks": [
+        {
+          "id": "D01-T1",
+          "title": "Implement generic configuration and content import/export",
+          "acceptance": [
+            "Export references without plaintext secrets; preserve paths/checksums/format metadata",
+            "Dry runs report invalid mappings, integrity errors, conflicts and unsupported items",
+            "Support selective/resumable/idempotent transfers and provenance"
+          ]
+        },
+        {
+          "id": "D01-T2",
+          "title": "Validate migration mappings and staged runner adoption",
+          "acceptance": [
+            "Select representative source-manager versions in a documented compatibility matrix",
+            "Inventory first; exercise migration fixtures and report unmapped configuration",
+            "Document endpoint switch, rollback and side-by-side build comparison with standard clients"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "U04",
+      "milestone": "M06",
+      "domain": "ui",
+      "title": "Operate replication and lifecycle jobs visually",
+      "persona": "operator",
+      "want": "replication, storage and maintenance screens",
+      "benefit": "risk and job progress are visible before changes",
+      "spec": "\u00a76.12",
+      "depends_on": [
+        "U01",
+        "R02",
+        "O02",
+        "D01"
+      ],
+      "tasks": [
+        {
+          "id": "U04-T1",
+          "title": "Build peer, seed and incremental sync screens",
+          "acceptance": [
+            "Configure scopes, credentials references, authoritative writer and schedules",
+            "Show seed progress, lag/errors, resume and deletion dry runs",
+            "Separate configuration template review from content sync and test denied operations"
+          ]
+        },
+        {
+          "id": "U04-T2",
+          "title": "Build storage, maintenance and adoption screens",
+          "acceptance": [
+            "Expose storage status/migration, retention, integrity, repair and backup guidance",
+            "Render import/export dry runs and job progress with cancellation semantics",
+            "Test destructive-action review, failure recovery and API permission parity"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F08",
+      "milestone": "M04",
+      "domain": "formats",
+      "title": "Docker / OCI: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Docker / OCI feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03"
+      ],
+      "tasks": [
+        {
+          "id": "F08-T1",
+          "title": "Docker / OCI: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: Docker and an OCI client push/pull/tag; manifests and blobs; multi-platform image pull; interrupted uploads",
+            "Resolve format-specific scope: Bearer-token realm/service/scope; manifest-list/index semantics; resumable upload; mount; tag conflicts; upstream URL/auth handling",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F08-T2",
+          "title": "Docker / OCI: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: Docker and an OCI client push/pull/tag; manifests and blobs; multi-platform image pull; interrupted uploads",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F08-T3",
+          "title": "Docker / OCI: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Bearer-token realm/service/scope; manifest-list/index semantics; resumable upload; mount; tag conflicts; upstream URL/auth handling",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F08-T4",
+          "title": "Docker / OCI: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for Docker and an OCI client push/pull/tag; manifests and blobs; multi-platform image pull; interrupted uploads on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F10",
+      "milestone": "M04",
+      "domain": "formats",
+      "title": "Go modules: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Go modules feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F08"
+      ],
+      "tasks": [
+        {
+          "id": "F10-T1",
+          "title": "Go modules: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `go mod download`; proxy list/info/mod/zip endpoints; escaped paths and immutable versions",
+            "Resolve format-specific scope: Checksum database access/proxy scope; private modules; retractions; canonical version resolution",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F10-T2",
+          "title": "Go modules: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `go mod download`; proxy list/info/mod/zip endpoints; escaped paths and immutable versions",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F10-T3",
+          "title": "Go modules: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Checksum database access/proxy scope; private modules; retractions; canonical version resolution",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F10-T4",
+          "title": "Go modules: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `go mod download`; proxy list/info/mod/zip endpoints; escaped paths and immutable versions on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F11",
+      "milestone": "M04",
+      "domain": "formats",
+      "title": "Helm: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Helm feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F10"
+      ],
+      "tasks": [
+        {
+          "id": "F11-T1",
+          "title": "Helm: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `helm repo add/update`, `helm pull/install`; OCI chart push/pull",
+            "Resolve format-specific scope: Classic chart publish/ingestion; index composition; provenance/signature retention; shared OCI adapter coverage",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F11-T2",
+          "title": "Helm: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `helm repo add/update`, `helm pull/install`; OCI chart push/pull",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F11-T3",
+          "title": "Helm: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Classic chart publish/ingestion; index composition; provenance/signature retention; shared OCI adapter coverage",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F11-T4",
+          "title": "Helm: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `helm repo add/update`, `helm pull/install`; OCI chart push/pull on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F23",
+      "milestone": "M04",
+      "domain": "formats",
+      "title": "Rust / Cargo: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Rust / Cargo feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F11"
+      ],
+      "tasks": [
+        {
+          "id": "F23-T1",
+          "title": "Rust / Cargo: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `cargo publish/fetch`; sparse and git registry indexes; crate downloads",
+            "Resolve format-specific scope: Index transport/auth; alternate registry configuration; yank; metadata update ordering; git hosting scope",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F23-T2",
+          "title": "Rust / Cargo: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `cargo publish/fetch`; sparse and git registry indexes; crate downloads",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F23-T3",
+          "title": "Rust / Cargo: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Index transport/auth; alternate registry configuration; yank; metadata update ordering; git hosting scope",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F23-T4",
+          "title": "Rust / Cargo: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `cargo publish/fetch`; sparse and git registry indexes; crate downloads on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F21",
+      "milestone": "M04",
+      "domain": "formats",
+      "title": "Raw: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Raw feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F23"
+      ],
+      "tasks": [
+        {
+          "id": "F21-T1",
+          "title": "Raw: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: HTTP upload/download/head/range; list/search; delete with explicit policy",
+            "Resolve format-specific scope: Path normalization; conditional requests; media types; immutable paths; no implied support for other ecosystems",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F21-T2",
+          "title": "Raw: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: HTTP upload/download/head/range; list/search; delete with explicit policy",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F21-T3",
+          "title": "Raw: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Path normalization; conditional requests; media types; immutable paths; no implied support for other ecosystems",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F21-T4",
+          "title": "Raw: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for HTTP upload/download/head/range; list/search; delete with explicit policy on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F16",
+      "milestone": "M04",
+      "domain": "formats",
+      "title": "OCI artifacts: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated OCI artifacts feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21"
+      ],
+      "tasks": [
+        {
+          "id": "F16-T1",
+          "title": "OCI artifacts: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: ORAS-compatible push/pull/discover for non-container payloads; digest-based retrieval",
+            "Resolve format-specific scope: Referrers/discovery behavior; artifact media types; subject relationships; deletion and replication references",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F16-T2",
+          "title": "OCI artifacts: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: ORAS-compatible push/pull/discover for non-container payloads; digest-based retrieval",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F16-T3",
+          "title": "OCI artifacts: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Referrers/discovery behavior; artifact media types; subject relationships; deletion and replication references",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F16-T4",
+          "title": "OCI artifacts: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for ORAS-compatible push/pull/discover for non-container payloads; digest-based retrieval on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F01",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Alpine APK: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Alpine APK feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F01-T1",
+          "title": "Alpine APK: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `apk update/add`; ingest packages; produce and verify signed indexes; consume via local and cached remote sources",
+            "Resolve format-specific scope: Supported Alpine/index/signing generations; architecture/channel mapping; key rotation; signed index composition",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F01-T2",
+          "title": "Alpine APK: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `apk update/add`; ingest packages; produce and verify signed indexes; consume via local and cached remote sources",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F01-T3",
+          "title": "Alpine APK: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Supported Alpine/index/signing generations; architecture/channel mapping; key rotation; signed index composition",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F01-T4",
+          "title": "Alpine APK: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `apk update/add`; ingest packages; produce and verify signed indexes; consume via local and cached remote sources on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F02",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Ansible Galaxy: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Ansible Galaxy feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F02-T1",
+          "title": "Ansible Galaxy: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `ansible-galaxy collection publish/install`; resolve collection versions/dependencies and download archives",
+            "Resolve format-specific scope: Galaxy API generations; namespace ownership; remote URLs; collections only versus roles",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F02-T2",
+          "title": "Ansible Galaxy: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `ansible-galaxy collection publish/install`; resolve collection versions/dependencies and download archives",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F02-T3",
+          "title": "Ansible Galaxy: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Galaxy API generations; namespace ownership; remote URLs; collections only versus roles",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F02-T4",
+          "title": "Ansible Galaxy: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `ansible-galaxy collection publish/install`; resolve collection versions/dependencies and download archives on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F03",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "APT / Debian: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated APT / Debian feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F03-T1",
+          "title": "APT / Debian: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `apt update/install`; ingest `.deb`; publish signed Release/InRelease and package indexes",
+            "Resolve format-specific scope: Distribution/component/architecture rules; signing ownership; by-hash; multi-source index composition",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F03-T2",
+          "title": "APT / Debian: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `apt update/install`; ingest `.deb`; publish signed Release/InRelease and package indexes",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F03-T3",
+          "title": "APT / Debian: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Distribution/component/architecture rules; signing ownership; by-hash; multi-source index composition",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F03-T4",
+          "title": "APT / Debian: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `apt update/install`; ingest `.deb`; publish signed Release/InRelease and package indexes on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F04",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "CocoaPods: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated CocoaPods feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F04-T1",
+          "title": "CocoaPods: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `pod repo`/`pod install` using supported spec sources; serve specs and source archives",
+            "Resolve format-specific scope: CDN versus git specs; source references that must remain external; publish/ingestion semantics",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F04-T2",
+          "title": "CocoaPods: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `pod repo`/`pod install` using supported spec sources; serve specs and source archives",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F04-T3",
+          "title": "CocoaPods: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including CDN versus git specs; source references that must remain external; publish/ingestion semantics",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F04-T4",
+          "title": "CocoaPods: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `pod repo`/`pod install` using supported spec sources; serve specs and source archives on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F05",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Composer / PHP: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Composer / PHP feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F05-T1",
+          "title": "Composer / PHP: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `composer install/update`; package metadata and dist archives; configured source references",
+            "Resolve format-specific scope: Metadata generations; authentication; distribution upload versus metadata ingestion; absolute URLs",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F05-T2",
+          "title": "Composer / PHP: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `composer install/update`; package metadata and dist archives; configured source references",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F05-T3",
+          "title": "Composer / PHP: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Metadata generations; authentication; distribution upload versus metadata ingestion; absolute URLs",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F05-T4",
+          "title": "Composer / PHP: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `composer install/update`; package metadata and dist archives; configured source references on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F06",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Conan: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Conan feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F06-T1",
+          "title": "Conan: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `conan upload/install`; recipe/package revisions and binaries",
+            "Resolve format-specific scope: Conan client/API versions; revision overwrite/immutability; checksums; auth flows",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F06-T2",
+          "title": "Conan: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `conan upload/install`; recipe/package revisions and binaries",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F06-T3",
+          "title": "Conan: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Conan client/API versions; revision overwrite/immutability; checksums; auth flows",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F06-T4",
+          "title": "Conan: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `conan upload/install`; recipe/package revisions and binaries on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F07",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Conda: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Conda feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F07-T1",
+          "title": "Conda: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `conda install/search`; ingest packages; generate channel/platform repodata",
+            "Resolve format-specific scope: Package container variants; repodata variants and patching; channel priority; signatures if supported",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F07-T2",
+          "title": "Conda: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `conda install/search`; ingest packages; generate channel/platform repodata",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F07-T3",
+          "title": "Conda: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Package container variants; repodata variants and patching; channel priority; signatures if supported",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F07-T4",
+          "title": "Conda: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `conda install/search`; ingest packages; generate channel/platform repodata on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F09",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Git LFS: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Git LFS feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F09-T1",
+          "title": "Git LFS: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `git lfs push/pull`; batch API; large-object transfer and checksum validation",
+            "Resolve format-specific scope: Transfer adapters, verification endpoint, action URL authorization, optional locking scope",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F09-T2",
+          "title": "Git LFS: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `git lfs push/pull`; batch API; large-object transfer and checksum validation",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F09-T3",
+          "title": "Git LFS: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Transfer adapters, verification endpoint, action URL authorization, optional locking scope",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F09-T4",
+          "title": "Git LFS: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `git lfs push/pull`; batch API; large-object transfer and checksum validation on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F12",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Hugging Face: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Hugging Face feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F12-T1",
+          "title": "Hugging Face: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: Supported Hub client model/dataset download; revisions and large files; range/resume",
+            "Resolve format-specific scope: Exact Hub API subset; upload API requirement; gated/private content; revision resolution; large-file transport",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F12-T2",
+          "title": "Hugging Face: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: Supported Hub client model/dataset download; revisions and large files; range/resume",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F12-T3",
+          "title": "Hugging Face: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Exact Hub API subset; upload API requirement; gated/private content; revision resolution; large-file transport",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F12-T4",
+          "title": "Hugging Face: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for Supported Hub client model/dataset download; revisions and large files; range/resume on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F13",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Maven: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Maven feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F13-T1",
+          "title": "Maven: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: Maven and Gradle dependency resolution; deploy release/snapshot; metadata/checksums",
+            "Resolve format-specific scope: Snapshot timestamp policy; metadata merging; plugin artifacts; checksum variants; release immutability",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F13-T2",
+          "title": "Maven: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: Maven and Gradle dependency resolution; deploy release/snapshot; metadata/checksums",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F13-T3",
+          "title": "Maven: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Snapshot timestamp policy; metadata merging; plugin artifacts; checksum variants; release immutability",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F13-T4",
+          "title": "Maven: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for Maven and Gradle dependency resolution; deploy release/snapshot; metadata/checksums on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F14",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "npm: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated npm feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F14-T1",
+          "title": "npm: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `npm publish/install/view/dist-tag`; scoped packages; metadata and tarballs",
+            "Resolve format-specific scope: Registry URL rewriting; tag mutation ownership; unpublish; package-level permissions; multi-source metadata safety",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F14-T2",
+          "title": "npm: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `npm publish/install/view/dist-tag`; scoped packages; metadata and tarballs",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F14-T3",
+          "title": "npm: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Registry URL rewriting; tag mutation ownership; unpublish; package-level permissions; multi-source metadata safety",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F14-T4",
+          "title": "npm: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `npm publish/install/view/dist-tag`; scoped packages; metadata and tarballs on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F15",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "NuGet / Chocolatey: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated NuGet / Chocolatey feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F15-T1",
+          "title": "NuGet / Chocolatey: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `dotnet nuget push`, restore; NuGet v2/v3 clients; Chocolatey install; symbol upload/consume",
+            "Resolve format-specific scope: Separate client matrices; service index URLs; registration/search; `.snupkg` and symbol service scope",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F15-T2",
+          "title": "NuGet / Chocolatey: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `dotnet nuget push`, restore; NuGet v2/v3 clients; Chocolatey install; symbol upload/consume",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F15-T3",
+          "title": "NuGet / Chocolatey: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Separate client matrices; service index URLs; registration/search; `.snupkg` and symbol service scope",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F15-T4",
+          "title": "NuGet / Chocolatey: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `dotnet nuget push`, restore; NuGet v2/v3 clients; Chocolatey install; symbol upload/consume on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F17",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Eclipse p2: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Eclipse p2 feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F17-T1",
+          "title": "Eclipse p2: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: Eclipse/p2 director installation from supported metadata/artifact repositories",
+            "Resolve format-specific scope: XML/compressed metadata, composite repositories, packed artifacts, signed content, ingestion workflow",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F17-T2",
+          "title": "Eclipse p2: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: Eclipse/p2 director installation from supported metadata/artifact repositories",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F17-T3",
+          "title": "Eclipse p2: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including XML/compressed metadata, composite repositories, packed artifacts, signed content, ingestion workflow",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F17-T4",
+          "title": "Eclipse p2: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for Eclipse/p2 director installation from supported metadata/artifact repositories on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F18",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Pub / Flutter: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Pub / Flutter feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F18-T1",
+          "title": "Pub / Flutter: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `dart pub publish/get`; Flutter dependency consumption",
+            "Resolve format-specific scope: Hosted registry API, auth, archive validation, package policy, version retraction/discontinuation scope",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F18-T2",
+          "title": "Pub / Flutter: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `dart pub publish/get`; Flutter dependency consumption",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F18-T3",
+          "title": "Pub / Flutter: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Hosted registry API, auth, archive validation, package policy, version retraction/discontinuation scope",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F18-T4",
+          "title": "Pub / Flutter: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `dart pub publish/get`; Flutter dependency consumption on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F19",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "PyPI: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated PyPI feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F19-T1",
+          "title": "PyPI: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: Twine upload; pip install from Simple API; wheels and source distributions",
+            "Resolve format-specific scope: HTML/JSON Simple variants; normalized names; yanked releases; metadata sidecars; external links/hash policy",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F19-T2",
+          "title": "PyPI: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: Twine upload; pip install from Simple API; wheels and source distributions",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F19-T3",
+          "title": "PyPI: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including HTML/JSON Simple variants; normalized names; yanked releases; metadata sidecars; external links/hash policy",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F19-T4",
+          "title": "PyPI: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for Twine upload; pip install from Simple API; wheels and source distributions on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F20",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "R / CRAN: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated R / CRAN feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F20-T1",
+          "title": "R / CRAN: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: R `install.packages`; ingest and index source/binary packages",
+            "Resolve format-specific scope: OS/R-version binary layout; PACKAGES compression formats; dependency metadata; publish conventions",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F20-T2",
+          "title": "R / CRAN: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: R `install.packages`; ingest and index source/binary packages",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F20-T3",
+          "title": "R / CRAN: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including OS/R-version binary layout; PACKAGES compression formats; dependency metadata; publish conventions",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F20-T4",
+          "title": "R / CRAN: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for R `install.packages`; ingest and index source/binary packages on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F22",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "RubyGems: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated RubyGems feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F22-T1",
+          "title": "RubyGems: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `gem push/install`; Bundler resolution; gem indexes and metadata",
+            "Resolve format-specific scope: Compact versus legacy indexes; yank semantics; API keys; source ordering and authentication",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F22-T2",
+          "title": "RubyGems: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `gem push/install`; Bundler resolution; gem indexes and metadata",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F22-T3",
+          "title": "RubyGems: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Compact versus legacy indexes; yank semantics; API keys; source ordering and authentication",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F22-T4",
+          "title": "RubyGems: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `gem push/install`; Bundler resolution; gem indexes and metadata on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F24",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Swift Package Manager: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Swift Package Manager feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F24-T1",
+          "title": "Swift Package Manager: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: Swift registry publish/download and dependency resolution",
+            "Resolve format-specific scope: Registry protocol/client versions; source archive checksums/signatures; identity and namespace mapping",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F24-T2",
+          "title": "Swift Package Manager: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: Swift registry publish/download and dependency resolution",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F24-T3",
+          "title": "Swift Package Manager: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Registry protocol/client versions; source archive checksums/signatures; identity and namespace mapping",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F24-T4",
+          "title": "Swift Package Manager: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for Swift registry publish/download and dependency resolution on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F25",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Terraform: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Terraform feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F25-T1",
+          "title": "Terraform: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: `terraform init`; provider discovery/download/checksums and module retrieval",
+            "Resolve format-specific scope: Provider signing; module version/source protocols; publishing/ingestion; authentication; external source references",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F25-T2",
+          "title": "Terraform: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: `terraform init`; provider discovery/download/checksums and module retrieval",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F25-T3",
+          "title": "Terraform: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Provider signing; module version/source protocols; publishing/ingestion; authentication; external source references",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F25-T4",
+          "title": "Terraform: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for `terraform init`; provider discovery/download/checksums and module retrieval on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F26",
+      "milestone": "M05",
+      "domain": "formats",
+      "title": "Yum / RPM: publish, resolve and validate supported clients",
+      "persona": "build engineer",
+      "want": "validated Yum / RPM feed workflows",
+      "benefit": "standard clients publish and consume through a predictable endpoint",
+      "spec": "\u00a75, \u00a75.1, \u00a76.1\u20136.4, \u00a711.1\u20132",
+      "depends_on": [
+        "S03",
+        "S04",
+        "K02",
+        "C03",
+        "F21",
+        "F16"
+      ],
+      "tasks": [
+        {
+          "id": "F26-T1",
+          "title": "Yum / RPM: finalize protocol and client acceptance contract",
+          "acceptance": [
+            "Research official protocol/client references and pin documented test versions for: DNF/Yum metadata refresh/install; ingest RPMs; generate repository metadata",
+            "Resolve format-specific scope: Metadata types/compression; signing; architecture/version rules; modular metadata; old-client compatibility",
+            "Record local/remote/replica capabilities, publish versus ingestion conventions, unsupported behaviors and metadata composition rules; no implementation before review"
+          ],
+          "planning_only": true
+        },
+        {
+          "id": "F26-T2",
+          "title": "Yum / RPM: implement local protocol and metadata lifecycle",
+          "acceptance": [
+            "Implement approved local workflows: DNF/Yum metadata refresh/install; ingest RPMs; generate repository metadata",
+            "Use shared authorization, atomic publication, provenance and routing; format-specific indexes/tags/signatures stay consistent",
+            "Validate malformed content, conflicting releases, deletion/overwrite and denied operations; add browse/search fields and client setup examples"
+          ]
+        },
+        {
+          "id": "F26-T3",
+          "title": "Yum / RPM: implement proxy resolution and cache semantics",
+          "acceptance": [
+            "Implement remote behavior under the approved contract, including Metadata types/compression; signing; architecture/version rules; modular metadata; old-client compatibility",
+            "Define cache keys/freshness/negative caches and format-safe source composition; do not leak upstream credentials or rewrite signatures unsafely",
+            "Test source precedence, upstream errors, stale/offline behavior and same-endpoint routing; no default upstream publishing"
+          ]
+        },
+        {
+          "id": "F26-T4",
+          "title": "Yum / RPM: certify client and replica workflows",
+          "acceptance": [
+            "Run pinned real clients for DNF/Yum metadata refresh/install; ingest RPMs; generate repository metadata on both supported storage backends",
+            "Verify auth, corruption, cancellation/restart, concurrent publication and range/resume where applicable; explicit N/A cells require reasons",
+            "Run full/incremental replica metadata/index/tag integrity checks after R02; publish reproducible evidence and known limitations; no support claim without evidence"
+          ],
+          "extra_dependencies": [
+            "R02"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q01",
+      "milestone": "M09",
+      "domain": "quality",
+      "title": "Qualify Phase 1 with reproducible release evidence",
+      "persona": "release owner",
+      "want": "a complete tested release matrix",
+      "benefit": "breadth and reliability claims are justified",
+      "spec": "\u00a711.1\u201310",
+      "depends_on": [
+        "I02",
+        "U02",
+        "U03",
+        "U04",
+        "A01",
+        "K03",
+        "O02",
+        "O03",
+        "D01",
+        "F01",
+        "F02",
+        "F03",
+        "F04",
+        "F05",
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10",
+        "F11",
+        "F12",
+        "F13",
+        "F14",
+        "F15",
+        "F16",
+        "F17",
+        "F18",
+        "F19",
+        "F20",
+        "F21",
+        "F22",
+        "F23",
+        "F24",
+        "F25",
+        "F26"
+      ],
+      "tasks": [
+        {
+          "id": "Q01-T1",
+          "title": "Run security, interoperability and interface parity qualification",
+          "acceptance": [
+            "All 26 ledger records have real-client evidence and reviewed limitations",
+            "Exercise OIDC/SAML/LDAP, scoped tokens, API/UI/MCP permission/audit parity and threat-model cases",
+            "Validate OpenAPI/generated clients, all supported backend/provider combinations and no unresolved release blockers"
+          ]
+        },
+        {
+          "id": "Q01-T2",
+          "title": "Run performance, resilience and recovery release gates",
+          "acceptance": [
+            "Use agreed workload/hardware profiles and numeric targets; record warm/cold latency, throughput, memory and fan-out fetch counts",
+            "Rehearse two-instance seed/increment/resume/outage, import dry run, backup/restore and upgrades",
+            "Publish release evidence, compatibility/support policy, capacity guidance and known limitations without claiming a license selection"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Z01",
+      "milestone": "M10",
+      "domain": "core",
+      "title": "Define federation as a separate future phase",
+      "persona": "multi-site administrator",
+      "want": "a separately approved federation design",
+      "benefit": "independent instances can evolve without hidden coupling",
+      "spec": "\u00a76.8, \u00a710 Phase 2",
+      "depends_on": [
+        "Q01"
+      ],
+      "tasks": [
+        {
+          "id": "Z01-T1",
+          "title": "Specify federation identity, discovery and consistency requirements",
+          "acceptance": [
+            "Define shared identity/policy, cross-site search, placement/routing and coordinated replication outcomes",
+            "Compare consistency and conflict models; include migrations and trust boundaries",
+            "No Phase 1 dependency may require federation services"
+          ]
+        },
+        {
+          "id": "Z01-T2",
+          "title": "Prepare Phase 2 architecture and acceptance backlog",
+          "acceptance": [
+            "Produce a separately reviewed threat model, API/data contracts and user stories",
+            "Document failure partitions, authority, audit and compatibility gates",
+            "Implementation remains deferred until Phase 2 scope is explicitly approved"
+          ]
+        }
+      ]
+    }
+  ]
+}

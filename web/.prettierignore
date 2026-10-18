@@ -1,0 +1,3 @@
+node_modules/
+src/generated.ts
+package-lock.json

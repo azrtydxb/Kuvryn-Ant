@@ -1,0 +1,18 @@
+{
+  "branch": "feat/service-foundation",
+  "tasks": [
+    "C01-T1",
+    "C01-T2"
+  ],
+  "evidence": "../implementation/foundation.md",
+  "planning_snapshot": "verification.json",
+  "active_increments": [
+    "C02",
+    "C03",
+    "C05",
+    "S01",
+    "S02",
+    "S03",
+    "I03"
+  ]
+}

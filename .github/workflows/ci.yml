@@ -1,0 +1,88 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        postgres: ['17', '18']
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: ant
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: ant_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ant -d ant_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Formatting
+        run: test -z "$(gofmt -l api cmd internal)"
+      - name: Generated API contract
+        run: ./scripts/check-generated.sh
+      - run: go vet ./...
+      - name: Unit and PostgreSQL integration tests
+        env:
+          ANT_TEST_DATABASE_URL: postgres://ant:ci-only-password@localhost:5432/ant_test?sslmode=disable
+          ANT_REQUIRE_INTEGRATION: '1'
+        run: go test -race -count=1 ./...
+      - run: go build ./cmd/ant
+
+  console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      # Same Node release as Dockerfile; immutable official multi-platform image.
+      image: node:22.22.3-bookworm-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install console lockfile
+        run: npm --prefix web ci --no-audit --no-fund
+      - name: Console contract and lint
+        run: |
+          npm --prefix web run check:contract
+          npm --prefix web run lint
+      - name: Console tests
+        run: npm --prefix web test
+      - name: Production console matches embedded assets and rebuilds deterministically
+        run: |
+          cp -R internal/console/dist "$RUNNER_TEMP/console-committed"
+          npm --prefix web run build
+          diff -ru "$RUNNER_TEMP/console-committed" internal/console/dist
+          cp -R internal/console/dist "$RUNNER_TEMP/console-first-build"
+          npm --prefix web run build
+          diff -ru "$RUNNER_TEMP/console-first-build" internal/console/dist
+
+  packaging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install checksum-pinned Helm 4.3.1
+        run: |
+          mkdir -p "$RUNNER_TEMP/helm"
+          curl --fail --silent --show-error --location --retry 3 --connect-timeout 10 --max-time 120 \
+            https://get.helm.sh/helm-v4.3.1-linux-amd64.tar.gz \
+            --output "$RUNNER_TEMP/helm/archive.tar.gz"
+          printf '%s  %s\n' '0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b' "$RUNNER_TEMP/helm/archive.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/helm/archive.tar.gz" -C "$RUNNER_TEMP/helm" linux-amd64/helm
+          echo "$RUNNER_TEMP/helm/linux-amd64" >> "$GITHUB_PATH"
+      - name: Helm disk, S3, identity, policy and invalid-configuration checks
+        run: ./deploy/check-chart.sh
+      - name: Compose application configuration
+        run: docker compose --profile app config --quiet
+      - name: Build production application image
+        run: docker build --platform linux/amd64 -t kuvryn-ant:ci .
+      - name: Non-root read-only image smoke
+        run: ./deploy/check-image.sh kuvryn-ant:ci linux/amd64

@@ -1,0 +1,28 @@
+# Replace inventory placeholders with your existing OKE/TrueNAS configuration.
+# This creates no cloud accounts, buckets, databases or additional test clusters.
+publicURL: https://ant.example.invalid
+image:
+  repository: registry.example.invalid/kuvryn-ant
+  tag: "0.1.0"
+persistence:
+  size: 120Gi # Persistent local upload staging remains required for S3.
+  storageClass: "" # Select your installed OKE block CSI storage class.
+storage:
+  backend: s3
+  s3:
+    endpoint: https://minio.example.invalid
+    region: us-east-1 # Set to the configured MinIO region.
+    bucket: ant
+    prefix: ant/
+    pathStyle: true
+    credentialsExistingSecret: ant-minio
+    caExistingSecret: ant-minio-ca
+postgres:
+  existingSecret: ant-postgres
+rootKey:
+  existingSecret: ant-root-key
+ingress:
+  enabled: true
+  host: ant.example.invalid
+  tlsSecret: ant-ingress-tls
+  className: "" # Select your installed ingress controller.

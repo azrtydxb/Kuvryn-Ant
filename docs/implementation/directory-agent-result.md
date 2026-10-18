@@ -1,0 +1,21 @@
+# Directory agent implementation
+
+Dependency needed by parent immediately: `github.com/go-ldap/ldap/v3 v3.4.15` (official package documentation inspected 2026-10-18). Parent owns go.mod/go.sum; this agent will not modify them. Testing will use an isolated temporary modfile if needed.
+
+Work in progress: new internal/directory package only, plus this requested handoff. LDAP/AD baseline with verified LDAPS/mandatory StartTLS, bounded operations and explicit trusted role mapping. No database/main/API changes.
+
+Integration API available: `directory.New(Config, SecretSource, Dialer) (*Provider, error)`; nil Dialer selects real verified TLS transport. `Authenticate(ctx, login string, password []byte) (ExternalIdentity, error)` consumes/clears password. `Health(ctx) error` verifies service bind/base reads. SecretSource returns fresh `([]byte, time.Time, error)` with expiry; buffer is cleared. Config requires ProviderID, URL (ldap means mandatory StartTLS), BindDN, UserBaseDN, GroupBaseDN, LoginAttribute, UserIDAttribute/GroupIDAttribute (`entryUUID` or `objectGUID`), UserClass, GroupClass, MemberAttribute; CAPEM optional (system roots otherwise). Defaults Timeout 10s, MaxDepth 10, MaxGroups 200, MaxSearches 201. GroupRoles keys and returned Subject/GroupIDs are base64url raw immutable IDs. Returned RoleIDs come only from trusted GroupRoles. Parent must resolve/provision external identities and role grants through shared identity service, rate-limit/audit authentication, and never expose this as an automatic admin path. No implicit directory-name role mappings.
+
+## Completed and validated
+
+Implemented `internal/directory/directory.go`, `transport.go`, and `directory_test.go`. Root dependency installation confirmed. `go test -race ./internal/directory` and `go vet ./internal/directory` pass. Tests cover TLS success/unknown CA/wrong hostname for both LDAPS and StartTLS, rejected StartTLS without fallback, cancellation during StartTLS, injection escaping, invalid passwords, ambiguous/missing identity, partial results, referrals, out-of-base entries, group depth 10 boundary/cycles/search and count limits, binary AD objectGUID, credential expiry/clearing, mapping immutability and no automatic roles, and bounded health checks.
+
+Security protocol references verified: [RFC 4513 authentication/TLS](https://www.rfc-editor.org/info/rfc4513/), [RFC 4515 filter escaping](https://www.rfc-editor.org/rfc/rfc4515.html), and [go-ldap v3.4.15 API](https://pkg.go.dev/github.com/go-ldap/ldap/v3@v3.4.15). Production transport performs TLS handshake and checks verified chains before returning a connection; ldap URLs always upgrade via StartTLS. Search uses asynchronous iteration with bounded accumulated entries, server size/time limits, operation deadlines, no aliases, and rejection of referrals/partial responses. Errors deliberately discard server diagnostics. No credential caching, connection pooling, logging, or anonymous binds.
+
+## Integration boundaries / remaining release evidence
+
+- No application wiring, persistence, migrations, sessions, OpenAPI or module changes made. Parent owns rate limiting, safe audit events, encrypted secret storage and external identity/role reconciliation (including removing stale memberships).
+- Only explicit `member=<DN>` (or configured DN-valued membership attribute) group edges within GroupBaseDN are traversed. AD primaryGroupID/tokenGroups and cross-domain referrals are not expanded; do not base authorization policies on those memberships. Service account ACLs must expose the entire configured user/group subtree; LDAP cannot distinguish an ACL-hidden entry from an absent entry.
+- AD schema unit fixtures and real TLS handshakes are evidence, not an OpenLDAP/Samba/Windows AD conformance run. No server fleet was provisioned. Live baseline provider acceptance remains parent/release work.
+- Search entries are capped at 64 KiB after decoding; go-ldap's BER decoder retains its library-wide packet limit (no mutation of global parser state). The configured directory is a trusted endpoint; this is not a hardened arbitrary/untrusted LDAP server parser.
+- Go string/network copies cannot promise secure memory erasure. Owned password/secret byte slices are cleared; no credentials are retained by Provider and connection lifetime is at most 30 seconds.

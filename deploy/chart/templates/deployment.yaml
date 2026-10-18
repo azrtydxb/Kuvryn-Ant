@@ -1,0 +1,204 @@
+{{- include "ant.validate" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ant.name" . }}
+  labels:
+    {{- include "ant.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "ant.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ant.selector" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: ant
+          image: {{ include "ant.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: ANT_LISTEN
+              value: "0.0.0.0:8080"
+            - name: ANT_DATA_DIR
+              value: /var/lib/ant/data
+            - name: ANT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "postgres.existingSecret required" .Values.postgres.existingSecret | quote }}
+                  key: {{ .Values.postgres.dsnKey | quote }}
+            - name: ANT_ROOT_KEY_FILE
+              value: {{ printf "/run/ant/root/%s" .Values.rootKey.key | quote }}
+            - name: ANT_ROOT_KEY_VERSION
+              value: {{ .Values.rootKey.activeVersion | quote }}
+            {{- if .Values.rootKey.previousKeysManifestKey }}
+            - name: ANT_PREVIOUS_ROOT_KEYS_FILE
+              value: {{ printf "/run/ant/root/%s" .Values.rootKey.previousKeysManifestKey | quote }}
+            {{- end }}
+            - name: ANT_PUBLIC_URL
+              value: {{ .Values.publicURL | quote }}
+            - name: ANT_INSTANCE_ID
+              value: {{ .Values.instanceID | quote }}
+            - name: ANT_SHUTDOWN_TIMEOUT
+              value: {{ printf "%ds" (int .Values.shutdownSeconds) | quote }}
+            - name: ANT_MAX_REQUESTS
+              value: {{ .Values.maxRequests | quote }}
+            - name: ANT_STORAGE_BACKEND
+              value: {{ .Values.storage.backend | quote }}
+            {{- if eq .Values.storage.backend "s3" }}
+            - name: ANT_S3_ENDPOINT
+              value: {{ .Values.storage.s3.endpoint | quote }}
+            - name: ANT_S3_REGION
+              value: {{ .Values.storage.s3.region | quote }}
+            - name: ANT_S3_BUCKET
+              value: {{ .Values.storage.s3.bucket | quote }}
+            - name: ANT_S3_PREFIX
+              value: {{ .Values.storage.s3.prefix | quote }}
+            - name: ANT_S3_PATH_STYLE
+              value: {{ .Values.storage.s3.pathStyle | quote }}
+            - name: ANT_S3_CREDENTIALS_FILE
+              value: /run/ant/s3/credentials.json
+            {{- if .Values.storage.s3.caExistingSecret }}
+            - name: ANT_S3_CA_FILE
+              value: /run/ant/s3-ca/ca.crt
+            {{- end }}
+            {{- end }}
+            {{- range $name, $provider := .Values.auth }}
+            {{- if $provider.existingSecret }}
+            - name: {{ printf "ANT_%s_CONFIG_FILE" (upper $name) }}
+              value: {{ printf "/run/ant/%s/%s" $name $provider.configKey | quote }}
+            {{- end }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ant
+            - name: tmp
+              mountPath: /tmp
+            - name: root-key
+              mountPath: /run/ant/root
+              readOnly: true
+            {{- if .Values.postgres.tlsExistingSecret }}
+            - name: postgres-tls
+              mountPath: /run/ant/postgres
+              readOnly: true
+            {{- end }}
+            {{- if eq .Values.storage.backend "s3" }}
+            - name: s3-credentials
+              mountPath: /run/ant/s3
+              readOnly: true
+            {{- if .Values.storage.s3.caExistingSecret }}
+            - name: s3-ca
+              mountPath: /run/ant/s3-ca
+              readOnly: true
+            {{- end }}
+            {{- end }}
+            {{- range $name, $provider := .Values.auth }}
+            {{- if $provider.existingSecret }}
+            - name: {{ $name }}
+              mountPath: {{ printf "/run/ant/%s" $name }}
+              readOnly: true
+            {{- end }}
+            {{- end }}
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ default (include "ant.name" .) .Values.persistence.existingClaim | quote }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+        - name: root-key
+          secret:
+            secretName: {{ required "rootKey.existingSecret required" .Values.rootKey.existingSecret | quote }}
+            defaultMode: 0440
+        {{- if .Values.postgres.tlsExistingSecret }}
+        - name: postgres-tls
+          secret:
+            secretName: {{ .Values.postgres.tlsExistingSecret | quote }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if eq .Values.storage.backend "s3" }}
+        - name: s3-credentials
+          secret:
+            secretName: {{ .Values.storage.s3.credentialsExistingSecret | quote }}
+            defaultMode: 0440
+            items:
+              - key: {{ .Values.storage.s3.credentialsKey | quote }}
+                path: credentials.json
+        {{- if .Values.storage.s3.caExistingSecret }}
+        - name: s3-ca
+          secret:
+            secretName: {{ .Values.storage.s3.caExistingSecret | quote }}
+            defaultMode: 0440
+            items:
+              - key: {{ .Values.storage.s3.caKey | quote }}
+                path: ca.crt
+        {{- end }}
+        {{- end }}
+        {{- range $name, $provider := .Values.auth }}
+        {{- if $provider.existingSecret }}
+        - name: {{ $name }}
+          secret:
+            secretName: {{ $provider.existingSecret | quote }}
+            defaultMode: 0440
+        {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
