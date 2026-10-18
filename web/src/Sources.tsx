@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { requireETag, type Client } from "./api";
-import { useAllSources } from "./data";
-import { isUnavailable, paths, type SourceStats } from "./gaps";
-import { formats, type Source } from "./generated";
+import { useAllSources, useOpsMaps } from "./data";
+import { isUnavailable } from "./gaps";
+import { HealthBadge } from "./Health";
+import {
+  formats,
+  type Source,
+  type SourceHealth,
+  type SourceStats,
+} from "./generated";
 import {
   Alert,
   Badge,
@@ -22,7 +28,6 @@ import {
   Copyable,
   Failure,
   Loading,
-  Needs,
   PageHeading,
   Toolbar,
   Unavailable,
@@ -35,24 +40,6 @@ import {
   when,
 } from "./ui";
 
-const healthTone = {
-  healthy: "good",
-  degraded: "warn",
-  failing: "bad",
-} as const;
-function Health({ s }: { s: Source }) {
-  const h = (s as SourceStats & Source).health;
-  if (!h?.state) return <span className="muted">—</span>;
-  return (
-    <Badge tone={healthTone[h.state] ?? "neutral"} dot>
-      {h.state === "healthy"
-        ? "Healthy"
-        : (h.message ?? (h.state === "degraded" ? "Degraded" : "Failing"))}
-      {h.p95_ms != null && h.state !== "healthy" && ` · ${h.p95_ms} ms p95`}
-    </Badge>
-  );
-}
-
 export function SourcesPage({
   client,
   openId,
@@ -61,6 +48,7 @@ export function SourcesPage({
   openId: string;
 }) {
   const all = useAllSources(client);
+  const ops = useOpsMaps(client);
   const [kind, setKind] = useState("all");
   const [filter, setFilter] = useState("");
   const [open, setOpen] = useState<string>(openId);
@@ -138,12 +126,11 @@ export function SourcesPage({
                   >
                     {s.name}
                     <small>
-                      {(s as SourceStats & Source).origin ??
-                        (s.kind === "remote"
-                          ? "Remote upstream"
-                          : s.kind === "local"
-                            ? "Local storage"
-                            : "Replica")}
+                      {s.kind === "remote"
+                        ? "Remote upstream"
+                        : s.kind === "local"
+                          ? "Local storage"
+                          : "Replica"}
                     </small>
                   </button>
                 ),
@@ -177,7 +164,7 @@ export function SourcesPage({
                 label: "Used by",
                 align: "right",
                 render: (s: Source) => {
-                  const n = (s as SourceStats & Source).feed_count;
+                  const n = ops.sources.get(s.id)?.attached_feeds;
                   return n == null ? "—" : `${n} ${n === 1 ? "feed" : "feeds"}`;
                 },
               },
@@ -185,13 +172,12 @@ export function SourcesPage({
                 key: "size",
                 label: "Stored",
                 align: "right",
-                render: (s: Source) =>
-                  bytes((s as SourceStats & Source).size_bytes),
+                render: (s: Source) => bytes(ops.sources.get(s.id)?.bytes),
               },
               {
                 key: "health",
                 label: "Health",
-                render: (s: Source) => <Health s={s} />,
+                render: (s: Source) => <HealthBadge h={ops.health.get(s.id)} />,
               },
             ]}
             rows={rows}
@@ -211,14 +197,18 @@ export function SourcesPage({
             }
           />
         ))}
-      <Needs block>source health, size, usage counts</Needs>
       {current && (
         <SourceDrawer
           key={current.id}
           client={client}
           source={current}
           onClose={() => setOpen("")}
-          refresh={all.reload}
+          stats={ops.sources.get(current.id)}
+          health={ops.health.get(current.id)}
+          refresh={() => {
+            all.reload();
+            ops.reload();
+          }}
         />
       )}
       {creating && (
@@ -333,16 +323,19 @@ function CreateSource({
 function SourceDrawer({
   client,
   source,
+  stats,
+  health,
   onClose,
   refresh,
 }: {
   client: Client;
   source: Source;
+  stats?: SourceStats;
+  health?: SourceHealth;
   onClose: () => void;
   refresh: () => void;
 }) {
   const remote = source.kind === "remote";
-  const stats = source as SourceStats & Source;
   return (
     <Drawer
       open
@@ -351,17 +344,19 @@ function SourceDrawer({
         <span className="row">
           <Badge tone="outline">{source.format}</Badge>
           {source.kind}
-          <Health s={source} />
+          <HealthBadge h={health} />
         </span>
       }
       onClose={onClose}
       width={600}
       footer={<Button onClick={onClose}>Done</Button>}
     >
-      {stats.health?.state === "failing" && (
-        <Alert tone="bad" title={stats.health.message ?? "Upstream is failing"}>
-          {stats.health.last_success_at &&
-            `Last success ${when(stats.health.last_success_at)}.`}
+      {health?.status === "failing" && (
+        <Alert tone="bad" title="Upstream is failing">
+          {health.last_status_code ? `HTTP ${health.last_status_code}. ` : ""}
+          {health.last_success_at
+            ? `Last success ${when(health.last_success_at)}.`
+            : "No successful request recorded."}
         </Alert>
       )}
       <PropertyList
@@ -371,18 +366,39 @@ function SourceDrawer({
           {
             label: "Attached to",
             value:
-              stats.feed_count == null
-                ? "—"
-                : `${count(stats.feed_count)} feed(s)`,
+              stats == null ? "—" : `${count(stats.attached_feeds)} feed(s)`,
           },
-          { label: "Stored", value: bytes(stats.size_bytes) },
+          { label: "Stored", value: bytes(stats?.bytes) },
+          ...(stats
+            ? [
+                {
+                  label: "Packages",
+                  value: `${count(stats.packages)} · ${count(stats.versions)} versions`,
+                },
+                {
+                  label: "Cache hits / misses",
+                  value: `${count(stats.cache_hits)} / ${count(stats.cache_misses)}`,
+                },
+              ]
+            : []),
+          ...(health && health.status !== "not_applicable"
+            ? [
+                {
+                  label: "Upstream requests",
+                  value: `${count(health.requests)} (${count(health.failures)} failed)`,
+                },
+                ...(health.last_error
+                  ? [{ label: "Last error", value: health.last_error }]
+                  : []),
+              ]
+            : []),
         ]}
       />
       <Rename client={client} source={source} refresh={refresh} />
       {remote ? (
         <>
           <RemoteSource client={client} source={source} />
-          <RemoteOps client={client} source={source} />
+          <RemoteOps client={client} source={source} changed={refresh} />
         </>
       ) : source.kind === "local" ? (
         <Alert tone="info" title="Local source">
@@ -463,14 +479,22 @@ function Rename({
   );
 }
 
-function RemoteOps({ client, source }: { client: Client; source: Source }) {
-  const [note, setNote] = useState<{ tone: "good" | "info"; text: string }>();
+function RemoteOps({
+  client,
+  source,
+  changed,
+}: {
+  client: Client;
+  source: Source;
+  changed: () => void;
+}) {
+  const [note, setNote] = useState<{ tone: "good" | "bad"; text: string }>();
   const [unavailable, setUnavailable] = useState("");
   const [purge, setPurge] = useState(false);
   const action = useAction();
   const toast = useToast();
   async function call(
-    run: () => Promise<unknown>,
+    run: () => Promise<{ tone: "good" | "bad"; text: string } | void>,
     label: string,
     done: string,
   ) {
@@ -478,9 +502,10 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
     setNote(undefined);
     await action.run(async () => {
       try {
-        await run();
-        setNote({ tone: "good", text: done });
+        const result = await run();
+        setNote(result ?? { tone: "good", text: done });
         toast(label, source.name);
+        changed();
       } catch (e) {
         if (isUnavailable(e)) setUnavailable(label);
         else throw e;
@@ -497,8 +522,18 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
           disabled={action.busy}
           onClick={() =>
             call(
-              () =>
-                client.extra("POST", paths.sourceTest(source.id), { body: {} }),
+              async () => {
+                const r = (
+                  await client.call("testSource", { params: { id: source.id } })
+                ).data;
+                const ok = r.reachable && r.authenticated;
+                return {
+                  tone: ok ? "good" : "bad",
+                  text: ok
+                    ? `Upstream reachable and authenticated (${r.latency_ms} ms).`
+                    : `Upstream ${r.reachable ? "reachable but not authenticated" : "unreachable"}${r.status_code ? ` (HTTP ${r.status_code})` : ""}.`,
+                };
+              },
               "Connection test",
               "Upstream reachable.",
             )
@@ -519,7 +554,6 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
       {unavailable && <Unavailable what={unavailable} compact />}
       {note && <Alert tone={note.tone} title={note.text} />}
       <Failure error={action.error} />
-      <Needs>connection test</Needs>
       {purge && (
         <Modal
           title="Purge cache"
@@ -536,10 +570,11 @@ function RemoteOps({ client, source }: { client: Client; source: Source }) {
                 onClick={() => {
                   setPurge(false);
                   void call(
-                    () =>
-                      client.call("purgeSourceCache", {
+                    async () => {
+                      await client.call("purgeSourceCache", {
                         params: { id: source.id },
-                      }),
+                      });
+                    },
                     "Cache purged",
                     "Cache purged.",
                   );

@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import type { Client } from "./api";
+import { requireETag, type Client } from "./api";
 import { useResource } from "./ui";
-import { useOptionalCall, paths, useOptional } from "./gaps";
-import type { AuditEvent } from "./generated";
+import { useOptionalCall } from "./gaps";
+import type { AuditEvent, AuditSink } from "./generated";
 import {
   Badge,
   Button,
@@ -10,6 +10,9 @@ import {
   Icon,
   Input,
   Modal,
+  PropertyList,
+  Select,
+  Switch,
   SegmentedControl,
   Table,
 } from "./ds/bundle";
@@ -17,7 +20,6 @@ import {
   Failure,
   Loading,
   Mono,
-  Needs,
   PageHeading,
   Pager,
   Toolbar,
@@ -25,6 +27,7 @@ import {
   useAction,
   useDebounced,
   useToast,
+  chk,
   val,
   when,
 } from "./ui";
@@ -247,38 +250,152 @@ export function AuditPage({ client }: { client: Client }) {
 }
 
 function Siem({ client, onClose }: { client: Client; onClose: () => void }) {
-  const r = useOptional<{
-    items?: { id?: string; kind?: string; target?: string }[];
-  }>(client, paths.auditSinks);
+  const r = useOptionalCall(client, "getAuditSink");
   return (
     <Modal
       title="Stream audit events"
       description="Forward audit records to a SIEM through a syslog or HTTP sink."
       onClose={onClose}
+      width={600}
       actions={<Button onClick={onClose}>Done</Button>}
     >
-      {r.state === "loading" && <Loading what="audit sinks" />}
+      {r.state === "loading" && <Loading what="audit sink" />}
       {r.state === "unavailable" && <Unavailable what="Audit streaming" />}
       {r.state === "error" && <Failure error={r.error} />}
       {r.state === "ready" && (
-        <>
-          {(r.data.items ?? []).length ? (
-            <ul className="plainlist">
-              {r.data.items!.map((s, i) => (
-                <li key={s.id ?? i}>
-                  <Mono>{s.kind}</Mono> {s.target}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted">No audit sinks are configured.</p>
-          )}
-          <p className="muted small">
-            Creating sinks from the console is not available yet.
-          </p>
-        </>
+        <SinkForm
+          key={r.data.revision}
+          client={client}
+          sink={r.data}
+          reload={r.reload}
+        />
       )}
-      <Needs block>audit streaming to a SIEM (syslog/HTTP sink)</Needs>
     </Modal>
+  );
+}
+function SinkForm({
+  client,
+  sink,
+  reload,
+}: {
+  client: Client;
+  sink: AuditSink;
+  reload: () => void;
+}) {
+  const [kind, setKind] = useState<"syslog" | "http">(sink.kind ?? "http");
+  const [endpoint, setEndpoint] = useState(sink.endpoint ?? "");
+  const [credential, setCredential] = useState("");
+  const [enabled, setEnabled] = useState(sink.enabled || !sink.configured);
+  const action = useAction();
+  const toast = useToast();
+  const etag = () => requireETag(`"${sink.revision}"`);
+  return (
+    <form
+      className="stack"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const submitted = credential;
+        setCredential("");
+        const ok = await action.run(() =>
+          client.call("putAuditSink", {
+            etag: etag(),
+            body: {
+              kind,
+              endpoint,
+              enabled,
+              ...(submitted ? { credential: submitted } : {}),
+            },
+          }),
+        );
+        if (ok) {
+          toast("Audit sink saved", endpoint);
+          reload();
+        }
+      }}
+    >
+      {sink.configured && (
+        <PropertyList
+          items={[
+            {
+              label: "Delivery",
+              value: (
+                <Badge tone={sink.last_error ? "bad" : "good"} dot>
+                  {sink.last_error
+                    ? "Failing"
+                    : sink.enabled
+                      ? "Streaming"
+                      : "Paused"}
+                </Badge>
+              ),
+            },
+            { label: "Checkpoint", value: sink.checkpoint, mono: true },
+            { label: "Last forwarded", value: when(sink.last_forwarded_at) },
+            ...(sink.last_error
+              ? [{ label: "Last error", value: sink.last_error }]
+              : []),
+          ]}
+        />
+      )}
+      <Select
+        label="Sink kind"
+        options={[
+          { value: "http", label: "HTTP" },
+          { value: "syslog", label: "Syslog" },
+        ]}
+        value={kind}
+        onChange={val((v) => setKind(v as "syslog" | "http"))}
+      />
+      <Input
+        label="Endpoint"
+        mono
+        required
+        maxLength={2048}
+        value={endpoint}
+        onChange={val(setEndpoint)}
+      />
+      <Input
+        label="Credential"
+        type="password"
+        mono
+        autoComplete="new-password"
+        value={credential}
+        onChange={val(setCredential)}
+        hint={
+          sink.has_credential
+            ? "A credential is stored. Leave empty to keep it; it is never shown."
+            : "Stored encrypted and never shown again."
+        }
+      />
+      <Switch
+        label="Enabled"
+        labelPosition="end"
+        checked={enabled}
+        onChange={chk(setEnabled)}
+      />
+      <Failure error={action.error} />
+      <div className="row">
+        <Button type="submit" disabled={action.busy}>
+          {action.busy ? "Saving…" : "Save audit sink"}
+        </Button>
+        {sink.configured && (
+          <Button
+            type="button"
+            variant="danger"
+            disabled={action.busy}
+            onClick={async () => {
+              const ok = await action.run(() =>
+                client.call("deleteAuditSink", { etag: etag() }),
+              );
+              if (ok) {
+                toast("Audit sink removed");
+                reload();
+              }
+            }}
+          >
+            Remove sink
+          </Button>
+        )}
+      </div>
+    </form>
   );
 }

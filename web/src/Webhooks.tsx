@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { requireETag, type Client } from "./api";
-import { isUnavailable, paths, type WebhookStats } from "./gaps";
+import { isUnavailable, useOptionalCall } from "./gaps";
 import type { Webhook, WebhookDelivery } from "./generated";
 import {
   Badge,
@@ -19,7 +19,6 @@ import {
   Failure,
   Loading,
   Mono,
-  Needs,
   PageHeading,
   Pager,
   Unavailable,
@@ -51,6 +50,14 @@ export function Webhooks({ client }: { client: Client }) {
         query: { limit: "25", ...(after ? { after } : {}) },
       }),
     [client, after],
+  );
+  const stats = useOptionalCall(client, "getWebhookStats", {
+    query: { limit: "200" },
+  });
+  const rates = new Map(
+    (stats.state === "ready" ? stats.data.items : []).flatMap((x) =>
+      x.success_rate == null ? [] : [[x.webhook_id, x.success_rate] as const],
+    ),
   );
   const current = r.value?.data.items.find((w) => w.id === open);
   return (
@@ -102,8 +109,8 @@ export function Webhooks({ client }: { client: Client }) {
                   label: "Success 7 d",
                   align: "right",
                   render: (w: Webhook) => {
-                    const v = (w as WebhookStats & Webhook).success_rate_7d;
-                    return v == null ? "—" : `${v.toFixed(1)}%`;
+                    const v = rates.get(w.id);
+                    return v == null ? "—" : `${(v * 100).toFixed(1)}%`;
                   },
                 },
                 {
@@ -142,7 +149,6 @@ export function Webhooks({ client }: { client: Client }) {
             }
           />
         ))}
-      <Needs block>success-rate aggregate, redeliver</Needs>
       {creating && (
         <CreateWebhook
           client={client}
@@ -527,11 +533,9 @@ function Deliveries({ client, id }: { client: Client; id: string }) {
                           let gone = false;
                           const ok = await action.run(async () => {
                             try {
-                              await client.extra(
-                                "POST",
-                                paths.redeliver(id, d.event_id),
-                                { body: {} },
-                              );
+                              await client.call("redeliverWebhookDelivery", {
+                                params: { id, event_id: String(d.event_id) },
+                              });
                             } catch (e) {
                               if (!isUnavailable(e)) throw e;
                               gone = true;

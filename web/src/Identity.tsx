@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { requireETag, type Client } from "./api";
+import { useAllFeeds } from "./data";
 import { getProviders, type Providers } from "./auth";
-import {
-  isUnavailable,
-  paths,
-  useOptional,
-  useOptionalCall,
-  type EffectivePermissions,
-} from "./gaps";
+import { isUnavailable, useOptionalCall } from "./gaps";
 import type {
+  EffectiveAction,
   IdentityBindingRecord,
   CreatePrincipal,
   IdentityPrincipal,
@@ -664,50 +660,68 @@ function EffectiveDrawer({
   principal: IdentityPrincipal;
   onClose: () => void;
 }) {
-  const r = useOptional<EffectivePermissions>(
-    client,
-    paths.effective(principal.id),
-  );
+  const feeds = useAllFeeds(client);
+  const [resource, setResource] = useState("instance");
+  const r = useOptionalCall(client, "getEffectivePermissions", {
+    query: { principal: principal.id, resource },
+  });
   return (
     <Drawer
       open
       title={`Effective permissions · ${principal.subject}`}
+      description="From role grants. Machine-token scopes narrow a specific token further and are not applied."
       onClose={onClose}
       width={520}
       footer={<Button onClick={onClose}>Done</Button>}
     >
+      <Select
+        label="Resource"
+        options={[
+          { value: "instance", label: "Instance" },
+          ...feeds.items.map((f) => ({
+            value: `feed:${f.id}`,
+            label: `Feed · ${f.slug}`,
+          })),
+        ]}
+        value={resource}
+        onChange={val(setResource)}
+      />
       {r.state === "loading" && <Loading what="effective permissions" />}
       {r.state === "unavailable" && (
         <Unavailable what="Effective permissions" />
       )}
       {r.state === "error" && <Failure error={r.error} />}
       {r.state === "ready" && (
-        <Table
-          columns={[
-            { key: "kind", label: "Kind" },
-            {
-              key: "scope",
-              label: "Scope",
-              render: (
-                g: NonNullable<EffectivePermissions["items"]>[number],
-              ) => (
-                <Mono muted>
-                  {g.namespace ?? g.feed_id ?? g.source_id ?? "all"}
-                </Mono>
-              ),
-            },
-            { key: "effect", label: "Effect" },
-            {
-              key: "actions",
-              label: "Actions",
-              render: (g: NonNullable<EffectivePermissions["items"]>[number]) =>
-                (g.actions ?? []).join(", "),
-            },
-          ]}
-          rows={(r.data.items ?? []).map((g, i) => ({ ...g, id: i }))}
-        />
+        <>
+          {r.data.disabled && (
+            <Alert tone="warn" title="Principal is disabled" />
+          )}
+          <Table
+            rowKey="action"
+            columns={[
+              { key: "action", label: "Action", mono: true },
+              {
+                key: "allowed",
+                label: "Result",
+                render: (a: EffectiveAction) => (
+                  <Badge tone={a.allowed ? "good" : "neutral"} dot>
+                    {a.allowed ? "Allowed" : "Not allowed"}
+                  </Badge>
+                ),
+              },
+              {
+                key: "via",
+                label: "Roles",
+                render: (a: EffectiveAction) =>
+                  a.denied_by_roles.length
+                    ? `denied by ${a.denied_by_roles.join(", ")}`
+                    : a.via_roles.join(", ") || "—",
+              },
+            ]}
+            rows={r.data.actions}
+          />
+        </>
       )}
-      <Needs block>effective permissions</Needs>
     </Drawer>
   );
 }

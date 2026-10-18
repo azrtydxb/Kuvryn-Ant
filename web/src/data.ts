@@ -1,6 +1,13 @@
 import { useMemo } from "react";
+import { useOptionalCall, type Optional } from "./gaps";
 import type { Client } from "./api";
-import type { Feed, Source } from "./generated";
+import type {
+  Feed,
+  FeedStats,
+  Source,
+  SourceHealth,
+  SourceStats,
+} from "./generated";
 import { useResource } from "./ui";
 
 const MAX_PAGES = 10;
@@ -52,4 +59,34 @@ export function sourcesForFormat(sources: Source[], format: string) {
 }
 export function sourceLabel(s: Source) {
   return `${s.name} (${s.kind})`;
+}
+
+function rows<T>(r: Optional<{ items: T[] }>) {
+  return r.state === "ready" ? r.data.items : [];
+}
+// Per-feed and per-source counts and source health, when the server has them.
+export function useOpsMaps(client: Client) {
+  const feeds = useOptionalCall(client, "listFeedStats", {
+    query: { limit: "200" },
+  });
+  const sources = useOptionalCall(client, "listSourceStats", {
+    query: { limit: "200" },
+  });
+  const health = useOptionalCall(client, "listSourceHealth", {
+    query: { limit: "200" },
+  });
+  return {
+    feeds: new Map<string, FeedStats>(rows(feeds).map((x) => [x.feed_id, x])),
+    sources: new Map<string, SourceStats>(
+      rows(sources).map((x) => [x.source_id, x]),
+    ),
+    health: new Map<string, SourceHealth>(
+      rows(health).map((x) => [x.source_id, x]),
+    ),
+    reload: () => {
+      feeds.reload();
+      sources.reload();
+      health.reload();
+    },
+  };
 }

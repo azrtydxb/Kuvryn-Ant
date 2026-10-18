@@ -1,2 +1,6 @@
 # Helm templates are Go templates, not parseable YAML.
 deploy/chart/templates/
+internal/console/dist/
+web/src/ds/
+web/src/generated.ts
+web/node_modules/

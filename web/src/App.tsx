@@ -6,6 +6,7 @@ import { Overview } from "./Overview";
 import { PackagesPage, PackageDrawer, type PackageRef } from "./Packages";
 import { FeedsPage } from "./Feeds";
 import { SourcesPage } from "./Sources";
+import { ReplicationPage } from "./Replication";
 import { Identity } from "./Identity";
 import { Webhooks } from "./Webhooks";
 import { AuditPage } from "./Audit";
@@ -22,7 +23,7 @@ import {
   Spinner,
   Topbar,
 } from "./ds/bundle";
-import { NotesContext, ToastProvider, Failure } from "./ui";
+import { NotesContext, ToastProvider, Failure, useResource } from "./ui";
 import brand from "./ds/assets/brand/ant-emblem.png";
 
 export type Page =
@@ -30,6 +31,7 @@ export type Page =
   | "packages"
   | "feeds"
   | "sources"
+  | "replication"
   | "identity"
   | "webhooks"
   | "audit"
@@ -43,6 +45,7 @@ const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "packages", label: "Packages", icon: "package" },
   { id: "feeds", label: "Feeds", icon: "rss" },
   { id: "sources", label: "Sources", icon: "database" },
+  { id: "replication", label: "Replication", icon: "copy" },
   { id: "identity", label: "Access", icon: "shield" },
   { id: "webhooks", label: "Webhooks", icon: "webhook" },
   { id: "audit", label: "Audit log", icon: "scroll-text" },
@@ -67,12 +70,38 @@ function Shell({
   sessionLabel,
   signOut,
   signingOut,
+  principalId,
 }: {
   client: Client;
+  principalId?: string;
   sessionLabel: string;
   signOut: () => void;
   signingOut: boolean;
 }) {
+  // Hide admin-only areas when the server says this principal cannot use them.
+  // Unknown (service token, older server, request failed) keeps everything visible.
+  const perms = useResource(
+    () =>
+      principalId
+        ? client.call("getEffectivePermissions", {
+            query: { principal: principalId, resource: "instance" },
+          })
+        : Promise.resolve({ data: undefined, etag: null }),
+    [client, principalId],
+  );
+  const can = (action: string) =>
+    perms.value?.data?.actions.find((a) => a.action === action)?.allowed;
+  const hidden = new Set<Page>(
+    can("admin") === false
+      ? [
+          "identity",
+          "webhooks",
+          "settings",
+          ...(can("replicate") === false ? (["replication"] as Page[]) : []),
+        ]
+      : [],
+  );
+  const nav = NAV.filter((n) => !hidden.has(n.id));
   const [page, setPage] = useState<Page>("overview");
   const [feed, setFeed] = useState("");
   const [crumb, setCrumb] = useState("");
@@ -187,6 +216,7 @@ function Shell({
     );
   else if (page === "sources")
     body = <SourcesPage client={client} openId={openSource} />;
+  else if (page === "replication") body = <ReplicationPage client={client} />;
   else if (page === "identity") body = <Identity client={client} />;
   else if (page === "webhooks") body = <Webhooks client={client} />;
   else if (page === "audit") body = <AuditPage client={client} />;
@@ -201,7 +231,7 @@ function Shell({
           </a>
           <div className={"app__side" + (menu ? " is-open" : "")}>
             <Sidebar
-              items={NAV}
+              items={nav}
               active={page}
               onSelect={(id: Page) => go(id)}
               brand={
@@ -313,6 +343,7 @@ export default function App() {
         }
         signOut={() => void auth.signOut()}
         signingOut={auth.loggingOut}
+        principalId={auth.browser?.session.PrincipalID}
       />
     );
   return (
