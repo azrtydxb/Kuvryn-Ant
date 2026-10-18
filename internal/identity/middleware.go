@@ -46,12 +46,16 @@ type Bearer struct {
 	mu                      sync.Mutex
 	attempts                map[string]*attempt
 	maxEntries, maxFailures int
-	window, timeout         time.Duration
-	now                     func() time.Time
+	// maxInflight bounds concurrent credential checks per peer separately from
+	// the failure budget: behind an ingress every client shares one peer, and
+	// package managers legitimately open dozens of parallel authenticated requests.
+	maxInflight     int
+	window, timeout time.Duration
+	now             func() time.Time
 }
 
 func NewBearer(auth Authenticator) *Bearer {
-	return &Bearer{auth: auth, attempts: make(map[string]*attempt), maxEntries: 4096, maxFailures: 10, window: time.Minute, timeout: 2 * time.Second, now: time.Now}
+	return &Bearer{auth: auth, attempts: make(map[string]*attempt), maxEntries: 4096, maxFailures: 10, maxInflight: 512, window: time.Minute, timeout: 2 * time.Second, now: time.Now}
 }
 func (b *Bearer) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +142,7 @@ func (b *Bearer) reserve(key string) (*attempt, bool) {
 		e = &attempt{started: now}
 		b.attempts[key] = e
 	}
-	if e.failures+e.inflight >= b.maxFailures {
+	if e.failures >= b.maxFailures || e.inflight >= b.maxInflight {
 		return nil, false
 	}
 	e.inflight++

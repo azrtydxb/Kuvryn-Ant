@@ -157,6 +157,10 @@ func (s *Proxy) serve(w http.ResponseWriter, r *http.Request) {
 		fail(w, artifact.ErrNotFound)
 		return
 	}
+	if slug, rest, ok := sumdbRoute(r.URL.Path); ok {
+		s.sumdb(w, r, p, slug, rest)
+		return
+	}
 	target, err := parseRoute(r.URL.Path)
 	if err != nil {
 		fail(w, err)

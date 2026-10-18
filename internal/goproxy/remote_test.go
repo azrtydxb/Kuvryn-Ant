@@ -27,7 +27,7 @@ func TestGoProxyPullThrough(t *testing.T) {
 			http.Error(w, "outage", 503)
 			return
 		}
-		if body, ok := files[r.URL.EscapedPath()]; ok {
+		if body, ok := files[r.URL.Path]; ok {
 			_, _ = w.Write([]byte(body))
 			return
 		}

@@ -156,7 +156,7 @@ func New(pool *pgxpool.Pool, instanceID string, keys *secrets.Keyring, o Options
 	if o.MaxMetadataBytes == 0 {
 		o.MaxMetadataBytes = 1 << 20
 	}
-	if o.MaxSources < 1 || o.MaxSources > 64 || o.MaxInflight < 1 || o.MaxInflight > 64 || o.MaxCacheEntries < o.MaxSources || o.MaxCacheEntries > 65536 || o.MaxCacheBytes < int64(o.MaxSources)*1024 || o.MaxCacheBytes > 1<<30 || o.MaxMetadataBytes < 1 || o.MaxMetadataBytes > 8<<20 || o.MaxMetadataBytes > o.MaxCacheBytes/int64(o.MaxSources) {
+	if o.MaxSources < 1 || o.MaxSources > 64 || o.MaxInflight < 1 || o.MaxInflight > 64 || o.MaxCacheEntries < o.MaxSources || o.MaxCacheEntries > 65536 || o.MaxCacheBytes < int64(o.MaxSources)*1024 || o.MaxCacheBytes > 1<<30 || o.MaxMetadataBytes < 1 || o.MaxMetadataBytes > 32<<20 || o.MaxMetadataBytes > o.MaxCacheBytes/int64(o.MaxSources) {
 		return nil, ErrInput
 	}
 	caFiles := map[string]string{}
