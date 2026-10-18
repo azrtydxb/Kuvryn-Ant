@@ -22,6 +22,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AuditEventResult.
+const (
+	AuditEventResultDenied  AuditEventResult = "denied"
+	AuditEventResultFailure AuditEventResult = "failure"
+	AuditEventResultSuccess AuditEventResult = "success"
+)
+
+// Valid indicates whether the value is a known member of the AuditEventResult enum.
+func (e AuditEventResult) Valid() bool {
+	switch e {
+	case AuditEventResultDenied:
+		return true
+	case AuditEventResultFailure:
+		return true
+	case AuditEventResultSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateFeedFormat.
 const (
 	CreateFeedFormatAnsible      CreateFeedFormat = "ansible"
@@ -106,6 +127,96 @@ func (e CreateFeedFormat) Valid() bool {
 	case CreateFeedFormatSwift:
 		return true
 	case CreateFeedFormatTerraform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateFeedBatchFormat.
+const (
+	CreateFeedBatchFormatAnsible      CreateFeedBatchFormat = "ansible"
+	CreateFeedBatchFormatApk          CreateFeedBatchFormat = "apk"
+	CreateFeedBatchFormatApt          CreateFeedBatchFormat = "apt"
+	CreateFeedBatchFormatCargo        CreateFeedBatchFormat = "cargo"
+	CreateFeedBatchFormatCocoapods    CreateFeedBatchFormat = "cocoapods"
+	CreateFeedBatchFormatComposer     CreateFeedBatchFormat = "composer"
+	CreateFeedBatchFormatConan        CreateFeedBatchFormat = "conan"
+	CreateFeedBatchFormatConda        CreateFeedBatchFormat = "conda"
+	CreateFeedBatchFormatCran         CreateFeedBatchFormat = "cran"
+	CreateFeedBatchFormatGitLfs       CreateFeedBatchFormat = "git-lfs"
+	CreateFeedBatchFormatGo           CreateFeedBatchFormat = "go"
+	CreateFeedBatchFormatHelm         CreateFeedBatchFormat = "helm"
+	CreateFeedBatchFormatHuggingface  CreateFeedBatchFormat = "huggingface"
+	CreateFeedBatchFormatMaven        CreateFeedBatchFormat = "maven"
+	CreateFeedBatchFormatNpm          CreateFeedBatchFormat = "npm"
+	CreateFeedBatchFormatNuget        CreateFeedBatchFormat = "nuget"
+	CreateFeedBatchFormatOci          CreateFeedBatchFormat = "oci"
+	CreateFeedBatchFormatOciArtifacts CreateFeedBatchFormat = "oci-artifacts"
+	CreateFeedBatchFormatP2           CreateFeedBatchFormat = "p2"
+	CreateFeedBatchFormatPub          CreateFeedBatchFormat = "pub"
+	CreateFeedBatchFormatPypi         CreateFeedBatchFormat = "pypi"
+	CreateFeedBatchFormatRaw          CreateFeedBatchFormat = "raw"
+	CreateFeedBatchFormatRpm          CreateFeedBatchFormat = "rpm"
+	CreateFeedBatchFormatRubygems     CreateFeedBatchFormat = "rubygems"
+	CreateFeedBatchFormatSwift        CreateFeedBatchFormat = "swift"
+	CreateFeedBatchFormatTerraform    CreateFeedBatchFormat = "terraform"
+)
+
+// Valid indicates whether the value is a known member of the CreateFeedBatchFormat enum.
+func (e CreateFeedBatchFormat) Valid() bool {
+	switch e {
+	case CreateFeedBatchFormatAnsible:
+		return true
+	case CreateFeedBatchFormatApk:
+		return true
+	case CreateFeedBatchFormatApt:
+		return true
+	case CreateFeedBatchFormatCargo:
+		return true
+	case CreateFeedBatchFormatCocoapods:
+		return true
+	case CreateFeedBatchFormatComposer:
+		return true
+	case CreateFeedBatchFormatConan:
+		return true
+	case CreateFeedBatchFormatConda:
+		return true
+	case CreateFeedBatchFormatCran:
+		return true
+	case CreateFeedBatchFormatGitLfs:
+		return true
+	case CreateFeedBatchFormatGo:
+		return true
+	case CreateFeedBatchFormatHelm:
+		return true
+	case CreateFeedBatchFormatHuggingface:
+		return true
+	case CreateFeedBatchFormatMaven:
+		return true
+	case CreateFeedBatchFormatNpm:
+		return true
+	case CreateFeedBatchFormatNuget:
+		return true
+	case CreateFeedBatchFormatOci:
+		return true
+	case CreateFeedBatchFormatOciArtifacts:
+		return true
+	case CreateFeedBatchFormatP2:
+		return true
+	case CreateFeedBatchFormatPub:
+		return true
+	case CreateFeedBatchFormatPypi:
+		return true
+	case CreateFeedBatchFormatRaw:
+		return true
+	case CreateFeedBatchFormatRpm:
+		return true
+	case CreateFeedBatchFormatRubygems:
+		return true
+	case CreateFeedBatchFormatSwift:
+		return true
+	case CreateFeedBatchFormatTerraform:
 		return true
 	default:
 		return false
@@ -490,6 +601,210 @@ func (e IssueServiceTokenScopesActions) Valid() bool {
 	}
 }
 
+// Defines values for PackageSearchResultFormat.
+const (
+	PackageSearchResultFormatAnsible      PackageSearchResultFormat = "ansible"
+	PackageSearchResultFormatApk          PackageSearchResultFormat = "apk"
+	PackageSearchResultFormatApt          PackageSearchResultFormat = "apt"
+	PackageSearchResultFormatCargo        PackageSearchResultFormat = "cargo"
+	PackageSearchResultFormatCocoapods    PackageSearchResultFormat = "cocoapods"
+	PackageSearchResultFormatComposer     PackageSearchResultFormat = "composer"
+	PackageSearchResultFormatConan        PackageSearchResultFormat = "conan"
+	PackageSearchResultFormatConda        PackageSearchResultFormat = "conda"
+	PackageSearchResultFormatCran         PackageSearchResultFormat = "cran"
+	PackageSearchResultFormatGitLfs       PackageSearchResultFormat = "git-lfs"
+	PackageSearchResultFormatGo           PackageSearchResultFormat = "go"
+	PackageSearchResultFormatHelm         PackageSearchResultFormat = "helm"
+	PackageSearchResultFormatHuggingface  PackageSearchResultFormat = "huggingface"
+	PackageSearchResultFormatMaven        PackageSearchResultFormat = "maven"
+	PackageSearchResultFormatNpm          PackageSearchResultFormat = "npm"
+	PackageSearchResultFormatNuget        PackageSearchResultFormat = "nuget"
+	PackageSearchResultFormatOci          PackageSearchResultFormat = "oci"
+	PackageSearchResultFormatOciArtifacts PackageSearchResultFormat = "oci-artifacts"
+	PackageSearchResultFormatP2           PackageSearchResultFormat = "p2"
+	PackageSearchResultFormatPub          PackageSearchResultFormat = "pub"
+	PackageSearchResultFormatPypi         PackageSearchResultFormat = "pypi"
+	PackageSearchResultFormatRaw          PackageSearchResultFormat = "raw"
+	PackageSearchResultFormatRpm          PackageSearchResultFormat = "rpm"
+	PackageSearchResultFormatRubygems     PackageSearchResultFormat = "rubygems"
+	PackageSearchResultFormatSwift        PackageSearchResultFormat = "swift"
+	PackageSearchResultFormatTerraform    PackageSearchResultFormat = "terraform"
+)
+
+// Valid indicates whether the value is a known member of the PackageSearchResultFormat enum.
+func (e PackageSearchResultFormat) Valid() bool {
+	switch e {
+	case PackageSearchResultFormatAnsible:
+		return true
+	case PackageSearchResultFormatApk:
+		return true
+	case PackageSearchResultFormatApt:
+		return true
+	case PackageSearchResultFormatCargo:
+		return true
+	case PackageSearchResultFormatCocoapods:
+		return true
+	case PackageSearchResultFormatComposer:
+		return true
+	case PackageSearchResultFormatConan:
+		return true
+	case PackageSearchResultFormatConda:
+		return true
+	case PackageSearchResultFormatCran:
+		return true
+	case PackageSearchResultFormatGitLfs:
+		return true
+	case PackageSearchResultFormatGo:
+		return true
+	case PackageSearchResultFormatHelm:
+		return true
+	case PackageSearchResultFormatHuggingface:
+		return true
+	case PackageSearchResultFormatMaven:
+		return true
+	case PackageSearchResultFormatNpm:
+		return true
+	case PackageSearchResultFormatNuget:
+		return true
+	case PackageSearchResultFormatOci:
+		return true
+	case PackageSearchResultFormatOciArtifacts:
+		return true
+	case PackageSearchResultFormatP2:
+		return true
+	case PackageSearchResultFormatPub:
+		return true
+	case PackageSearchResultFormatPypi:
+		return true
+	case PackageSearchResultFormatRaw:
+		return true
+	case PackageSearchResultFormatRpm:
+		return true
+	case PackageSearchResultFormatRubygems:
+		return true
+	case PackageSearchResultFormatSwift:
+		return true
+	case PackageSearchResultFormatTerraform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PackageSearchResultOrigin.
+const (
+	PackageSearchResultOriginLocal   PackageSearchResultOrigin = "local"
+	PackageSearchResultOriginRemote  PackageSearchResultOrigin = "remote"
+	PackageSearchResultOriginReplica PackageSearchResultOrigin = "replica"
+)
+
+// Valid indicates whether the value is a known member of the PackageSearchResultOrigin enum.
+func (e PackageSearchResultOrigin) Valid() bool {
+	switch e {
+	case PackageSearchResultOriginLocal:
+		return true
+	case PackageSearchResultOriginRemote:
+		return true
+	case PackageSearchResultOriginReplica:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveCacheState.
+const (
+	Fresh         ResolveCacheState = "fresh"
+	NotApplicable ResolveCacheState = "not_applicable"
+	NotCached     ResolveCacheState = "not_cached"
+	Stale         ResolveCacheState = "stale"
+)
+
+// Valid indicates whether the value is a known member of the ResolveCacheState enum.
+func (e ResolveCacheState) Valid() bool {
+	switch e {
+	case Fresh:
+		return true
+	case NotApplicable:
+		return true
+	case NotCached:
+		return true
+	case Stale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveExplanationStatus.
+const (
+	NamespaceMismatch ResolveExplanationStatus = "namespace_mismatch"
+	NotFound          ResolveExplanationStatus = "not_found"
+	PullThrough       ResolveExplanationStatus = "pull_through"
+	Served            ResolveExplanationStatus = "served"
+)
+
+// Valid indicates whether the value is a known member of the ResolveExplanationStatus enum.
+func (e ResolveExplanationStatus) Valid() bool {
+	switch e {
+	case NamespaceMismatch:
+		return true
+	case NotFound:
+		return true
+	case PullThrough:
+		return true
+	case Served:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveSourceKind.
+const (
+	ResolveSourceKindLocal   ResolveSourceKind = "local"
+	ResolveSourceKindRemote  ResolveSourceKind = "remote"
+	ResolveSourceKindReplica ResolveSourceKind = "replica"
+)
+
+// Valid indicates whether the value is a known member of the ResolveSourceKind enum.
+func (e ResolveSourceKind) Valid() bool {
+	switch e {
+	case ResolveSourceKindLocal:
+		return true
+	case ResolveSourceKindRemote:
+		return true
+	case ResolveSourceKindReplica:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ResolveSourceRole.
+const (
+	Absent               ResolveSourceRole = "absent"
+	PullThroughCandidate ResolveSourceRole = "pull_through_candidate"
+	Serving              ResolveSourceRole = "serving"
+	Shadowed             ResolveSourceRole = "shadowed"
+)
+
+// Valid indicates whether the value is a known member of the ResolveSourceRole enum.
+func (e ResolveSourceRole) Valid() bool {
+	switch e {
+	case Absent:
+		return true
+	case PullThroughCandidate:
+		return true
+	case Serving:
+		return true
+	case Shadowed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RevokedServiceTokenRevoked.
 const (
 	True RevokedServiceTokenRevoked = true
@@ -646,6 +961,57 @@ func (e SourceKind) Valid() bool {
 	}
 }
 
+// Defines values for TokenRecordScopesActions.
+const (
+	TokenRecordScopesActionsAdmin     TokenRecordScopesActions = "admin"
+	TokenRecordScopesActionsConfigure TokenRecordScopesActions = "configure"
+	TokenRecordScopesActionsDelete    TokenRecordScopesActions = "delete"
+	TokenRecordScopesActionsPublish   TokenRecordScopesActions = "publish"
+	TokenRecordScopesActionsRead      TokenRecordScopesActions = "read"
+	TokenRecordScopesActionsReplicate TokenRecordScopesActions = "replicate"
+)
+
+// Valid indicates whether the value is a known member of the TokenRecordScopesActions enum.
+func (e TokenRecordScopesActions) Valid() bool {
+	switch e {
+	case TokenRecordScopesActionsAdmin:
+		return true
+	case TokenRecordScopesActionsConfigure:
+		return true
+	case TokenRecordScopesActionsDelete:
+		return true
+	case TokenRecordScopesActionsPublish:
+		return true
+	case TokenRecordScopesActionsRead:
+		return true
+	case TokenRecordScopesActionsReplicate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TokenRecordStatus.
+const (
+	TokenRecordStatusActive  TokenRecordStatus = "active"
+	TokenRecordStatusExpired TokenRecordStatus = "expired"
+	TokenRecordStatusRevoked TokenRecordStatus = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the TokenRecordStatus enum.
+func (e TokenRecordStatus) Valid() bool {
+	switch e {
+	case TokenRecordStatusActive:
+		return true
+	case TokenRecordStatusExpired:
+		return true
+	case TokenRecordStatusRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WebhookDeliveryLastFailure.
 const (
 	AttemptsExhausted  WebhookDeliveryLastFailure = "attempts_exhausted"
@@ -700,6 +1066,198 @@ func (e WebhookDeliveryState) Valid() bool {
 	}
 }
 
+// Defines values for ListAuditEventsParamsResult.
+const (
+	ListAuditEventsParamsResultDenied  ListAuditEventsParamsResult = "denied"
+	ListAuditEventsParamsResultFailure ListAuditEventsParamsResult = "failure"
+	ListAuditEventsParamsResultSuccess ListAuditEventsParamsResult = "success"
+)
+
+// Valid indicates whether the value is a known member of the ListAuditEventsParamsResult enum.
+func (e ListAuditEventsParamsResult) Valid() bool {
+	switch e {
+	case ListAuditEventsParamsResultDenied:
+		return true
+	case ListAuditEventsParamsResultFailure:
+		return true
+	case ListAuditEventsParamsResultSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetApiV1AuditExportParamsResult.
+const (
+	GetApiV1AuditExportParamsResultDenied  GetApiV1AuditExportParamsResult = "denied"
+	GetApiV1AuditExportParamsResultFailure GetApiV1AuditExportParamsResult = "failure"
+	GetApiV1AuditExportParamsResultSuccess GetApiV1AuditExportParamsResult = "success"
+)
+
+// Valid indicates whether the value is a known member of the GetApiV1AuditExportParamsResult enum.
+func (e GetApiV1AuditExportParamsResult) Valid() bool {
+	switch e {
+	case GetApiV1AuditExportParamsResultDenied:
+		return true
+	case GetApiV1AuditExportParamsResultFailure:
+		return true
+	case GetApiV1AuditExportParamsResultSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetApiV1AuditExportParamsFormat.
+const (
+	Csv    GetApiV1AuditExportParamsFormat = "csv"
+	Ndjson GetApiV1AuditExportParamsFormat = "ndjson"
+)
+
+// Valid indicates whether the value is a known member of the GetApiV1AuditExportParamsFormat enum.
+func (e GetApiV1AuditExportParamsFormat) Valid() bool {
+	switch e {
+	case Csv:
+		return true
+	case Ndjson:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SearchPackagesParamsFormat.
+const (
+	SearchPackagesParamsFormatAnsible      SearchPackagesParamsFormat = "ansible"
+	SearchPackagesParamsFormatApk          SearchPackagesParamsFormat = "apk"
+	SearchPackagesParamsFormatApt          SearchPackagesParamsFormat = "apt"
+	SearchPackagesParamsFormatCargo        SearchPackagesParamsFormat = "cargo"
+	SearchPackagesParamsFormatCocoapods    SearchPackagesParamsFormat = "cocoapods"
+	SearchPackagesParamsFormatComposer     SearchPackagesParamsFormat = "composer"
+	SearchPackagesParamsFormatConan        SearchPackagesParamsFormat = "conan"
+	SearchPackagesParamsFormatConda        SearchPackagesParamsFormat = "conda"
+	SearchPackagesParamsFormatCran         SearchPackagesParamsFormat = "cran"
+	SearchPackagesParamsFormatGitLfs       SearchPackagesParamsFormat = "git-lfs"
+	SearchPackagesParamsFormatGo           SearchPackagesParamsFormat = "go"
+	SearchPackagesParamsFormatHelm         SearchPackagesParamsFormat = "helm"
+	SearchPackagesParamsFormatHuggingface  SearchPackagesParamsFormat = "huggingface"
+	SearchPackagesParamsFormatMaven        SearchPackagesParamsFormat = "maven"
+	SearchPackagesParamsFormatNpm          SearchPackagesParamsFormat = "npm"
+	SearchPackagesParamsFormatNuget        SearchPackagesParamsFormat = "nuget"
+	SearchPackagesParamsFormatOci          SearchPackagesParamsFormat = "oci"
+	SearchPackagesParamsFormatOciArtifacts SearchPackagesParamsFormat = "oci-artifacts"
+	SearchPackagesParamsFormatP2           SearchPackagesParamsFormat = "p2"
+	SearchPackagesParamsFormatPub          SearchPackagesParamsFormat = "pub"
+	SearchPackagesParamsFormatPypi         SearchPackagesParamsFormat = "pypi"
+	SearchPackagesParamsFormatRaw          SearchPackagesParamsFormat = "raw"
+	SearchPackagesParamsFormatRpm          SearchPackagesParamsFormat = "rpm"
+	SearchPackagesParamsFormatRubygems     SearchPackagesParamsFormat = "rubygems"
+	SearchPackagesParamsFormatSwift        SearchPackagesParamsFormat = "swift"
+	SearchPackagesParamsFormatTerraform    SearchPackagesParamsFormat = "terraform"
+)
+
+// Valid indicates whether the value is a known member of the SearchPackagesParamsFormat enum.
+func (e SearchPackagesParamsFormat) Valid() bool {
+	switch e {
+	case SearchPackagesParamsFormatAnsible:
+		return true
+	case SearchPackagesParamsFormatApk:
+		return true
+	case SearchPackagesParamsFormatApt:
+		return true
+	case SearchPackagesParamsFormatCargo:
+		return true
+	case SearchPackagesParamsFormatCocoapods:
+		return true
+	case SearchPackagesParamsFormatComposer:
+		return true
+	case SearchPackagesParamsFormatConan:
+		return true
+	case SearchPackagesParamsFormatConda:
+		return true
+	case SearchPackagesParamsFormatCran:
+		return true
+	case SearchPackagesParamsFormatGitLfs:
+		return true
+	case SearchPackagesParamsFormatGo:
+		return true
+	case SearchPackagesParamsFormatHelm:
+		return true
+	case SearchPackagesParamsFormatHuggingface:
+		return true
+	case SearchPackagesParamsFormatMaven:
+		return true
+	case SearchPackagesParamsFormatNpm:
+		return true
+	case SearchPackagesParamsFormatNuget:
+		return true
+	case SearchPackagesParamsFormatOci:
+		return true
+	case SearchPackagesParamsFormatOciArtifacts:
+		return true
+	case SearchPackagesParamsFormatP2:
+		return true
+	case SearchPackagesParamsFormatPub:
+		return true
+	case SearchPackagesParamsFormatPypi:
+		return true
+	case SearchPackagesParamsFormatRaw:
+		return true
+	case SearchPackagesParamsFormatRpm:
+		return true
+	case SearchPackagesParamsFormatRubygems:
+		return true
+	case SearchPackagesParamsFormatSwift:
+		return true
+	case SearchPackagesParamsFormatTerraform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SearchPackagesParamsOrigin.
+const (
+	SearchPackagesParamsOriginLocal   SearchPackagesParamsOrigin = "local"
+	SearchPackagesParamsOriginRemote  SearchPackagesParamsOrigin = "remote"
+	SearchPackagesParamsOriginReplica SearchPackagesParamsOrigin = "replica"
+)
+
+// Valid indicates whether the value is a known member of the SearchPackagesParamsOrigin enum.
+func (e SearchPackagesParamsOrigin) Valid() bool {
+	switch e {
+	case SearchPackagesParamsOriginLocal:
+		return true
+	case SearchPackagesParamsOriginRemote:
+		return true
+	case SearchPackagesParamsOriginReplica:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListServiceTokensParamsStatus.
+const (
+	ListServiceTokensParamsStatusActive  ListServiceTokensParamsStatus = "active"
+	ListServiceTokensParamsStatusExpired ListServiceTokensParamsStatus = "expired"
+	ListServiceTokensParamsStatusRevoked ListServiceTokensParamsStatus = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the ListServiceTokensParamsStatus enum.
+func (e ListServiceTokensParamsStatus) Valid() bool {
+	switch e {
+	case ListServiceTokensParamsStatusActive:
+		return true
+	case ListServiceTokensParamsStatusExpired:
+		return true
+	case ListServiceTokensParamsStatusRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListWebhookDeliveriesParamsState.
 const (
 	ListWebhookDeliveriesParamsStateDead      ListWebhookDeliveriesParamsState = "dead"
@@ -747,6 +1305,37 @@ type AttachSource struct {
 	Priority int32 `json:"priority"`
 }
 
+// AuditEvent defines model for AuditEvent.
+type AuditEvent struct {
+	Action      string                 `json:"action"`
+	CreatedAt   time.Time              `json:"created_at"`
+	Details     map[string]interface{} `json:"details"`
+	Id          int64                  `json:"id"`
+	PrincipalId *openapi_types.UUID    `json:"principal_id,omitempty"`
+	ResourceId  *openapi_types.UUID    `json:"resource_id,omitempty"`
+	Result      AuditEventResult       `json:"result"`
+}
+
+// AuditEventResult defines model for AuditEvent.Result.
+type AuditEventResult string
+
+// AuditPage defines model for AuditPage.
+type AuditPage struct {
+	Items []AuditEvent `json:"items"`
+	Page  PageInfo     `json:"page"`
+}
+
+// CachePurge defines model for CachePurge.
+type CachePurge struct {
+	AssetsRemoved int64 `json:"assets_removed"`
+
+	// BytesReleased Logical bytes of purged assets; storage is reclaimed by garbage collection.
+	BytesReleased     int64              `json:"bytes_released"`
+	ComponentsRemoved int64              `json:"components_removed"`
+	SourceId          openapi_types.UUID `json:"source_id"`
+	VersionsRemoved   int64              `json:"versions_removed"`
+}
+
 // CreateFeed defines model for CreateFeed.
 type CreateFeed struct {
 	AnonymousRead *bool            `json:"anonymous_read,omitempty"`
@@ -756,6 +1345,20 @@ type CreateFeed struct {
 
 // CreateFeedFormat defines model for CreateFeed.Format.
 type CreateFeedFormat string
+
+// CreateFeedBatch defines model for CreateFeedBatch.
+type CreateFeedBatch struct {
+	AnonymousRead *bool                 `json:"anonymous_read,omitempty"`
+	Format        CreateFeedBatchFormat `json:"format"`
+	PublishPolicy *PutPublishPolicy     `json:"publish_policy,omitempty"`
+	Slug          string                `json:"slug"`
+
+	// SourceIds Same-format sources to attach, in read order.
+	SourceIds *[]openapi_types.UUID `json:"source_ids,omitempty"`
+}
+
+// CreateFeedBatchFormat defines model for CreateFeedBatch.Format.
+type CreateFeedBatchFormat string
 
 // CreatePrincipal defines model for CreatePrincipal.
 type CreatePrincipal struct {
@@ -885,6 +1488,24 @@ type Feed struct {
 // FeedFormat defines model for Feed.Format.
 type FeedFormat string
 
+// FeedBatchResult defines model for FeedBatchResult.
+type FeedBatchResult struct {
+	Feed          Feed              `json:"feed"`
+	PublishPolicy *PublishPolicy    `json:"publish_policy,omitempty"`
+	Sources       []SourceOrderItem `json:"sources"`
+}
+
+// FeedDeleted defines model for FeedDeleted.
+type FeedDeleted struct {
+	Deleted                  bool               `json:"deleted"`
+	Id                       openapi_types.UUID `json:"id"`
+	ReplicationJobsRemoved   int64              `json:"replication_jobs_removed"`
+	RetentionPoliciesRemoved int64              `json:"retention_policies_removed"`
+	RoleGrantsRemoved        int64              `json:"role_grants_removed"`
+	SourcesDetached          int64              `json:"sources_detached"`
+	UploadSessionsRemoved    int64              `json:"upload_sessions_removed"`
+}
+
 // FeedPage defines model for FeedPage.
 type FeedPage struct {
 	Items []Feed   `json:"items"`
@@ -893,6 +1514,26 @@ type FeedPage struct {
 
 // IdentityBinding defines model for IdentityBinding.
 type IdentityBinding struct {
+	Issuer      string             `json:"issuer"`
+	PrincipalId openapi_types.UUID `json:"principal_id"`
+	Subject     string             `json:"subject"`
+}
+
+// IdentityBindingDeleted defines model for IdentityBindingDeleted.
+type IdentityBindingDeleted struct {
+	Deleted bool   `json:"deleted"`
+	Id      string `json:"id"`
+}
+
+// IdentityBindingPage defines model for IdentityBindingPage.
+type IdentityBindingPage struct {
+	Items []IdentityBindingRecord `json:"items"`
+	Page  PageInfo                `json:"page"`
+}
+
+// IdentityBindingRecord defines model for IdentityBindingRecord.
+type IdentityBindingRecord struct {
+	Id          string             `json:"id"`
 	Issuer      string             `json:"issuer"`
 	PrincipalId openapi_types.UUID `json:"principal_id"`
 	Subject     string             `json:"subject"`
@@ -970,6 +1611,38 @@ type IssuedServiceToken struct {
 	Secret    string             `json:"secret"`
 }
 
+// PackageSearchPage defines model for PackageSearchPage.
+type PackageSearchPage struct {
+	Items []PackageSearchResult `json:"items"`
+	Page  PageInfo              `json:"page"`
+
+	// Total Authorized matches across all pages.
+	Total int64 `json:"total"`
+}
+
+// PackageSearchResult defines model for PackageSearchResult.
+type PackageSearchResult struct {
+	Coordinate string                    `json:"coordinate"`
+	FeedId     openapi_types.UUID        `json:"feed_id"`
+	FeedSlug   string                    `json:"feed_slug"`
+	Format     PackageSearchResultFormat `json:"format"`
+	Id         openapi_types.UUID        `json:"id"`
+
+	// Metadata Format-owned JSON metadata, bounded to 64 KiB.
+	Metadata  map[string]interface{} `json:"metadata"`
+	Namespace string                 `json:"namespace"`
+
+	// Origin Kind of the owning source.
+	Origin   PackageSearchResultOrigin `json:"origin"`
+	SourceId openapi_types.UUID        `json:"source_id"`
+}
+
+// PackageSearchResultFormat defines model for PackageSearchResult.Format.
+type PackageSearchResultFormat string
+
+// PackageSearchResultOrigin Kind of the owning source.
+type PackageSearchResultOrigin string
+
 // PageInfo defines model for PageInfo.
 type PageInfo struct {
 	HasMore    bool    `json:"has_more"`
@@ -1000,6 +1673,43 @@ type PublishPolicy struct {
 	FeedId          openapi_types.UUID `json:"feed_id"`
 	Revision        int64              `json:"revision"`
 	Rules           []PublishRule      `json:"rules"`
+}
+
+// PublishPolicyTestRequest defines model for PublishPolicyTestRequest.
+type PublishPolicyTestRequest struct {
+	Coordinate string  `json:"coordinate"`
+	Namespace  *string `json:"namespace,omitempty"`
+
+	// Path Absolute slash path, as the publish route would supply (/ + asset key).
+	Path   *string          `json:"path,omitempty"`
+	Policy PutPublishPolicy `json:"policy"`
+
+	// PrincipalId Defaults to the caller. Evaluating another principal requires instance administration.
+	PrincipalId *openapi_types.UUID `json:"principal_id,omitempty"`
+}
+
+// PublishPolicyTestResult defines model for PublishPolicyTestResult.
+type PublishPolicyTestResult struct {
+	Allowed bool `json:"allowed"`
+
+	// Denial Reason code when the publish would be refused, including principal_not_permitted.
+	Denial              *string                  `json:"denial,omitempty"`
+	MatchedRuleId       *string                  `json:"matched_rule_id,omitempty"`
+	PrincipalAuthorized *bool                    `json:"principal_authorized,omitempty"`
+	PrincipalId         openapi_types.UUID       `json:"principal_id"`
+	Reason              string                   `json:"reason"`
+	TargetSourceId      *openapi_types.UUID      `json:"target_source_id,omitempty"`
+	TargetSourceName    *string                  `json:"target_source_name,omitempty"`
+	Trace               []PublishPolicyTestTrace `json:"trace"`
+}
+
+// PublishPolicyTestTrace defines model for PublishPolicyTestTrace.
+type PublishPolicyTestTrace struct {
+	Matched  bool   `json:"matched"`
+	Priority int64  `json:"priority"`
+	Reason   string `json:"reason"`
+	RuleId   string `json:"rule_id"`
+	Selected bool   `json:"selected"`
 }
 
 // PublishRule Highest priority wins; deny rules override every allow. Allow rules need a local target; deny rules must omit targets. Equal-priority overlapping allow rules cannot choose different targets.
@@ -1066,6 +1776,63 @@ type RemoteSourceRecord struct {
 	Revision int64              `json:"revision"`
 	SourceId openapi_types.UUID `json:"source_id"`
 }
+
+// ReorderSources defines model for ReorderSources.
+type ReorderSources struct {
+	// SourceIds Every attached source, in the new read order (index = priority).
+	SourceIds []openapi_types.UUID `json:"source_ids"`
+}
+
+// ResolveCache defines model for ResolveCache.
+type ResolveCache struct {
+	AgeSeconds           *int64            `json:"age_seconds,omitempty"`
+	ExpiresAt            *time.Time        `json:"expires_at,omitempty"`
+	LastAccessedAt       *time.Time        `json:"last_accessed_at,omitempty"`
+	LastCachedAt         *time.Time        `json:"last_cached_at,omitempty"`
+	MetadataTtlSeconds   int               `json:"metadata_ttl_seconds"`
+	ServableStaleOnError bool              `json:"servable_stale_on_error"`
+	StaleIfErrorSeconds  int               `json:"stale_if_error_seconds"`
+	State                ResolveCacheState `json:"state"`
+}
+
+// ResolveCacheState defines model for ResolveCache.State.
+type ResolveCacheState string
+
+// ResolveExplanation defines model for ResolveExplanation.
+type ResolveExplanation struct {
+	Cache      ResolveCache       `json:"cache"`
+	Coordinate string             `json:"coordinate"`
+	FeedId     openapi_types.UUID `json:"feed_id"`
+
+	// HiddenSources Attached sources omitted because the caller cannot read them.
+	HiddenSources int            `json:"hidden_sources"`
+	Namespace     string         `json:"namespace"`
+	Serving       *ResolveSource `json:"serving,omitempty"`
+
+	// Sources Readable attached sources in read order.
+	Sources []ResolveSource          `json:"sources"`
+	Status  ResolveExplanationStatus `json:"status"`
+}
+
+// ResolveExplanationStatus defines model for ResolveExplanation.Status.
+type ResolveExplanationStatus string
+
+// ResolveSource defines model for ResolveSource.
+type ResolveSource struct {
+	Kind     ResolveSourceKind  `json:"kind"`
+	Name     string             `json:"name"`
+	Priority int32              `json:"priority"`
+	Reason   string             `json:"reason"`
+	Role     ResolveSourceRole  `json:"role"`
+	SourceId openapi_types.UUID `json:"source_id"`
+	Versions int64              `json:"versions"`
+}
+
+// ResolveSourceKind defines model for ResolveSource.Kind.
+type ResolveSourceKind string
+
+// ResolveSourceRole defines model for ResolveSource.Role.
+type ResolveSourceRole string
 
 // RevokedServiceToken defines model for RevokedServiceToken.
 type RevokedServiceToken struct {
@@ -1142,11 +1909,52 @@ type SourceAttachmentPage struct {
 	Page         PageInfo           `json:"page"`
 }
 
+// SourceOrder defines model for SourceOrder.
+type SourceOrder struct {
+	FeedId       openapi_types.UUID `json:"feed_id"`
+	FeedRevision int64              `json:"feed_revision"`
+	Items        []SourceOrderItem  `json:"items"`
+}
+
+// SourceOrderItem defines model for SourceOrderItem.
+type SourceOrderItem struct {
+	Priority int32              `json:"priority"`
+	SourceId openapi_types.UUID `json:"source_id"`
+}
+
 // SourcePage defines model for SourcePage.
 type SourcePage struct {
 	Items []Source `json:"items"`
 	Page  PageInfo `json:"page"`
 }
+
+// TokenPage defines model for TokenPage.
+type TokenPage struct {
+	Items []TokenRecord `json:"items"`
+	Page  PageInfo      `json:"page"`
+}
+
+// TokenRecord defines model for TokenRecord.
+type TokenRecord struct {
+	CreatedAt   time.Time          `json:"created_at"`
+	ExpiresAt   time.Time          `json:"expires_at"`
+	Id          openapi_types.UUID `json:"id"`
+	LastUsedAt  *time.Time         `json:"last_used_at,omitempty"`
+	PrincipalId openapi_types.UUID `json:"principal_id"`
+	RevokedAt   *time.Time         `json:"revoked_at,omitempty"`
+	Scopes      []struct {
+		Actions   []TokenRecordScopesActions `json:"actions"`
+		FeedId    *openapi_types.UUID        `json:"feed_id,omitempty"`
+		Namespace *string                    `json:"namespace,omitempty"`
+	} `json:"scopes"`
+	Status TokenRecordStatus `json:"status"`
+}
+
+// TokenRecordScopesActions defines model for TokenRecord.Scopes.Actions.
+type TokenRecordScopesActions string
+
+// TokenRecordStatus defines model for TokenRecord.Status.
+type TokenRecordStatus string
 
 // Webhook defines model for Webhook.
 type Webhook struct {
@@ -1187,6 +1995,48 @@ type WebhookPage struct {
 	NextAfter *openapi_types.UUID `json:"next_after,omitempty"`
 }
 
+// ListAuditEventsParams defines parameters for ListAuditEvents.
+type ListAuditEventsParams struct {
+	Principal *openapi_types.UUID `form:"principal,omitempty" json:"principal,omitempty"`
+
+	// Action Exact action name, e.g. feed.create.
+	Action *string                      `form:"action,omitempty" json:"action,omitempty"`
+	Result *ListAuditEventsParamsResult `form:"result,omitempty" json:"result,omitempty"`
+
+	// From Inclusive lower bound on created_at.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Exclusive upper bound on created_at.
+	To     *time.Time `form:"to,omitempty" json:"to,omitempty"`
+	Limit  *int       `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListAuditEventsParamsResult defines parameters for ListAuditEvents.
+type ListAuditEventsParamsResult string
+
+// GetApiV1AuditExportParams defines parameters for GetApiV1AuditExport.
+type GetApiV1AuditExportParams struct {
+	Principal *openapi_types.UUID `form:"principal,omitempty" json:"principal,omitempty"`
+
+	// Action Exact action name, e.g. feed.create.
+	Action *string                          `form:"action,omitempty" json:"action,omitempty"`
+	Result *GetApiV1AuditExportParamsResult `form:"result,omitempty" json:"result,omitempty"`
+
+	// From Inclusive lower bound on created_at.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Exclusive upper bound on created_at.
+	To     *time.Time                       `form:"to,omitempty" json:"to,omitempty"`
+	Format *GetApiV1AuditExportParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+}
+
+// GetApiV1AuditExportParamsResult defines parameters for GetApiV1AuditExport.
+type GetApiV1AuditExportParamsResult string
+
+// GetApiV1AuditExportParamsFormat defines parameters for GetApiV1AuditExport.
+type GetApiV1AuditExportParamsFormat string
+
 // ListFeedsParams defines parameters for ListFeeds.
 type ListFeedsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
@@ -1197,6 +2047,19 @@ type ListFeedsParams struct {
 // CreateFeedParams defines parameters for CreateFeed.
 type CreateFeedParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// CreateFeedBatchParams defines parameters for CreateFeedBatch.
+type CreateFeedBatchParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// DeleteFeedParams defines parameters for DeleteFeed.
+type DeleteFeedParams struct {
+	// Force Also remove replication jobs targeting the feed. Requires instance administration.
+	Force          *bool  `form:"force,omitempty" json:"force,omitempty"`
+	IdempotencyKey string `json:"Idempotency-Key"`
+	IfMatch        string `json:"If-Match"`
 }
 
 // UpdateFeedParams defines parameters for UpdateFeed.
@@ -1245,11 +2108,23 @@ type SetPublishPolicyParams struct {
 	IfMatch        string `json:"If-Match"`
 }
 
+// ResolveFeedCoordinateParams defines parameters for ResolveFeedCoordinate.
+type ResolveFeedCoordinateParams struct {
+	Coordinate string  `form:"coordinate" json:"coordinate"`
+	Namespace  *string `form:"namespace,omitempty" json:"namespace,omitempty"`
+}
+
 // ListFeedSourcesParams defines parameters for ListFeedSources.
 type ListFeedSourcesParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Prefix *string `form:"prefix,omitempty" json:"prefix,omitempty"`
+}
+
+// ReorderFeedSourcesParams defines parameters for ReorderFeedSources.
+type ReorderFeedSourcesParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+	IfMatch        string `json:"If-Match"`
 }
 
 // DetachFeedSourceParams defines parameters for DetachFeedSource.
@@ -1264,10 +2139,41 @@ type AttachFeedSourceParams struct {
 	IfMatch        string `json:"If-Match"`
 }
 
+// ListIdentityBindingsParams defines parameters for ListIdentityBindings.
+type ListIdentityBindingsParams struct {
+	Principal *openapi_types.UUID `form:"principal,omitempty" json:"principal,omitempty"`
+	Limit     *int                `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor    *string             `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // CreateIdentityBindingParams defines parameters for CreateIdentityBinding.
 type CreateIdentityBindingParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
+
+// DeleteIdentityBindingParams defines parameters for DeleteIdentityBinding.
+type DeleteIdentityBindingParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// SearchPackagesParams defines parameters for SearchPackages.
+type SearchPackagesParams struct {
+	// Q Case-insensitive literal substring of the package coordinate.
+	Q      *string                     `form:"q,omitempty" json:"q,omitempty"`
+	Feed   *openapi_types.UUID         `form:"feed,omitempty" json:"feed,omitempty"`
+	Format *SearchPackagesParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+
+	// Origin Kind of the owning source.
+	Origin *SearchPackagesParamsOrigin `form:"origin,omitempty" json:"origin,omitempty"`
+	Limit  *int                        `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor *string                     `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// SearchPackagesParamsFormat defines parameters for SearchPackages.
+type SearchPackagesParamsFormat string
+
+// SearchPackagesParamsOrigin defines parameters for SearchPackages.
+type SearchPackagesParamsOrigin string
 
 // ListPrincipalsParams defines parameters for ListPrincipals.
 type ListPrincipalsParams struct {
@@ -1321,6 +2227,13 @@ type UpdateSourceParams struct {
 	IfMatch        string `json:"If-Match"`
 }
 
+// PurgeSourceCacheParams defines parameters for PurgeSourceCache.
+type PurgeSourceCacheParams struct {
+	// Coordinate Purge a single package instead of the whole source cache.
+	Coordinate     *string `form:"coordinate,omitempty" json:"coordinate,omitempty"`
+	IdempotencyKey string  `json:"Idempotency-Key"`
+}
+
 // SetRemoteSourceConfigParams defines parameters for SetRemoteSourceConfig.
 type SetRemoteSourceConfigParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
@@ -1332,6 +2245,17 @@ type SetRemoteSourceCredentialParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 	IfMatch        string `json:"If-Match"`
 }
+
+// ListServiceTokensParams defines parameters for ListServiceTokens.
+type ListServiceTokensParams struct {
+	Principal *openapi_types.UUID            `form:"principal,omitempty" json:"principal,omitempty"`
+	Status    *ListServiceTokensParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	Limit     *int                           `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor    *string                        `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListServiceTokensParamsStatus defines parameters for ListServiceTokens.
+type ListServiceTokensParamsStatus string
 
 // RevokeServiceTokenParams defines parameters for RevokeServiceToken.
 type RevokeServiceTokenParams struct {
@@ -1384,11 +2308,20 @@ type RotateWebhookSecretParams struct {
 // CreateFeedJSONRequestBody defines body for CreateFeed for application/json ContentType.
 type CreateFeedJSONRequestBody = CreateFeed
 
+// CreateFeedBatchJSONRequestBody defines body for CreateFeedBatch for application/json ContentType.
+type CreateFeedBatchJSONRequestBody = CreateFeedBatch
+
 // UpdateFeedJSONRequestBody defines body for UpdateFeed for application/json ContentType.
 type UpdateFeedJSONRequestBody = PatchFeed
 
 // SetPublishPolicyJSONRequestBody defines body for SetPublishPolicy for application/json ContentType.
 type SetPublishPolicyJSONRequestBody = PutPublishPolicy
+
+// TestPublishPolicyJSONRequestBody defines body for TestPublishPolicy for application/json ContentType.
+type TestPublishPolicyJSONRequestBody = PublishPolicyTestRequest
+
+// ReorderFeedSourcesJSONRequestBody defines body for ReorderFeedSources for application/json ContentType.
+type ReorderFeedSourcesJSONRequestBody = ReorderSources
 
 // AttachFeedSourceJSONRequestBody defines body for AttachFeedSource for application/json ContentType.
 type AttachFeedSourceJSONRequestBody = AttachSource
@@ -1506,6 +2439,16 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// ListAuditEvents performs a GET /api/v1/audit (the `ListAuditEvents` operationId) request.
+	//
+	// Newest-first audit events with keyset pagination. Requires instance admin.
+	ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetApiV1AuditExport performs a GET /api/v1/audit/export (the `GetApiV1AuditExport` operationId) request.
+	//
+	// Export every matching audit event. Requires instance admin; the export is itself audited as audit.export.
+	GetApiV1AuditExport(ctx context.Context, params *GetApiV1AuditExportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListFeeds performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 	ListFeeds(ctx context.Context, params *ListFeedsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1516,6 +2459,23 @@ type ClientInterface interface {
 	// CreateFeed performs a POST /api/v1/feeds (the `CreateFeed` operationId) request.
 	// Takes a body of the `application/json` content type.
 	CreateFeed(ctx context.Context, params *CreateFeedParams, body CreateFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFeedBatchWithBody performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+	CreateFeedBatchWithBody(ctx context.Context, params *CreateFeedBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFeedBatch performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+	CreateFeedBatch(ctx context.Context, params *CreateFeedBatchParams, body CreateFeedBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFeed performs a DELETE /api/v1/feeds/{id} (the `DeleteFeed` operationId) request.
+	//
+	// Delete a feed. Sources and their content are kept; only attachments, the publish policy, feed-scoped grants and retention policies are removed. Refused with 409 while replication jobs target the feed unless force=true.
+	DeleteFeed(ctx context.Context, id openapi_types.UUID, params *DeleteFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetFeed performs a GET /api/v1/feeds/{id} (the `GetFeed` operationId) request.
 	GetFeed(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1570,10 +2530,39 @@ type ClientInterface interface {
 	// Replace the complete publish policy, atomically incrementing the feed revision. Requires configure permission on the feed and all target sources. Targets must be same-format, attached local sources. If-Match is the feed revision.
 	SetPublishPolicy(ctx context.Context, id openapi_types.UUID, params *SetPublishPolicyParams, body SetPublishPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// TestPublishPolicyWithBody performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+	TestPublishPolicyWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// TestPublishPolicy performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+	TestPublishPolicy(ctx context.Context, id openapi_types.UUID, body TestPublishPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResolveFeedCoordinate performs a GET /api/v1/feeds/{id}/resolve (the `ResolveFeedCoordinate` operationId) request.
+	//
+	// Explain read resolution: the owning source, shadowed sources with reasons, and remote cache freshness. Sources the caller cannot read are omitted and counted.
+	ResolveFeedCoordinate(ctx context.Context, id openapi_types.UUID, params *ResolveFeedCoordinateParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListFeedSources performs a GET /api/v1/feeds/{id}/sources (the `ListFeedSources` operationId) request.
 	//
 	// Ordered by ascending priority. Requires feed read; sources without source read permission are omitted. Cursor is invalidated by feed revision changes.
 	ListFeedSources(ctx context.Context, id openapi_types.UUID, params *ListFeedSourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReorderFeedSourcesWithBody performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+	ReorderFeedSourcesWithBody(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReorderFeedSources performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+	ReorderFeedSources(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, body ReorderFeedSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DetachFeedSource performs a DELETE /api/v1/feeds/{id}/sources/{source_id} (the `DetachFeedSource` operationId) request.
 	//
@@ -1592,6 +2581,11 @@ type ClientInterface interface {
 	// Attach or reorder a same-format source. Requires configure permission on both feed and source. If-Match refers to the feed revision, incremented atomically with attachment and audit events.
 	AttachFeedSource(ctx context.Context, id openapi_types.UUID, sourceId openapi_types.UUID, params *AttachFeedSourceParams, body AttachFeedSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListIdentityBindings performs a GET /api/v1/identity-bindings (the `ListIdentityBindings` operationId) request.
+	//
+	// Requires instance admin.
+	ListIdentityBindings(ctx context.Context, params *ListIdentityBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateIdentityBindingWithBody performs a POST /api/v1/identity-bindings (the `CreateIdentityBinding` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -1603,6 +2597,16 @@ type ClientInterface interface {
 	//
 	// Requires instance admin permission. Metadata mutations require an Idempotency-Key; collection reads use bounded UUID keyset pagination.
 	CreateIdentityBinding(ctx context.Context, params *CreateIdentityBindingParams, body CreateIdentityBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteIdentityBinding performs a DELETE /api/v1/identity-bindings/{id} (the `DeleteIdentityBinding` operationId) request.
+	//
+	// Remove a binding and, by cascade, browser sessions that depend on it. Requires instance admin.
+	DeleteIdentityBinding(ctx context.Context, id string, params *DeleteIdentityBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchPackages performs a GET /api/v1/packages (the `SearchPackages` operationId) request.
+	//
+	// Cross-feed package search. Package-owner composition and per-feed/namespace read authorization apply exactly as for the per-feed listing; total counts only authorized matches.
+	SearchPackages(ctx context.Context, params *SearchPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPrincipals performs a GET /api/v1/principals (the `ListPrincipals` operationId) request.
 	//
@@ -1696,6 +2700,11 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	UpdateSource(ctx context.Context, id openapi_types.UUID, params *UpdateSourceParams, body UpdateSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PurgeSourceCache performs a DELETE /api/v1/sources/{id}/cache (the `PurgeSourceCache` operationId) request.
+	//
+	// Purge cached content of a remote source. Requires configure on the source. Unreferenced blobs are reclaimed by garbage collection.
+	PurgeSourceCache(ctx context.Context, id openapi_types.UUID, params *PurgeSourceCacheParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetRemoteSourceConfig performs a GET /api/v1/sources/{id}/remote-config (the `GetRemoteSourceConfig` operationId) request.
 	//
 	// Read nonsecret remote-source trust/cache configuration. Requires Source Configure, including on replay; local and replica sources are hidden as 404.
@@ -1727,6 +2736,11 @@ type ClientInterface interface {
 
 	// GetStatus performs a GET /api/v1/status (the `GetStatus` operationId) request.
 	GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListServiceTokens performs a GET /api/v1/tokens (the `ListServiceTokens` operationId) request.
+	//
+	// Token metadata with expiry and last use. Requires instance admin. Secrets and verifiers are never returned. Revoke with DELETE /tokens/{id}.
+	ListServiceTokens(ctx context.Context, params *ListServiceTokensParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RevokeServiceToken performs a DELETE /api/v1/tokens/{id} (the `RevokeServiceToken` operationId) request.
 	//
@@ -1785,6 +2799,36 @@ type ClientInterface interface {
 	RotateWebhookSecret(ctx context.Context, id openapi_types.UUID, params *RotateWebhookSecretParams, body RotateWebhookSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+// ListAuditEvents performs a GET /api/v1/audit (the `ListAuditEvents` operationId) request.
+//
+// Newest-first audit events with keyset pagination. Requires instance admin.
+func (c *Client) ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAuditEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetApiV1AuditExport performs a GET /api/v1/audit/export (the `GetApiV1AuditExport` operationId) request.
+//
+// Export every matching audit event. Requires instance admin; the export is itself audited as audit.export.
+func (c *Client) GetApiV1AuditExport(ctx context.Context, params *GetApiV1AuditExportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetApiV1AuditExportRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListFeeds performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 func (c *Client) ListFeeds(ctx context.Context, params *ListFeedsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListFeedsRequest(c.Server, params)
@@ -1816,6 +2860,53 @@ func (c *Client) CreateFeedWithBody(ctx context.Context, params *CreateFeedParam
 // Takes a body of the `application/json` content type.
 func (c *Client) CreateFeed(ctx context.Context, params *CreateFeedParams, body CreateFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateFeedRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFeedBatchWithBody performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request,
+// with any type of body and a specified content type.
+//
+// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+func (c *Client) CreateFeedBatchWithBody(ctx context.Context, params *CreateFeedBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFeedBatchRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFeedBatch performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+func (c *Client) CreateFeedBatch(ctx context.Context, params *CreateFeedBatchParams, body CreateFeedBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFeedBatchRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteFeed performs a DELETE /api/v1/feeds/{id} (the `DeleteFeed` operationId) request.
+//
+// Delete a feed. Sources and their content are kept; only attachments, the publish policy, feed-scoped grants and retention policies are removed. Refused with 409 while replication jobs target the feed unless force=true.
+func (c *Client) DeleteFeed(ctx context.Context, id openapi_types.UUID, params *DeleteFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFeedRequest(c.Server, id, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1989,11 +3080,90 @@ func (c *Client) SetPublishPolicy(ctx context.Context, id openapi_types.UUID, pa
 	return c.Client.Do(req)
 }
 
+// TestPublishPolicyWithBody performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+func (c *Client) TestPublishPolicyWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTestPublishPolicyRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// TestPublishPolicy performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+func (c *Client) TestPublishPolicy(ctx context.Context, id openapi_types.UUID, body TestPublishPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewTestPublishPolicyRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ResolveFeedCoordinate performs a GET /api/v1/feeds/{id}/resolve (the `ResolveFeedCoordinate` operationId) request.
+//
+// Explain read resolution: the owning source, shadowed sources with reasons, and remote cache freshness. Sources the caller cannot read are omitted and counted.
+func (c *Client) ResolveFeedCoordinate(ctx context.Context, id openapi_types.UUID, params *ResolveFeedCoordinateParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveFeedCoordinateRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListFeedSources performs a GET /api/v1/feeds/{id}/sources (the `ListFeedSources` operationId) request.
 //
 // Ordered by ascending priority. Requires feed read; sources without source read permission are omitted. Cursor is invalidated by feed revision changes.
 func (c *Client) ListFeedSources(ctx context.Context, id openapi_types.UUID, params *ListFeedSourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListFeedSourcesRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReorderFeedSourcesWithBody performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request,
+// with any type of body and a specified content type.
+//
+// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+func (c *Client) ReorderFeedSourcesWithBody(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReorderFeedSourcesRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReorderFeedSources performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+func (c *Client) ReorderFeedSources(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, body ReorderFeedSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReorderFeedSourcesRequest(c.Server, id, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2051,6 +3221,21 @@ func (c *Client) AttachFeedSource(ctx context.Context, id openapi_types.UUID, so
 	return c.Client.Do(req)
 }
 
+// ListIdentityBindings performs a GET /api/v1/identity-bindings (the `ListIdentityBindings` operationId) request.
+//
+// Requires instance admin.
+func (c *Client) ListIdentityBindings(ctx context.Context, params *ListIdentityBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIdentityBindingsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // CreateIdentityBindingWithBody performs a POST /api/v1/identity-bindings (the `CreateIdentityBinding` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -2073,6 +3258,36 @@ func (c *Client) CreateIdentityBindingWithBody(ctx context.Context, params *Crea
 // Requires instance admin permission. Metadata mutations require an Idempotency-Key; collection reads use bounded UUID keyset pagination.
 func (c *Client) CreateIdentityBinding(ctx context.Context, params *CreateIdentityBindingParams, body CreateIdentityBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateIdentityBindingRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteIdentityBinding performs a DELETE /api/v1/identity-bindings/{id} (the `DeleteIdentityBinding` operationId) request.
+//
+// Remove a binding and, by cascade, browser sessions that depend on it. Requires instance admin.
+func (c *Client) DeleteIdentityBinding(ctx context.Context, id string, params *DeleteIdentityBindingParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteIdentityBindingRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SearchPackages performs a GET /api/v1/packages (the `SearchPackages` operationId) request.
+//
+// Cross-feed package search. Package-owner composition and per-feed/namespace read authorization apply exactly as for the per-feed listing; total counts only authorized matches.
+func (c *Client) SearchPackages(ctx context.Context, params *SearchPackagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchPackagesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2355,6 +3570,21 @@ func (c *Client) UpdateSource(ctx context.Context, id openapi_types.UUID, params
 	return c.Client.Do(req)
 }
 
+// PurgeSourceCache performs a DELETE /api/v1/sources/{id}/cache (the `PurgeSourceCache` operationId) request.
+//
+// Purge cached content of a remote source. Requires configure on the source. Unreferenced blobs are reclaimed by garbage collection.
+func (c *Client) PurgeSourceCache(ctx context.Context, id openapi_types.UUID, params *PurgeSourceCacheParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPurgeSourceCacheRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetRemoteSourceConfig performs a GET /api/v1/sources/{id}/remote-config (the `GetRemoteSourceConfig` operationId) request.
 //
 // Read nonsecret remote-source trust/cache configuration. Requires Source Configure, including on replay; local and replica sources are hidden as 404.
@@ -2437,6 +3667,21 @@ func (c *Client) SetRemoteSourceCredential(ctx context.Context, id openapi_types
 // GetStatus performs a GET /api/v1/status (the `GetStatus` operationId) request.
 func (c *Client) GetStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListServiceTokens performs a GET /api/v1/tokens (the `ListServiceTokens` operationId) request.
+//
+// Token metadata with expiry and last use. Requires instance admin. Secrets and verifiers are never returned. Revoke with DELETE /tokens/{id}.
+func (c *Client) ListServiceTokens(ctx context.Context, params *ListServiceTokensParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListServiceTokensRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2603,6 +3848,246 @@ func (c *Client) RotateWebhookSecret(ctx context.Context, id openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
+// NewListAuditEventsRequest constructs an http.Request for the ListAuditEvents method
+func NewListAuditEventsRequest(server string, params *ListAuditEventsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/audit")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Principal != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "principal", *params.Principal, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Action != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "action", *params.Action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Result != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "result", *params.Result, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetApiV1AuditExportRequest constructs an http.Request for the GetApiV1AuditExport method
+func NewGetApiV1AuditExportRequest(server string, params *GetApiV1AuditExportParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/audit/export")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Principal != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "principal", *params.Principal, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Action != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "action", *params.Action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Result != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "result", *params.Result, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Format != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "format", *params.Format, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListFeedsRequest constructs an http.Request for the ListFeeds method
 func NewListFeedsRequest(server string, params *ListFeedsParams) (*http.Request, error) {
 	var err error
@@ -2728,6 +4213,142 @@ func NewCreateFeedRequestWithBody(server string, params *CreateFeedParams, conte
 		}
 
 		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewCreateFeedBatchRequest calls the generic CreateFeedBatch builder with application/json body
+func NewCreateFeedBatchRequest(server string, params *CreateFeedBatchParams, body CreateFeedBatchJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFeedBatchRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateFeedBatchRequestWithBody constructs an http.Request for the CreateFeedBatch method, with any body, and a specified content type
+func NewCreateFeedBatchRequestWithBody(server string, params *CreateFeedBatchParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/batch")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteFeedRequest constructs an http.Request for the DeleteFeed method
+func NewDeleteFeedRequest(server string, id openapi_types.UUID, params *DeleteFeedParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Force != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "force", *params.Force, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam1)
 
 	}
 
@@ -3373,6 +4994,122 @@ func NewSetPublishPolicyRequestWithBody(server string, id openapi_types.UUID, pa
 	return req, nil
 }
 
+// NewTestPublishPolicyRequest calls the generic TestPublishPolicy builder with application/json body
+func NewTestPublishPolicyRequest(server string, id openapi_types.UUID, body TestPublishPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewTestPublishPolicyRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewTestPublishPolicyRequestWithBody constructs an http.Request for the TestPublishPolicy method, with any body, and a specified content type
+func NewTestPublishPolicyRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s/publish-policy:test", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewResolveFeedCoordinateRequest constructs an http.Request for the ResolveFeedCoordinate method
+func NewResolveFeedCoordinateRequest(server string, id openapi_types.UUID, params *ResolveFeedCoordinateParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s/resolve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "coordinate", params.Coordinate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.Namespace != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "namespace", *params.Namespace, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListFeedSourcesRequest constructs an http.Request for the ListFeedSources method
 func NewListFeedSourcesRequest(server string, id openapi_types.UUID, params *ListFeedSourcesParams) (*http.Request, error) {
 	var err error
@@ -3453,6 +5190,75 @@ func NewListFeedSourcesRequest(server string, id openapi_types.UUID, params *Lis
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReorderFeedSourcesRequest calls the generic ReorderFeedSources builder with application/json body
+func NewReorderFeedSourcesRequest(server string, id openapi_types.UUID, params *ReorderFeedSourcesParams, body ReorderFeedSourcesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReorderFeedSourcesRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewReorderFeedSourcesRequestWithBody constructs an http.Request for the ReorderFeedSources method, with any body, and a specified content type
+func NewReorderFeedSourcesRequestWithBody(server string, id openapi_types.UUID, params *ReorderFeedSourcesParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s/sources", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+		var headerParam1 string
+
+		headerParam1, err = runtime.StyleParamWithOptions("simple", false, "If-Match", params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("If-Match", headerParam1)
+
 	}
 
 	return req, nil
@@ -3597,6 +5403,84 @@ func NewAttachFeedSourceRequestWithBody(server string, id openapi_types.UUID, so
 	return req, nil
 }
 
+// NewListIdentityBindingsRequest constructs an http.Request for the ListIdentityBindings method
+func NewListIdentityBindingsRequest(server string, params *ListIdentityBindingsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-bindings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Principal != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "principal", *params.Principal, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateIdentityBindingRequest calls the generic CreateIdentityBinding builder with application/json body
 func NewCreateIdentityBindingRequest(server string, params *CreateIdentityBindingParams, body CreateIdentityBindingJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3645,6 +5529,167 @@ func NewCreateIdentityBindingRequestWithBody(server string, params *CreateIdenti
 
 		req.Header.Set("Idempotency-Key", headerParam0)
 
+	}
+
+	return req, nil
+}
+
+// NewDeleteIdentityBindingRequest constructs an http.Request for the DeleteIdentityBinding method
+func NewDeleteIdentityBindingRequest(server string, id string, params *DeleteIdentityBindingParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/identity-bindings/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewSearchPackagesRequest constructs an http.Request for the SearchPackages method
+func NewSearchPackagesRequest(server string, params *SearchPackagesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/packages")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Feed != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "feed", *params.Feed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Format != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "format", *params.Format, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Origin != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "origin", *params.Origin, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return req, nil
@@ -4307,6 +6352,80 @@ func NewUpdateSourceRequestWithBody(server string, id openapi_types.UUID, params
 	return req, nil
 }
 
+// NewPurgeSourceCacheRequest constructs an http.Request for the PurgeSourceCache method
+func NewPurgeSourceCacheRequest(server string, id openapi_types.UUID, params *PurgeSourceCacheParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/sources/%s/cache", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Coordinate != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "coordinate", *params.Coordinate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
 // NewGetRemoteSourceConfigRequest constructs an http.Request for the GetRemoteSourceConfig method
 func NewGetRemoteSourceConfigRequest(server string, id openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -4496,6 +6615,96 @@ func NewGetStatusRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListServiceTokensRequest constructs an http.Request for the ListServiceTokens method
+func NewListServiceTokensRequest(server string, params *ListServiceTokensParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/tokens")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Principal != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "principal", *params.Principal, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -5024,6 +7233,20 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// ListAuditEventsWithResponse performs a GET /api/v1/audit (the `ListAuditEvents` operationId) request.
+	//
+	// Newest-first audit events with keyset pagination. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error)
+
+	// GetApiV1AuditExportWithResponse performs a GET /api/v1/audit/export (the `GetApiV1AuditExport` operationId) request.
+	//
+	// Export every matching audit event. Requires instance admin; the export is itself audited as audit.export.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetApiV1AuditExportWithResponse(ctx context.Context, params *GetApiV1AuditExportParams, reqEditors ...RequestEditorFn) (*GetApiV1AuditExportResponse, error)
+
 	// ListFeedsWithResponse performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -5038,6 +7261,27 @@ type ClientWithResponsesInterface interface {
 	// CreateFeedWithResponse performs a POST /api/v1/feeds (the `CreateFeed` operationId) request.
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	CreateFeedWithResponse(ctx context.Context, params *CreateFeedParams, body CreateFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFeedResponse, error)
+
+	// CreateFeedBatchWithBodyWithResponse performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateFeedBatchWithBodyWithResponse(ctx context.Context, params *CreateFeedBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFeedBatchResponse, error)
+
+	// CreateFeedBatchWithResponse performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+	CreateFeedBatchWithResponse(ctx context.Context, params *CreateFeedBatchParams, body CreateFeedBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFeedBatchResponse, error)
+
+	// DeleteFeedWithResponse performs a DELETE /api/v1/feeds/{id} (the `DeleteFeed` operationId) request.
+	//
+	// Delete a feed. Sources and their content are kept; only attachments, the publish policy, feed-scoped grants and retention policies are removed. Refused with 409 while replication jobs target the feed unless force=true.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteFeedWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteFeedParams, reqEditors ...RequestEditorFn) (*DeleteFeedResponse, error)
 
 	// GetFeedWithResponse performs a GET /api/v1/feeds/{id} (the `GetFeed` operationId) request.
 	//
@@ -5110,12 +7354,47 @@ type ClientWithResponsesInterface interface {
 	// Replace the complete publish policy, atomically incrementing the feed revision. Requires configure permission on the feed and all target sources. Targets must be same-format, attached local sources. If-Match is the feed revision.
 	SetPublishPolicyWithResponse(ctx context.Context, id openapi_types.UUID, params *SetPublishPolicyParams, body SetPublishPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*SetPublishPolicyResponse, error)
 
+	// TestPublishPolicyWithBodyWithResponse performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	TestPublishPolicyWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TestPublishPolicyResponse, error)
+
+	// TestPublishPolicyWithResponse performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+	TestPublishPolicyWithResponse(ctx context.Context, id openapi_types.UUID, body TestPublishPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*TestPublishPolicyResponse, error)
+
+	// ResolveFeedCoordinateWithResponse performs a GET /api/v1/feeds/{id}/resolve (the `ResolveFeedCoordinate` operationId) request.
+	//
+	// Explain read resolution: the owning source, shadowed sources with reasons, and remote cache freshness. Sources the caller cannot read are omitted and counted.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ResolveFeedCoordinateWithResponse(ctx context.Context, id openapi_types.UUID, params *ResolveFeedCoordinateParams, reqEditors ...RequestEditorFn) (*ResolveFeedCoordinateResponse, error)
+
 	// ListFeedSourcesWithResponse performs a GET /api/v1/feeds/{id}/sources (the `ListFeedSources` operationId) request.
 	//
 	// Ordered by ascending priority. Requires feed read; sources without source read permission are omitted. Cursor is invalidated by feed revision changes.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	ListFeedSourcesWithResponse(ctx context.Context, id openapi_types.UUID, params *ListFeedSourcesParams, reqEditors ...RequestEditorFn) (*ListFeedSourcesResponse, error)
+
+	// ReorderFeedSourcesWithBodyWithResponse performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ReorderFeedSourcesWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReorderFeedSourcesResponse, error)
+
+	// ReorderFeedSourcesWithResponse performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+	ReorderFeedSourcesWithResponse(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, body ReorderFeedSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*ReorderFeedSourcesResponse, error)
 
 	// DetachFeedSourceWithResponse performs a DELETE /api/v1/feeds/{id}/sources/{source_id} (the `DetachFeedSource` operationId) request.
 	//
@@ -5138,6 +7417,13 @@ type ClientWithResponsesInterface interface {
 	// Attach or reorder a same-format source. Requires configure permission on both feed and source. If-Match refers to the feed revision, incremented atomically with attachment and audit events.
 	AttachFeedSourceWithResponse(ctx context.Context, id openapi_types.UUID, sourceId openapi_types.UUID, params *AttachFeedSourceParams, body AttachFeedSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachFeedSourceResponse, error)
 
+	// ListIdentityBindingsWithResponse performs a GET /api/v1/identity-bindings (the `ListIdentityBindings` operationId) request.
+	//
+	// Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListIdentityBindingsWithResponse(ctx context.Context, params *ListIdentityBindingsParams, reqEditors ...RequestEditorFn) (*ListIdentityBindingsResponse, error)
+
 	// CreateIdentityBindingWithBodyWithResponse performs a POST /api/v1/identity-bindings (the `CreateIdentityBinding` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -5151,6 +7437,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Requires instance admin permission. Metadata mutations require an Idempotency-Key; collection reads use bounded UUID keyset pagination.
 	CreateIdentityBindingWithResponse(ctx context.Context, params *CreateIdentityBindingParams, body CreateIdentityBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIdentityBindingResponse, error)
+
+	// DeleteIdentityBindingWithResponse performs a DELETE /api/v1/identity-bindings/{id} (the `DeleteIdentityBinding` operationId) request.
+	//
+	// Remove a binding and, by cascade, browser sessions that depend on it. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteIdentityBindingWithResponse(ctx context.Context, id string, params *DeleteIdentityBindingParams, reqEditors ...RequestEditorFn) (*DeleteIdentityBindingResponse, error)
+
+	// SearchPackagesWithResponse performs a GET /api/v1/packages (the `SearchPackages` operationId) request.
+	//
+	// Cross-feed package search. Package-owner composition and per-feed/namespace read authorization apply exactly as for the per-feed listing; total counts only authorized matches.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SearchPackagesWithResponse(ctx context.Context, params *SearchPackagesParams, reqEditors ...RequestEditorFn) (*SearchPackagesResponse, error)
 
 	// ListPrincipalsWithResponse performs a GET /api/v1/principals (the `ListPrincipals` operationId) request.
 	//
@@ -5266,6 +7566,13 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	UpdateSourceWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateSourceParams, body UpdateSourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSourceResponse, error)
 
+	// PurgeSourceCacheWithResponse performs a DELETE /api/v1/sources/{id}/cache (the `PurgeSourceCache` operationId) request.
+	//
+	// Purge cached content of a remote source. Requires configure on the source. Unreferenced blobs are reclaimed by garbage collection.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PurgeSourceCacheWithResponse(ctx context.Context, id openapi_types.UUID, params *PurgeSourceCacheParams, reqEditors ...RequestEditorFn) (*PurgeSourceCacheResponse, error)
+
 	// GetRemoteSourceConfigWithResponse performs a GET /api/v1/sources/{id}/remote-config (the `GetRemoteSourceConfig` operationId) request.
 	//
 	// Read nonsecret remote-source trust/cache configuration. Requires Source Configure, including on replay; local and replica sources are hidden as 404.
@@ -5305,6 +7612,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusResponse, error)
+
+	// ListServiceTokensWithResponse performs a GET /api/v1/tokens (the `ListServiceTokens` operationId) request.
+	//
+	// Token metadata with expiry and last use. Requires instance admin. Secrets and verifiers are never returned. Revoke with DELETE /tokens/{id}.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListServiceTokensWithResponse(ctx context.Context, params *ListServiceTokensParams, reqEditors ...RequestEditorFn) (*ListServiceTokensResponse, error)
 
 	// RevokeServiceTokenWithResponse performs a DELETE /api/v1/tokens/{id} (the `RevokeServiceToken` operationId) request.
 	//
@@ -5375,6 +7689,291 @@ type ClientWithResponsesInterface interface {
 	//
 	// Requires instance admin. Secret-bearing requests are hashed for idempotency, but only public subscription metadata is retained as the replay response. No secret is returned.
 	RotateWebhookSecretWithResponse(ctx context.Context, id openapi_types.UUID, params *RotateWebhookSecretParams, body RotateWebhookSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateWebhookSecretResponse, error)
+}
+
+// ListAuditEventsResponse200Headers the declared response headers of an HTTP 200 response for ListAuditEvents
+type ListAuditEventsResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse400Headers the declared response headers of an HTTP 400 response for ListAuditEvents
+type ListAuditEventsResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse401Headers the declared response headers of an HTTP 401 response for ListAuditEvents
+type ListAuditEventsResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse403Headers the declared response headers of an HTTP 403 response for ListAuditEvents
+type ListAuditEventsResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse404Headers the declared response headers of an HTTP 404 response for ListAuditEvents
+type ListAuditEventsResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse429Headers the declared response headers of an HTTP 429 response for ListAuditEvents
+type ListAuditEventsResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse500Headers the declared response headers of an HTTP 500 response for ListAuditEvents
+type ListAuditEventsResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListAuditEventsResponse503Headers the declared response headers of an HTTP 503 response for ListAuditEvents
+type ListAuditEventsResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListAuditEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AuditPage
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListAuditEventsResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListAuditEventsResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListAuditEventsResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListAuditEventsResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListAuditEventsResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListAuditEventsResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListAuditEventsResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListAuditEventsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAuditEventsResponse) GetJSON200() *AuditPage {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListAuditEventsResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListAuditEventsResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListAuditEventsResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListAuditEventsResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListAuditEventsResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListAuditEventsResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListAuditEventsResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAuditEventsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAuditEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAuditEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAuditEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetApiV1AuditExportResponse200Headers the declared response headers of an HTTP 200 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse400Headers the declared response headers of an HTTP 400 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse401Headers the declared response headers of an HTTP 401 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse403Headers the declared response headers of an HTTP 403 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse404Headers the declared response headers of an HTTP 404 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse429Headers the declared response headers of an HTTP 429 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse500Headers the declared response headers of an HTTP 500 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetApiV1AuditExportResponse503Headers the declared response headers of an HTTP 503 response for GetApiV1AuditExport
+type GetApiV1AuditExportResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetApiV1AuditExportResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetApiV1AuditExportResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetApiV1AuditExportResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetApiV1AuditExportResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetApiV1AuditExportResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetApiV1AuditExportResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetApiV1AuditExportResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetApiV1AuditExportResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetApiV1AuditExportResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetApiV1AuditExportResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetApiV1AuditExportResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetApiV1AuditExportResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetApiV1AuditExportResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetApiV1AuditExportResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 // ListFeedsResponse200Headers the declared response headers of an HTTP 200 response for ListFeeds
@@ -5692,6 +8291,440 @@ func (r CreateFeedResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateFeedResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateFeedBatchResponse201Headers the declared response headers of an HTTP 201 response for CreateFeedBatch
+type CreateFeedBatchResponse201Headers struct {
+	ETag       *string
+	Location   *string
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse400Headers the declared response headers of an HTTP 400 response for CreateFeedBatch
+type CreateFeedBatchResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse401Headers the declared response headers of an HTTP 401 response for CreateFeedBatch
+type CreateFeedBatchResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse403Headers the declared response headers of an HTTP 403 response for CreateFeedBatch
+type CreateFeedBatchResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse404Headers the declared response headers of an HTTP 404 response for CreateFeedBatch
+type CreateFeedBatchResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse409Headers the declared response headers of an HTTP 409 response for CreateFeedBatch
+type CreateFeedBatchResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse412Headers the declared response headers of an HTTP 412 response for CreateFeedBatch
+type CreateFeedBatchResponse412Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse413Headers the declared response headers of an HTTP 413 response for CreateFeedBatch
+type CreateFeedBatchResponse413Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse415Headers the declared response headers of an HTTP 415 response for CreateFeedBatch
+type CreateFeedBatchResponse415Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse428Headers the declared response headers of an HTTP 428 response for CreateFeedBatch
+type CreateFeedBatchResponse428Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse429Headers the declared response headers of an HTTP 429 response for CreateFeedBatch
+type CreateFeedBatchResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse500Headers the declared response headers of an HTTP 500 response for CreateFeedBatch
+type CreateFeedBatchResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateFeedBatchResponse503Headers the declared response headers of an HTTP 503 response for CreateFeedBatch
+type CreateFeedBatchResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateFeedBatchResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *FeedBatchResult
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateFeedBatchResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateFeedBatchResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateFeedBatchResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateFeedBatchResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreateFeedBatchResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateFeedBatchResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *CreateFeedBatchResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *CreateFeedBatchResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *CreateFeedBatchResponse415Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *CreateFeedBatchResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateFeedBatchResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateFeedBatchResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateFeedBatchResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON201() *FeedBatchResult {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateFeedBatchResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFeedBatchResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFeedBatchResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFeedBatchResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFeedBatchResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteFeedResponse200Headers the declared response headers of an HTTP 200 response for DeleteFeed
+type DeleteFeedResponse200Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse400Headers the declared response headers of an HTTP 400 response for DeleteFeed
+type DeleteFeedResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse401Headers the declared response headers of an HTTP 401 response for DeleteFeed
+type DeleteFeedResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse403Headers the declared response headers of an HTTP 403 response for DeleteFeed
+type DeleteFeedResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse404Headers the declared response headers of an HTTP 404 response for DeleteFeed
+type DeleteFeedResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse409Headers the declared response headers of an HTTP 409 response for DeleteFeed
+type DeleteFeedResponse409Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse412Headers the declared response headers of an HTTP 412 response for DeleteFeed
+type DeleteFeedResponse412Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse413Headers the declared response headers of an HTTP 413 response for DeleteFeed
+type DeleteFeedResponse413Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse415Headers the declared response headers of an HTTP 415 response for DeleteFeed
+type DeleteFeedResponse415Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse428Headers the declared response headers of an HTTP 428 response for DeleteFeed
+type DeleteFeedResponse428Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse429Headers the declared response headers of an HTTP 429 response for DeleteFeed
+type DeleteFeedResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse500Headers the declared response headers of an HTTP 500 response for DeleteFeed
+type DeleteFeedResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedResponse503Headers the declared response headers of an HTTP 503 response for DeleteFeed
+type DeleteFeedResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteFeedResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FeedDeleted
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *DeleteFeedResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteFeedResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteFeedResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteFeedResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteFeedResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteFeedResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *DeleteFeedResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *DeleteFeedResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *DeleteFeedResponse415Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *DeleteFeedResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteFeedResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteFeedResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteFeedResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DeleteFeedResponse) GetJSON200() *FeedDeleted {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteFeedResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteFeedResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteFeedResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteFeedResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteFeedResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r DeleteFeedResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r DeleteFeedResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r DeleteFeedResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r DeleteFeedResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteFeedResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteFeedResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteFeedResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteFeedResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFeedResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFeedResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteFeedResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7156,6 +10189,326 @@ func (r SetPublishPolicyResponse) ContentType() string {
 	return ""
 }
 
+// TestPublishPolicyResponse200Headers the declared response headers of an HTTP 200 response for TestPublishPolicy
+type TestPublishPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse400Headers the declared response headers of an HTTP 400 response for TestPublishPolicy
+type TestPublishPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse401Headers the declared response headers of an HTTP 401 response for TestPublishPolicy
+type TestPublishPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse403Headers the declared response headers of an HTTP 403 response for TestPublishPolicy
+type TestPublishPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse404Headers the declared response headers of an HTTP 404 response for TestPublishPolicy
+type TestPublishPolicyResponse404Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse413Headers the declared response headers of an HTTP 413 response for TestPublishPolicy
+type TestPublishPolicyResponse413Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse415Headers the declared response headers of an HTTP 415 response for TestPublishPolicy
+type TestPublishPolicyResponse415Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse429Headers the declared response headers of an HTTP 429 response for TestPublishPolicy
+type TestPublishPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse500Headers the declared response headers of an HTTP 500 response for TestPublishPolicy
+type TestPublishPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// TestPublishPolicyResponse503Headers the declared response headers of an HTTP 503 response for TestPublishPolicy
+type TestPublishPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type TestPublishPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PublishPolicyTestResult
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *TestPublishPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *TestPublishPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *TestPublishPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *TestPublishPolicyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *TestPublishPolicyResponse404Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *TestPublishPolicyResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *TestPublishPolicyResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *TestPublishPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *TestPublishPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *TestPublishPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON200() *PublishPolicyTestResult {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r TestPublishPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r TestPublishPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r TestPublishPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r TestPublishPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r TestPublishPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ResolveFeedCoordinateResponse200Headers the declared response headers of an HTTP 200 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse200Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse400Headers the declared response headers of an HTTP 400 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse400Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse401Headers the declared response headers of an HTTP 401 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse401Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse403Headers the declared response headers of an HTTP 403 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse403Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse404Headers the declared response headers of an HTTP 404 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse404Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse429Headers the declared response headers of an HTTP 429 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse429Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse500Headers the declared response headers of an HTTP 500 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse500Headers struct {
+	XRequestID *string
+}
+
+// ResolveFeedCoordinateResponse503Headers the declared response headers of an HTTP 503 response for ResolveFeedCoordinate
+type ResolveFeedCoordinateResponse503Headers struct {
+	XRequestID *string
+}
+
+type ResolveFeedCoordinateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ResolveExplanation
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ResolveFeedCoordinateResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ResolveFeedCoordinateResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ResolveFeedCoordinateResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ResolveFeedCoordinateResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ResolveFeedCoordinateResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ResolveFeedCoordinateResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ResolveFeedCoordinateResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ResolveFeedCoordinateResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON200() *ResolveExplanation {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ResolveFeedCoordinateResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ResolveFeedCoordinateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ResolveFeedCoordinateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResolveFeedCoordinateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResolveFeedCoordinateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListFeedSourcesResponse200Headers the declared response headers of an HTTP 200 response for ListFeedSources
 type ListFeedSourcesResponse200Headers struct {
 	ETag       *string
@@ -7297,6 +10650,223 @@ func (r ListFeedSourcesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListFeedSourcesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ReorderFeedSourcesResponse200Headers the declared response headers of an HTTP 200 response for ReorderFeedSources
+type ReorderFeedSourcesResponse200Headers struct {
+	ETag       *string
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse400Headers the declared response headers of an HTTP 400 response for ReorderFeedSources
+type ReorderFeedSourcesResponse400Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse401Headers the declared response headers of an HTTP 401 response for ReorderFeedSources
+type ReorderFeedSourcesResponse401Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse403Headers the declared response headers of an HTTP 403 response for ReorderFeedSources
+type ReorderFeedSourcesResponse403Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse404Headers the declared response headers of an HTTP 404 response for ReorderFeedSources
+type ReorderFeedSourcesResponse404Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse409Headers the declared response headers of an HTTP 409 response for ReorderFeedSources
+type ReorderFeedSourcesResponse409Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse412Headers the declared response headers of an HTTP 412 response for ReorderFeedSources
+type ReorderFeedSourcesResponse412Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse413Headers the declared response headers of an HTTP 413 response for ReorderFeedSources
+type ReorderFeedSourcesResponse413Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse415Headers the declared response headers of an HTTP 415 response for ReorderFeedSources
+type ReorderFeedSourcesResponse415Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse428Headers the declared response headers of an HTTP 428 response for ReorderFeedSources
+type ReorderFeedSourcesResponse428Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse429Headers the declared response headers of an HTTP 429 response for ReorderFeedSources
+type ReorderFeedSourcesResponse429Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse500Headers the declared response headers of an HTTP 500 response for ReorderFeedSources
+type ReorderFeedSourcesResponse500Headers struct {
+	XRequestID *string
+}
+
+// ReorderFeedSourcesResponse503Headers the declared response headers of an HTTP 503 response for ReorderFeedSources
+type ReorderFeedSourcesResponse503Headers struct {
+	XRequestID *string
+}
+
+type ReorderFeedSourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SourceOrder
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ReorderFeedSourcesResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ReorderFeedSourcesResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ReorderFeedSourcesResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ReorderFeedSourcesResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ReorderFeedSourcesResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ReorderFeedSourcesResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *ReorderFeedSourcesResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *ReorderFeedSourcesResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *ReorderFeedSourcesResponse415Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *ReorderFeedSourcesResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ReorderFeedSourcesResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ReorderFeedSourcesResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ReorderFeedSourcesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON200() *SourceOrder {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ReorderFeedSourcesResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ReorderFeedSourcesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReorderFeedSourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReorderFeedSourcesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReorderFeedSourcesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7737,6 +11307,152 @@ func (r AttachFeedSourceResponse) ContentType() string {
 	return ""
 }
 
+// ListIdentityBindingsResponse200Headers the declared response headers of an HTTP 200 response for ListIdentityBindings
+type ListIdentityBindingsResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse400Headers the declared response headers of an HTTP 400 response for ListIdentityBindings
+type ListIdentityBindingsResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse401Headers the declared response headers of an HTTP 401 response for ListIdentityBindings
+type ListIdentityBindingsResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse403Headers the declared response headers of an HTTP 403 response for ListIdentityBindings
+type ListIdentityBindingsResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse404Headers the declared response headers of an HTTP 404 response for ListIdentityBindings
+type ListIdentityBindingsResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse429Headers the declared response headers of an HTTP 429 response for ListIdentityBindings
+type ListIdentityBindingsResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse500Headers the declared response headers of an HTTP 500 response for ListIdentityBindings
+type ListIdentityBindingsResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListIdentityBindingsResponse503Headers the declared response headers of an HTTP 503 response for ListIdentityBindings
+type ListIdentityBindingsResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListIdentityBindingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityBindingPage
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListIdentityBindingsResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListIdentityBindingsResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListIdentityBindingsResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListIdentityBindingsResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListIdentityBindingsResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListIdentityBindingsResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListIdentityBindingsResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListIdentityBindingsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON200() *IdentityBindingPage {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListIdentityBindingsResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListIdentityBindingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIdentityBindingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIdentityBindingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListIdentityBindingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // CreateIdentityBindingResponse201Headers the declared response headers of an HTTP 201 response for CreateIdentityBinding
 type CreateIdentityBindingResponse201Headers struct {
 	XRequestID *string
@@ -7947,6 +11663,368 @@ func (r CreateIdentityBindingResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateIdentityBindingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteIdentityBindingResponse200Headers the declared response headers of an HTTP 200 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse200Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse400Headers the declared response headers of an HTTP 400 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse401Headers the declared response headers of an HTTP 401 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse403Headers the declared response headers of an HTTP 403 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse404Headers the declared response headers of an HTTP 404 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse409Headers the declared response headers of an HTTP 409 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse409Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse412Headers the declared response headers of an HTTP 412 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse412Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse413Headers the declared response headers of an HTTP 413 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse413Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse415Headers the declared response headers of an HTTP 415 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse415Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse428Headers the declared response headers of an HTTP 428 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse428Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse429Headers the declared response headers of an HTTP 429 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse500Headers the declared response headers of an HTTP 500 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteIdentityBindingResponse503Headers the declared response headers of an HTTP 503 response for DeleteIdentityBinding
+type DeleteIdentityBindingResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteIdentityBindingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IdentityBindingDeleted
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *DeleteIdentityBindingResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteIdentityBindingResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteIdentityBindingResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteIdentityBindingResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteIdentityBindingResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteIdentityBindingResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *DeleteIdentityBindingResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *DeleteIdentityBindingResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *DeleteIdentityBindingResponse415Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *DeleteIdentityBindingResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteIdentityBindingResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteIdentityBindingResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteIdentityBindingResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON200() *IdentityBindingDeleted {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteIdentityBindingResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteIdentityBindingResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteIdentityBindingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteIdentityBindingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteIdentityBindingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SearchPackagesResponse200Headers the declared response headers of an HTTP 200 response for SearchPackages
+type SearchPackagesResponse200Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse400Headers the declared response headers of an HTTP 400 response for SearchPackages
+type SearchPackagesResponse400Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse401Headers the declared response headers of an HTTP 401 response for SearchPackages
+type SearchPackagesResponse401Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse403Headers the declared response headers of an HTTP 403 response for SearchPackages
+type SearchPackagesResponse403Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse404Headers the declared response headers of an HTTP 404 response for SearchPackages
+type SearchPackagesResponse404Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse429Headers the declared response headers of an HTTP 429 response for SearchPackages
+type SearchPackagesResponse429Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse500Headers the declared response headers of an HTTP 500 response for SearchPackages
+type SearchPackagesResponse500Headers struct {
+	XRequestID *string
+}
+
+// SearchPackagesResponse503Headers the declared response headers of an HTTP 503 response for SearchPackages
+type SearchPackagesResponse503Headers struct {
+	XRequestID *string
+}
+
+type SearchPackagesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PackageSearchPage
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *SearchPackagesResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *SearchPackagesResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *SearchPackagesResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *SearchPackagesResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *SearchPackagesResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *SearchPackagesResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *SearchPackagesResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *SearchPackagesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SearchPackagesResponse) GetJSON200() *PackageSearchPage {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r SearchPackagesResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r SearchPackagesResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r SearchPackagesResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SearchPackagesResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r SearchPackagesResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r SearchPackagesResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r SearchPackagesResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r SearchPackagesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchPackagesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchPackagesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SearchPackagesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -10155,6 +14233,222 @@ func (r UpdateSourceResponse) ContentType() string {
 	return ""
 }
 
+// PurgeSourceCacheResponse200Headers the declared response headers of an HTTP 200 response for PurgeSourceCache
+type PurgeSourceCacheResponse200Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse400Headers the declared response headers of an HTTP 400 response for PurgeSourceCache
+type PurgeSourceCacheResponse400Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse401Headers the declared response headers of an HTTP 401 response for PurgeSourceCache
+type PurgeSourceCacheResponse401Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse403Headers the declared response headers of an HTTP 403 response for PurgeSourceCache
+type PurgeSourceCacheResponse403Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse404Headers the declared response headers of an HTTP 404 response for PurgeSourceCache
+type PurgeSourceCacheResponse404Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse409Headers the declared response headers of an HTTP 409 response for PurgeSourceCache
+type PurgeSourceCacheResponse409Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse412Headers the declared response headers of an HTTP 412 response for PurgeSourceCache
+type PurgeSourceCacheResponse412Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse413Headers the declared response headers of an HTTP 413 response for PurgeSourceCache
+type PurgeSourceCacheResponse413Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse415Headers the declared response headers of an HTTP 415 response for PurgeSourceCache
+type PurgeSourceCacheResponse415Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse428Headers the declared response headers of an HTTP 428 response for PurgeSourceCache
+type PurgeSourceCacheResponse428Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse429Headers the declared response headers of an HTTP 429 response for PurgeSourceCache
+type PurgeSourceCacheResponse429Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse500Headers the declared response headers of an HTTP 500 response for PurgeSourceCache
+type PurgeSourceCacheResponse500Headers struct {
+	XRequestID *string
+}
+
+// PurgeSourceCacheResponse503Headers the declared response headers of an HTTP 503 response for PurgeSourceCache
+type PurgeSourceCacheResponse503Headers struct {
+	XRequestID *string
+}
+
+type PurgeSourceCacheResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CachePurge
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON428 the response for an HTTP 428 `application/json` response
+	JSON428 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PurgeSourceCacheResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PurgeSourceCacheResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PurgeSourceCacheResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PurgeSourceCacheResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PurgeSourceCacheResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PurgeSourceCacheResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *PurgeSourceCacheResponse412Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PurgeSourceCacheResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PurgeSourceCacheResponse415Headers
+	// Headers428 the parsed response headers for an HTTP 428 response
+	Headers428 *PurgeSourceCacheResponse428Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PurgeSourceCacheResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PurgeSourceCacheResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PurgeSourceCacheResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON200() *CachePurge {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON428 returns the response for an HTTP 428 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON428() *Error {
+	return r.JSON428
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PurgeSourceCacheResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PurgeSourceCacheResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PurgeSourceCacheResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PurgeSourceCacheResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PurgeSourceCacheResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetRemoteSourceConfigResponse200Headers the declared response headers of an HTTP 200 response for GetRemoteSourceConfig
 type GetRemoteSourceConfigResponse200Headers struct {
 	ETag       *string
@@ -10806,6 +15100,152 @@ func (r GetStatusResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListServiceTokensResponse200Headers the declared response headers of an HTTP 200 response for ListServiceTokens
+type ListServiceTokensResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse400Headers the declared response headers of an HTTP 400 response for ListServiceTokens
+type ListServiceTokensResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse401Headers the declared response headers of an HTTP 401 response for ListServiceTokens
+type ListServiceTokensResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse403Headers the declared response headers of an HTTP 403 response for ListServiceTokens
+type ListServiceTokensResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse404Headers the declared response headers of an HTTP 404 response for ListServiceTokens
+type ListServiceTokensResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse429Headers the declared response headers of an HTTP 429 response for ListServiceTokens
+type ListServiceTokensResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse500Headers the declared response headers of an HTTP 500 response for ListServiceTokens
+type ListServiceTokensResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListServiceTokensResponse503Headers the declared response headers of an HTTP 503 response for ListServiceTokens
+type ListServiceTokensResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListServiceTokensResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TokenPage
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListServiceTokensResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListServiceTokensResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListServiceTokensResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListServiceTokensResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListServiceTokensResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListServiceTokensResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListServiceTokensResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListServiceTokensResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListServiceTokensResponse) GetJSON200() *TokenPage {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListServiceTokensResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListServiceTokensResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListServiceTokensResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListServiceTokensResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListServiceTokensResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListServiceTokensResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListServiceTokensResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListServiceTokensResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListServiceTokensResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListServiceTokensResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListServiceTokensResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12327,6 +16767,32 @@ func (r RotateWebhookSecretResponse) ContentType() string {
 	return ""
 }
 
+// ListAuditEventsWithResponse performs a GET /api/v1/audit (the `ListAuditEvents` operationId) request.
+//
+// Newest-first audit events with keyset pagination. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error) {
+	rsp, err := c.ListAuditEvents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAuditEventsResponse(rsp)
+}
+
+// GetApiV1AuditExportWithResponse performs a GET /api/v1/audit/export (the `GetApiV1AuditExport` operationId) request.
+//
+// Export every matching audit event. Requires instance admin; the export is itself audited as audit.export.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetApiV1AuditExportWithResponse(ctx context.Context, params *GetApiV1AuditExportParams, reqEditors ...RequestEditorFn) (*GetApiV1AuditExportResponse, error) {
+	rsp, err := c.GetApiV1AuditExport(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetApiV1AuditExportResponse(rsp)
+}
+
 // ListFeedsWithResponse performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -12358,6 +16824,45 @@ func (c *ClientWithResponses) CreateFeedWithResponse(ctx context.Context, params
 		return nil, err
 	}
 	return ParseCreateFeedResponse(rsp)
+}
+
+// CreateFeedBatchWithBodyWithResponse performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request,
+// with any type of body and a specified content type.
+//
+// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateFeedBatchWithBodyWithResponse(ctx context.Context, params *CreateFeedBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFeedBatchResponse, error) {
+	rsp, err := c.CreateFeedBatchWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFeedBatchResponse(rsp)
+}
+
+// CreateFeedBatchWithResponse performs a POST /api/v1/feeds/batch (the `CreateFeedBatch` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source.
+func (c *ClientWithResponses) CreateFeedBatchWithResponse(ctx context.Context, params *CreateFeedBatchParams, body CreateFeedBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFeedBatchResponse, error) {
+	rsp, err := c.CreateFeedBatch(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFeedBatchResponse(rsp)
+}
+
+// DeleteFeedWithResponse performs a DELETE /api/v1/feeds/{id} (the `DeleteFeed` operationId) request.
+//
+// Delete a feed. Sources and their content are kept; only attachments, the publish policy, feed-scoped grants and retention policies are removed. Refused with 409 while replication jobs target the feed unless force=true.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteFeedWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteFeedParams, reqEditors ...RequestEditorFn) (*DeleteFeedResponse, error) {
+	rsp, err := c.DeleteFeed(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFeedResponse(rsp)
 }
 
 // GetFeedWithResponse performs a GET /api/v1/feeds/{id} (the `GetFeed` operationId) request.
@@ -12497,6 +17002,45 @@ func (c *ClientWithResponses) SetPublishPolicyWithResponse(ctx context.Context, 
 	return ParseSetPublishPolicyResponse(rsp)
 }
 
+// TestPublishPolicyWithBodyWithResponse performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) TestPublishPolicyWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TestPublishPolicyResponse, error) {
+	rsp, err := c.TestPublishPolicyWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTestPublishPolicyResponse(rsp)
+}
+
+// TestPublishPolicyWithResponse performs a POST /api/v1/feeds/{id}/publish-policy:test (the `TestPublishPolicy` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source.
+func (c *ClientWithResponses) TestPublishPolicyWithResponse(ctx context.Context, id openapi_types.UUID, body TestPublishPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*TestPublishPolicyResponse, error) {
+	rsp, err := c.TestPublishPolicy(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseTestPublishPolicyResponse(rsp)
+}
+
+// ResolveFeedCoordinateWithResponse performs a GET /api/v1/feeds/{id}/resolve (the `ResolveFeedCoordinate` operationId) request.
+//
+// Explain read resolution: the owning source, shadowed sources with reasons, and remote cache freshness. Sources the caller cannot read are omitted and counted.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ResolveFeedCoordinateWithResponse(ctx context.Context, id openapi_types.UUID, params *ResolveFeedCoordinateParams, reqEditors ...RequestEditorFn) (*ResolveFeedCoordinateResponse, error) {
+	rsp, err := c.ResolveFeedCoordinate(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveFeedCoordinateResponse(rsp)
+}
+
 // ListFeedSourcesWithResponse performs a GET /api/v1/feeds/{id}/sources (the `ListFeedSources` operationId) request.
 //
 // Ordered by ascending priority. Requires feed read; sources without source read permission are omitted. Cursor is invalidated by feed revision changes.
@@ -12508,6 +17052,32 @@ func (c *ClientWithResponses) ListFeedSourcesWithResponse(ctx context.Context, i
 		return nil, err
 	}
 	return ParseListFeedSourcesResponse(rsp)
+}
+
+// ReorderFeedSourcesWithBodyWithResponse performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request,
+// with any type of body and a specified content type.
+//
+// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ReorderFeedSourcesWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReorderFeedSourcesResponse, error) {
+	rsp, err := c.ReorderFeedSourcesWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReorderFeedSourcesResponse(rsp)
+}
+
+// ReorderFeedSourcesWithResponse performs a PUT /api/v1/feeds/{id}/sources (the `ReorderFeedSources` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event.
+func (c *ClientWithResponses) ReorderFeedSourcesWithResponse(ctx context.Context, id openapi_types.UUID, params *ReorderFeedSourcesParams, body ReorderFeedSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*ReorderFeedSourcesResponse, error) {
+	rsp, err := c.ReorderFeedSources(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReorderFeedSourcesResponse(rsp)
 }
 
 // DetachFeedSourceWithResponse performs a DELETE /api/v1/feeds/{id}/sources/{source_id} (the `DetachFeedSource` operationId) request.
@@ -12549,6 +17119,19 @@ func (c *ClientWithResponses) AttachFeedSourceWithResponse(ctx context.Context, 
 	return ParseAttachFeedSourceResponse(rsp)
 }
 
+// ListIdentityBindingsWithResponse performs a GET /api/v1/identity-bindings (the `ListIdentityBindings` operationId) request.
+//
+// Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListIdentityBindingsWithResponse(ctx context.Context, params *ListIdentityBindingsParams, reqEditors ...RequestEditorFn) (*ListIdentityBindingsResponse, error) {
+	rsp, err := c.ListIdentityBindings(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIdentityBindingsResponse(rsp)
+}
+
 // CreateIdentityBindingWithBodyWithResponse performs a POST /api/v1/identity-bindings (the `CreateIdentityBinding` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -12573,6 +17156,32 @@ func (c *ClientWithResponses) CreateIdentityBindingWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseCreateIdentityBindingResponse(rsp)
+}
+
+// DeleteIdentityBindingWithResponse performs a DELETE /api/v1/identity-bindings/{id} (the `DeleteIdentityBinding` operationId) request.
+//
+// Remove a binding and, by cascade, browser sessions that depend on it. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteIdentityBindingWithResponse(ctx context.Context, id string, params *DeleteIdentityBindingParams, reqEditors ...RequestEditorFn) (*DeleteIdentityBindingResponse, error) {
+	rsp, err := c.DeleteIdentityBinding(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteIdentityBindingResponse(rsp)
+}
+
+// SearchPackagesWithResponse performs a GET /api/v1/packages (the `SearchPackages` operationId) request.
+//
+// Cross-feed package search. Package-owner composition and per-feed/namespace read authorization apply exactly as for the per-feed listing; total counts only authorized matches.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SearchPackagesWithResponse(ctx context.Context, params *SearchPackagesParams, reqEditors ...RequestEditorFn) (*SearchPackagesResponse, error) {
+	rsp, err := c.SearchPackages(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchPackagesResponse(rsp)
 }
 
 // ListPrincipalsWithResponse performs a GET /api/v1/principals (the `ListPrincipals` operationId) request.
@@ -12797,6 +17406,19 @@ func (c *ClientWithResponses) UpdateSourceWithResponse(ctx context.Context, id o
 	return ParseUpdateSourceResponse(rsp)
 }
 
+// PurgeSourceCacheWithResponse performs a DELETE /api/v1/sources/{id}/cache (the `PurgeSourceCache` operationId) request.
+//
+// Purge cached content of a remote source. Requires configure on the source. Unreferenced blobs are reclaimed by garbage collection.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PurgeSourceCacheWithResponse(ctx context.Context, id openapi_types.UUID, params *PurgeSourceCacheParams, reqEditors ...RequestEditorFn) (*PurgeSourceCacheResponse, error) {
+	rsp, err := c.PurgeSourceCache(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePurgeSourceCacheResponse(rsp)
+}
+
 // GetRemoteSourceConfigWithResponse performs a GET /api/v1/sources/{id}/remote-config (the `GetRemoteSourceConfig` operationId) request.
 //
 // Read nonsecret remote-source trust/cache configuration. Requires Source Configure, including on replay; local and replica sources are hidden as 404.
@@ -12871,6 +17493,19 @@ func (c *ClientWithResponses) GetStatusWithResponse(ctx context.Context, reqEdit
 		return nil, err
 	}
 	return ParseGetStatusResponse(rsp)
+}
+
+// ListServiceTokensWithResponse performs a GET /api/v1/tokens (the `ListServiceTokens` operationId) request.
+//
+// Token metadata with expiry and last use. Requires instance admin. Secrets and verifiers are never returned. Revoke with DELETE /tokens/{id}.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListServiceTokensWithResponse(ctx context.Context, params *ListServiceTokensParams, reqEditors ...RequestEditorFn) (*ListServiceTokensResponse, error) {
+	rsp, err := c.ListServiceTokens(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListServiceTokensResponse(rsp)
 }
 
 // RevokeServiceTokenWithResponse performs a DELETE /api/v1/tokens/{id} (the `RevokeServiceToken` operationId) request.
@@ -13001,6 +17636,315 @@ func (c *ClientWithResponses) RotateWebhookSecretWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseRotateWebhookSecretResponse(rsp)
+}
+
+// ParseListAuditEventsResponse parses an HTTP response from a ListAuditEventsWithResponse call
+func ParseListAuditEventsResponse(rsp *http.Response) (*ListAuditEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAuditEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuditPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListAuditEventsResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListAuditEventsResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListAuditEventsResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListAuditEventsResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListAuditEventsResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListAuditEventsResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListAuditEventsResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListAuditEventsResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetApiV1AuditExportResponse parses an HTTP response from a GetApiV1AuditExportWithResponse call
+func ParseGetApiV1AuditExportResponse(rsp *http.Response) (*GetApiV1AuditExportResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetApiV1AuditExportResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetApiV1AuditExportResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetApiV1AuditExportResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetApiV1AuditExportResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetApiV1AuditExportResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetApiV1AuditExportResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetApiV1AuditExportResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetApiV1AuditExportResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetApiV1AuditExportResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
 }
 
 // ParseListFeedsResponse parses an HTTP response from a ListFeedsWithResponse call
@@ -13347,6 +18291,506 @@ func ParseCreateFeedResponse(rsp *http.Response) (*CreateFeedResponse, error) {
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers CreateFeedResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateFeedBatchResponse parses an HTTP response from a CreateFeedBatchWithResponse call
+func ParseCreateFeedBatchResponse(rsp *http.Response) (*CreateFeedBatchResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFeedBatchResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FeedBatchResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateFeedBatchResponse201Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateFeedBatchResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateFeedBatchResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateFeedBatchResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreateFeedBatchResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateFeedBatchResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers CreateFeedBatchResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers CreateFeedBatchResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers CreateFeedBatchResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 428:
+		var headers CreateFeedBatchResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateFeedBatchResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateFeedBatchResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateFeedBatchResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFeedResponse parses an HTTP response from a DeleteFeedWithResponse call
+func ParseDeleteFeedResponse(rsp *http.Response) (*DeleteFeedResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFeedResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FeedDeleted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers DeleteFeedResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteFeedResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteFeedResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteFeedResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteFeedResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteFeedResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers DeleteFeedResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers DeleteFeedResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers DeleteFeedResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 428:
+		var headers DeleteFeedResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteFeedResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteFeedResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteFeedResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -14980,6 +20424,356 @@ func ParseSetPublishPolicyResponse(rsp *http.Response) (*SetPublishPolicyRespons
 	return response, nil
 }
 
+// ParseTestPublishPolicyResponse parses an HTTP response from a TestPublishPolicyWithResponse call
+func ParseTestPublishPolicyResponse(rsp *http.Response) (*TestPublishPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &TestPublishPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PublishPolicyTestResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers TestPublishPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers TestPublishPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers TestPublishPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers TestPublishPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers TestPublishPolicyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 413:
+		var headers TestPublishPolicyResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers TestPublishPolicyResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers TestPublishPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers TestPublishPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers TestPublishPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseResolveFeedCoordinateResponse parses an HTTP response from a ResolveFeedCoordinateWithResponse call
+func ParseResolveFeedCoordinateResponse(rsp *http.Response) (*ResolveFeedCoordinateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResolveFeedCoordinateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ResolveExplanation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ResolveFeedCoordinateResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ResolveFeedCoordinateResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ResolveFeedCoordinateResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ResolveFeedCoordinateResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ResolveFeedCoordinateResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ResolveFeedCoordinateResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ResolveFeedCoordinateResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ResolveFeedCoordinateResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseListFeedSourcesResponse parses an HTTP response from a ListFeedSourcesWithResponse call
 func ParseListFeedSourcesResponse(rsp *http.Response) (*ListFeedSourcesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -15132,6 +20926,256 @@ func ParseListFeedSourcesResponse(rsp *http.Response) (*ListFeedSourcesResponse,
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers ListFeedSourcesResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseReorderFeedSourcesResponse parses an HTTP response from a ReorderFeedSourcesWithResponse call
+func ParseReorderFeedSourcesResponse(rsp *http.Response) (*ReorderFeedSourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReorderFeedSourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SourceOrder
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ReorderFeedSourcesResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ReorderFeedSourcesResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ReorderFeedSourcesResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ReorderFeedSourcesResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ReorderFeedSourcesResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ReorderFeedSourcesResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers ReorderFeedSourcesResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers ReorderFeedSourcesResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers ReorderFeedSourcesResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 428:
+		var headers ReorderFeedSourcesResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers ReorderFeedSourcesResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ReorderFeedSourcesResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ReorderFeedSourcesResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -15645,6 +21689,164 @@ func ParseAttachFeedSourceResponse(rsp *http.Response) (*AttachFeedSourceRespons
 	return response, nil
 }
 
+// ParseListIdentityBindingsResponse parses an HTTP response from a ListIdentityBindingsWithResponse call
+func ParseListIdentityBindingsResponse(rsp *http.Response) (*ListIdentityBindingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIdentityBindingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityBindingPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListIdentityBindingsResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListIdentityBindingsResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListIdentityBindingsResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListIdentityBindingsResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListIdentityBindingsResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListIdentityBindingsResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListIdentityBindingsResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListIdentityBindingsResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseCreateIdentityBindingResponse parses an HTTP response from a CreateIdentityBindingWithResponse call
 func ParseCreateIdentityBindingResponse(rsp *http.Response) (*CreateIdentityBindingResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -15875,6 +22077,407 @@ func ParseCreateIdentityBindingResponse(rsp *http.Response) (*CreateIdentityBind
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers CreateIdentityBindingResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteIdentityBindingResponse parses an HTTP response from a DeleteIdentityBindingWithResponse call
+func ParseDeleteIdentityBindingResponse(rsp *http.Response) (*DeleteIdentityBindingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteIdentityBindingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IdentityBindingDeleted
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers DeleteIdentityBindingResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteIdentityBindingResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteIdentityBindingResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteIdentityBindingResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteIdentityBindingResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteIdentityBindingResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers DeleteIdentityBindingResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers DeleteIdentityBindingResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers DeleteIdentityBindingResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 428:
+		var headers DeleteIdentityBindingResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteIdentityBindingResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteIdentityBindingResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteIdentityBindingResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSearchPackagesResponse parses an HTTP response from a SearchPackagesWithResponse call
+func ParseSearchPackagesResponse(rsp *http.Response) (*SearchPackagesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchPackagesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PackageSearchPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers SearchPackagesResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers SearchPackagesResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers SearchPackagesResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers SearchPackagesResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers SearchPackagesResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers SearchPackagesResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers SearchPackagesResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers SearchPackagesResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18396,6 +24999,249 @@ func ParseUpdateSourceResponse(rsp *http.Response) (*UpdateSourceResponse, error
 	return response, nil
 }
 
+// ParsePurgeSourceCacheResponse parses an HTTP response from a PurgeSourceCacheWithResponse call
+func ParsePurgeSourceCacheResponse(rsp *http.Response) (*PurgeSourceCacheResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PurgeSourceCacheResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CachePurge
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PurgeSourceCacheResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PurgeSourceCacheResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PurgeSourceCacheResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PurgeSourceCacheResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PurgeSourceCacheResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers PurgeSourceCacheResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers PurgeSourceCacheResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 413:
+		var headers PurgeSourceCacheResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PurgeSourceCacheResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 428:
+		var headers PurgeSourceCacheResponse428Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers428 = &headers
+	case rsp.StatusCode == 429:
+		var headers PurgeSourceCacheResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PurgeSourceCacheResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PurgeSourceCacheResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetRemoteSourceConfigResponse parses an HTTP response from a GetRemoteSourceConfigWithResponse call
 func ParseGetRemoteSourceConfigResponse(rsp *http.Response) (*GetRemoteSourceConfigResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -19121,6 +25967,164 @@ func ParseGetStatusResponse(rsp *http.Response) (*GetStatusResponse, error) {
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetStatusResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListServiceTokensResponse parses an HTTP response from a ListServiceTokensWithResponse call
+func ParseListServiceTokensResponse(rsp *http.Response) (*ListServiceTokensResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListServiceTokensResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TokenPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListServiceTokensResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListServiceTokensResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListServiceTokensResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListServiceTokensResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListServiceTokensResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListServiceTokensResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListServiceTokensResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListServiceTokensResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -20861,109 +27865,154 @@ func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretR
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"A6UggB/nirm+Xtxd3P3/AA==",
+	"7H15UyO5tudXUeTciHlL2ixF0dUQ7w+6lr7M7aUGqPteTF3GIWce22rSUrakBHxrmM/+4kjKzc60nQYD",
+	"Beo/uoydqfXodxad5VsQiWkqOHCtgqNvgQSVCq7A/PFRSiHxQyS4Bq7xI03ThEVUM8F3/lCC43cqmsCU",
+	"4qe/SBgFR8H/2Clb3bG/qh3b2t3dXRjEoCLJUmwkOArONR0mQBTlTLN/QkzAPBkGE6AxSDOU/+qdwZ8Z",
+	"KN07/YB/z7UA8hpkbwwcJNUQk0hICYkZJWExcM1GDLDJcqhTxn8BPtaT4GjvMAz0LIXgKFBaMj7GUd7d",
+	"5U+bAZxoTaPJuchkBGYd4phh8zT5LEUKUjNcsxFNFIRBWvnqW5BKJiTTM/w8EnJKdXAUMK7f7AdhMKW3",
+	"bJpNg6O9XfNfiAOz3+wWo2Jcwxhw8cJAwp8ZkxAHR1/Lli+LR8XwD4h0cBcGJ1nM9MfrfN/WHy+N7LJ+",
+	"m1+UMIgk4PoOqK5NJqYaeppNIQgX34lBU5ao9kFomUHD+Fk8v2CHB0FlefYWlwdnwnjEUpoM5l7PMhY3",
+	"jU6CMnva4fksMbMHjqP4GqgsikCpAGfKGeBbI8qSTEJwudDA3AaaPiqLGuaLX3RUrl/rHn+m464kyTRM",
+	"6x+WndwKJd0Vg6BS0plZctf9shZwiKd8JBYXwPTvGmma4XsaTeBzJjtPkSoFWg0kTMU1NJPSIvkMZxrw",
+	"nQSogngRaH4RYxbRhJjniBiRFEcWE9vZMVFaSDoGwhSRECWUTSEmwxkZUznE7yORJGB2uB+E6wyoXMuO",
+	"M+lG1dcgFRO8WydzW1n22Djshk7C+U1a2IBGijDH5RNA3JUiuOCzqciwfeo2d0TNaXbPu76GQiRAOXaW",
+	"L0J53Gl6hQPnig0TwE+pNhOOBE1FrPLJK8NuIsEpt//GNAgDEbEgDMZM95IRPjoWhs0lU/wnG48ZH49o",
+	"BIYvXAO+yVP8jWdj0Pb9HpWajWikzbFBFpJmQ/z/LMW2I2k6lPQG/58NZ2N7wCIqTWfqho2wJQ1SUpwd",
+	"PpZOG6AqDFSSjQ0Do1qD5MFR8H+/0t4/d3s/Xrp/B73Lb7vh4f7dX4JVUGcaKxZ0+cb+RHU08bu73d1N",
+	"s2HC1GSQioRFs5UInunP9oXP9vl700cFo1SDSEen0LP7Q+xzimhBqBHDQsI4wW0mQsYgEUsLRrYS66b0",
+	"9tQ+fHgwx83CIOPszwzc71pmsCkZf84FkY5kfMV4XCXIzJKaAnnNImg+ppntG4VaepsLtftOliyE3JUH",
+	"1DUT2jG0T+1MJF2ZMadTmBvf3v67buMzbbSPaiPR/FUDwDypJSKiCT4PU6HBfDC6XuPL+Y7WT+2FZFMU",
+	"eb5cfOq9c+eW4KMhoZpMhdJkf3fXik8huWF6IjJNUL2UIiHRhEoaaZCqbzWjjWnZjM7NcI3D+p8wnAhx",
+	"1ZF4gMepYFwvLsNfLy4+nxMDsBGJQWnGjS5ambIEo5bSRIXkzwzkjAhJRpKOp8B1n3z47ZxIUCLJrA6r",
+	"SDSB6ApiIjiBa3w+hoSZD5Hg3AqVx/h5xMaZtKpvLEARLjSZ0isgHPSNkFdEWk1a1UTQTLL5NT941wQ2",
+	"EElomLLd8b/+evKeKDbmjI+JfTQkb/aJnkiRjSfkYPfHQ7v7ffIbToNI0JnkOC9JUpCKKdTfGSdpQhnX",
+	"cKvnaAGbWE4MYXAjmYbfeTJrxvBi44rpNJHGB6YicQ0S4hOloKsSXbDQdUXwjVRrNgal51iwmtD9t4dH",
+	"X3d7P9Le6PLb4UEz911zXFcwazQFTCFmdGC/bvg5leIaOOXLINkq/nU6+mTG0xM3SBP/6/z338gUNI2p",
+	"piEZiozHEKMccHhA/sZ+6gcN+6bYP2FgaGy5/WD3/mpTliaCxiDd821q1XrNNZoGqlRUay+s6Vu4SbUt",
+	"KWijth5ztobKHq1xALZuZpjrry6rGRbwuKaHcjyfaXTVffaREDJG5G8+IWvSWE7+j32MkIWqlEbNg+9y",
+	"TpoJu1ibald1qi6mvtbuPCJ9uh6fEYVe0PGGInmDhfOaKWcA7mh9vQ/eOZGtBnHFUFZO/hE3H5f6+Wz8",
+	"3+16PUfpZG2L+n3prYGM12emVTKrzXOtdX9Eust3+qlpr7gV7ERvMVRVTcavacLigVNFjOGFZnoCXOPl",
+	"Ijitbcji2KrJQg9GyLassj1KWGQFGEDV24xigJcu5sWM02vKEmoVeCQXyWkysLeKl4vawm0Ph9W7ptIw",
+	"IhyfmeN7EcOpHehZMc7ily8LAy5++lQZefHlb0J/cjMovntfTqX47nNlTp/yKVV7rcytMkw7yY92jkZs",
+	"UMqRQcOJM7NxZ3/FRWidOsxGlq3X2moiFm+m374dZ/s4+6AXAVZ5qZlRaxA8t/9tVGXuCM6K29guRj9H",
+	"k8vgEXvYxEg+byG3luu10d4aMX+XMUgE+MXr1rm1NFMpu2lbqw+QgO58EOPyrcUTtzbRFe4igz/EsOst",
+	"pgQN3LxsNoBB5wZEAoOxpJteoKpBDHjjsPZr1iQwUKDufaFqVjTfhIYBLVnd5okvXc/2obdR1dZln/wQ",
+	"Pq58c2oMs3r2E+MxUnHHGSqVgVy4izlYddmxgetK273PQceLFTfksHIDVBvLGou0NYCpcpzlBs1lh2eN",
+	"GWydmOf6O4NIyKenbjeMjhPvuDVh5VQ8KNmvQQL3Ie5N73BjplBAvx/nXHERHAYwBTkGHs0ahcJ7SHuG",
+	"dbhL+U2u1fffHi5S9QNdUpu+526qw3LBa4JkMY+19vjRAKDocQ1NnsOtHtCRBrnGHjRCwbK5b3CRbyWK",
+	"znPGnn7GV9eglDXPx0YuBfc4F02E6GyWFZpz67Nq1e1abOKWW1/7HByMplRoKwXnc9YSvBCu3Oeb72k8",
+	"ZbwROSr+MWZF3B97a/jKhAGMRu6UF4p4kogbMyLejFQjgHiwISjmSnYQ1lUhY/dReu5qq048xeVGJzy6",
+	"19WHgyu3SGGxpavI5dGwCTt7OlhCVn1u+duFuIKuRm24TZkE1clGrSKRzi3YSzuSXc7X5udibpeXUXbd",
+	"Aa99OvNtur0KqxvdSkfxIxPSusJr4T5TXd23h5tIQbaplcvhLivPgcposnUkqfXmzHMPfWMRBlpoK5XX",
+	"b71PMj0R0sQQTdE8CIrQSAqlCE0Sgp2oRr/7DiE3NQUrH8jKZd/ITrnCf6DLuTbP5lbcxV+99fw7dcMQ",
+	"ko0ZXzwIf2M8xvAUPQEibqw3nhFbsI+N/D3vIfXkhFolw4rpf31/EDfbFY4hBU50O20TqgZTIaFZaTcS",
+	"T5RJJZpte8tXoGi7ebw6mqx1TzZlvPrt3kPcnN37aqd5Pmt6Y9ep9gxw5wnNaZWcakVQZiaUx8QFA1AJ",
+	"hE2nmQka7Qdtbi3P2C+5lQg2dUNuNTYt+L3aJxsHULu66mrHNVQ2qGHEfOAchs3Z6A2I8x348uX0Q4ie",
+	"vzBN9YzYRcONJlwQ16rZ4pI4//L/cmvjSe/T5bd3d73qnwdd/txrCUvpwljvY2bLkg43g25/zrIFBW3R",
+	"hjK37Yvbk3ceVrB5qa9VjTouQOncIeI+Ek0nCXiJbvL2sOHplOpJg4A4NC71QFRC1YTgQyGhyvBJp6kR",
+	"KfCBG5ElMVFZmiYz8i875N9tjCe5gtm/9tfylN88rmreJF6fwwe7nSYcCscd0SQB2Scfr2mSUY0niHKh",
+	"JyBJ0RBx9KBIbhYhRttkSttQgXoswDpc3U2vxrrXJJ0NZGFjRWqzqMfAWZM6cAZUCU4iEQO5mQCvbbPd",
+	"4CEQCaNMQYwxZVGS4aVIuW4DdDxKQU6Z1hD3m+3eqGjEAzxRbX7gZXu00FCap7JB/DpVLcH6msoxzKHy",
+	"yvbqL7U6iWrpDmIX8Cpp4MK8vsq7Id/0YpZz65MPYy2yu8hH3IHq3N62blVjWodWV4bWjVpGOgoSiPRa",
+	"7D1vpjK0gjyDSkvFWJasm+Ez3aS3v7LxBJQmeefkhnF1TNDuSwy7IejHKFkMLoDJbG+fnOA/7gkOEBNK",
+	"jGZCLCnWWphmShMxZdr9qPrk458ZTXpFp9hHQtPUwGCl5YhyDISKJkIoIDEbjUACL9sJFoUaPlt2gbf8",
+	"3qEqTp/0/o+TpPtHvct/b5Q5OhKT3Ush1zx45/njm6FCk/WpQmLFYBaM/AtkdV4ZdwfS+sCmwI1TihH/",
+	"IzEdMtSoUVAnJ7996JOPRoBEDgj2mYxHgiN3wwePCdzSSLtUMJq5ZyKqoKewZc2uoU8+Uz0hqYQRu0Va",
+	"w5NDFJiIPKutU2le5TGRgDMjsdD5EyokQxpdGcHCPQQqoilKu5BSSbWQqllf6SLVFIEoa0lAAzubdVTW",
+	"Rd6zoodG3W9emnnVisSjSfi2o6Zzd2ZsOzaJyiY7MqW3y2LpyuRFP7z54WDv3f5BVevZ3T9oAi9sE7iW",
+	"bHWrcxmRGvWo3Bg00DoZKOM8vaLdd4cHq5vlMKYIC+s3+2Z1o0pT5NEj64y+2WhX26gbV6RlRq1jqu9T",
+	"WKGEJXRWRDWf8jTTHVH+RJMEKDJ4DoQLDiWm5/pL3CfnWkiICfBIzlKNcjuvBRL3CQb+GhHe5hU7OX9/",
+	"ekpsLjHHIY4RFhatOwggNxOmLSD3BLZjX+iTXHC3gdVTmhr966T67TGhKRtcwaz4+b96Jynr/Q1m/WAN",
+	"6519eQ553+39uF8XJ0jv/1/+21+C1VHPYVAb9MM1fNdKANbs995ccG6i4Q1Sya7rFx4VwSuiA4Of8zzh",
+	"95T+mQHB1pDL9mhqIltjMhUZ1xCT9yeVLHBm80csATVTGqbGCKAamEMhtl1WJThrDH3TDPgR4uwqnF+E",
+	"5DsTd+ROTiPX+5hTeyVxAJHGd89KJtYYwJRjiMdOSEbmh5wyj7avBdU3MsMqJ6wyuvbPbdyv7W7iQmYm",
+	"xt8mSRhSBeTL2S9LMiOERV4EZXk8R40+3kHhCzevkMAaMwVUZjnROlVHOzvNenTMJER6YIddZ9sLjS65",
+	"od87XOtWXrMpiEw/EGeZYwDFRcnCrMK5c7Y4kJyKL1cc8o08R6MCGVafkBqWrDS15kv14/7+mzc/7O++",
+	"OXz39uCHHw7XECDuoQrVTKqVKEI76OYlNCmLzsvAkA7Ltyxh0kerU9cFY5MoCa1eHG4qCZPIvzAewy35",
+	"j0JZ/9dNcyhZIa+bT0rbIraJFkok1xYwu/KUMSw/YEtzQWziBpJQpQfUJISEuPub5uh1e69N/G2gc5DX",
+	"KBENrMQnuAuJbOS17ZJqo1Sra+GdaDV1iWKt/wAX+dyCMBhJMA5RpovVOTJt62GbVNsqvrZNdwmNfbxN",
+	"E8oLaakLsK3H+SuUfBc+pIPHxMSbDirxZvOydQ0XlJEPkAsPIaKZgspNQm4qM3ChJzDtrzwpK3JFgLx2",
+	"gTRrrI67Oa4Hzy3Y9WMj2tP5WbWnhevU84LzuqY6q3n34ZzA+vclycClN5oLVC5WZTBlyliTVhN7eR/X",
+	"7hFhB1OuT86xF6hgCaVvlC3tQRKGrW36NOmRu9nRnT97dZOsBqMmNHZXCXSogOu5nRtElMcsrt9hbeb8",
+	"UuY57cxylggX9YRmFeOrmXPlgqTovHnzr8XVvVwj178Wx44qm4GM/zJcdYWRC1Lm5cYZCF3mazsvnCm7",
+	"yFAvIIHZkqxlbm/PC8TqIi6lbFBJqZEfo+u9pQc6f+wqu5Yz3qNcr4Y5R87VDpsno4toGXRN7zqhh49k",
+	"WkOcXRp2dA66iP9Qzy32Zm4iS2JZfLLNLbmZvqScnNsJtqrn9Fzht2Tp1Aq/0+6VEB6wckMRmbRWBogW",
+	"WaDK+teZ7q+Z3kSZ6exZfg8vuC0s8T2dlKtiV3126yz5BgEW913CbgEaC0diqyHo6y+hSXryjAl1k1Xu",
+	"lsilieTCJfFy8308JLZt65hVD9caULb1cKV2nX+7aRiM7rX12ZlenirTRLXzjsa0DZINbjFmz1hms672",
+	"3A08OY3a68NXn3n46mrjIL59DUVkZrNNY4VzXdXLtQh8LUx/tTTOK+I/N4sq2egM8iVpT15ltvxtR5E0",
+	"EU8lu32+IV1SnDpy+eDWqyukaA3TVKsNpIoisWXH6nJmnF0p9boh9+16cqDhBnmBt4aUphUCDsLi25TO",
+	"MLlaEbY9qCcp1ZJylQpZthwG6K1Q+TNf2QHcTqjxoAiK2c8G7RXnGq7nUrCZzSqrZz7TNfCpWLmwuJgr",
+	"9nxuD9egrq1LQHP9bZ7bYpPT2Cq5u1E91uyfKKOHTXeQoYh/jgOyMxgClSDRca4oHWo4hfm67Aup3xYL",
+	"ZS6Wt840XDZkskemlNMxGCdtY7Sike6TTyaQgBcOwiaoS7ln53Af/fyOiYFFEzWQR5q2cAc2xZAwphVJ",
+	"pdAiEgmhMU01SGQ8+KsZjPFVtJ1X2JfxO8dW0EcgNQ+5RAFFa/YZ5zMOZCTFtDrHk8+nxNnMGR+bkCSm",
+	"E8Cgb2OAJydck19rzweVTNnBbn+vv4tbLlLgNGXBUfCmv9t/Yx3CJmaPdmjKdq73dmgWM4Oq46Ybk9/g",
+	"BpTujZhUmphHiUEHZf3yr2CmAD20xg4O++SsOQoNJ2Gd95jgp3FwFPzClC6rTlo1Q9IpaJAqOPr6LWA4",
+	"ACMJ5JbBo1JqqtV5XUnLC440JlTASoDOTgr9cZ+MAOK+ZZ79IGwcQVG8s+x+Pkykofumlorqn2VLG9Yb",
+	"nZ/eKUa5KXYNBIOrpHMfxDC5Qi5omx6SYvPaLmG2TQucjyBL024j0GKj/puaStiU1Re4CJZ/u1sxPe6v",
+	"9r1r7sBlC2ghhua0AZdhvQLz/u7ug9VfLmvFNtVgtkQ1yhKSD+DJCzCHwcHubtusimXK60rj03udnn7T",
+	"6emDLk/v/9jh6bedZvm2w7jNItbAfAduUcxsxfSP5menMxmfFcMSS3BvBfFj40JkmzeMUCtIRvZVUyHX",
+	"fuzbJxYh/2fQJyn7+56FfTtKD/se9h8Y9ot7wwbcD3j8h/WiyRc9UtdBmH99eV+8vu3xeBGz9WJYHdzq",
+	"Hex66XOLGK4lULzptUcsRKdfUJoYAe3YRNWYFERWPie4BwnjYMPkzMD6HvNfFuYjeKkK2C9K2Z/ME2sB",
+	"7bOUmMI2pmDiXlub2n1c2atIl+9Fr+7H8NkcrDBIhWo4R5WK9M0HyW5mSZ2nMUxToYFHM4wODKr2FJtG",
+	"rplsV+eJvCwq8vwk4tmD0W9lhnd3d/PDvVs4OXsPenI2OjUfXUm8+mv/OxN4RlJhY/5JxS5ejqcSMvaP",
+	"4OseRgBiGOC//SNoToHm+WSnp7sc54O9TiPZe/siOPbO0EQLHH0rAKdOUvY4oqUSIA5dGEQ1CMJGeRn7",
+	"J2hrq3Rpj2zaJvMMB8JyINLEXEFYTaai4xWXvSioo4KHPZJIJIm9QzN9FJdsEkxWlaiIyFhU80okMQWc",
+	"Xj5g2mk+AWpWC2Q9cwDFpB65n+IyxcgD7RaBdv/ZwPK7lwHi31h8V5Y5akrkl0CB4vllkc0cpCfAJHFQ",
+	"YO6DriA1OnySx/i6ePhqSjuL7aFpr2ecRmJinfhNo0XxL5IX/zItuzJfCPomEZ69vTnY/RFzYST4e4FC",
+	"BIuMuZRZJTfIeAJKoRkhgv9AZFtEfTvVZyEhh209jnq/Oo7U3lVHYFuIwkyUcOvdtqxobs1XttXWWkvb",
+	"2GLlsrGCi6p6Sybgrau/eYkwrwF73H9RuB82G9d+Bu3wbqvHyuvG3oa8HVNXA5c2SZULJuOCddt45aob",
+	"uEvsw6m59aPzJY3p65MWtqSJluUF1tJBPTp5dPKCxfNVKHdMGnq18838e9fqyIEOlkigkSHcPM7ZZkeh",
+	"9ayFzoFvLqWqKxtDSZmIxGR07pNzl0wjfzKmmrokjCOaJCpPltAn782FHjGqKBkyHqsytXpYcYsMnSHT",
+	"pt43xT5YokGqXOMt6zpJcYPa0CjJANWhqnfhry5BkHnHBg9gqj+lhUT/SvRHxLCBYSKGBC/4odShFkQ3",
+	"55R5goscPAIzDBsbpa77ezHZrQH8B6YiYbzH7TJ5ze7VuhhYaHLZqZUHpS2AEjprfM4X+BER6XU5gbS5",
+	"Bdq91iZ/MinCDB1FHOdpx012e0UyXjwRk/xQtJnqaqm9WrWUleM8M2mILGViuTlZdGzMyJTZg8NdGRtD",
+	"h3qSR8qpbNo2vpiNQek2KVtN6P7bw6NVtfkfhw254+EdbTwzKpnRzrfi7bsdTceeO22ZO13Q8aMyqHqj",
+	"xWZ75vesPCBLlL6gY4/QHqFbELqaPNOj9PZQ+u/5Onuk9kjdgtSORjxae7RegdY739yn3D7t4Xu78H1i",
+	"V/mFgHe9bUdKni08U7ZgaM8zBc8U7nac52mvrHXdCPpYsCGPPKhlVWmMNDD1lpWyqVlKN1OE37XDDPAK",
+	"r1aIcosno96R93jwx++79cfKGg9vmuBdh6kQI6apcVqfdzmnWkwZ1o/B0KJIwhR4zZW5IN6uJ54meSHo",
+	"PL6pTy7M364a9BCIolPo2emFpbxoi0gXL+UeW5ibYnFUCwByvggg3hPtvjipG6Dy8RzSPE57zzTvmfZY",
+	"wuCRBqXbQ1g/yFlPZhg/SjKuKFZrnQtRpWPKuCrjjP6nWqj31Se/CW0yFDFVFt9ZGb7aNWb1AtRazOCh",
+	"2fF2QLgyD5yYg5knBWM7jo0jVT1W+oj6tRBK2uJ3y7KfJTSvIVgmlD4y0OEMj3lhVVW3Nrqkl7YOmwpd",
+	"wOVUaCCmOh8xVS85KFVGerbUXKQSivKM2Exkq1gv4pKr5YeO9u+r1QKfyjesVrLwoeXeB3Gb2qaBrKGG",
+	"qAezV24fq5QwbQQcU7wFq7DOCFWRTctd1GSuyDFOWaXxcQ1uMDe+/dv8WNWjKyBS3HcwRVw+ckM6w1ld",
+	"CcZaX9x5KjYnCjsvKo76dGHbhJLGolJeYfW49aIMiyelzVBWbIyVAs7kYgIkYUpbUx8OhwA6ZCcz8+ii",
+	"PriG5mfbz9U/++bxcvNgWBo18/wYpvtKWtwG4czMYTVsehNiFxnLLGq+oI+ss1YL1Xk09uZDbz7cgqy8",
+	"862oEbgie5JJekdzAThTm943DYVR3Gs8BPBmScSz4o7JRPg0JTbCUZQg/+ow/pEk4KKSrcddj7sed5+t",
+	"rN/s0Vet+roNPcJwAiGJBJf4tOoSkF/rrMkIRvXKURXHAXNTpIgWqxSEijOE0RXKhH2m4WqppEWOcqJf",
+	"OUd5eK3BLmlRWf0JdAbPyDwj84xsGwqEJTY966EbP+NLwns7FZ87dc3+lLe63VJEvkAZVTtza+49zF+d",
+	"JbrRU6jl3FZkt0qIzdSxV0Uci0cHoznZ6Liav14CjRXJFNh6VBCTL19OPzQUr2zJZD9HtC81n/38NB85",
+	"n31j9x4WvETzGiSalYnkz2xGcUrcG6hlhni9H1EV0RhCMsTwRJBEgQFMvOKimsSQgnWFZLpDcV6byftZ",
+	"At/jSCY+lblHIW8gXGnwWZkUrAJ6K1MHvpdCqZ4xurlniQIqo0lRQL1n056ZGSpWFCdKQZrXdsqsbYvB",
+	"5gSxYVb4FlBTzcLW1nCvGzcExsfHRAtNE+uUqRbCwE3J3CYXqnMz2PYEfnOzpQp6jCvgzqaTMA0Sw5my",
+	"oV0/IkZ2fG4xSt/LtkRuf3ZNMNfUyMgm5b63cttQhjWvuUrTqyAMKFdsmAB+SvG5SESCpsLUqrRbbGAw",
+	"Epxy+29McdEjFoTBmOleMsJHx8LAbzLFf7LxmPHxyDqNTuk14Js8xd94hlRn3u/lSQnMLu3j/7Ih/n+W",
+	"YtuRNB1KeoP/z4azMUzNoKg0nakbNsKWNEhJcZr4WDpdq0jv3xiP842tuRu37amQbMx44zKa8Dfs2zgh",
+	"mw+G/bUMxFsgTK50c5jys+rtD6/Ug7ew43W2Jj65VcLkCCmHv5bZko70HME9ucnyMaT5Ypn8SffC/IsU",
+	"5r9De+rnyhXKC64MWk7ziSypcwPwF9EeYz3GPozM6GJNRWJPb0tSlecJwpj2JJ/ImZnBIzqNeZ+mDn5F",
+	"Cxv1yI5NnpF4RuIZySMwEi2uwObDbpPndSa5jVpTEEnQRPAIQpf6tEiLQkxigzShszz1aH+eiWDwm4Q/",
+	"IDJRwx9vUybLCAjm4ugynUmbDBWdWxknggOZAZWL3ORUqQzwZLEILnAa33HilMW5PLbkjgOIF0fQEXHf",
+	"Y8Rk773gWoqk3ntuOuaihxQCwaXHUY+j3yuOFgL4d2e/XSZ4e9MtCp24Qt5q6wHMW22fh9UWz+PLNtia",
+	"GT6Rrbbs22vXHlQ9qN5bKrSK9VhSrr9LEy0Cws929N48+1zNs5VNeiLTrOcbnm94vvEwfGMxk+Oi3u7T",
+	"Iz5mchiv/28IOc9Q123SKZ9J+outapVdclLsPfD58ZLBK5YMXlkO+CK3nIukbGThP4MuMGfLvMufPR/C",
+	"8P0m8zUq+MLx+ZLGz4drv4BqWTjMp8xZ5THKWw685eBhZY8dUwtmWS6Hz5kcu5IxMXGnGUNCaV5NZkk2",
+	"Q5fpPH/iC6/UtsLq0spUhZAQJZRNbQGIMZVDGz6cW6YXDc5mSBYTjPPQcwD3pkWjRDE+TsqYaMaVBlpE",
+	"1N5MRJKvjl3htrDaWiGb55iQwuyDmbW3gHjo9EkougqxbfBsMbZnIXV5OWsuuPO2dS85YNEyU9rifGut",
+	"awum5L37GUz62CQzuXtE7qV77CrY2poVBimK4j+I4xMWx8AxV8XB7kFjBewzMzCH3HZKW61/VfZ2BpGQ",
+	"sZcgvZb7Mmth55X9qufb5nouynG5mlpF9mg8xqwUifoLIJB7DsR98jtmlbHHWcgeTVMpsEDq+xNy+kGZ",
+	"lkx+a9cX8EjOUkOhEgxd0qQsa6oIjSJIjUe/rbhTDG7HZKLeEZkeitvjytvKxQ5IE1rQVHrwvAVdvNb/",
+	"cCDqFvWRlX8P416a9dLs1g0BuaRZYK6l/Cfia/Y2kghJMmPFNfpyyVfsyHvGU63KZIr6a1qgvxvc2hxp",
+	"dfa4VO51LKydS+bRbaW4bVvdaeJ1Jh1bn7wvfxrOtBOXLUezhpXQ1mCAmIiSyR0TB+hkxPgYZCoZ1xgR",
+	"dwUzU1RcCN27ghmRwvr6kSmdVQpqEpHMcWATa4cefav5Z/Ga56EPxMHKJT3lSPOejXo26tnoS2CjmupM",
+	"Lb3Ft09s84bMRuG6jr4bE+wWdygMFEQZlq0Ojr5eVverjF9vNKaZSGYyzR3pjRINNvIchYGEKk0yBe35",
+	"qcm5kQusXnwN0qxMlecXWiw5g2txBbaPDx9/+XjxkbjhGaGsORqzGnH9FHVAVE7NDalSI4T/IAzMgoGV",
+	"DXGKsc/y2X54zU5679FXm92zcuKXZ9V/nvE/FsQeO6tG+KIS+ts1vH8yDQ8GXmb+HiDvBoYTIa66F0dz",
+	"wlVvCFRay44hd3cDSRUaf0ZCVm02IRlm2ibGT7NhwiKTtD7vq5T0TK4hTRmHGC8xbel/YzLJ59Inv4k8",
+	"pRFTpRzXKKb9Zz5FnzdjEe/c4nihx+Pcq0+Z8Z1gmjXJu4P7sqOg8kk+chhUrVtvl/XY67H3IWTMQrEu",
+	"4kReEiybsIzlqOyTbzyH0JlOTGXXMxXPVDxTeeZMZSeGhOEND2xgyPjJmVnhGrjuNZpaySfKksy+jO7Y",
+	"oEgKRUVVEqPbdzkEe41EiTS3+8ic7NvOfXPEbiEmMaNjLpRmEYmohrEwb9ownNzthAuS0lkiqHVHoTcE",
+	"cCXUUjvHh3IpHpELrW9FYVwfHgSbXRht/UYKr9Sg8UbN7XeA2G0W2Fyq4c4Hly38a7uMxO3zzJtuPNK/",
+	"IqR3WOpxPh+qR3mP8h7lPcq/KJS3BpeuGVi/E0vRmdClbduO2BuMnqnHeMNWebuRtxt5PvN98Zm6F/K3",
+	"ABkEyJMMievr5d3l3X8PAA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

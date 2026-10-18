@@ -50,6 +50,28 @@ export type RemoteCachePolicy = { "metadata_ttl_seconds": number; "negative_ttl_
 export type RemoteSourceConfig = { "origin": string; "redirect_origins": Array<string>; "credential_id"?: string; "ca_ref"?: string; "allow_private": boolean; "timeout_seconds": number; "cache": RemoteCachePolicy };
 export type RemoteSourceRecord = { "source_id": string; "revision": number; "config": RemoteSourceConfig };
 export type RemoteCredentialInput = { "authorization"?: string; "api_key"?: string };
+export type PackageSearchResult = { "feed_id": string; "feed_slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "id": string; "coordinate": string; "namespace": string; "source_id": string; "origin": "local" | "remote" | "replica"; "metadata": {  } };
+export type PackageSearchPage = { "items": Array<PackageSearchResult>; "page": PageInfo; "total": number };
+export type ReorderSources = { "source_ids": Array<string> };
+export type SourceOrderItem = { "source_id": string; "priority": number };
+export type SourceOrder = { "feed_id": string; "feed_revision": number; "items": Array<SourceOrderItem> };
+export type CreateFeedBatch = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean; "source_ids"?: Array<string>; "publish_policy"?: PutPublishPolicy };
+export type FeedBatchResult = { "feed": Feed; "sources": Array<SourceOrderItem>; "publish_policy"?: PublishPolicy };
+export type ResolveSource = { "source_id": string; "name": string; "kind": "local" | "remote" | "replica"; "priority": number; "role": "serving" | "shadowed" | "absent" | "pull_through_candidate"; "reason": string; "versions": number };
+export type ResolveCache = { "state": "not_applicable" | "not_cached" | "fresh" | "stale"; "last_cached_at"?: string; "last_accessed_at"?: string; "age_seconds"?: number; "metadata_ttl_seconds": number; "stale_if_error_seconds": number; "expires_at"?: string; "servable_stale_on_error": boolean };
+export type ResolveExplanation = { "feed_id": string; "coordinate": string; "namespace": string; "status": "served" | "pull_through" | "not_found" | "namespace_mismatch"; "serving"?: ResolveSource; "sources": Array<ResolveSource>; "cache": ResolveCache; "hidden_sources": number };
+export type PublishPolicyTestRequest = { "policy": PutPublishPolicy; "coordinate": string; "namespace"?: string; "path"?: string; "principal_id"?: string };
+export type PublishPolicyTestTrace = { "rule_id": string; "priority": number; "matched": boolean; "selected": boolean; "reason": string };
+export type PublishPolicyTestResult = { "allowed": boolean; "reason": string; "matched_rule_id"?: string; "target_source_id"?: string; "target_source_name"?: string; "denial"?: string; "principal_id": string; "principal_authorized"?: boolean; "trace": Array<PublishPolicyTestTrace> };
+export type FeedDeleted = { "id": string; "deleted": boolean; "sources_detached": number; "replication_jobs_removed": number; "role_grants_removed": number; "retention_policies_removed": number; "upload_sessions_removed": number };
+export type CachePurge = { "source_id": string; "components_removed": number; "versions_removed": number; "assets_removed": number; "bytes_released": number };
+export type TokenRecord = { "id": string; "principal_id": string; "scopes": Array<{ "feed_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin"> }>; "status": "active" | "expired" | "revoked"; "created_at": string; "expires_at": string; "revoked_at"?: string; "last_used_at"?: string };
+export type TokenPage = { "items": Array<TokenRecord>; "page": PageInfo };
+export type IdentityBindingRecord = { "id": string; "issuer": string; "subject": string; "principal_id": string };
+export type IdentityBindingPage = { "items": Array<IdentityBindingRecord>; "page": PageInfo };
+export type IdentityBindingDeleted = { "id": string; "deleted": boolean };
+export type AuditEvent = { "id": number; "created_at": string; "principal_id"?: string; "action": string; "resource_id"?: string; "result": "success" | "denied" | "failure"; "details": {  } };
+export type AuditPage = { "items": Array<AuditEvent>; "page": PageInfo };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -57,11 +79,13 @@ listFeeds: { body: undefined; response: FeedPage };
 createFeed: { body: CreateFeed; response: Feed };
 getFeed: { body: undefined; response: Feed };
 updateFeed: { body: PatchFeed; response: Feed };
+deleteFeed: { body: undefined; response: FeedDeleted };
 listSources: { body: undefined; response: SourcePage };
 createSource: { body: CreateSource; response: Source };
 getSource: { body: undefined; response: Source };
 updateSource: { body: PatchSource; response: Source };
 listFeedSources: { body: undefined; response: SourceAttachmentPage };
+reorderFeedSources: { body: ReorderSources; response: SourceOrder };
 attachFeedSource: { body: AttachSource; response: SourceAttachmentMutation };
 detachFeedSource: { body: undefined; response: SourceAttachmentMutation };
 getPublishPolicy: { body: undefined; response: PublishPolicy };
@@ -75,6 +99,7 @@ setPrincipalRoles: { body: SetPrincipalRoles; response: IdentityPrincipal };
 issueServiceToken: { body: IssueServiceToken; response: IssuedServiceToken };
 revokeServiceToken: { body: undefined; response: RevokedServiceToken };
 createIdentityBinding: { body: IdentityBinding; response: IdentityBinding };
+listIdentityBindings: { body: undefined; response: IdentityBindingPage };
 listWebhooks: { body: undefined; response: WebhookPage };
 createWebhook: { body: CreateWebhook; response: Webhook };
 patchWebhook: { body: PatchWebhook; response: Webhook };
@@ -89,6 +114,14 @@ getPackageAsset: { body: undefined; response: DiscoveredAsset };
 getRemoteSourceConfig: { body: undefined; response: RemoteSourceRecord };
 setRemoteSourceConfig: { body: RemoteSourceConfig; response: RemoteSourceRecord };
 setRemoteSourceCredential: { body: RemoteCredentialInput; response: RemoteSourceRecord };
+searchPackages: { body: undefined; response: PackageSearchPage };
+createFeedBatch: { body: CreateFeedBatch; response: FeedBatchResult };
+resolveFeedCoordinate: { body: undefined; response: ResolveExplanation };
+testPublishPolicy: { body: PublishPolicyTestRequest; response: PublishPolicyTestResult };
+purgeSourceCache: { body: undefined; response: CachePurge };
+listServiceTokens: { body: undefined; response: TokenPage };
+deleteIdentityBinding: { body: undefined; response: IdentityBindingDeleted };
+listAuditEvents: { body: undefined; response: AuditPage };
 }
 export const routes = {
   "getStatus": {
@@ -116,6 +149,11 @@ export const routes = {
     "method": "PATCH",
     "idempotent": true
   },
+  "deleteFeed": {
+    "path": "/api/v1/feeds/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
   "listSources": {
     "path": "/api/v1/sources",
     "method": "GET",
@@ -140,6 +178,11 @@ export const routes = {
     "path": "/api/v1/feeds/{id}/sources",
     "method": "GET",
     "idempotent": false
+  },
+  "reorderFeedSources": {
+    "path": "/api/v1/feeds/{id}/sources",
+    "method": "PUT",
+    "idempotent": true
   },
   "attachFeedSource": {
     "path": "/api/v1/feeds/{id}/sources/{source_id}",
@@ -205,6 +248,11 @@ export const routes = {
     "path": "/api/v1/identity-bindings",
     "method": "POST",
     "idempotent": true
+  },
+  "listIdentityBindings": {
+    "path": "/api/v1/identity-bindings",
+    "method": "GET",
+    "idempotent": false
   },
   "listWebhooks": {
     "path": "/api/v1/webhooks",
@@ -275,5 +323,45 @@ export const routes = {
     "path": "/api/v1/sources/{id}/remote-credential",
     "method": "PUT",
     "idempotent": true
+  },
+  "searchPackages": {
+    "path": "/api/v1/packages",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createFeedBatch": {
+    "path": "/api/v1/feeds/batch",
+    "method": "POST",
+    "idempotent": true
+  },
+  "resolveFeedCoordinate": {
+    "path": "/api/v1/feeds/{id}/resolve",
+    "method": "GET",
+    "idempotent": false
+  },
+  "testPublishPolicy": {
+    "path": "/api/v1/feeds/{id}/publish-policy:test",
+    "method": "POST",
+    "idempotent": false
+  },
+  "purgeSourceCache": {
+    "path": "/api/v1/sources/{id}/cache",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "listServiceTokens": {
+    "path": "/api/v1/tokens",
+    "method": "GET",
+    "idempotent": false
+  },
+  "deleteIdentityBinding": {
+    "path": "/api/v1/identity-bindings/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "listAuditEvents": {
+    "path": "/api/v1/audit",
+    "method": "GET",
+    "idempotent": false
   }
 } as const;
