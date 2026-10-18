@@ -3335,6 +3335,63 @@
             "$ref": "#/components/responses/Error"
           }
         }
+      },
+      "delete": {
+        "operationId": "deletePackageAsset",
+        "description": "Policy-gated removal of one asset. The version is removed with its last asset. Same authorization, policy, audit and garbage-collection semantics as version deletion.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "asset",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mutation applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageMutation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
       }
     },
     "/api/v1/sources/{id}/remote-config": {
@@ -8331,6 +8388,191 @@
             "$ref": "#/components/responses/Error"
           },
           "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/feeds/{id}/packages/{component}/versions/{version}": {
+      "delete": {
+        "operationId": "deletePackageVersion",
+        "description": "Policy-gated removal of a package version. action=delete (default) removes the version, its assets and tags; action=unlist hides it from listings; action=relist reverses an unlist. Requires the delete action on the artifact resource and passes the feed/namespace delete policy (allowed, unlist_only, denied; immutable releases). Audit, outbox event and replication tombstones commit atomically. Blobs are reclaimed later by garbage collection, never inline.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "component",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "delete",
+                "unlist",
+                "relist"
+              ],
+              "default": "delete"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mutation applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageMutation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/feeds/{id}/delete-policy": {
+      "get": {
+        "operationId": "getDeletePolicy",
+        "description": "Effective feed-level delete policy (allowed when none is set). Requires configure on the feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletePolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "setDeletePolicy",
+        "description": "Set the delete policy for the feed or one namespace: mode allowed, denied or unlist_only, plus immutable release protection (non-SNAPSHOT versions cannot be deleted). Audited.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletePolicy"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delete policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletePolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
             "$ref": "#/components/responses/Error"
           },
           "503": {
@@ -13599,6 +13841,71 @@
             "items": {
               "$ref": "#/components/schemas/ReplicationTemplateDiff"
             }
+          }
+        }
+      },
+      "PackageMutation": {
+        "type": "object",
+        "required": [
+          "action",
+          "version_removed",
+          "assets_removed",
+          "tags_removed",
+          "unchanged"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "delete",
+              "unlist",
+              "relist"
+            ]
+          },
+          "version_removed": {
+            "type": "boolean"
+          },
+          "component_removed": {
+            "type": "boolean"
+          },
+          "assets_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tags_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unchanged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeletePolicy": {
+        "type": "object",
+        "required": [
+          "mode",
+          "immutable_releases"
+        ],
+        "properties": {
+          "namespace": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "allowed",
+              "denied",
+              "unlist_only"
+            ]
+          },
+          "immutable_releases": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }

@@ -66,18 +66,21 @@ func (s *Repository) providers(w http.ResponseWriter, r *http.Request, p identit
 	pub := artifact.Publication{FeedID: feed, Namespace: providerNamespace, Coordinate: "providers/" + rest[0] + "/" + rest[1]}
 	typ := rest[1]
 	switch {
-	case len(rest) == 3 && rest[2] == "versions" && r.Method != "PUT":
+	case len(rest) == 3 && r.Method == "DELETE" && validVersion(rest[2]):
+		pub.Version = rest[2]
+		s.deleteVersion(w, r, p, pub)
+	case len(rest) == 3 && rest[2] == "versions" && r.Method != "PUT" && r.Method != "DELETE":
 		s.providerVersions(w, r, p, pub)
 	case len(rest) == 3 && r.Method == "PUT" && validVersion(rest[2]):
 		pub.Version = rest[2]
 		s.providerUpload(w, r, p, pub, typ)
-	case len(rest) == 6 && rest[3] == "download" && r.Method != "PUT" && validVersion(rest[2]):
+	case len(rest) == 6 && rest[3] == "download" && r.Method != "PUT" && r.Method != "DELETE" && validVersion(rest[2]):
 		pub.Version = rest[2]
 		s.providerDownload(w, r, p, slug, pub, typ, rest[4], rest[5])
-	case len(rest) == 5 && rest[3] == "files" && r.Method != "PUT" && validVersion(rest[2]):
+	case len(rest) == 5 && rest[3] == "files" && r.Method != "PUT" && r.Method != "DELETE" && validVersion(rest[2]):
 		pub.Version = rest[2]
 		s.providerFile(w, r, p, pub, typ, rest[4])
-	case len(rest) >= 3 && r.Method == "PUT":
+	case len(rest) >= 3 && (r.Method == "PUT" || r.Method == "DELETE"):
 		failure(w, errInvalid)
 	default:
 		failure(w, artifact.ErrNotFound)

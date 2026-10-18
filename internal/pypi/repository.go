@@ -104,6 +104,31 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.publish(w, r, p, feed)
 		return
 	}
+	if (r.Method == "DELETE" || r.Method == "PUT") && (len(a) == 6 || len(a) == 7) && a[3] == "files" && validName(a[4]) && validName(a[5]) {
+		// PyPI clients have no delete/yank command (the Warehouse web UI does
+		// both). DELETE files/{project}/{filename} removes the distribution and
+		// PUT/DELETE files/{project}/{filename}/yanked yanks (unlists, PEP 592) /
+		// restores it. All are policy-gated by the shared artifact core.
+		t := artifact.Target{FeedID: feed, Coordinate: normalize(a[4]), Version: versionKey(a[5])}
+		var e error
+		switch {
+		case len(a) == 6 && r.Method == "DELETE":
+			_, e = s.service.Delete(r.Context(), p, t)
+		case len(a) == 7 && a[6] == "yanked" && r.Method == "PUT":
+			_, e = s.service.Unlist(r.Context(), p, t)
+		case len(a) == 7 && a[6] == "yanked" && r.Method == "DELETE":
+			_, e = s.service.Relist(r.Context(), p, t)
+		default:
+			failure(w, 405)
+			return
+		}
+		if e != nil {
+			fail(w, e)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	}
 	if r.Method != "GET" && r.Method != "HEAD" {
 		failure(w, 405)
 		return
@@ -378,6 +403,13 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 	var markup strings.Builder
 	markup.WriteString("<!DOCTYPE html><html><head><meta name=\"pypi:repository-version\" content=\"1.0\"></head><body>\n")
 	total := 0
+	yankedFiles := map[string]bool{}
+	if name != "" {
+		if yankedFiles, e = s.service.UnlistedVersions(ctx, p.InstanceID, feed, name); e != nil {
+			fail(w, e)
+			return
+		}
+	}
 	for _, v := range entries {
 		if !policy.Authorize(p, identity.Resource{InstanceID: s.instance, FeedID: feed, SourceID: v.source, Kind: identity.ArtifactResource}, identity.Read) {
 			continue
@@ -424,6 +456,9 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		}
 		// PEP 658 appends .metadata to the file URL; bind both using the distribution digest route.
 		link := base + "files/" + url.PathEscape(name) + "/" + v.source + "/" + m.Digest + "/" + url.PathEscape(m.Filename)
+		if yankedFiles[v.version] && (m.Yanked == false || m.Yanked == nil) {
+			m.Yanked = true
+		}
 		item := map[string]any{"filename": m.Filename, "url": link, "hashes": map[string]string{"sha256": m.Digest}, "requires-python": m.RequiresPython, "yanked": m.Yanked}
 		if strings.HasSuffix(m.Filename, ".whl") {
 			item["core-metadata"] = map[string]string{"sha256": m.CoreDigest}

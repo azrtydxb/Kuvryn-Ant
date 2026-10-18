@@ -58,6 +58,11 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		return
 	}
 	sort.Slice(entries, func(i, j int) bool { return semver.Compare("v"+entries[i].version, "v"+entries[j].version) < 0 })
+	retracted, e := s.service.UnlistedVersions(ctx, p.InstanceID, feed, name)
+	if e != nil {
+		failure(w, e)
+		return
+	}
 	items := []any{}
 	var latest any
 	total := 0
@@ -92,8 +97,11 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 			return
 		}
 		item := map[string]any{"version": x.version, "pubspec": spec, "archive_url": base + "packages/" + name + "/versions/" + x.version + ".tar.gz", "archive_sha256": string(rec.Info.Digest)}
+		if retracted[x.version] {
+			item["retracted"] = true
+		}
 		items = append(items, item)
-		if semver.Prerelease("v"+x.version) == "" {
+		if semver.Prerelease("v"+x.version) == "" && !retracted[x.version] {
 			latest = item
 		}
 	}

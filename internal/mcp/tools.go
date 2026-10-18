@@ -321,6 +321,16 @@ func catalog() []*tool {
 				return c.api(http.MethodDelete, "/api/v1/feeds/"+feed+"/sources/"+c.str("source_id"), nil, nil,
 					map[string]string{"Idempotency-Key": c.idempotencyKey(), "If-Match": etag(rev)}).result()
 			}},
+		{name: "delete_package_version", title: "Delete or unlist package version", desc: "DESTRUCTIVE: delete a package version (default) or unlist/relist it (action). Subject to the feed delete policy (allowed, unlist_only, denied, immutable releases) and the delete permission; audited and replicated as a tombstone. Stored bytes are reclaimed later by garbage collection. Requires confirm: true.", destructive: true, idempotent: true,
+			params: []param{feed, pkg, {name: "version", typ: "string", required: true, desc: "Version string as listed by list_package_versions."}, {name: "action", typ: "string", desc: "delete (default), unlist or relist."}},
+			run: func(c *call) *toolResult {
+				q := url.Values{}
+				if a := c.str("action"); a != "" {
+					q.Set("action", a)
+				}
+				c.resourceID = c.str("feed_id")
+				return c.api(http.MethodDelete, "/api/v1/feeds/"+c.str("feed_id")+"/packages/"+c.str("package_id")+"/versions/"+url.PathEscape(c.str("version")), q, nil, nil).result()
+			}},
 		{name: "disable_webhook", title: "Disable webhook", desc: "DESTRUCTIVE: stop delivering events to a webhook. Requires confirm: true.", destructive: true, idempotent: true,
 			params: []param{{name: "webhook_id", typ: "uuid", required: true, desc: "Webhook ID."},
 				{name: "revision", typ: "integer", desc: "Webhook revision; current revision is used when omitted."}},

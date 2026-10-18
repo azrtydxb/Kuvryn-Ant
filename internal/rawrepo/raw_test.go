@@ -180,7 +180,7 @@ func TestRawLifecycleAndHTTPConditions(t *testing.T) {
 	if w = f.request("PUT", "team/a.bin", "changed", nil); w.Code != 409 {
 		t.Fatalf("overwrite %d", w.Code)
 	}
-	if w = f.request("DELETE", "team/a.bin", "", nil); w.Code != 405 {
+	if w = f.request("DELETE", "team/a.bin", "", nil); w.Code != 403 { // token lacks the delete action
 		t.Fatal(w.Code)
 	}
 	if w = f.request("PUT", "team/a.bin", body, map[string]string{"If-Match": tag}); w.Code != 501 {

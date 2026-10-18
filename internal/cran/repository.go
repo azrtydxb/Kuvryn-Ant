@@ -82,8 +82,13 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		failure(w, e)
 		return
 	}
-	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "PUT" {
-		w.Header().Set("Allow", "GET, HEAD, PUT")
+	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "PUT" && r.Method != "DELETE" {
+		w.Header().Set("Allow", "GET, HEAD, PUT, DELETE")
+		w.WriteHeader(405)
+		return
+	}
+	if (a[5] == "PACKAGES" || a[5] == "PACKAGES.gz") && r.Method == "DELETE" {
+		w.Header().Set("Allow", "GET, HEAD")
 		w.WriteHeader(405)
 		return
 	}
@@ -109,6 +114,19 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	pub := artifact.Publication{FeedID: feed, Namespace: channel, Coordinate: channel, Version: stem, AssetKey: "archive", MediaType: "application/gzip"}
 	if r.Method == "PUT" {
 		s.ingest(w, r, p, pub, name, version)
+		return
+	}
+	if r.Method == "DELETE" {
+		// CRAN has no client-side delete (old versions move to the Archive);
+		// DELETE on the source tarball is the API method, policy-gated by the
+		// artifact core. PACKAGES is generated from stored packages.
+		ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		defer cancel()
+		if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Namespace: pub.Namespace, Coordinate: pub.Coordinate, Version: pub.Version}); e != nil {
+			failure(w, e)
+			return
+		}
+		w.WriteHeader(204)
 		return
 	}
 	s.download(w, r, p, pub)

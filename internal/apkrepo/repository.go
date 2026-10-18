@@ -22,7 +22,6 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
-	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -235,67 +234,12 @@ func (s *Repository) ingest(w http.ResponseWriter, r *http.Request, p identity.P
 	w.WriteHeader(201)
 }
 
-// remove deletes one package version from a local source. Policy: feed Admin
-// only, local sources only; the audit event and outbox event commit with it.
-// Blobs are left unreferenced for normal garbage collection.
+// remove deletes one package version through the shared policy-gated core:
+// delete authorization, feed/namespace delete policy, audit, outbox event and
+// replication tombstone commit together. Blobs are left for garbage collection.
 func (s *Repository) remove(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	defer cancel()
-	policy, e := (identity.Roles{DB: s.db}).Resolve(ctx, p)
-	if e == nil && !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: pub.FeedID, Kind: identity.FeedResource}, identity.Admin) {
-		e = artifact.ErrDenied
-	}
-	if e != nil {
+	if _, e := s.service.Delete(r.Context(), p, artifact.Target{FeedID: pub.FeedID, Namespace: pub.Namespace, Coordinate: pub.Coordinate, Version: pub.Version}); e != nil {
 		failure(w, e)
-		return
-	}
-	tx, e := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if e != nil {
-		failure(w, artifact.ErrUnavailable)
-		return
-	}
-	defer func() {
-		c, cn := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cn()
-		_ = tx.Rollback(c)
-	}()
-	lease := s.service.Lease()
-	if lease.InstanceID != p.InstanceID {
-		failure(w, artifact.ErrDenied)
-		return
-	}
-	if e = ownership.Require(ctx, tx, lease); e != nil {
-		failure(w, e)
-		return
-	}
-	var component, version, source string
-	e = tx.QueryRow(ctx, `SELECT c.id::text,v.id::text,c.source_id::text FROM feed_sources fs JOIN sources s ON s.id=fs.source_id AND s.kind='local' JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id JOIN versions v ON v.component_id=c.id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 AND v.version=$4 ORDER BY fs.priority LIMIT 1 FOR UPDATE OF v`, p.InstanceID, pub.FeedID, pub.Coordinate, pub.Version).Scan(&component, &version, &source)
-	if errors.Is(e, pgx.ErrNoRows) {
-		failure(w, artifact.ErrNotFound)
-		return
-	}
-	if e != nil {
-		failure(w, artifact.ErrUnavailable)
-		return
-	}
-	var audit int64
-	if e = tx.QueryRow(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id,details) VALUES($1,$2,'artifact.delete',$3,jsonb_build_object('feed_id',$4::text,'coordinate',$5::text,'version',$6::text)) RETURNING id`, p.InstanceID, p.PrincipalID, version, pub.FeedID, pub.Coordinate, pub.Version).Scan(&audit); e == nil {
-		_, e = tx.Exec(ctx, `INSERT INTO outbox_events(audit_id,topic,payload) VALUES($1,'artifact.delete',jsonb_build_object('version_id',$2::text,'coordinate',$3::text,'version',$4::text))`, audit, version, pub.Coordinate, pub.Version)
-	}
-	if e == nil {
-		_, e = tx.Exec(ctx, `DELETE FROM tags WHERE component_id=$1 AND version_id=$2`, component, version)
-	}
-	if e == nil {
-		_, e = tx.Exec(ctx, `DELETE FROM assets WHERE version_id=$1 AND instance_id=$2`, version, p.InstanceID)
-	}
-	if e == nil {
-		_, e = tx.Exec(ctx, `DELETE FROM versions WHERE id=$1 AND instance_id=$2`, version, p.InstanceID)
-	}
-	if e == nil {
-		e = tx.Commit(ctx)
-	}
-	if e != nil {
-		failure(w, artifact.ErrUnavailable)
 		return
 	}
 	w.WriteHeader(204)

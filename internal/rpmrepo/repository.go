@@ -22,7 +22,6 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
-	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -469,35 +468,25 @@ func (s *Repository) ingest(w http.ResponseWriter, r *http.Request, p identity.P
 	w.WriteHeader(201)
 }
 
-// remove deletes one package for administrators. The new generation is
-// published first, so no generation ever lists bytes that are gone.
+// remove deletes one package through the shared policy-gated core. The policy
+// is checked first, then the new generation (without the package) is published,
+// then the core removes the version, so no generation lists a removed package.
 func (s *Repository) remove(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string, n nevra) {
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Minute)
 	defer cancel()
-	e := s.requireAdmin(ctx, p, feed)
-	var source, owner string
+	t := artifact.Target{FeedID: feed, Namespace: namespace, Coordinate: n.name, Version: n.version + "-" + n.release + "." + n.arch}
+	e := s.service.Check(ctx, p, artifact.ActionDelete, t)
+	var source string
 	if e == nil {
 		source, e = s.service.Prepare(ctx, p, feed, namespace, n.name, packageAsset)
-	}
-	if e == nil {
-		owner, e = s.owner(ctx, feed)
-	}
-	if e == nil && owner != source {
-		e = artifact.ErrConflict
-	}
-	var rec artifact.Record
-	if e == nil {
-		rec, e = s.service.Lookup(ctx, p, n.pub(feed, packageAsset))
-	}
-	if e == nil && rec.SourceID != source {
-		e = artifact.ErrConflict
 	}
 	if e == nil {
 		e = s.withFeed(ctx, feed, func() error {
 			if err := s.generate(ctx, p, feed, source, n.filename); err != nil {
 				return err
 			}
-			return s.deleteVersion(ctx, p, feed, source, n, rec.ID)
+			_, err := s.service.Delete(ctx, p, t)
+			return err
 		})
 	}
 	if e != nil {
@@ -505,46 +494,6 @@ func (s *Repository) remove(w http.ResponseWriter, r *http.Request, p identity.P
 		return
 	}
 	w.WriteHeader(204)
-}
-
-func (s *Repository) deleteVersion(ctx context.Context, p identity.Principal, feed, source string, n nevra, assetID string) error {
-	tx, e := s.db.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if e != nil {
-		return artifact.ErrUnavailable
-	}
-	defer func() {
-		c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_ = tx.Rollback(c)
-	}()
-	if e = ownership.Require(ctx, tx, s.service.Lease()); e != nil {
-		return e
-	}
-	var version string
-	e = tx.QueryRow(ctx, `SELECT v.id::text FROM versions v JOIN components c ON c.id=v.component_id AND c.instance_id=v.instance_id WHERE c.instance_id=$1 AND c.source_id=$2 AND c.coordinate=$3 AND c.namespace=$4 AND v.version=$5 FOR UPDATE OF v`, p.InstanceID, source, n.name, namespace, n.version+"-"+n.release+"."+n.arch).Scan(&version)
-	if errors.Is(e, pgx.ErrNoRows) {
-		return artifact.ErrNotFound
-	}
-	if e != nil {
-		return artifact.ErrUnavailable
-	}
-	var audit int64
-	if tx.QueryRow(ctx, `INSERT INTO audit_events(instance_id,principal_id,action,resource_id) VALUES($1,$2,'artifact.delete',$3) RETURNING id`, p.InstanceID, p.PrincipalID, assetID).Scan(&audit) != nil {
-		return artifact.ErrUnavailable
-	}
-	if _, e = tx.Exec(ctx, `INSERT INTO outbox_events(audit_id,topic,payload) VALUES($1,'artifact.delete',jsonb_build_object('asset_id',$2::text,'feed_id',$3::text,'package',$4::text))`, audit, assetID, feed, n.filename); e != nil {
-		return artifact.ErrUnavailable
-	}
-	if _, e = tx.Exec(ctx, `DELETE FROM assets WHERE instance_id=$1 AND version_id=$2`, p.InstanceID, version); e != nil {
-		return artifact.ErrUnavailable
-	}
-	if _, e = tx.Exec(ctx, `DELETE FROM versions WHERE instance_id=$1 AND id=$2`, p.InstanceID, version); e != nil {
-		return artifact.ErrUnavailable
-	}
-	if tx.Commit(ctx) != nil {
-		return artifact.ErrUnavailable
-	}
-	return nil
 }
 
 func (s *Repository) withFeed(ctx context.Context, feed string, f func() error) error {

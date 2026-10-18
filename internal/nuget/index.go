@@ -86,7 +86,12 @@ func (s *Repository) leaf(w http.ResponseWriter, r *http.Request, p identity.Pri
 		failure(w, e)
 		return
 	}
-	writeJSON(w, r, map[string]any{"@id": base + "v3/registration/" + id + "/" + v + ".json", "listed": true, "packageContent": contentURL(base, id, v), "registration": base + "v3/registration/" + id + "/index.json"})
+	unlisted, e := s.service.UnlistedVersions(ctx, p.InstanceID, feed, id)
+	if e != nil {
+		failure(w, e)
+		return
+	}
+	writeJSON(w, r, map[string]any{"@id": base + "v3/registration/" + id + "/" + v + ".json", "listed": !unlisted[v], "packageContent": contentURL(base, id, v), "registration": base + "v3/registration/" + id + "/index.json"})
 }
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, base string, registration bool, degraded error) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
@@ -126,6 +131,11 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		return
 	}
 	sort.Slice(entries, func(i, j int) bool { return versionLess(entries[i].version, entries[j].version) })
+	unlisted, e := s.service.UnlistedVersions(ctx, p.InstanceID, feed, id)
+	if e != nil {
+		failure(w, e)
+		return
+	}
 	versions := []string{}
 	items := []any{}
 	total := 0
@@ -146,7 +156,7 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 				failure(w, e)
 				return
 			}
-			catalog := map[string]any{"@id": base + "v3/registration/" + id + "/" + v.version + ".json#catalog", "id": m.ID, "version": m.Version, "authors": m.Authors, "description": m.Description, "dependencyGroups": m.Groups, "listed": true}
+			catalog := map[string]any{"@id": base + "v3/registration/" + id + "/" + v.version + ".json#catalog", "id": m.ID, "version": m.Version, "authors": m.Authors, "description": m.Description, "dependencyGroups": m.Groups, "listed": !unlisted[v.version]}
 			item := map[string]any{"@id": base + "v3/registration/" + id + "/" + v.version + ".json", "catalogEntry": catalog, "packageContent": contentURL(base, id, v.version)}
 			encoded, _ := json.Marshal(item)
 			total += len(encoded)

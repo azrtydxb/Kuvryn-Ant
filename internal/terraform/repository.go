@@ -78,16 +78,9 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch r.Method {
-	case "GET", "HEAD", "PUT":
-	case "DELETE":
-		// The shared artifact core exposes no version deletion primitive and
-		// published versions are immutable; deletion stays an operator/retention
-		// action until the core grows a policy-gated primitive.
-		w.Header().Set("Allow", "GET, HEAD, PUT")
-		failureStatus(w, 405)
-		return
+	case "GET", "HEAD", "PUT", "DELETE":
 	default:
-		w.Header().Set("Allow", "GET, HEAD, PUT")
+		w.Header().Set("Allow", "GET, HEAD, PUT, DELETE")
 		failureStatus(w, 405)
 		return
 	}
@@ -222,4 +215,18 @@ func (s *Repository) readAsset(ctx context.Context, p identity.Principal, pub ar
 		return record, nil, artifact.ErrUnavailable
 	}
 	return record, data, nil
+}
+
+// deleteVersion removes one published version through the policy-gated artifact
+// core (delete authorization, feed/namespace delete policy, audit, outbox,
+// replication tombstones). Terraform defines no client delete; this is the API
+// method on the same resource a version is PUT to. Bytes await garbage collection.
+func (s *Repository) deleteVersion(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: pub.FeedID, Namespace: pub.Namespace, Coordinate: pub.Coordinate, Version: pub.Version}); e != nil {
+		failure(w, e)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

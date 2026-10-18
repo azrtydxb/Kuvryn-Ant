@@ -115,6 +115,16 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.push(w, r, p, feed, a[4]+"/"+a[5], a[6])
 		return
 	}
+	if len(a) == 7 && a[3] == "ingest" && namePattern.MatchString(a[4]+"/"+a[5]) && versionPattern.MatchString(a[6]) && r.Method == "DELETE" {
+		// Composer has no native delete; DELETE on the ingest resource is the
+		// API method, policy-gated by the shared artifact core.
+		if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Namespace: a[4], Coordinate: a[4] + "/" + a[5], Version: a[6]}); e != nil {
+			failure(w, e)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	}
 	if r.Method != "GET" && r.Method != "HEAD" {
 		http.Error(w, "method unsupported", 405)
 		return

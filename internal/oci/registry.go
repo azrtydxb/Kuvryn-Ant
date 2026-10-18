@@ -400,6 +400,8 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 			r.manifest(w, req, p, rep, reference)
 		} else if req.Method == "GET" || req.Method == "HEAD" {
 			r.read(w, req, p, rep, reference, "manifest")
+		} else if req.Method == "DELETE" {
+			r.deleteManifest(w, req, p, rep, reference)
 		} else {
 			failure(w, 405, "UNSUPPORTED", "operation unavailable")
 		}
@@ -421,4 +423,34 @@ func rollback(tx pgx.Tx) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = tx.Rollback(ctx)
+}
+
+// deleteManifest implements the distribution-spec manifest delete. A digest
+// reference removes the manifest (and the tags that point at it); a tag
+// reference removes only that tag. Both go through the policy-gated artifact
+// core (delete authorization, feed policy, audit, outbox, replication
+// tombstones). Layer and config blobs are left for garbage collection.
+func (r *Registry) deleteManifest(w http.ResponseWriter, req *http.Request, p identity.Principal, rep repository, reference string) {
+	t := artifact.Target{FeedID: rep.feed, Namespace: rep.namespace, Coordinate: rep.name}
+	if digest, ok := parseDigest(reference); ok {
+		t.Version = string(digest)
+	} else if tagPattern.MatchString(reference) {
+		t.Tag = reference
+	} else {
+		failure(w, 400, "TAG_INVALID", "invalid manifest reference")
+		return
+	}
+	if _, err := r.service.Delete(req.Context(), p, t); err != nil {
+		if errors.Is(err, artifact.ErrNotFound) {
+			failure(w, 404, "MANIFEST_UNKNOWN", "manifest not found")
+			return
+		}
+		if errors.Is(err, artifact.ErrPolicy) || errors.Is(err, artifact.ErrUnlistOnly) || errors.Is(err, artifact.ErrImmutable) {
+			failure(w, 405, "UNSUPPORTED", "deletion is disabled by repository policy")
+			return
+		}
+		failService(w, err)
+		return
+	}
+	w.WriteHeader(202)
 }

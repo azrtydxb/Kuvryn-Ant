@@ -142,12 +142,26 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Method == "DELETE" {
-		w.Header().Set("Allow", "GET, HEAD, PUT")
-		failure(w, perr(405, "release deletion is disabled by repository policy"))
+		if rest := a[3:]; len(rest) == 3 {
+			q := &req{s: s, w: w, r: r, p: p, feed: feed, slug: a[1], scope: rest[0], name: rest[1]}
+			if !q.validPackage() {
+				failure(w, artifact.ErrNotFound)
+				return
+			}
+			if !validVersion(rest[2]) {
+				failure(w, perr(400, "invalid version"))
+				return
+			}
+			q.version = rest[2]
+			q.remove()
+			return
+		}
+		w.Header().Set("Allow", "GET, HEAD, PUT, DELETE")
+		failure(w, perr(405, "method not allowed"))
 		return
 	}
 	if r.Method != "GET" && r.Method != "HEAD" && r.Method != "PUT" {
-		w.Header().Set("Allow", "GET, HEAD, PUT")
+		w.Header().Set("Allow", "GET, HEAD, PUT, DELETE")
 		failure(w, perr(405, "method not allowed"))
 		return
 	}
@@ -259,4 +273,18 @@ func readAsset(ctx context.Context, svc *artifact.Service, p identity.Principal,
 		return rec, nil, artifact.ErrUnavailable
 	}
 	return rec, b, nil
+}
+
+// remove deletes one release through the policy-gated artifact core (delete
+// authorization, feed/namespace delete policy, audit, outbox, replication
+// tombstones). The Swift registry specification defines no delete; this is the
+// API method on the release resource a package is PUT to.
+func (q *req) remove() {
+	ctx, cancel := context.WithTimeout(q.r.Context(), 15*time.Second)
+	defer cancel()
+	if _, e := q.s.service.Delete(ctx, q.p, artifact.Target{FeedID: q.feed, Namespace: q.ns(), Coordinate: q.coord(), Version: q.version}); e != nil {
+		failure(q.w, e)
+		return
+	}
+	q.w.WriteHeader(204)
 }

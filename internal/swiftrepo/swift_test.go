@@ -157,7 +157,7 @@ func TestPostgres(t *testing.T) {
 	assertCode(t, f.request("GET", base+"acme/nope", nil, nil), 404)
 	assertCode(t, f.request("GET", base+"acme/demo/9.9.9", nil, nil), 404)
 	assertCode(t, f.request("GET", base+"acme/demo", nil, map[string]string{"Authorization": "Bearer bad"}), 401)
-	assertCode(t, f.request("DELETE", base+"acme/demo/1.0.0", nil, nil), 405)
+	assertCode(t, f.request("DELETE", base+"acme/demo/1.0.0", nil, nil), 403) // fixture token has no delete action
 
 	assertCode(t, publish(f, base+"acme/bad/1.0.0", []byte("not a zip"), meta, nil), 422)
 	assertCode(t, publish(f, base+"acme/bad/1.0.0", zipBytes(t, map[string]string{"x/readme": "no manifest"}), meta, nil), 422)

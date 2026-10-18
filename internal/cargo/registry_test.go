@@ -74,7 +74,7 @@ func setup(t *testing.T) fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	token, err := (identity.Tokens{DB: pool}).Issue(ctx, owner.InstanceID, owner.PrincipalID, owner.PrincipalID, []identity.Scope{{Actions: []identity.Action{identity.Read, identity.Publish}}}, time.Now().Add(time.Hour))
+	token, err := (identity.Tokens{DB: pool}).Issue(ctx, owner.InstanceID, owner.PrincipalID, owner.PrincipalID, []identity.Scope{{Actions: []identity.Action{identity.Read, identity.Publish, identity.Delete}}}, time.Now().Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,23 @@ func TestPublishIndexDownload(t *testing.T) {
 	if !bytes.Equal(downloaded.Body.Bytes(), crate) {
 		t.Fatal("download changed")
 	}
+	// Yank is the core's unlist: policy-gated, audited and visible in the index.
+	assertCode(t, f.request("DELETE", base+"api/v1/crates/demo/1.0.0/yank", nil, nil), 200)
+	if yanked := f.request("GET", base+indexPath("demo"), nil, nil); !bytes.Contains(yanked.Body.Bytes(), []byte(`"yanked":true`)) || yanked.Header().Get("ETag") == response.Header().Get("ETag") {
+		t.Fatal("yank not reflected in index")
+	}
+	assertCode(t, f.request("GET", base+"api/v1/crates/demo/1.0.0/download", nil, nil), 200)
+	assertCode(t, f.request("PUT", base+"api/v1/crates/demo/1.0.0/unyank", nil, nil), 200)
+	if unyanked := f.request("GET", base+indexPath("demo"), nil, nil); !bytes.Contains(unyanked.Body.Bytes(), []byte(`"yanked":false`)) {
+		t.Fatal("unyank not reflected in index")
+	}
+	if _, e := f.pool.Exec(context.Background(), `INSERT INTO delete_policies(instance_id,feed_id,mode) VALUES($1,$2,'denied')`, f.instance, f.feed); e != nil {
+		t.Fatal(e)
+	}
 	assertCode(t, f.request("DELETE", base+"api/v1/crates/demo/1.0.0/yank", nil, nil), 403)
+	if _, e := f.pool.Exec(context.Background(), `DELETE FROM delete_policies`); e != nil {
+		t.Fatal(e)
+	}
 	m.Version = "1.0.0+other"
 	assertCode(t, f.request("PUT", base+"api/v1/crates/new", wire(m, crateArchive(t, m.Name, m.Version, "")), nil), 409)
 	m.Version = "2.0.0"

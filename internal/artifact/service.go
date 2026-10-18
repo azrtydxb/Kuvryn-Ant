@@ -45,6 +45,9 @@ type Service struct {
 	Downloads interface{ Download(assetID string) }
 	// MaxMaterializeBytes bounds one cached upstream artifact; zero means 8 GiB.
 	MaxMaterializeBytes int64
+	// Changed, when set, is called after a delete/unlist/relist commits so derived
+	// metadata and caches can be invalidated. It must not block.
+	Changed func(Change)
 
 	flightMu sync.Mutex
 	flights  map[string]*flight

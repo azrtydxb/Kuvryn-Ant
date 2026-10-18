@@ -105,9 +105,18 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 		r.put(w, req, p, pub)
 	case http.MethodGet, http.MethodHead:
 		r.get(w, req, p, pub)
+	case http.MethodDelete:
+		// Policy-gated by the shared core: delete permission, feed/namespace
+		// delete policy, audit, outbox and replication tombstone. Bytes are
+		// reclaimed later by garbage collection.
+		if _, err := r.service.Delete(req.Context(), p, artifact.Target{FeedID: pub.FeedID, Namespace: pub.Namespace, Coordinate: pub.Coordinate, Version: pub.Version, AssetKey: pub.AssetKey}); err != nil {
+			fail(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	default:
-		w.Header().Set("Allow", "GET, HEAD, PUT, PROPFIND, MKCOL, OPTIONS")
-		http.Error(w, "method unsupported; deletion requires an explicit policy", http.StatusMethodNotAllowed)
+		w.Header().Set("Allow", "GET, HEAD, PUT, DELETE, PROPFIND, MKCOL, OPTIONS")
+		http.Error(w, "method unsupported", http.StatusMethodNotAllowed)
 	}
 }
 func (r *Repository) put(w http.ResponseWriter, req *http.Request, p identity.Principal, pub artifact.Publication) {

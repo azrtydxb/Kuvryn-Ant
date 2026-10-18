@@ -146,7 +146,16 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 		fail(w, artifact.ErrNotFound)
 		return
 	}
-	l, err := parsePath(req)
+	parseReq := req
+	versionDir := req.Method == "DELETE" && strings.HasSuffix(req.URL.Path, "/")
+	if versionDir {
+		// DELETE of a version directory (trailing slash) removes the whole
+		// version; validate it with the same rules as the _bundle endpoint.
+		parseReq = req.Clone(req.Context())
+		parseReq.URL.Path += "_bundle"
+		parseReq.URL.RawPath = ""
+	}
+	l, err := parsePath(parseReq)
 	if err != nil {
 		fail(w, err)
 		return
@@ -160,6 +169,18 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	switch {
+	case req.Method == "DELETE" && !l.metadata:
+		// A version directory removes the version; a file removes that asset
+		// (and the version with its last asset). Policy-gated by the shared core.
+		target := artifact.Target{FeedID: feed, Namespace: l.group, Coordinate: l.group + ":" + l.name, Version: l.version}
+		if !versionDir {
+			target.AssetKey = l.key
+		}
+		if _, err := r.service.Delete(req.Context(), p, target); err != nil {
+			fail(w, err)
+			return
+		}
+		w.WriteHeader(204)
 	case req.Method == "POST" && l.file == "_bundle":
 		r.publish(w, req, p, l, feed)
 	case (req.Method == "GET" || req.Method == "HEAD") && l.metadata:
@@ -167,7 +188,7 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 	case (req.Method == "GET" || req.Method == "HEAD") && l.file != "_bundle":
 		r.get(w, req, p, l.publication(feed))
 	default:
-		w.Header().Set("Allow", "GET, HEAD, POST")
+		w.Header().Set("Allow", "GET, HEAD, POST, DELETE")
 		http.Error(w, "native multi-PUT deployment unsupported; publish a complete release via POST to the version/_bundle endpoint", 405)
 	}
 }

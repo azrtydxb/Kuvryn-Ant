@@ -142,14 +142,7 @@ func (s *Repository) unlist(w http.ResponseWriter, r *http.Request, p identity.P
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 	defer cancel()
-	policy, e := (identity.Roles{DB: s.db}).Resolve(ctx, p)
-	if e == nil && !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: pub.FeedID, Namespace: nsPool, Kind: identity.ArtifactResource}, identity.Delete) {
-		e = artifact.ErrDenied
-	}
-	var source string
-	if e == nil {
-		source, e = s.sources(ctx, p, pub.FeedID, dist, nil)
-	}
+	source, e := s.sources(ctx, p, pub.FeedID, dist, nil)
 	if e != nil {
 		failure(w, e)
 		return
@@ -164,6 +157,14 @@ func (s *Repository) unlist(w http.ResponseWriter, r *http.Request, p identity.P
 	}
 	if _, exists := st[comp][filename]; !exists {
 		failure(w, artifact.ErrNotFound)
+		return
+	}
+	// The shared core authorizes (delete permission), applies the feed delete
+	// policy and records audit, outbox and the unlisted marker atomically. It
+	// runs before the index changes, so a refusal leaves the index untouched and
+	// a retry after a failed index commit is idempotent.
+	if _, e = s.service.Unlist(ctx, p, artifact.Target{FeedID: pub.FeedID, Namespace: pub.Namespace, Coordinate: pub.Coordinate, Version: pub.Version}); e != nil {
+		failure(w, e)
 		return
 	}
 	delete(st[comp], filename)

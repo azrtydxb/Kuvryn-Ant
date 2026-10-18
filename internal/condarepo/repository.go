@@ -108,6 +108,18 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.push(w, r, p, feed, a[4], a[5])
 		return
 	}
+	if len(a) == 6 && a[3] == "ingest" && validSubdir(a[4]) && validFilename(a[5]) && r.Method == "DELETE" {
+		// Conda has no client-side delete; DELETE on the ingest resource (like
+		// Quetz/anaconda.org API removal) is policy-gated by the artifact core.
+		// repodata.json is generated from stored packages, so it updates at once.
+		pub := publication(feed, a[4], a[5], "archive")
+		if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Namespace: pub.Namespace, Coordinate: pub.Coordinate, Version: pub.Version}); e != nil {
+			failure(w, e)
+			return
+		}
+		w.WriteHeader(204)
+		return
+	}
 	if r.Method != "GET" && r.Method != "HEAD" {
 		http.Error(w, "method unsupported", 405)
 		return

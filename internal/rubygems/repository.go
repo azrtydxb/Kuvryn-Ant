@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -113,8 +114,12 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.push(w, r, p, feed)
 		return
 	}
+	if route == "api/v1/gems/yank" && r.Method == "DELETE" {
+		s.yank(w, r, p, feed)
+		return
+	}
 	if r.Method != "GET" && r.Method != "HEAD" {
-		w.Header().Set("Allow", "GET, HEAD, POST")
+		w.Header().Set("Allow", "GET, HEAD, POST, DELETE")
 		http.Error(w, "unsupported operation", 405)
 		return
 	}
@@ -320,4 +325,44 @@ func (w *challengeWriter) WriteHeader(status int) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="RubyGems"`)
 	}
 	w.ResponseWriter.WriteHeader(status)
+}
+
+var gemNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
+
+// yank implements `gem yank NAME -v VERSION [--platform P]` (DELETE
+// /api/v1/gems/yank with form fields). A yank removes the version through the
+// shared policy-gated core: delete authorization, feed/namespace delete policy,
+// audit, outbox and replication tombstone. A policy that protects the version
+// (immutable release, unlist-only, denied) refuses the yank; bytes are reclaimed
+// later by garbage collection.
+func (s *Repository) yank(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string) {
+	// net/http does not parse DELETE bodies; the gem client sends a form body.
+	raw, e := io.ReadAll(http.MaxBytesReader(w, r.Body, 8<<10))
+	form, pe := url.ParseQuery(string(raw))
+	if e != nil || pe != nil {
+		failure(w, errInvalid)
+		return
+	}
+	for k, v := range r.URL.Query() {
+		if _, set := form[k]; !set {
+			form[k] = v
+		}
+	}
+	name, version, platform := form.Get("gem_name"), form.Get("version"), form.Get("platform")
+	if !gemNamePattern.MatchString(name) || version == "" || len(version) > 128 || len(platform) > 128 || strings.ContainsAny(version+platform, "\x00\r\n/") {
+		failure(w, errInvalid)
+		return
+	}
+	key := version
+	if platform != "" && platform != "ruby" {
+		key += "-" + platform
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	if _, e := s.service.Delete(ctx, p, artifact.Target{FeedID: feed, Coordinate: name, Version: key}); e != nil {
+		failure(w, e)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	_, _ = w.Write([]byte("Successfully yanked gem: " + name + " (" + version + ")\n"))
 }
