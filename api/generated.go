@@ -124,6 +124,33 @@ func (e CertificateStatusStatus) Valid() bool {
 	}
 }
 
+// Defines values for ClientAuthMethod.
+const (
+	Anonymous      ClientAuthMethod = "anonymous"
+	BasicDirectory ClientAuthMethod = "basic-directory"
+	GithubOidc     ClientAuthMethod = "github-oidc"
+	Pat            ClientAuthMethod = "pat"
+	Token          ClientAuthMethod = "token"
+)
+
+// Valid indicates whether the value is a known member of the ClientAuthMethod enum.
+func (e ClientAuthMethod) Valid() bool {
+	switch e {
+	case Anonymous:
+		return true
+	case BasicDirectory:
+		return true
+	case GithubOidc:
+		return true
+	case Pat:
+		return true
+	case Token:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ComponentStatusStatus.
 const (
 	ComponentStatusStatusDegraded    ComponentStatusStatus = "degraded"
@@ -676,6 +703,21 @@ func (e FileIdentityProviderKind) Valid() bool {
 	case FileIdentityProviderKindOidc:
 		return true
 	case FileIdentityProviderKindSaml:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GitHubExchangeResponseTokenType.
+const (
+	Bearer GitHubExchangeResponseTokenType = "Bearer"
+)
+
+// Valid indicates whether the value is a known member of the GitHubExchangeResponseTokenType enum.
+func (e GitHubExchangeResponseTokenType) Valid() bool {
+	switch e {
+	case Bearer:
 		return true
 	default:
 		return false
@@ -2077,6 +2119,27 @@ func (e TokenRecordStatus) Valid() bool {
 	}
 }
 
+// Defines values for TokenScopeActions.
+const (
+	TokenScopeActionsDelete  TokenScopeActions = "delete"
+	TokenScopeActionsPublish TokenScopeActions = "publish"
+	TokenScopeActionsRead    TokenScopeActions = "read"
+)
+
+// Valid indicates whether the value is a known member of the TokenScopeActions enum.
+func (e TokenScopeActions) Valid() bool {
+	switch e {
+	case TokenScopeActionsDelete:
+		return true
+	case TokenScopeActionsPublish:
+		return true
+	case TokenScopeActionsRead:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TrafficSeriesScope.
 const (
 	TrafficSeriesScopeFeed     TrafficSeriesScope = "feed"
@@ -2618,6 +2681,18 @@ type CertificateStatus struct {
 // CertificateStatusStatus defines model for CertificateStatus.Status.
 type CertificateStatusStatus string
 
+// ClientAuthMethod anonymous (read-only, optionally CIDR restricted, only on feeds with anonymous read), token (service token), basic-directory (HTTP Basic against LDAP/AD), pat (personal access token), github-oidc (GitHub Actions OIDC JWT).
+type ClientAuthMethod string
+
+// ClientAuthPolicy defines model for ClientAuthPolicy.
+type ClientAuthPolicy struct {
+	AnonymousNetworkGroupIds []openapi_types.UUID `json:"anonymous_network_group_ids"`
+	FeedId                   *openapi_types.UUID  `json:"feed_id,omitempty"`
+	Inherited                bool                 `json:"inherited"`
+	Methods                  []ClientAuthMethod   `json:"methods"`
+	Revision                 int64                `json:"revision"`
+}
+
 // ComponentStatus defines model for ComponentStatus.
 type ComponentStatus struct {
 	// Detail Fixed non-sensitive code.
@@ -2652,6 +2727,13 @@ type CreateFeedBatch struct {
 
 // CreateFeedBatchFormat defines model for CreateFeedBatch.Format.
 type CreateFeedBatchFormat string
+
+// CreatePersonalAccessToken defines model for CreatePersonalAccessToken.
+type CreatePersonalAccessToken struct {
+	ExpiresInDays int          `json:"expires_in_days"`
+	Name          string       `json:"name"`
+	Scopes        []TokenScope `json:"scopes"`
+}
 
 // CreatePrincipal defines model for CreatePrincipal.
 type CreatePrincipal struct {
@@ -2702,6 +2784,20 @@ type CreateWebhook struct {
 
 	// Secret UTF-8 HMAC signing secret, 32 through 4096 bytes. Never returned or persisted in plaintext.
 	Secret *string `json:"secret,omitempty"`
+}
+
+// CreatedPersonalAccessToken defines model for CreatedPersonalAccessToken.
+type CreatedPersonalAccessToken struct {
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	Id         openapi_types.UUID `json:"id"`
+	LastUsedAt *time.Time         `json:"last_used_at,omitempty"`
+	Name       string             `json:"name"`
+	RevokedAt  *time.Time         `json:"revoked_at,omitempty"`
+	Scopes     []TokenScope       `json:"scopes"`
+
+	// Token The secret. Shown only in this response.
+	Token string `json:"token"`
 }
 
 // DeletePolicy defines model for DeletePolicy.
@@ -2944,6 +3040,74 @@ type FileIdentityProvider struct {
 
 // FileIdentityProviderKind defines model for FileIdentityProvider.Kind.
 type FileIdentityProviderKind string
+
+// GitHubExchangeRequest defines model for GitHubExchangeRequest.
+type GitHubExchangeRequest struct {
+	Token string `json:"token"`
+}
+
+// GitHubExchangeResponse defines model for GitHubExchangeResponse.
+type GitHubExchangeResponse struct {
+	AccessToken string                          `json:"access_token"`
+	ExpiresAt   time.Time                       `json:"expires_at"`
+	TokenType   GitHubExchangeResponseTokenType `json:"token_type"`
+	TrustRuleId openapi_types.UUID              `json:"trust_rule_id"`
+}
+
+// GitHubExchangeResponseTokenType defines model for GitHubExchangeResponse.TokenType.
+type GitHubExchangeResponseTokenType string
+
+// GitHubOIDCConfig defines model for GitHubOIDCConfig.
+type GitHubOIDCConfig struct {
+	Audience string `json:"audience"`
+	Issuer   string `json:"issuer"`
+	Revision int64  `json:"revision"`
+}
+
+// GitHubTrustRule defines model for GitHubTrustRule.
+type GitHubTrustRule struct {
+	Enabled     bool               `json:"enabled"`
+	Environment string             `json:"environment"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        string             `json:"name"`
+	Org         string             `json:"org"`
+	PrincipalId openapi_types.UUID `json:"principal_id"`
+	Ref         string             `json:"ref"`
+	Repo        string             `json:"repo"`
+	Revision    int64              `json:"revision"`
+	Scopes      []TokenScope       `json:"scopes"`
+	TtlSeconds  int                `json:"ttl_seconds"`
+	Workflow    string             `json:"workflow"`
+}
+
+// GitHubTrustRuleInput defines model for GitHubTrustRuleInput.
+type GitHubTrustRuleInput struct {
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Environment Glob over the job environment. Default *.
+	Environment *string `json:"environment,omitempty"`
+	Name        string  `json:"name"`
+
+	// Org Repository owner, matched case-insensitively.
+	Org         string             `json:"org"`
+	PrincipalId openapi_types.UUID `json:"principal_id"`
+
+	// Ref Glob over the full ref; a pattern not starting with refs/ is a branch glob. Default *.
+	Ref *string `json:"ref,omitempty"`
+
+	// Repo Glob over the repository name (without owner); * and ? wildcards.
+	Repo       string       `json:"repo"`
+	Scopes     []TokenScope `json:"scopes"`
+	TtlSeconds *int         `json:"ttl_seconds,omitempty"`
+
+	// Workflow Glob over the workflow name. Default *.
+	Workflow *string `json:"workflow,omitempty"`
+}
+
+// GitHubTrustRuleList defines model for GitHubTrustRuleList.
+type GitHubTrustRuleList struct {
+	Items []GitHubTrustRule `json:"items"`
+}
 
 // GroupRoleMapping Maps a base64url-encoded immutable LDAP group ID to proposed role IDs. Proposals are informational; effective roles come from identity bindings.
 type GroupRoleMapping struct {
@@ -3263,6 +3427,25 @@ type MappingSubject struct {
 	Subject  string    `json:"subject"`
 }
 
+// NetworkGroup defines model for NetworkGroup.
+type NetworkGroup struct {
+	Cidrs    []string           `json:"cidrs"`
+	Id       openapi_types.UUID `json:"id"`
+	Name     string             `json:"name"`
+	Revision int64              `json:"revision"`
+}
+
+// NetworkGroupInput defines model for NetworkGroupInput.
+type NetworkGroupInput struct {
+	Cidrs []string `json:"cidrs"`
+	Name  string   `json:"name"`
+}
+
+// NetworkGroupList defines model for NetworkGroupList.
+type NetworkGroupList struct {
+	Items []NetworkGroup `json:"items"`
+}
+
 // PackageMutation defines model for PackageMutation.
 type PackageMutation struct {
 	Action           PackageMutationAction `json:"action"`
@@ -3329,6 +3512,22 @@ type PatchSource struct {
 // PatchWebhook defines model for PatchWebhook.
 type PatchWebhook struct {
 	Enabled bool `json:"enabled"`
+}
+
+// PersonalAccessToken defines model for PersonalAccessToken.
+type PersonalAccessToken struct {
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	Id         openapi_types.UUID `json:"id"`
+	LastUsedAt *time.Time         `json:"last_used_at,omitempty"`
+	Name       string             `json:"name"`
+	RevokedAt  *time.Time         `json:"revoked_at,omitempty"`
+	Scopes     []TokenScope       `json:"scopes"`
+}
+
+// PersonalAccessTokenList defines model for PersonalAccessTokenList.
+type PersonalAccessTokenList struct {
+	Items []PersonalAccessToken `json:"items"`
 }
 
 // PolicyTemplate defines model for PolicyTemplate.
@@ -3481,10 +3680,22 @@ type PutAuditSink struct {
 // PutAuditSinkKind defines model for PutAuditSink.Kind.
 type PutAuditSinkKind string
 
+// PutClientAuthPolicy defines model for PutClientAuthPolicy.
+type PutClientAuthPolicy struct {
+	// AnonymousNetworkGroupIds Restricts anonymous access to these groups; empty means any network. Requires anonymous in methods.
+	AnonymousNetworkGroupIds []openapi_types.UUID `json:"anonymous_network_group_ids"`
+	Methods                  []ClientAuthMethod   `json:"methods"`
+}
+
 // PutFeedPolicyBinding Omitted fields unbind. Requires If-Match with the feed revision.
 type PutFeedPolicyBinding struct {
 	PublishTemplateId *openapi_types.UUID `json:"publish_template_id,omitempty"`
 	ReadTemplateId    *openapi_types.UUID `json:"read_template_id,omitempty"`
+}
+
+// PutGitHubOIDCConfig defines model for PutGitHubOIDCConfig.
+type PutGitHubOIDCConfig struct {
+	Audience string `json:"audience"`
 }
 
 // PutLimits defines model for PutLimits.
@@ -4500,6 +4711,16 @@ type TokenRecordScopesActions string
 // TokenRecordStatus defines model for TokenRecord.Status.
 type TokenRecordStatus string
 
+// TokenScope defines model for TokenScope.
+type TokenScope struct {
+	Actions   []TokenScopeActions `json:"actions"`
+	FeedId    *openapi_types.UUID `json:"feed_id,omitempty"`
+	Namespace *string             `json:"namespace,omitempty"`
+}
+
+// TokenScopeActions defines model for TokenScope.Actions.
+type TokenScopeActions string
+
 // TotpConfirm defines model for TotpConfirm.
 type TotpConfirm struct {
 	Code string `json:"code"`
@@ -4688,6 +4909,11 @@ type GetApiV1AuditExportParamsResult string
 
 // GetApiV1AuditExportParamsFormat defines parameters for GetApiV1AuditExport.
 type GetApiV1AuditExportParamsFormat string
+
+// CreatePersonalAccessTokenParams defines parameters for CreatePersonalAccessToken.
+type CreatePersonalAccessTokenParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
 
 // ListFeedsParams defines parameters for ListFeeds.
 type ListFeedsParams struct {
@@ -5212,6 +5438,30 @@ type IngestSecurityResultJSONRequestBody = SecurityResultInput
 // PutAuditSinkJSONRequestBody defines body for PutAuditSink for application/json ContentType.
 type PutAuditSinkJSONRequestBody = PutAuditSink
 
+// PutGitHubOIDCConfigJSONRequestBody defines body for PutGitHubOIDCConfig for application/json ContentType.
+type PutGitHubOIDCConfigJSONRequestBody = PutGitHubOIDCConfig
+
+// ExchangeGitHubOIDCTokenJSONRequestBody defines body for ExchangeGitHubOIDCToken for application/json ContentType.
+type ExchangeGitHubOIDCTokenJSONRequestBody = GitHubExchangeRequest
+
+// CreateGitHubTrustRuleJSONRequestBody defines body for CreateGitHubTrustRule for application/json ContentType.
+type CreateGitHubTrustRuleJSONRequestBody = GitHubTrustRuleInput
+
+// PutGitHubTrustRuleJSONRequestBody defines body for PutGitHubTrustRule for application/json ContentType.
+type PutGitHubTrustRuleJSONRequestBody = GitHubTrustRuleInput
+
+// CreateNetworkGroupJSONRequestBody defines body for CreateNetworkGroup for application/json ContentType.
+type CreateNetworkGroupJSONRequestBody = NetworkGroupInput
+
+// PutNetworkGroupJSONRequestBody defines body for PutNetworkGroup for application/json ContentType.
+type PutNetworkGroupJSONRequestBody = NetworkGroupInput
+
+// CreatePersonalAccessTokenJSONRequestBody defines body for CreatePersonalAccessToken for application/json ContentType.
+type CreatePersonalAccessTokenJSONRequestBody = CreatePersonalAccessToken
+
+// PutClientAuthPolicyJSONRequestBody defines body for PutClientAuthPolicy for application/json ContentType.
+type PutClientAuthPolicyJSONRequestBody = PutClientAuthPolicy
+
 // CreateFeedJSONRequestBody defines body for CreateFeed for application/json ContentType.
 type CreateFeedJSONRequestBody = CreateFeed
 
@@ -5220,6 +5470,9 @@ type CreateFeedBatchJSONRequestBody = CreateFeedBatch
 
 // UpdateFeedJSONRequestBody defines body for UpdateFeed for application/json ContentType.
 type UpdateFeedJSONRequestBody = PatchFeed
+
+// PutFeedClientAuthPolicyJSONRequestBody defines body for PutFeedClientAuthPolicy for application/json ContentType.
+type PutFeedClientAuthPolicyJSONRequestBody = PutClientAuthPolicy
 
 // SetDeletePolicyJSONRequestBody defines body for SetDeletePolicy for application/json ContentType.
 type SetDeletePolicyJSONRequestBody = DeletePolicy
@@ -5464,6 +5717,142 @@ type ClientInterface interface {
 	// Export every matching audit event. Requires instance admin; the export is itself audited as audit.export.
 	GetApiV1AuditExport(ctx context.Context, params *GetApiV1AuditExportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetGitHubOIDCConfig performs a GET /api/v1/auth/github-oidc/config (the `GetGitHubOIDCConfig` operationId) request.
+	//
+	// GitHub Actions OIDC settings. An empty audience disables the feature. Requires instance admin.
+	GetGitHubOIDCConfig(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutGitHubOIDCConfigWithBody performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Sets the accepted OIDC audience. Requires instance admin.
+	PutGitHubOIDCConfigWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutGitHubOIDCConfig performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Sets the accepted OIDC audience. Requires instance admin.
+	PutGitHubOIDCConfig(ctx context.Context, body PutGitHubOIDCConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExchangeGitHubOIDCTokenWithBody performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+	ExchangeGitHubOIDCTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExchangeGitHubOIDCToken performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+	ExchangeGitHubOIDCToken(ctx context.Context, body ExchangeGitHubOIDCTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListGitHubTrustRules performs a GET /api/v1/auth/github-oidc/trust-rules (the `ListGitHubTrustRules` operationId) request.
+	//
+	// Trust rules mapping GitHub workflows to scoped Ant tokens; the oldest enabled matching rule applies. Requires instance admin.
+	ListGitHubTrustRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateGitHubTrustRuleWithBody performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+	CreateGitHubTrustRuleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateGitHubTrustRule performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+	CreateGitHubTrustRule(ctx context.Context, body CreateGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteGitHubTrustRule performs a DELETE /api/v1/auth/github-oidc/trust-rules/{id} (the `DeleteGitHubTrustRule` operationId) request.
+	//
+	// Deletes a trust rule. Requires instance admin.
+	DeleteGitHubTrustRule(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutGitHubTrustRuleWithBody performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces a trust rule. Requires instance admin.
+	PutGitHubTrustRuleWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutGitHubTrustRule performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replaces a trust rule. Requires instance admin.
+	PutGitHubTrustRule(ctx context.Context, id openapi_types.UUID, body PutGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListNetworkGroups performs a GET /api/v1/auth/network-groups (the `ListNetworkGroups` operationId) request.
+	//
+	// Named CIDR groups usable to restrict anonymous access. Requires instance admin.
+	ListNetworkGroups(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateNetworkGroupWithBody performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a named network group. Requires instance admin.
+	CreateNetworkGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateNetworkGroup performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Creates a named network group. Requires instance admin.
+	CreateNetworkGroup(ctx context.Context, body CreateNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteNetworkGroup performs a DELETE /api/v1/auth/network-groups/{id} (the `DeleteNetworkGroup` operationId) request.
+	//
+	// Deletes a network group that no policy references (409 otherwise). Requires instance admin.
+	DeleteNetworkGroup(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutNetworkGroupWithBody performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces a network group. Requires instance admin.
+	PutNetworkGroupWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutNetworkGroup performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replaces a network group. Requires instance admin.
+	PutNetworkGroup(ctx context.Context, id openapi_types.UUID, body PutNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPersonalAccessTokens performs a GET /api/v1/auth/personal-access-tokens (the `ListPersonalAccessTokens` operationId) request.
+	//
+	// The signed-in user's personal access tokens. Secrets are never returned.
+	ListPersonalAccessTokens(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePersonalAccessTokenWithBody performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+	CreatePersonalAccessTokenWithBody(ctx context.Context, params *CreatePersonalAccessTokenParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePersonalAccessToken performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+	CreatePersonalAccessToken(ctx context.Context, params *CreatePersonalAccessTokenParams, body CreatePersonalAccessTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokePersonalAccessToken performs a DELETE /api/v1/auth/personal-access-tokens/{id} (the `RevokePersonalAccessToken` operationId) request.
+	//
+	// Revokes one of the signed-in user's tokens.
+	RevokePersonalAccessToken(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetClientAuthPolicy performs a GET /api/v1/auth/policy (the `GetClientAuthPolicy` operationId) request.
+	//
+	// Instance default client authentication policy for package-protocol traffic. Requires instance admin.
+	GetClientAuthPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutClientAuthPolicyWithBody performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+	PutClientAuthPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutClientAuthPolicy performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+	PutClientAuthPolicy(ctx context.Context, body PutClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetDiagnostics performs a GET /api/v1/diagnostics (the `GetDiagnostics` operationId) request.
 	//
 	// Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.
@@ -5517,6 +5906,28 @@ type ClientInterface interface {
 	//
 	// Authenticated artifact read authorization; first attached source owning a coordinate wins. Shadowed source data never falls through. Cursor scope binds principal, credential, feed, route and filters; only authorized rows influence pagination. Metadata only, with no storage keys or blob enumeration.
 	GetPackageAsset(ctx context.Context, id openapi_types.UUID, asset openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFeedClientAuthPolicy performs a DELETE /api/v1/feeds/{id}/auth-policy (the `DeleteFeedClientAuthPolicy` operationId) request.
+	//
+	// Removes the feed's own policy so it inherits the instance default. Requires configure on the feed.
+	DeleteFeedClientAuthPolicy(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFeedClientAuthPolicy performs a GET /api/v1/feeds/{id}/auth-policy (the `GetFeedClientAuthPolicy` operationId) request.
+	//
+	// Effective client authentication policy of a feed; inherited is true when the feed has no policy of its own. Requires configure on the feed.
+	GetFeedClientAuthPolicy(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutFeedClientAuthPolicyWithBody performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Sets the feed's own client authentication policy. Requires configure on the feed.
+	PutFeedClientAuthPolicyWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutFeedClientAuthPolicy performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Sets the feed's own client authentication policy. Requires configure on the feed.
+	PutFeedClientAuthPolicy(ctx context.Context, id openapi_types.UUID, body PutFeedClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetDeletePolicy performs a GET /api/v1/feeds/{id}/delete-policy (the `GetDeletePolicy` operationId) request.
 	//
@@ -6516,6 +6927,382 @@ func (c *Client) GetApiV1AuditExport(ctx context.Context, params *GetApiV1AuditE
 	return c.Client.Do(req)
 }
 
+// GetGitHubOIDCConfig performs a GET /api/v1/auth/github-oidc/config (the `GetGitHubOIDCConfig` operationId) request.
+//
+// GitHub Actions OIDC settings. An empty audience disables the feature. Requires instance admin.
+func (c *Client) GetGitHubOIDCConfig(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetGitHubOIDCConfigRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutGitHubOIDCConfigWithBody performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request,
+// with any type of body and a specified content type.
+//
+// Sets the accepted OIDC audience. Requires instance admin.
+func (c *Client) PutGitHubOIDCConfigWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutGitHubOIDCConfigRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutGitHubOIDCConfig performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Sets the accepted OIDC audience. Requires instance admin.
+func (c *Client) PutGitHubOIDCConfig(ctx context.Context, body PutGitHubOIDCConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutGitHubOIDCConfigRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExchangeGitHubOIDCTokenWithBody performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request,
+// with any type of body and a specified content type.
+//
+// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+func (c *Client) ExchangeGitHubOIDCTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExchangeGitHubOIDCTokenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExchangeGitHubOIDCToken performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+func (c *Client) ExchangeGitHubOIDCToken(ctx context.Context, body ExchangeGitHubOIDCTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExchangeGitHubOIDCTokenRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListGitHubTrustRules performs a GET /api/v1/auth/github-oidc/trust-rules (the `ListGitHubTrustRules` operationId) request.
+//
+// Trust rules mapping GitHub workflows to scoped Ant tokens; the oldest enabled matching rule applies. Requires instance admin.
+func (c *Client) ListGitHubTrustRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListGitHubTrustRulesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateGitHubTrustRuleWithBody performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+func (c *Client) CreateGitHubTrustRuleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateGitHubTrustRuleRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateGitHubTrustRule performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+func (c *Client) CreateGitHubTrustRule(ctx context.Context, body CreateGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateGitHubTrustRuleRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteGitHubTrustRule performs a DELETE /api/v1/auth/github-oidc/trust-rules/{id} (the `DeleteGitHubTrustRule` operationId) request.
+//
+// Deletes a trust rule. Requires instance admin.
+func (c *Client) DeleteGitHubTrustRule(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteGitHubTrustRuleRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutGitHubTrustRuleWithBody performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces a trust rule. Requires instance admin.
+func (c *Client) PutGitHubTrustRuleWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutGitHubTrustRuleRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutGitHubTrustRule performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replaces a trust rule. Requires instance admin.
+func (c *Client) PutGitHubTrustRule(ctx context.Context, id openapi_types.UUID, body PutGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutGitHubTrustRuleRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListNetworkGroups performs a GET /api/v1/auth/network-groups (the `ListNetworkGroups` operationId) request.
+//
+// Named CIDR groups usable to restrict anonymous access. Requires instance admin.
+func (c *Client) ListNetworkGroups(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListNetworkGroupsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateNetworkGroupWithBody performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a named network group. Requires instance admin.
+func (c *Client) CreateNetworkGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateNetworkGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateNetworkGroup performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Creates a named network group. Requires instance admin.
+func (c *Client) CreateNetworkGroup(ctx context.Context, body CreateNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateNetworkGroupRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteNetworkGroup performs a DELETE /api/v1/auth/network-groups/{id} (the `DeleteNetworkGroup` operationId) request.
+//
+// Deletes a network group that no policy references (409 otherwise). Requires instance admin.
+func (c *Client) DeleteNetworkGroup(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteNetworkGroupRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutNetworkGroupWithBody performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces a network group. Requires instance admin.
+func (c *Client) PutNetworkGroupWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutNetworkGroupRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutNetworkGroup performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replaces a network group. Requires instance admin.
+func (c *Client) PutNetworkGroup(ctx context.Context, id openapi_types.UUID, body PutNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutNetworkGroupRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPersonalAccessTokens performs a GET /api/v1/auth/personal-access-tokens (the `ListPersonalAccessTokens` operationId) request.
+//
+// The signed-in user's personal access tokens. Secrets are never returned.
+func (c *Client) ListPersonalAccessTokens(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPersonalAccessTokensRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePersonalAccessTokenWithBody performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+func (c *Client) CreatePersonalAccessTokenWithBody(ctx context.Context, params *CreatePersonalAccessTokenParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePersonalAccessTokenRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePersonalAccessToken performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+func (c *Client) CreatePersonalAccessToken(ctx context.Context, params *CreatePersonalAccessTokenParams, body CreatePersonalAccessTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePersonalAccessTokenRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RevokePersonalAccessToken performs a DELETE /api/v1/auth/personal-access-tokens/{id} (the `RevokePersonalAccessToken` operationId) request.
+//
+// Revokes one of the signed-in user's tokens.
+func (c *Client) RevokePersonalAccessToken(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokePersonalAccessTokenRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetClientAuthPolicy performs a GET /api/v1/auth/policy (the `GetClientAuthPolicy` operationId) request.
+//
+// Instance default client authentication policy for package-protocol traffic. Requires instance admin.
+func (c *Client) GetClientAuthPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetClientAuthPolicyRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutClientAuthPolicyWithBody performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+func (c *Client) PutClientAuthPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutClientAuthPolicyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutClientAuthPolicy performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+func (c *Client) PutClientAuthPolicy(ctx context.Context, body PutClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutClientAuthPolicyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetDiagnostics performs a GET /api/v1/diagnostics (the `GetDiagnostics` operationId) request.
 //
 // Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.
@@ -6680,6 +7467,68 @@ func (c *Client) DeletePackageAsset(ctx context.Context, id openapi_types.UUID, 
 // Authenticated artifact read authorization; first attached source owning a coordinate wins. Shadowed source data never falls through. Cursor scope binds principal, credential, feed, route and filters; only authorized rows influence pagination. Metadata only, with no storage keys or blob enumeration.
 func (c *Client) GetPackageAsset(ctx context.Context, id openapi_types.UUID, asset openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetPackageAssetRequest(c.Server, id, asset)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteFeedClientAuthPolicy performs a DELETE /api/v1/feeds/{id}/auth-policy (the `DeleteFeedClientAuthPolicy` operationId) request.
+//
+// Removes the feed's own policy so it inherits the instance default. Requires configure on the feed.
+func (c *Client) DeleteFeedClientAuthPolicy(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFeedClientAuthPolicyRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFeedClientAuthPolicy performs a GET /api/v1/feeds/{id}/auth-policy (the `GetFeedClientAuthPolicy` operationId) request.
+//
+// Effective client authentication policy of a feed; inherited is true when the feed has no policy of its own. Requires configure on the feed.
+func (c *Client) GetFeedClientAuthPolicy(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFeedClientAuthPolicyRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutFeedClientAuthPolicyWithBody performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Sets the feed's own client authentication policy. Requires configure on the feed.
+func (c *Client) PutFeedClientAuthPolicyWithBody(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFeedClientAuthPolicyRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutFeedClientAuthPolicy performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Sets the feed's own client authentication policy. Requires configure on the feed.
+func (c *Client) PutFeedClientAuthPolicy(ctx context.Context, id openapi_types.UUID, body PutFeedClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutFeedClientAuthPolicyRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9600,6 +10449,590 @@ func NewGetApiV1AuditExportRequest(server string, params *GetApiV1AuditExportPar
 	return req, nil
 }
 
+// NewGetGitHubOIDCConfigRequest constructs an http.Request for the GetGitHubOIDCConfig method
+func NewGetGitHubOIDCConfigRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/config")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutGitHubOIDCConfigRequest calls the generic PutGitHubOIDCConfig builder with application/json body
+func NewPutGitHubOIDCConfigRequest(server string, body PutGitHubOIDCConfigJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutGitHubOIDCConfigRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutGitHubOIDCConfigRequestWithBody constructs an http.Request for the PutGitHubOIDCConfig method, with any body, and a specified content type
+func NewPutGitHubOIDCConfigRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/config")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewExchangeGitHubOIDCTokenRequest calls the generic ExchangeGitHubOIDCToken builder with application/json body
+func NewExchangeGitHubOIDCTokenRequest(server string, body ExchangeGitHubOIDCTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewExchangeGitHubOIDCTokenRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewExchangeGitHubOIDCTokenRequestWithBody constructs an http.Request for the ExchangeGitHubOIDCToken method, with any body, and a specified content type
+func NewExchangeGitHubOIDCTokenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/exchange")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListGitHubTrustRulesRequest constructs an http.Request for the ListGitHubTrustRules method
+func NewListGitHubTrustRulesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/trust-rules")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateGitHubTrustRuleRequest calls the generic CreateGitHubTrustRule builder with application/json body
+func NewCreateGitHubTrustRuleRequest(server string, body CreateGitHubTrustRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateGitHubTrustRuleRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateGitHubTrustRuleRequestWithBody constructs an http.Request for the CreateGitHubTrustRule method, with any body, and a specified content type
+func NewCreateGitHubTrustRuleRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/trust-rules")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteGitHubTrustRuleRequest constructs an http.Request for the DeleteGitHubTrustRule method
+func NewDeleteGitHubTrustRuleRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/trust-rules/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutGitHubTrustRuleRequest calls the generic PutGitHubTrustRule builder with application/json body
+func NewPutGitHubTrustRuleRequest(server string, id openapi_types.UUID, body PutGitHubTrustRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutGitHubTrustRuleRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutGitHubTrustRuleRequestWithBody constructs an http.Request for the PutGitHubTrustRule method, with any body, and a specified content type
+func NewPutGitHubTrustRuleRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/github-oidc/trust-rules/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListNetworkGroupsRequest constructs an http.Request for the ListNetworkGroups method
+func NewListNetworkGroupsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/network-groups")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateNetworkGroupRequest calls the generic CreateNetworkGroup builder with application/json body
+func NewCreateNetworkGroupRequest(server string, body CreateNetworkGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateNetworkGroupRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateNetworkGroupRequestWithBody constructs an http.Request for the CreateNetworkGroup method, with any body, and a specified content type
+func NewCreateNetworkGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/network-groups")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteNetworkGroupRequest constructs an http.Request for the DeleteNetworkGroup method
+func NewDeleteNetworkGroupRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/network-groups/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutNetworkGroupRequest calls the generic PutNetworkGroup builder with application/json body
+func NewPutNetworkGroupRequest(server string, id openapi_types.UUID, body PutNetworkGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutNetworkGroupRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutNetworkGroupRequestWithBody constructs an http.Request for the PutNetworkGroup method, with any body, and a specified content type
+func NewPutNetworkGroupRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/network-groups/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListPersonalAccessTokensRequest constructs an http.Request for the ListPersonalAccessTokens method
+func NewListPersonalAccessTokensRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/personal-access-tokens")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreatePersonalAccessTokenRequest calls the generic CreatePersonalAccessToken builder with application/json body
+func NewCreatePersonalAccessTokenRequest(server string, params *CreatePersonalAccessTokenParams, body CreatePersonalAccessTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePersonalAccessTokenRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreatePersonalAccessTokenRequestWithBody constructs an http.Request for the CreatePersonalAccessToken method, with any body, and a specified content type
+func NewCreatePersonalAccessTokenRequestWithBody(server string, params *CreatePersonalAccessTokenParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/personal-access-tokens")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewRevokePersonalAccessTokenRequest constructs an http.Request for the RevokePersonalAccessToken method
+func NewRevokePersonalAccessTokenRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/personal-access-tokens/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetClientAuthPolicyRequest constructs an http.Request for the GetClientAuthPolicy method
+func NewGetClientAuthPolicyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/policy")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutClientAuthPolicyRequest calls the generic PutClientAuthPolicy builder with application/json body
+func NewPutClientAuthPolicyRequest(server string, body PutClientAuthPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutClientAuthPolicyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutClientAuthPolicyRequestWithBody constructs an http.Request for the PutClientAuthPolicy method, with any body, and a specified content type
+func NewPutClientAuthPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/auth/policy")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetDiagnosticsRequest constructs an http.Request for the GetDiagnostics method
 func NewGetDiagnosticsRequest(server string) (*http.Request, error) {
 	var err error
@@ -10088,6 +11521,121 @@ func NewGetPackageAssetRequest(server string, id openapi_types.UUID, asset opena
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewDeleteFeedClientAuthPolicyRequest constructs an http.Request for the DeleteFeedClientAuthPolicy method
+func NewDeleteFeedClientAuthPolicyRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s/auth-policy", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetFeedClientAuthPolicyRequest constructs an http.Request for the GetFeedClientAuthPolicy method
+func NewGetFeedClientAuthPolicyRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s/auth-policy", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutFeedClientAuthPolicyRequest calls the generic PutFeedClientAuthPolicy builder with application/json body
+func NewPutFeedClientAuthPolicyRequest(server string, id openapi_types.UUID, body PutFeedClientAuthPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutFeedClientAuthPolicyRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutFeedClientAuthPolicyRequestWithBody constructs an http.Request for the PutFeedClientAuthPolicy method, with any body, and a specified content type
+func NewPutFeedClientAuthPolicyRequestWithBody(server string, id openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/feeds/%s/auth-policy", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -16681,6 +18229,174 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetApiV1AuditExportWithResponse(ctx context.Context, params *GetApiV1AuditExportParams, reqEditors ...RequestEditorFn) (*GetApiV1AuditExportResponse, error)
 
+	// GetGitHubOIDCConfigWithResponse performs a GET /api/v1/auth/github-oidc/config (the `GetGitHubOIDCConfig` operationId) request.
+	//
+	// GitHub Actions OIDC settings. An empty audience disables the feature. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetGitHubOIDCConfigWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetGitHubOIDCConfigResponse, error)
+
+	// PutGitHubOIDCConfigWithBodyWithResponse performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Sets the accepted OIDC audience. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PutGitHubOIDCConfigWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutGitHubOIDCConfigResponse, error)
+
+	// PutGitHubOIDCConfigWithResponse performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Sets the accepted OIDC audience. Requires instance admin.
+	PutGitHubOIDCConfigWithResponse(ctx context.Context, body PutGitHubOIDCConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*PutGitHubOIDCConfigResponse, error)
+
+	// ExchangeGitHubOIDCTokenWithBodyWithResponse performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ExchangeGitHubOIDCTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeGitHubOIDCTokenResponse, error)
+
+	// ExchangeGitHubOIDCTokenWithResponse performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+	ExchangeGitHubOIDCTokenWithResponse(ctx context.Context, body ExchangeGitHubOIDCTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ExchangeGitHubOIDCTokenResponse, error)
+
+	// ListGitHubTrustRulesWithResponse performs a GET /api/v1/auth/github-oidc/trust-rules (the `ListGitHubTrustRules` operationId) request.
+	//
+	// Trust rules mapping GitHub workflows to scoped Ant tokens; the oldest enabled matching rule applies. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListGitHubTrustRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGitHubTrustRulesResponse, error)
+
+	// CreateGitHubTrustRuleWithBodyWithResponse performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateGitHubTrustRuleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateGitHubTrustRuleResponse, error)
+
+	// CreateGitHubTrustRuleWithResponse performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+	CreateGitHubTrustRuleWithResponse(ctx context.Context, body CreateGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateGitHubTrustRuleResponse, error)
+
+	// DeleteGitHubTrustRuleWithResponse performs a DELETE /api/v1/auth/github-oidc/trust-rules/{id} (the `DeleteGitHubTrustRule` operationId) request.
+	//
+	// Deletes a trust rule. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteGitHubTrustRuleWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteGitHubTrustRuleResponse, error)
+
+	// PutGitHubTrustRuleWithBodyWithResponse performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces a trust rule. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PutGitHubTrustRuleWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutGitHubTrustRuleResponse, error)
+
+	// PutGitHubTrustRuleWithResponse performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replaces a trust rule. Requires instance admin.
+	PutGitHubTrustRuleWithResponse(ctx context.Context, id openapi_types.UUID, body PutGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*PutGitHubTrustRuleResponse, error)
+
+	// ListNetworkGroupsWithResponse performs a GET /api/v1/auth/network-groups (the `ListNetworkGroups` operationId) request.
+	//
+	// Named CIDR groups usable to restrict anonymous access. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListNetworkGroupsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListNetworkGroupsResponse, error)
+
+	// CreateNetworkGroupWithBodyWithResponse performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a named network group. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateNetworkGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNetworkGroupResponse, error)
+
+	// CreateNetworkGroupWithResponse performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Creates a named network group. Requires instance admin.
+	CreateNetworkGroupWithResponse(ctx context.Context, body CreateNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNetworkGroupResponse, error)
+
+	// DeleteNetworkGroupWithResponse performs a DELETE /api/v1/auth/network-groups/{id} (the `DeleteNetworkGroup` operationId) request.
+	//
+	// Deletes a network group that no policy references (409 otherwise). Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteNetworkGroupWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteNetworkGroupResponse, error)
+
+	// PutNetworkGroupWithBodyWithResponse performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces a network group. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PutNetworkGroupWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutNetworkGroupResponse, error)
+
+	// PutNetworkGroupWithResponse performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replaces a network group. Requires instance admin.
+	PutNetworkGroupWithResponse(ctx context.Context, id openapi_types.UUID, body PutNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*PutNetworkGroupResponse, error)
+
+	// ListPersonalAccessTokensWithResponse performs a GET /api/v1/auth/personal-access-tokens (the `ListPersonalAccessTokens` operationId) request.
+	//
+	// The signed-in user's personal access tokens. Secrets are never returned.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListPersonalAccessTokensWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPersonalAccessTokensResponse, error)
+
+	// CreatePersonalAccessTokenWithBodyWithResponse performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreatePersonalAccessTokenWithBodyWithResponse(ctx context.Context, params *CreatePersonalAccessTokenParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePersonalAccessTokenResponse, error)
+
+	// CreatePersonalAccessTokenWithResponse performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+	CreatePersonalAccessTokenWithResponse(ctx context.Context, params *CreatePersonalAccessTokenParams, body CreatePersonalAccessTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePersonalAccessTokenResponse, error)
+
+	// RevokePersonalAccessTokenWithResponse performs a DELETE /api/v1/auth/personal-access-tokens/{id} (the `RevokePersonalAccessToken` operationId) request.
+	//
+	// Revokes one of the signed-in user's tokens.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RevokePersonalAccessTokenWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevokePersonalAccessTokenResponse, error)
+
+	// GetClientAuthPolicyWithResponse performs a GET /api/v1/auth/policy (the `GetClientAuthPolicy` operationId) request.
+	//
+	// Instance default client authentication policy for package-protocol traffic. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetClientAuthPolicyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetClientAuthPolicyResponse, error)
+
+	// PutClientAuthPolicyWithBodyWithResponse performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PutClientAuthPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutClientAuthPolicyResponse, error)
+
+	// PutClientAuthPolicyWithResponse performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+	PutClientAuthPolicyWithResponse(ctx context.Context, body PutClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*PutClientAuthPolicyResponse, error)
+
 	// GetDiagnosticsWithResponse performs a GET /api/v1/diagnostics (the `GetDiagnostics` operationId) request.
 	//
 	// Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.
@@ -16752,6 +18468,34 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetPackageAssetWithResponse(ctx context.Context, id openapi_types.UUID, asset openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPackageAssetResponse, error)
+
+	// DeleteFeedClientAuthPolicyWithResponse performs a DELETE /api/v1/feeds/{id}/auth-policy (the `DeleteFeedClientAuthPolicy` operationId) request.
+	//
+	// Removes the feed's own policy so it inherits the instance default. Requires configure on the feed.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteFeedClientAuthPolicyWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteFeedClientAuthPolicyResponse, error)
+
+	// GetFeedClientAuthPolicyWithResponse performs a GET /api/v1/feeds/{id}/auth-policy (the `GetFeedClientAuthPolicy` operationId) request.
+	//
+	// Effective client authentication policy of a feed; inherited is true when the feed has no policy of its own. Requires configure on the feed.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFeedClientAuthPolicyWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFeedClientAuthPolicyResponse, error)
+
+	// PutFeedClientAuthPolicyWithBodyWithResponse performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Sets the feed's own client authentication policy. Requires configure on the feed.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	PutFeedClientAuthPolicyWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFeedClientAuthPolicyResponse, error)
+
+	// PutFeedClientAuthPolicyWithResponse performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Sets the feed's own client authentication policy. Requires configure on the feed.
+	PutFeedClientAuthPolicyWithResponse(ctx context.Context, id openapi_types.UUID, body PutFeedClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFeedClientAuthPolicyResponse, error)
 
 	// GetDeletePolicyWithResponse performs a GET /api/v1/feeds/{id}/delete-policy (the `GetDeletePolicy` operationId) request.
 	//
@@ -19062,6 +20806,2671 @@ func (r GetApiV1AuditExportResponse) ContentType() string {
 	return ""
 }
 
+// GetGitHubOIDCConfigResponse200Headers the declared response headers of an HTTP 200 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse400Headers the declared response headers of an HTTP 400 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse401Headers the declared response headers of an HTTP 401 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse403Headers the declared response headers of an HTTP 403 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse404Headers the declared response headers of an HTTP 404 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse429Headers the declared response headers of an HTTP 429 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse500Headers the declared response headers of an HTTP 500 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetGitHubOIDCConfigResponse503Headers the declared response headers of an HTTP 503 response for GetGitHubOIDCConfig
+type GetGitHubOIDCConfigResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetGitHubOIDCConfigResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GitHubOIDCConfig
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetGitHubOIDCConfigResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetGitHubOIDCConfigResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetGitHubOIDCConfigResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetGitHubOIDCConfigResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetGitHubOIDCConfigResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetGitHubOIDCConfigResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetGitHubOIDCConfigResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetGitHubOIDCConfigResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON200() *GitHubOIDCConfig {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetGitHubOIDCConfigResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetGitHubOIDCConfigResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetGitHubOIDCConfigResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetGitHubOIDCConfigResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetGitHubOIDCConfigResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PutGitHubOIDCConfigResponse200Headers the declared response headers of an HTTP 200 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse200Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse400Headers the declared response headers of an HTTP 400 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse400Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse401Headers the declared response headers of an HTTP 401 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse401Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse403Headers the declared response headers of an HTTP 403 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse403Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse404Headers the declared response headers of an HTTP 404 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse404Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse409Headers the declared response headers of an HTTP 409 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse409Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse413Headers the declared response headers of an HTTP 413 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse413Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse415Headers the declared response headers of an HTTP 415 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse415Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse429Headers the declared response headers of an HTTP 429 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse429Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse500Headers the declared response headers of an HTTP 500 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse500Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubOIDCConfigResponse503Headers the declared response headers of an HTTP 503 response for PutGitHubOIDCConfig
+type PutGitHubOIDCConfigResponse503Headers struct {
+	XRequestID *string
+}
+
+type PutGitHubOIDCConfigResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GitHubOIDCConfig
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PutGitHubOIDCConfigResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PutGitHubOIDCConfigResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PutGitHubOIDCConfigResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PutGitHubOIDCConfigResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PutGitHubOIDCConfigResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PutGitHubOIDCConfigResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PutGitHubOIDCConfigResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PutGitHubOIDCConfigResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PutGitHubOIDCConfigResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PutGitHubOIDCConfigResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PutGitHubOIDCConfigResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON200() *GitHubOIDCConfig {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PutGitHubOIDCConfigResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PutGitHubOIDCConfigResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutGitHubOIDCConfigResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutGitHubOIDCConfigResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutGitHubOIDCConfigResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ExchangeGitHubOIDCTokenResponse200Headers the declared response headers of an HTTP 200 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse200Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse400Headers the declared response headers of an HTTP 400 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse400Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse401Headers the declared response headers of an HTTP 401 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse401Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse403Headers the declared response headers of an HTTP 403 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse403Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse404Headers the declared response headers of an HTTP 404 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse404Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse409Headers the declared response headers of an HTTP 409 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse409Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse413Headers the declared response headers of an HTTP 413 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse413Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse415Headers the declared response headers of an HTTP 415 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse415Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse429Headers the declared response headers of an HTTP 429 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse429Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse500Headers the declared response headers of an HTTP 500 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse500Headers struct {
+	XRequestID *string
+}
+
+// ExchangeGitHubOIDCTokenResponse503Headers the declared response headers of an HTTP 503 response for ExchangeGitHubOIDCToken
+type ExchangeGitHubOIDCTokenResponse503Headers struct {
+	XRequestID *string
+}
+
+type ExchangeGitHubOIDCTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GitHubExchangeResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ExchangeGitHubOIDCTokenResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ExchangeGitHubOIDCTokenResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ExchangeGitHubOIDCTokenResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ExchangeGitHubOIDCTokenResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ExchangeGitHubOIDCTokenResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ExchangeGitHubOIDCTokenResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *ExchangeGitHubOIDCTokenResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *ExchangeGitHubOIDCTokenResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ExchangeGitHubOIDCTokenResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ExchangeGitHubOIDCTokenResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ExchangeGitHubOIDCTokenResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON200() *GitHubExchangeResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ExchangeGitHubOIDCTokenResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ExchangeGitHubOIDCTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ExchangeGitHubOIDCTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExchangeGitHubOIDCTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ExchangeGitHubOIDCTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListGitHubTrustRulesResponse200Headers the declared response headers of an HTTP 200 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse400Headers the declared response headers of an HTTP 400 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse401Headers the declared response headers of an HTTP 401 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse403Headers the declared response headers of an HTTP 403 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse404Headers the declared response headers of an HTTP 404 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse429Headers the declared response headers of an HTTP 429 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse500Headers the declared response headers of an HTTP 500 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListGitHubTrustRulesResponse503Headers the declared response headers of an HTTP 503 response for ListGitHubTrustRules
+type ListGitHubTrustRulesResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListGitHubTrustRulesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GitHubTrustRuleList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListGitHubTrustRulesResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListGitHubTrustRulesResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListGitHubTrustRulesResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListGitHubTrustRulesResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListGitHubTrustRulesResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListGitHubTrustRulesResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListGitHubTrustRulesResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListGitHubTrustRulesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON200() *GitHubTrustRuleList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListGitHubTrustRulesResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListGitHubTrustRulesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListGitHubTrustRulesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListGitHubTrustRulesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListGitHubTrustRulesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateGitHubTrustRuleResponse201Headers the declared response headers of an HTTP 201 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse201Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse400Headers the declared response headers of an HTTP 400 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse401Headers the declared response headers of an HTTP 401 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse403Headers the declared response headers of an HTTP 403 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse404Headers the declared response headers of an HTTP 404 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse409Headers the declared response headers of an HTTP 409 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse413Headers the declared response headers of an HTTP 413 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse413Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse415Headers the declared response headers of an HTTP 415 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse415Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse429Headers the declared response headers of an HTTP 429 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse500Headers the declared response headers of an HTTP 500 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateGitHubTrustRuleResponse503Headers the declared response headers of an HTTP 503 response for CreateGitHubTrustRule
+type CreateGitHubTrustRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateGitHubTrustRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *GitHubTrustRule
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateGitHubTrustRuleResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateGitHubTrustRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateGitHubTrustRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateGitHubTrustRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreateGitHubTrustRuleResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateGitHubTrustRuleResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *CreateGitHubTrustRuleResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *CreateGitHubTrustRuleResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateGitHubTrustRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateGitHubTrustRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateGitHubTrustRuleResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON201() *GitHubTrustRule {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateGitHubTrustRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateGitHubTrustRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateGitHubTrustRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateGitHubTrustRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateGitHubTrustRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteGitHubTrustRuleResponse204Headers the declared response headers of an HTTP 204 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse204Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse400Headers the declared response headers of an HTTP 400 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse401Headers the declared response headers of an HTTP 401 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse403Headers the declared response headers of an HTTP 403 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse404Headers the declared response headers of an HTTP 404 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse429Headers the declared response headers of an HTTP 429 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse500Headers the declared response headers of an HTTP 500 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteGitHubTrustRuleResponse503Headers the declared response headers of an HTTP 503 response for DeleteGitHubTrustRule
+type DeleteGitHubTrustRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteGitHubTrustRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DeleteGitHubTrustRuleResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteGitHubTrustRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteGitHubTrustRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteGitHubTrustRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteGitHubTrustRuleResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteGitHubTrustRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteGitHubTrustRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteGitHubTrustRuleResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteGitHubTrustRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteGitHubTrustRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteGitHubTrustRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteGitHubTrustRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteGitHubTrustRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PutGitHubTrustRuleResponse200Headers the declared response headers of an HTTP 200 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse200Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse400Headers the declared response headers of an HTTP 400 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse401Headers the declared response headers of an HTTP 401 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse403Headers the declared response headers of an HTTP 403 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse404Headers the declared response headers of an HTTP 404 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse409Headers the declared response headers of an HTTP 409 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse409Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse413Headers the declared response headers of an HTTP 413 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse413Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse415Headers the declared response headers of an HTTP 415 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse415Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse429Headers the declared response headers of an HTTP 429 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse500Headers the declared response headers of an HTTP 500 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// PutGitHubTrustRuleResponse503Headers the declared response headers of an HTTP 503 response for PutGitHubTrustRule
+type PutGitHubTrustRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type PutGitHubTrustRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GitHubTrustRule
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PutGitHubTrustRuleResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PutGitHubTrustRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PutGitHubTrustRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PutGitHubTrustRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PutGitHubTrustRuleResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PutGitHubTrustRuleResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PutGitHubTrustRuleResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PutGitHubTrustRuleResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PutGitHubTrustRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PutGitHubTrustRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PutGitHubTrustRuleResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON200() *GitHubTrustRule {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PutGitHubTrustRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PutGitHubTrustRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutGitHubTrustRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutGitHubTrustRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutGitHubTrustRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListNetworkGroupsResponse200Headers the declared response headers of an HTTP 200 response for ListNetworkGroups
+type ListNetworkGroupsResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse400Headers the declared response headers of an HTTP 400 response for ListNetworkGroups
+type ListNetworkGroupsResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse401Headers the declared response headers of an HTTP 401 response for ListNetworkGroups
+type ListNetworkGroupsResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse403Headers the declared response headers of an HTTP 403 response for ListNetworkGroups
+type ListNetworkGroupsResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse404Headers the declared response headers of an HTTP 404 response for ListNetworkGroups
+type ListNetworkGroupsResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse429Headers the declared response headers of an HTTP 429 response for ListNetworkGroups
+type ListNetworkGroupsResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse500Headers the declared response headers of an HTTP 500 response for ListNetworkGroups
+type ListNetworkGroupsResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListNetworkGroupsResponse503Headers the declared response headers of an HTTP 503 response for ListNetworkGroups
+type ListNetworkGroupsResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListNetworkGroupsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *NetworkGroupList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListNetworkGroupsResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListNetworkGroupsResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListNetworkGroupsResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListNetworkGroupsResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListNetworkGroupsResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListNetworkGroupsResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListNetworkGroupsResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListNetworkGroupsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON200() *NetworkGroupList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListNetworkGroupsResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListNetworkGroupsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListNetworkGroupsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListNetworkGroupsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListNetworkGroupsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateNetworkGroupResponse201Headers the declared response headers of an HTTP 201 response for CreateNetworkGroup
+type CreateNetworkGroupResponse201Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse400Headers the declared response headers of an HTTP 400 response for CreateNetworkGroup
+type CreateNetworkGroupResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse401Headers the declared response headers of an HTTP 401 response for CreateNetworkGroup
+type CreateNetworkGroupResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse403Headers the declared response headers of an HTTP 403 response for CreateNetworkGroup
+type CreateNetworkGroupResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse404Headers the declared response headers of an HTTP 404 response for CreateNetworkGroup
+type CreateNetworkGroupResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse409Headers the declared response headers of an HTTP 409 response for CreateNetworkGroup
+type CreateNetworkGroupResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse413Headers the declared response headers of an HTTP 413 response for CreateNetworkGroup
+type CreateNetworkGroupResponse413Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse415Headers the declared response headers of an HTTP 415 response for CreateNetworkGroup
+type CreateNetworkGroupResponse415Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse429Headers the declared response headers of an HTTP 429 response for CreateNetworkGroup
+type CreateNetworkGroupResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse500Headers the declared response headers of an HTTP 500 response for CreateNetworkGroup
+type CreateNetworkGroupResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateNetworkGroupResponse503Headers the declared response headers of an HTTP 503 response for CreateNetworkGroup
+type CreateNetworkGroupResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateNetworkGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *NetworkGroup
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateNetworkGroupResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateNetworkGroupResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateNetworkGroupResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateNetworkGroupResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreateNetworkGroupResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateNetworkGroupResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *CreateNetworkGroupResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *CreateNetworkGroupResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateNetworkGroupResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateNetworkGroupResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateNetworkGroupResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON201() *NetworkGroup {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateNetworkGroupResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateNetworkGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateNetworkGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateNetworkGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateNetworkGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteNetworkGroupResponse204Headers the declared response headers of an HTTP 204 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse204Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse400Headers the declared response headers of an HTTP 400 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse401Headers the declared response headers of an HTTP 401 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse403Headers the declared response headers of an HTTP 403 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse404Headers the declared response headers of an HTTP 404 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse409Headers the declared response headers of an HTTP 409 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse409Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse429Headers the declared response headers of an HTTP 429 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse500Headers the declared response headers of an HTTP 500 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteNetworkGroupResponse503Headers the declared response headers of an HTTP 503 response for DeleteNetworkGroup
+type DeleteNetworkGroupResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteNetworkGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DeleteNetworkGroupResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteNetworkGroupResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteNetworkGroupResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteNetworkGroupResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteNetworkGroupResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteNetworkGroupResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteNetworkGroupResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteNetworkGroupResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteNetworkGroupResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteNetworkGroupResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteNetworkGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteNetworkGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteNetworkGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteNetworkGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PutNetworkGroupResponse200Headers the declared response headers of an HTTP 200 response for PutNetworkGroup
+type PutNetworkGroupResponse200Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse400Headers the declared response headers of an HTTP 400 response for PutNetworkGroup
+type PutNetworkGroupResponse400Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse401Headers the declared response headers of an HTTP 401 response for PutNetworkGroup
+type PutNetworkGroupResponse401Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse403Headers the declared response headers of an HTTP 403 response for PutNetworkGroup
+type PutNetworkGroupResponse403Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse404Headers the declared response headers of an HTTP 404 response for PutNetworkGroup
+type PutNetworkGroupResponse404Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse409Headers the declared response headers of an HTTP 409 response for PutNetworkGroup
+type PutNetworkGroupResponse409Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse413Headers the declared response headers of an HTTP 413 response for PutNetworkGroup
+type PutNetworkGroupResponse413Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse415Headers the declared response headers of an HTTP 415 response for PutNetworkGroup
+type PutNetworkGroupResponse415Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse429Headers the declared response headers of an HTTP 429 response for PutNetworkGroup
+type PutNetworkGroupResponse429Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse500Headers the declared response headers of an HTTP 500 response for PutNetworkGroup
+type PutNetworkGroupResponse500Headers struct {
+	XRequestID *string
+}
+
+// PutNetworkGroupResponse503Headers the declared response headers of an HTTP 503 response for PutNetworkGroup
+type PutNetworkGroupResponse503Headers struct {
+	XRequestID *string
+}
+
+type PutNetworkGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *NetworkGroup
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PutNetworkGroupResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PutNetworkGroupResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PutNetworkGroupResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PutNetworkGroupResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PutNetworkGroupResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PutNetworkGroupResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PutNetworkGroupResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PutNetworkGroupResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PutNetworkGroupResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PutNetworkGroupResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PutNetworkGroupResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON200() *NetworkGroup {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PutNetworkGroupResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PutNetworkGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutNetworkGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutNetworkGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutNetworkGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListPersonalAccessTokensResponse200Headers the declared response headers of an HTTP 200 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse400Headers the declared response headers of an HTTP 400 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse401Headers the declared response headers of an HTTP 401 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse403Headers the declared response headers of an HTTP 403 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse404Headers the declared response headers of an HTTP 404 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse429Headers the declared response headers of an HTTP 429 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse500Headers the declared response headers of an HTTP 500 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListPersonalAccessTokensResponse503Headers the declared response headers of an HTTP 503 response for ListPersonalAccessTokens
+type ListPersonalAccessTokensResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListPersonalAccessTokensResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PersonalAccessTokenList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListPersonalAccessTokensResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListPersonalAccessTokensResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListPersonalAccessTokensResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListPersonalAccessTokensResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListPersonalAccessTokensResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListPersonalAccessTokensResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListPersonalAccessTokensResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListPersonalAccessTokensResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON200() *PersonalAccessTokenList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListPersonalAccessTokensResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPersonalAccessTokensResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPersonalAccessTokensResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPersonalAccessTokensResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPersonalAccessTokensResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreatePersonalAccessTokenResponse201Headers the declared response headers of an HTTP 201 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse201Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse400Headers the declared response headers of an HTTP 400 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse401Headers the declared response headers of an HTTP 401 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse403Headers the declared response headers of an HTTP 403 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse404Headers the declared response headers of an HTTP 404 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse409Headers the declared response headers of an HTTP 409 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse413Headers the declared response headers of an HTTP 413 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse413Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse415Headers the declared response headers of an HTTP 415 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse415Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse429Headers the declared response headers of an HTTP 429 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse500Headers the declared response headers of an HTTP 500 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreatePersonalAccessTokenResponse503Headers the declared response headers of an HTTP 503 response for CreatePersonalAccessToken
+type CreatePersonalAccessTokenResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreatePersonalAccessTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *CreatedPersonalAccessToken
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreatePersonalAccessTokenResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreatePersonalAccessTokenResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreatePersonalAccessTokenResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreatePersonalAccessTokenResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreatePersonalAccessTokenResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreatePersonalAccessTokenResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *CreatePersonalAccessTokenResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *CreatePersonalAccessTokenResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreatePersonalAccessTokenResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreatePersonalAccessTokenResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreatePersonalAccessTokenResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON201() *CreatedPersonalAccessToken {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreatePersonalAccessTokenResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePersonalAccessTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePersonalAccessTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePersonalAccessTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePersonalAccessTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RevokePersonalAccessTokenResponse204Headers the declared response headers of an HTTP 204 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse204Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse400Headers the declared response headers of an HTTP 400 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse400Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse401Headers the declared response headers of an HTTP 401 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse401Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse403Headers the declared response headers of an HTTP 403 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse403Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse404Headers the declared response headers of an HTTP 404 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse404Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse429Headers the declared response headers of an HTTP 429 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse429Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse500Headers the declared response headers of an HTTP 500 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse500Headers struct {
+	XRequestID *string
+}
+
+// RevokePersonalAccessTokenResponse503Headers the declared response headers of an HTTP 503 response for RevokePersonalAccessToken
+type RevokePersonalAccessTokenResponse503Headers struct {
+	XRequestID *string
+}
+
+type RevokePersonalAccessTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *RevokePersonalAccessTokenResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *RevokePersonalAccessTokenResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *RevokePersonalAccessTokenResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *RevokePersonalAccessTokenResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *RevokePersonalAccessTokenResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RevokePersonalAccessTokenResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *RevokePersonalAccessTokenResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *RevokePersonalAccessTokenResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r RevokePersonalAccessTokenResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r RevokePersonalAccessTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokePersonalAccessTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokePersonalAccessTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokePersonalAccessTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetClientAuthPolicyResponse200Headers the declared response headers of an HTTP 200 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse400Headers the declared response headers of an HTTP 400 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse401Headers the declared response headers of an HTTP 401 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse403Headers the declared response headers of an HTTP 403 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse404Headers the declared response headers of an HTTP 404 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse429Headers the declared response headers of an HTTP 429 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse500Headers the declared response headers of an HTTP 500 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetClientAuthPolicyResponse503Headers the declared response headers of an HTTP 503 response for GetClientAuthPolicy
+type GetClientAuthPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetClientAuthPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ClientAuthPolicy
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetClientAuthPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetClientAuthPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetClientAuthPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetClientAuthPolicyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetClientAuthPolicyResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetClientAuthPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetClientAuthPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetClientAuthPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON200() *ClientAuthPolicy {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetClientAuthPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetClientAuthPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetClientAuthPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetClientAuthPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetClientAuthPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PutClientAuthPolicyResponse200Headers the declared response headers of an HTTP 200 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse400Headers the declared response headers of an HTTP 400 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse401Headers the declared response headers of an HTTP 401 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse403Headers the declared response headers of an HTTP 403 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse404Headers the declared response headers of an HTTP 404 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse404Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse409Headers the declared response headers of an HTTP 409 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse409Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse413Headers the declared response headers of an HTTP 413 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse413Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse415Headers the declared response headers of an HTTP 415 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse415Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse429Headers the declared response headers of an HTTP 429 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse500Headers the declared response headers of an HTTP 500 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// PutClientAuthPolicyResponse503Headers the declared response headers of an HTTP 503 response for PutClientAuthPolicy
+type PutClientAuthPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type PutClientAuthPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ClientAuthPolicy
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PutClientAuthPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PutClientAuthPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PutClientAuthPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PutClientAuthPolicyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PutClientAuthPolicyResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PutClientAuthPolicyResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PutClientAuthPolicyResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PutClientAuthPolicyResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PutClientAuthPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PutClientAuthPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PutClientAuthPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON200() *ClientAuthPolicy {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PutClientAuthPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PutClientAuthPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutClientAuthPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutClientAuthPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutClientAuthPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetDiagnosticsResponse200Headers the declared response headers of an HTTP 200 response for GetDiagnostics
 type GetDiagnosticsResponse200Headers struct {
 	ContentDisposition *string
@@ -20586,6 +24995,479 @@ func (r GetPackageAssetResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetPackageAssetResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteFeedClientAuthPolicyResponse204Headers the declared response headers of an HTTP 204 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse204Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse400Headers the declared response headers of an HTTP 400 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse401Headers the declared response headers of an HTTP 401 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse403Headers the declared response headers of an HTTP 403 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse404Headers the declared response headers of an HTTP 404 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse429Headers the declared response headers of an HTTP 429 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse500Headers the declared response headers of an HTTP 500 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteFeedClientAuthPolicyResponse503Headers the declared response headers of an HTTP 503 response for DeleteFeedClientAuthPolicy
+type DeleteFeedClientAuthPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteFeedClientAuthPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DeleteFeedClientAuthPolicyResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteFeedClientAuthPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteFeedClientAuthPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteFeedClientAuthPolicyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteFeedClientAuthPolicyResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteFeedClientAuthPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteFeedClientAuthPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteFeedClientAuthPolicyResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteFeedClientAuthPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteFeedClientAuthPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFeedClientAuthPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFeedClientAuthPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteFeedClientAuthPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFeedClientAuthPolicyResponse200Headers the declared response headers of an HTTP 200 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse400Headers the declared response headers of an HTTP 400 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse401Headers the declared response headers of an HTTP 401 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse403Headers the declared response headers of an HTTP 403 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse404Headers the declared response headers of an HTTP 404 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse429Headers the declared response headers of an HTTP 429 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse500Headers the declared response headers of an HTTP 500 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFeedClientAuthPolicyResponse503Headers the declared response headers of an HTTP 503 response for GetFeedClientAuthPolicy
+type GetFeedClientAuthPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFeedClientAuthPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ClientAuthPolicy
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFeedClientAuthPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFeedClientAuthPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFeedClientAuthPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFeedClientAuthPolicyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFeedClientAuthPolicyResponse404Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFeedClientAuthPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFeedClientAuthPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFeedClientAuthPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON200() *ClientAuthPolicy {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFeedClientAuthPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFeedClientAuthPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFeedClientAuthPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFeedClientAuthPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFeedClientAuthPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// PutFeedClientAuthPolicyResponse200Headers the declared response headers of an HTTP 200 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse200Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse400Headers the declared response headers of an HTTP 400 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse400Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse401Headers the declared response headers of an HTTP 401 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse401Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse403Headers the declared response headers of an HTTP 403 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse403Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse404Headers the declared response headers of an HTTP 404 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse404Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse409Headers the declared response headers of an HTTP 409 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse409Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse413Headers the declared response headers of an HTTP 413 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse413Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse415Headers the declared response headers of an HTTP 415 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse415Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse429Headers the declared response headers of an HTTP 429 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse429Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse500Headers the declared response headers of an HTTP 500 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse500Headers struct {
+	XRequestID *string
+}
+
+// PutFeedClientAuthPolicyResponse503Headers the declared response headers of an HTTP 503 response for PutFeedClientAuthPolicy
+type PutFeedClientAuthPolicyResponse503Headers struct {
+	XRequestID *string
+}
+
+type PutFeedClientAuthPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ClientAuthPolicy
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *Error
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *PutFeedClientAuthPolicyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *PutFeedClientAuthPolicyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *PutFeedClientAuthPolicyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *PutFeedClientAuthPolicyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *PutFeedClientAuthPolicyResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *PutFeedClientAuthPolicyResponse409Headers
+	// Headers413 the parsed response headers for an HTTP 413 response
+	Headers413 *PutFeedClientAuthPolicyResponse413Headers
+	// Headers415 the parsed response headers for an HTTP 415 response
+	Headers415 *PutFeedClientAuthPolicyResponse415Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *PutFeedClientAuthPolicyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *PutFeedClientAuthPolicyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *PutFeedClientAuthPolicyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON200() *ClientAuthPolicy {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON413() *Error {
+	return r.JSON413
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON415() *Error {
+	return r.JSON415
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r PutFeedClientAuthPolicyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r PutFeedClientAuthPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutFeedClientAuthPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutFeedClientAuthPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutFeedClientAuthPolicyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -41136,6 +46018,318 @@ func (c *ClientWithResponses) GetApiV1AuditExportWithResponse(ctx context.Contex
 	return ParseGetApiV1AuditExportResponse(rsp)
 }
 
+// GetGitHubOIDCConfigWithResponse performs a GET /api/v1/auth/github-oidc/config (the `GetGitHubOIDCConfig` operationId) request.
+//
+// GitHub Actions OIDC settings. An empty audience disables the feature. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetGitHubOIDCConfigWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetGitHubOIDCConfigResponse, error) {
+	rsp, err := c.GetGitHubOIDCConfig(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetGitHubOIDCConfigResponse(rsp)
+}
+
+// PutGitHubOIDCConfigWithBodyWithResponse performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request,
+// with any type of body and a specified content type.
+//
+// Sets the accepted OIDC audience. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PutGitHubOIDCConfigWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutGitHubOIDCConfigResponse, error) {
+	rsp, err := c.PutGitHubOIDCConfigWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutGitHubOIDCConfigResponse(rsp)
+}
+
+// PutGitHubOIDCConfigWithResponse performs a PUT /api/v1/auth/github-oidc/config (the `PutGitHubOIDCConfig` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Sets the accepted OIDC audience. Requires instance admin.
+func (c *ClientWithResponses) PutGitHubOIDCConfigWithResponse(ctx context.Context, body PutGitHubOIDCConfigJSONRequestBody, reqEditors ...RequestEditorFn) (*PutGitHubOIDCConfigResponse, error) {
+	rsp, err := c.PutGitHubOIDCConfig(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutGitHubOIDCConfigResponse(rsp)
+}
+
+// ExchangeGitHubOIDCTokenWithBodyWithResponse performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request,
+// with any type of body and a specified content type.
+//
+// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ExchangeGitHubOIDCTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeGitHubOIDCTokenResponse, error) {
+	rsp, err := c.ExchangeGitHubOIDCTokenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExchangeGitHubOIDCTokenResponse(rsp)
+}
+
+// ExchangeGitHubOIDCTokenWithResponse performs a POST /api/v1/auth/github-oidc/exchange (the `ExchangeGitHubOIDCToken` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Exchanges a GitHub Actions OIDC JWT (issuer https://token.actions.githubusercontent.com, configured audience) for a short-lived scoped Ant token. The JWT is the credential and may be sent as the body token or as a Bearer. No other authentication is required.
+func (c *ClientWithResponses) ExchangeGitHubOIDCTokenWithResponse(ctx context.Context, body ExchangeGitHubOIDCTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ExchangeGitHubOIDCTokenResponse, error) {
+	rsp, err := c.ExchangeGitHubOIDCToken(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExchangeGitHubOIDCTokenResponse(rsp)
+}
+
+// ListGitHubTrustRulesWithResponse performs a GET /api/v1/auth/github-oidc/trust-rules (the `ListGitHubTrustRules` operationId) request.
+//
+// Trust rules mapping GitHub workflows to scoped Ant tokens; the oldest enabled matching rule applies. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListGitHubTrustRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListGitHubTrustRulesResponse, error) {
+	rsp, err := c.ListGitHubTrustRules(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListGitHubTrustRulesResponse(rsp)
+}
+
+// CreateGitHubTrustRuleWithBodyWithResponse performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateGitHubTrustRuleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateGitHubTrustRuleResponse, error) {
+	rsp, err := c.CreateGitHubTrustRuleWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateGitHubTrustRuleResponse(rsp)
+}
+
+// CreateGitHubTrustRuleWithResponse performs a POST /api/v1/auth/github-oidc/trust-rules (the `CreateGitHubTrustRule` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.
+func (c *ClientWithResponses) CreateGitHubTrustRuleWithResponse(ctx context.Context, body CreateGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateGitHubTrustRuleResponse, error) {
+	rsp, err := c.CreateGitHubTrustRule(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateGitHubTrustRuleResponse(rsp)
+}
+
+// DeleteGitHubTrustRuleWithResponse performs a DELETE /api/v1/auth/github-oidc/trust-rules/{id} (the `DeleteGitHubTrustRule` operationId) request.
+//
+// Deletes a trust rule. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteGitHubTrustRuleWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteGitHubTrustRuleResponse, error) {
+	rsp, err := c.DeleteGitHubTrustRule(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteGitHubTrustRuleResponse(rsp)
+}
+
+// PutGitHubTrustRuleWithBodyWithResponse performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces a trust rule. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PutGitHubTrustRuleWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutGitHubTrustRuleResponse, error) {
+	rsp, err := c.PutGitHubTrustRuleWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutGitHubTrustRuleResponse(rsp)
+}
+
+// PutGitHubTrustRuleWithResponse performs a PUT /api/v1/auth/github-oidc/trust-rules/{id} (the `PutGitHubTrustRule` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replaces a trust rule. Requires instance admin.
+func (c *ClientWithResponses) PutGitHubTrustRuleWithResponse(ctx context.Context, id openapi_types.UUID, body PutGitHubTrustRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*PutGitHubTrustRuleResponse, error) {
+	rsp, err := c.PutGitHubTrustRule(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutGitHubTrustRuleResponse(rsp)
+}
+
+// ListNetworkGroupsWithResponse performs a GET /api/v1/auth/network-groups (the `ListNetworkGroups` operationId) request.
+//
+// Named CIDR groups usable to restrict anonymous access. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListNetworkGroupsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListNetworkGroupsResponse, error) {
+	rsp, err := c.ListNetworkGroups(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListNetworkGroupsResponse(rsp)
+}
+
+// CreateNetworkGroupWithBodyWithResponse performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a named network group. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateNetworkGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNetworkGroupResponse, error) {
+	rsp, err := c.CreateNetworkGroupWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateNetworkGroupResponse(rsp)
+}
+
+// CreateNetworkGroupWithResponse performs a POST /api/v1/auth/network-groups (the `CreateNetworkGroup` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Creates a named network group. Requires instance admin.
+func (c *ClientWithResponses) CreateNetworkGroupWithResponse(ctx context.Context, body CreateNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNetworkGroupResponse, error) {
+	rsp, err := c.CreateNetworkGroup(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateNetworkGroupResponse(rsp)
+}
+
+// DeleteNetworkGroupWithResponse performs a DELETE /api/v1/auth/network-groups/{id} (the `DeleteNetworkGroup` operationId) request.
+//
+// Deletes a network group that no policy references (409 otherwise). Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteNetworkGroupWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteNetworkGroupResponse, error) {
+	rsp, err := c.DeleteNetworkGroup(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteNetworkGroupResponse(rsp)
+}
+
+// PutNetworkGroupWithBodyWithResponse performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces a network group. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PutNetworkGroupWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutNetworkGroupResponse, error) {
+	rsp, err := c.PutNetworkGroupWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutNetworkGroupResponse(rsp)
+}
+
+// PutNetworkGroupWithResponse performs a PUT /api/v1/auth/network-groups/{id} (the `PutNetworkGroup` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replaces a network group. Requires instance admin.
+func (c *ClientWithResponses) PutNetworkGroupWithResponse(ctx context.Context, id openapi_types.UUID, body PutNetworkGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*PutNetworkGroupResponse, error) {
+	rsp, err := c.PutNetworkGroup(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutNetworkGroupResponse(rsp)
+}
+
+// ListPersonalAccessTokensWithResponse performs a GET /api/v1/auth/personal-access-tokens (the `ListPersonalAccessTokens` operationId) request.
+//
+// The signed-in user's personal access tokens. Secrets are never returned.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListPersonalAccessTokensWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPersonalAccessTokensResponse, error) {
+	rsp, err := c.ListPersonalAccessTokens(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPersonalAccessTokensResponse(rsp)
+}
+
+// CreatePersonalAccessTokenWithBodyWithResponse performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreatePersonalAccessTokenWithBodyWithResponse(ctx context.Context, params *CreatePersonalAccessTokenParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePersonalAccessTokenResponse, error) {
+	rsp, err := c.CreatePersonalAccessTokenWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePersonalAccessTokenResponse(rsp)
+}
+
+// CreatePersonalAccessTokenWithResponse performs a POST /api/v1/auth/personal-access-tokens (the `CreatePersonalAccessToken` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Creates a personal access token for the signed-in user (not available to machine tokens). The secret is returned once. Effective access is the user's own grants intersected with the scopes.
+func (c *ClientWithResponses) CreatePersonalAccessTokenWithResponse(ctx context.Context, params *CreatePersonalAccessTokenParams, body CreatePersonalAccessTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePersonalAccessTokenResponse, error) {
+	rsp, err := c.CreatePersonalAccessToken(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePersonalAccessTokenResponse(rsp)
+}
+
+// RevokePersonalAccessTokenWithResponse performs a DELETE /api/v1/auth/personal-access-tokens/{id} (the `RevokePersonalAccessToken` operationId) request.
+//
+// Revokes one of the signed-in user's tokens.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RevokePersonalAccessTokenWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevokePersonalAccessTokenResponse, error) {
+	rsp, err := c.RevokePersonalAccessToken(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokePersonalAccessTokenResponse(rsp)
+}
+
+// GetClientAuthPolicyWithResponse performs a GET /api/v1/auth/policy (the `GetClientAuthPolicy` operationId) request.
+//
+// Instance default client authentication policy for package-protocol traffic. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetClientAuthPolicyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetClientAuthPolicyResponse, error) {
+	rsp, err := c.GetClientAuthPolicy(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetClientAuthPolicyResponse(rsp)
+}
+
+// PutClientAuthPolicyWithBodyWithResponse performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PutClientAuthPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutClientAuthPolicyResponse, error) {
+	rsp, err := c.PutClientAuthPolicyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutClientAuthPolicyResponse(rsp)
+}
+
+// PutClientAuthPolicyWithResponse performs a PUT /api/v1/auth/policy (the `PutClientAuthPolicy` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.
+func (c *ClientWithResponses) PutClientAuthPolicyWithResponse(ctx context.Context, body PutClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*PutClientAuthPolicyResponse, error) {
+	rsp, err := c.PutClientAuthPolicy(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutClientAuthPolicyResponse(rsp)
+}
+
 // GetDiagnosticsWithResponse performs a GET /api/v1/diagnostics (the `GetDiagnostics` operationId) request.
 //
 // Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.
@@ -41278,6 +46472,58 @@ func (c *ClientWithResponses) GetPackageAssetWithResponse(ctx context.Context, i
 		return nil, err
 	}
 	return ParseGetPackageAssetResponse(rsp)
+}
+
+// DeleteFeedClientAuthPolicyWithResponse performs a DELETE /api/v1/feeds/{id}/auth-policy (the `DeleteFeedClientAuthPolicy` operationId) request.
+//
+// Removes the feed's own policy so it inherits the instance default. Requires configure on the feed.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteFeedClientAuthPolicyWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteFeedClientAuthPolicyResponse, error) {
+	rsp, err := c.DeleteFeedClientAuthPolicy(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFeedClientAuthPolicyResponse(rsp)
+}
+
+// GetFeedClientAuthPolicyWithResponse performs a GET /api/v1/feeds/{id}/auth-policy (the `GetFeedClientAuthPolicy` operationId) request.
+//
+// Effective client authentication policy of a feed; inherited is true when the feed has no policy of its own. Requires configure on the feed.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFeedClientAuthPolicyWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFeedClientAuthPolicyResponse, error) {
+	rsp, err := c.GetFeedClientAuthPolicy(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFeedClientAuthPolicyResponse(rsp)
+}
+
+// PutFeedClientAuthPolicyWithBodyWithResponse performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request,
+// with any type of body and a specified content type.
+//
+// Sets the feed's own client authentication policy. Requires configure on the feed.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) PutFeedClientAuthPolicyWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutFeedClientAuthPolicyResponse, error) {
+	rsp, err := c.PutFeedClientAuthPolicyWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutFeedClientAuthPolicyResponse(rsp)
+}
+
+// PutFeedClientAuthPolicyWithResponse performs a PUT /api/v1/feeds/{id}/auth-policy (the `PutFeedClientAuthPolicy` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Sets the feed's own client authentication policy. Requires configure on the feed.
+func (c *ClientWithResponses) PutFeedClientAuthPolicyWithResponse(ctx context.Context, id openapi_types.UUID, body PutFeedClientAuthPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*PutFeedClientAuthPolicyResponse, error) {
+	rsp, err := c.PutFeedClientAuthPolicy(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutFeedClientAuthPolicyResponse(rsp)
 }
 
 // GetDeletePolicyWithResponse performs a GET /api/v1/feeds/{id}/delete-policy (the `GetDeletePolicy` operationId) request.
@@ -44680,6 +49926,2947 @@ func ParseGetApiV1AuditExportResponse(rsp *http.Response) (*GetApiV1AuditExportR
 	return response, nil
 }
 
+// ParseGetGitHubOIDCConfigResponse parses an HTTP response from a GetGitHubOIDCConfigWithResponse call
+func ParseGetGitHubOIDCConfigResponse(rsp *http.Response) (*GetGitHubOIDCConfigResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetGitHubOIDCConfigResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GitHubOIDCConfig
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetGitHubOIDCConfigResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetGitHubOIDCConfigResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetGitHubOIDCConfigResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetGitHubOIDCConfigResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetGitHubOIDCConfigResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetGitHubOIDCConfigResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetGitHubOIDCConfigResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetGitHubOIDCConfigResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePutGitHubOIDCConfigResponse parses an HTTP response from a PutGitHubOIDCConfigWithResponse call
+func ParsePutGitHubOIDCConfigResponse(rsp *http.Response) (*PutGitHubOIDCConfigResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutGitHubOIDCConfigResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GitHubOIDCConfig
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PutGitHubOIDCConfigResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PutGitHubOIDCConfigResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PutGitHubOIDCConfigResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PutGitHubOIDCConfigResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PutGitHubOIDCConfigResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers PutGitHubOIDCConfigResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers PutGitHubOIDCConfigResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PutGitHubOIDCConfigResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PutGitHubOIDCConfigResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PutGitHubOIDCConfigResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PutGitHubOIDCConfigResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseExchangeGitHubOIDCTokenResponse parses an HTTP response from a ExchangeGitHubOIDCTokenWithResponse call
+func ParseExchangeGitHubOIDCTokenResponse(rsp *http.Response) (*ExchangeGitHubOIDCTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExchangeGitHubOIDCTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GitHubExchangeResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ExchangeGitHubOIDCTokenResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ExchangeGitHubOIDCTokenResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ExchangeGitHubOIDCTokenResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ExchangeGitHubOIDCTokenResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ExchangeGitHubOIDCTokenResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ExchangeGitHubOIDCTokenResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers ExchangeGitHubOIDCTokenResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers ExchangeGitHubOIDCTokenResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers ExchangeGitHubOIDCTokenResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ExchangeGitHubOIDCTokenResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ExchangeGitHubOIDCTokenResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListGitHubTrustRulesResponse parses an HTTP response from a ListGitHubTrustRulesWithResponse call
+func ParseListGitHubTrustRulesResponse(rsp *http.Response) (*ListGitHubTrustRulesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListGitHubTrustRulesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GitHubTrustRuleList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListGitHubTrustRulesResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListGitHubTrustRulesResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListGitHubTrustRulesResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListGitHubTrustRulesResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListGitHubTrustRulesResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListGitHubTrustRulesResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListGitHubTrustRulesResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListGitHubTrustRulesResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateGitHubTrustRuleResponse parses an HTTP response from a CreateGitHubTrustRuleWithResponse call
+func ParseCreateGitHubTrustRuleResponse(rsp *http.Response) (*CreateGitHubTrustRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateGitHubTrustRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest GitHubTrustRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateGitHubTrustRuleResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateGitHubTrustRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateGitHubTrustRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateGitHubTrustRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreateGitHubTrustRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateGitHubTrustRuleResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers CreateGitHubTrustRuleResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers CreateGitHubTrustRuleResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateGitHubTrustRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateGitHubTrustRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateGitHubTrustRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteGitHubTrustRuleResponse parses an HTTP response from a DeleteGitHubTrustRuleWithResponse call
+func ParseDeleteGitHubTrustRuleResponse(rsp *http.Response) (*DeleteGitHubTrustRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteGitHubTrustRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DeleteGitHubTrustRuleResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteGitHubTrustRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteGitHubTrustRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteGitHubTrustRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteGitHubTrustRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteGitHubTrustRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteGitHubTrustRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteGitHubTrustRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePutGitHubTrustRuleResponse parses an HTTP response from a PutGitHubTrustRuleWithResponse call
+func ParsePutGitHubTrustRuleResponse(rsp *http.Response) (*PutGitHubTrustRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutGitHubTrustRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GitHubTrustRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PutGitHubTrustRuleResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PutGitHubTrustRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PutGitHubTrustRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PutGitHubTrustRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PutGitHubTrustRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers PutGitHubTrustRuleResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers PutGitHubTrustRuleResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PutGitHubTrustRuleResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PutGitHubTrustRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PutGitHubTrustRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PutGitHubTrustRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListNetworkGroupsResponse parses an HTTP response from a ListNetworkGroupsWithResponse call
+func ParseListNetworkGroupsResponse(rsp *http.Response) (*ListNetworkGroupsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListNetworkGroupsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NetworkGroupList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListNetworkGroupsResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListNetworkGroupsResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListNetworkGroupsResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListNetworkGroupsResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListNetworkGroupsResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListNetworkGroupsResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListNetworkGroupsResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListNetworkGroupsResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateNetworkGroupResponse parses an HTTP response from a CreateNetworkGroupWithResponse call
+func ParseCreateNetworkGroupResponse(rsp *http.Response) (*CreateNetworkGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateNetworkGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest NetworkGroup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateNetworkGroupResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateNetworkGroupResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateNetworkGroupResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateNetworkGroupResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreateNetworkGroupResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateNetworkGroupResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers CreateNetworkGroupResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers CreateNetworkGroupResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateNetworkGroupResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateNetworkGroupResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateNetworkGroupResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteNetworkGroupResponse parses an HTTP response from a DeleteNetworkGroupWithResponse call
+func ParseDeleteNetworkGroupResponse(rsp *http.Response) (*DeleteNetworkGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteNetworkGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DeleteNetworkGroupResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteNetworkGroupResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteNetworkGroupResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteNetworkGroupResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteNetworkGroupResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteNetworkGroupResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteNetworkGroupResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteNetworkGroupResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteNetworkGroupResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePutNetworkGroupResponse parses an HTTP response from a PutNetworkGroupWithResponse call
+func ParsePutNetworkGroupResponse(rsp *http.Response) (*PutNetworkGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutNetworkGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NetworkGroup
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PutNetworkGroupResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PutNetworkGroupResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PutNetworkGroupResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PutNetworkGroupResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PutNetworkGroupResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers PutNetworkGroupResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers PutNetworkGroupResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PutNetworkGroupResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PutNetworkGroupResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PutNetworkGroupResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PutNetworkGroupResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListPersonalAccessTokensResponse parses an HTTP response from a ListPersonalAccessTokensWithResponse call
+func ParseListPersonalAccessTokensResponse(rsp *http.Response) (*ListPersonalAccessTokensResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPersonalAccessTokensResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PersonalAccessTokenList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListPersonalAccessTokensResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListPersonalAccessTokensResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListPersonalAccessTokensResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListPersonalAccessTokensResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListPersonalAccessTokensResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListPersonalAccessTokensResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListPersonalAccessTokensResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListPersonalAccessTokensResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreatePersonalAccessTokenResponse parses an HTTP response from a CreatePersonalAccessTokenWithResponse call
+func ParseCreatePersonalAccessTokenResponse(rsp *http.Response) (*CreatePersonalAccessTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePersonalAccessTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CreatedPersonalAccessToken
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreatePersonalAccessTokenResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreatePersonalAccessTokenResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreatePersonalAccessTokenResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreatePersonalAccessTokenResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreatePersonalAccessTokenResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreatePersonalAccessTokenResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers CreatePersonalAccessTokenResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers CreatePersonalAccessTokenResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreatePersonalAccessTokenResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreatePersonalAccessTokenResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreatePersonalAccessTokenResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseRevokePersonalAccessTokenResponse parses an HTTP response from a RevokePersonalAccessTokenWithResponse call
+func ParseRevokePersonalAccessTokenResponse(rsp *http.Response) (*RevokePersonalAccessTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokePersonalAccessTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers RevokePersonalAccessTokenResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers RevokePersonalAccessTokenResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers RevokePersonalAccessTokenResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers RevokePersonalAccessTokenResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers RevokePersonalAccessTokenResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers RevokePersonalAccessTokenResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers RevokePersonalAccessTokenResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers RevokePersonalAccessTokenResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetClientAuthPolicyResponse parses an HTTP response from a GetClientAuthPolicyWithResponse call
+func ParseGetClientAuthPolicyResponse(rsp *http.Response) (*GetClientAuthPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetClientAuthPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ClientAuthPolicy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetClientAuthPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetClientAuthPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetClientAuthPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetClientAuthPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetClientAuthPolicyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetClientAuthPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetClientAuthPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetClientAuthPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePutClientAuthPolicyResponse parses an HTTP response from a PutClientAuthPolicyWithResponse call
+func ParsePutClientAuthPolicyResponse(rsp *http.Response) (*PutClientAuthPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutClientAuthPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ClientAuthPolicy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PutClientAuthPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PutClientAuthPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PutClientAuthPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PutClientAuthPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PutClientAuthPolicyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers PutClientAuthPolicyResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers PutClientAuthPolicyResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PutClientAuthPolicyResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PutClientAuthPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PutClientAuthPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PutClientAuthPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetDiagnosticsResponse parses an HTTP response from a GetDiagnosticsWithResponse call
 func ParseGetDiagnosticsResponse(rsp *http.Response) (*GetDiagnosticsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -46386,6 +54573,527 @@ func ParseGetPackageAssetResponse(rsp *http.Response) (*GetPackageAssetResponse,
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetPackageAssetResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFeedClientAuthPolicyResponse parses an HTTP response from a DeleteFeedClientAuthPolicyWithResponse call
+func ParseDeleteFeedClientAuthPolicyResponse(rsp *http.Response) (*DeleteFeedClientAuthPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFeedClientAuthPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DeleteFeedClientAuthPolicyResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteFeedClientAuthPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteFeedClientAuthPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteFeedClientAuthPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteFeedClientAuthPolicyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteFeedClientAuthPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteFeedClientAuthPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteFeedClientAuthPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFeedClientAuthPolicyResponse parses an HTTP response from a GetFeedClientAuthPolicyWithResponse call
+func ParseGetFeedClientAuthPolicyResponse(rsp *http.Response) (*GetFeedClientAuthPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFeedClientAuthPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ClientAuthPolicy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFeedClientAuthPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFeedClientAuthPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFeedClientAuthPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFeedClientAuthPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFeedClientAuthPolicyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFeedClientAuthPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFeedClientAuthPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFeedClientAuthPolicyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePutFeedClientAuthPolicyResponse parses an HTTP response from a PutFeedClientAuthPolicyWithResponse call
+func ParsePutFeedClientAuthPolicyResponse(rsp *http.Response) (*PutFeedClientAuthPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutFeedClientAuthPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ClientAuthPolicy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers PutFeedClientAuthPolicyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers PutFeedClientAuthPolicyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers PutFeedClientAuthPolicyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers PutFeedClientAuthPolicyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers PutFeedClientAuthPolicyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers PutFeedClientAuthPolicyResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 413:
+		var headers PutFeedClientAuthPolicyResponse413Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers413 = &headers
+	case rsp.StatusCode == 415:
+		var headers PutFeedClientAuthPolicyResponse415Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers415 = &headers
+	case rsp.StatusCode == 429:
+		var headers PutFeedClientAuthPolicyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers PutFeedClientAuthPolicyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers PutFeedClientAuthPolicyResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -69207,425 +77915,460 @@ func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretR
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"OWTC4wyJ618fv3z88v8NAA==",
+	"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",
+	"AA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

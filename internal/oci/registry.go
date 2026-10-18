@@ -82,7 +82,9 @@ func (r *Registry) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 		// Feeds with anonymous_read (typically a pull-through mirror used by
 		// dockerd, which never sends credentials to a mirror) are served without
 		// a challenge. Everything else, and every write, still gets the 401.
-		if r.serveAnonymous(w, request) {
+		// When the client-authentication middleware already applied the feed
+		// policy, it alone decides anonymous access.
+		if !identity.PolicyEnforced(request.Context()) && r.serveAnonymous(w, request) {
 			return
 		}
 		w.Header().Set("WWW-Authenticate", `Basic realm="Kuvryn Ant"`)

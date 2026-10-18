@@ -46,6 +46,10 @@ type Principal struct {
 	// anonymous_read enabled, never derived from a request or token, and
 	// Roles.Resolve grants it Read on those feeds only.
 	Anonymous bool
+	// ticket marks a principal minted by the client-authentication middleware
+	// after it verified a credential against the feed policy. Only that
+	// middleware can set it (via a single-use in-process ticket).
+	ticket bool
 }
 type IssuedToken struct {
 	ID, Secret string
@@ -89,15 +93,9 @@ func (t Tokens) Issue(ctx context.Context, instance, actor, principal string, sc
 	if !expires.After(time.Now()) || expires.After(time.Now().Add(365*24*time.Hour)) {
 		return IssuedToken{}, errors.New("token expiry must be within one year")
 	}
-	// Normalize UUID spelling before retaining scopes for authorization comparisons.
-	scopes = append([]Scope(nil), scopes...)
-	for i := range scopes {
-		if scopes[i].FeedID != "" {
-			var id pgtype.UUID
-			_ = id.Scan(scopes[i].FeedID)
-			value, _ := id.Value()
-			scopes[i].FeedID = value.(string)
-		}
+	scopes, err := normalizeScopes(scopes)
+	if err != nil {
+		return IssuedToken{}, ErrInvalidScope
 	}
 	var secret [32]byte
 	if _, err := rand.Read(secret[:]); err != nil {
@@ -155,6 +153,9 @@ func (t Tokens) Authenticate(ctx context.Context, raw string) (Principal, error)
 		return Principal{}, ErrUnauthenticated
 	}
 	clear(decoded)
+	if p, ok := takeTicket(raw); ok {
+		return p, nil
+	}
 	verifier := sha256.Sum256([]byte(raw))
 	var p Principal
 	var scopes []byte
@@ -215,4 +216,21 @@ func rollback(tx pgx.Tx) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = tx.Rollback(ctx)
+}
+
+// normalizeScopes canonicalizes UUID spelling before scopes are retained for
+// authorization comparisons.
+func normalizeScopes(in []Scope) ([]Scope, error) {
+	scopes := append([]Scope(nil), in...)
+	for i := range scopes {
+		if scopes[i].FeedID != "" {
+			var id pgtype.UUID
+			if id.Scan(scopes[i].FeedID) != nil || !id.Valid {
+				return nil, ErrInvalidScope
+			}
+			value, _ := id.Value()
+			scopes[i].FeedID = value.(string)
+		}
+	}
+	return scopes, nil
 }

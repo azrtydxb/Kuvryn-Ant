@@ -91,7 +91,7 @@ func (b *Bearer) Wrap(next http.Handler) http.Handler {
 					authError(w, r, http.StatusServiceUnavailable, api.ErrorCodeUnavailable, "authentication unavailable")
 					return
 				}
-				valid = err == nil && p.PrincipalID != "" && p.InstanceID != "" && p.TokenID != ""
+				valid = err == nil && p.PrincipalID != "" && p.InstanceID != "" && (p.TokenID != "" || p.ticket)
 			}
 		}
 		if !valid {
