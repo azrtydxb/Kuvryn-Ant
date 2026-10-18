@@ -27,6 +27,18 @@ Local disposable PostgreSQL17 fixtures and installed clients exercised:
 | Python hash-verified download/install and requires-python rejection | pip26.2.1 | `internal/pypi` PostgreSQL tests |
 | Maven release parent-POM resolution | Maven3.9.16 | `internal/maven` PostgreSQL tests |
 | NuGet push and restore | .NET8.0.131 | `internal/nuget` PostgreSQL tests |
+| Git LFS object push/pull and byte-range reads | Git HTTP fixtures | `internal/gitlfs` PostgreSQL tests |
+| Composer install, locked install and package metadata | Composer2.9.7/PHP8.5.6 | `internal/composer` PostgreSQL tests |
+| Pub version fetch, archive install and offline checks | Dart fixtures | `internal/pubrepo` PostgreSQL tests |
+| RubyGems push, compact index, install and checksums | RubyGems fixtures | `internal/rubygems` PostgreSQL tests |
+
+Conan, ansible-galaxy, conda and CRAN adapters are implemented and mounted with
+boundary-tested local fixtures (`internal/conan`, `internal/ansiblerepo`,
+`internal/condarepo`, `internal/cran`); native-client evidence for those four
+formats and remote/replica resolution remain release gates. The remote-source
+runtime (`internal/remoteruntime`) materializes authorized remote config and
+credentials, applies CAs and redirect policy, and streams/caches metadata and
+archives with per-source quotas under `scripts/test-postgres.sh` fixtures.
 
 These actual versions differ from some planned release-matrix pins. Remote/replica behavior, deployment-scale workloads, mutable lifecycle policies and full format certification remain separate gates. Inspect each adapter's README for its exact supported operations and explicit limits.
 
@@ -42,8 +54,8 @@ The React console configures implemented management resources; no bearer token i
 
 The runtime now pins Go1.27.2 and goxmldsig1.6.0. The latter addresses [GO-2026-4753](https://pkg.go.dev/vuln/GO-2026-4753); SAML signature fixtures also enforce the supported single-reference structure. Forced shutdown joins handler cleanup before closing storage. Background delivery retains an immutable instance scope and rejects startup without matching writer ownership.
 
-Root encryption keys support `ANT_ROOT_KEY_VERSION` (default `v1`) and an optional `ANT_PREVIOUS_ROOT_KEYS_FILE`, a bounded JSON map from earlier version names to mounted 32-byte key files. Keep earlier keys available while encrypted records still reference them. This configuration does not by itself re-encrypt existing records.
+Root encryption keys support `ANT_ROOT_KEY_VERSION` (default `v1`) and an optional `ANT_PREVIOUS_ROOT_KEYS_FILE`, a bounded JSON map from earlier version names to mounted 32-byte key files. Keep earlier keys available while encrypted records still reference them. Run the local `ant rotate-secrets` command with both active and previous mounted keys to rewrap at most100 records per invocation. The command emits only a count and batch limit and can be safely resumed; it does not issue an access token. Keep previous keys until no stored records reference their versions (a zero batch can also mean rows are currently locked by another rotation).
 
 ## Remaining work
 
-The entire Phase1 scope remains required: remaining format adapters and certification, upstream cache integration, replication, retention/GC, backups and restore, provider administration, release packaging/qualification and deployment evidence. OKE plus existing MinIO on TrueNAS SCALE is the primary deployment target. AWS and other compatible providers remain supported targets without a separate environment fleet. Licensing remains deliberately undecided.
+The entire Phase1 scope remains required: the remaining format adapters and certification, replication, retention/GC, backups and restore, provider administration, release packaging/qualification and deployment evidence. OKE plus existing MinIO on TrueNAS SCALE is the primary deployment target. AWS and other compatible providers remain supported targets without a separate environment fleet. Licensing remains deliberately undecided.

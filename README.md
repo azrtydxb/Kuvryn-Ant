@@ -80,3 +80,5 @@ Configuration fields and tested boundaries are recorded in [OIDC](docs/implement
 OKE plus existing MinIO on TrueNAS SCALE is the primary integration target. Disk, AWS S3, and other compatible providers remain in scope through a reusable storage contract. No provider-specific test fleet is required. See the [compatibility baseline](docs/planning/compatibility-matrix.md).
 
 Licensing remains undecided.
+
+Root-key rotation uses `ANT_ROOT_KEY_VERSION`, `ANT_PREVIOUS_ROOT_KEYS_FILE`, and the bounded local `ant rotate-secrets` command. See [rotation and delivery evidence](docs/implementation/local-delivery.md).
