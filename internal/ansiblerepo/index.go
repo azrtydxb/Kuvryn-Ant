@@ -28,6 +28,16 @@ type entry struct {
 // info=true renders the collection page, otherwise a versions list (version
 // empty) or a single version detail.
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, ns, name, version, base string, info bool) {
+	served, remoteErr := s.serveRemote(w, r, p, feed, ns, name, version, base, info)
+	if served {
+		return
+	}
+	if errors.Is(remoteErr, errNoRemote) {
+		remoteErr = nil
+	}
+	if remoteErr != nil {
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
 	defer cancel()
 	coordinate := ns + "." + name
@@ -54,6 +64,11 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 	}
 	if len(entries) > maxVersions {
 		failure(w, artifact.ErrUnavailable)
+		return
+	}
+	if remoteErr != nil && len(entries) == 0 {
+		w.Header().Del("X-Kuvryn-Cache")
+		failure(w, remoteErr)
 		return
 	}
 	sort.Slice(entries, func(i, j int) bool { return semver.Compare("v"+entries[i].version, "v"+entries[j].version) > 0 })
