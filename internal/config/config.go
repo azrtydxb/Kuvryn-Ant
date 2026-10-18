@@ -27,6 +27,7 @@ type Config struct {
 	ShutdownTimeout time.Duration
 	MaxRequests     int
 	Retention       Retention
+	Replication     ReplicationHistory
 	OCIMirror       OCIMirror
 }
 
@@ -71,6 +72,10 @@ func Load(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 	c.Retention, err = loadRetention(getenv)
+	if err != nil {
+		return Config{}, err
+	}
+	c.Replication, err = loadReplicationHistory(getenv)
 	if err != nil {
 		return Config{}, err
 	}

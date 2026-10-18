@@ -4,6 +4,12 @@ import { useAllFeeds } from "./data";
 import { useOptionalCall } from "./gaps";
 import type { ReplicationJob, ReplicationPeer } from "./generated";
 import {
+  EditJobModal,
+  PeerEditModal,
+  TemplateModal,
+} from "./ReplicationDialogs";
+import {
+  Alert,
   Badge,
   Button,
   Drawer,
@@ -43,9 +49,13 @@ export function ReplicationPage({ client }: { client: Client }) {
   const feeds = useAllFeeds(client);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState<string>();
+  const [editing, setEditing] = useState<string>();
+  const [reviewing, setReviewing] = useState<string>();
   const peerList = peers.state === "ready" ? peers.data.items : [];
   const jobList = jobs.state === "ready" ? jobs.data.items : [];
   const current = jobList.find((j) => j.id === open);
+  const editJob = jobList.find((j) => j.id === editing);
+  const reviewJob = jobList.find((j) => j.id === reviewing);
   const reload = () => {
     jobs.reload();
     peers.reload();
@@ -117,7 +127,9 @@ export function ReplicationPage({ client }: { client: Client }) {
                               ? "Running"
                               : j.status.last_error
                                 ? "Failing"
-                                : j.status.phase.replace("_", " ")}
+                                : j.status.reseeding
+                                  ? "Reseeding"
+                                  : j.status.phase.replace("_", " ")}
                           </Badge>
                         ),
                       },
@@ -150,7 +162,13 @@ export function ReplicationPage({ client }: { client: Client }) {
                         label: "",
                         align: "right",
                         render: (j: ReplicationJob) => (
-                          <JobMenu client={client} job={j} changed={reload} />
+                          <JobMenu
+                            client={client}
+                            job={j}
+                            changed={reload}
+                            edit={() => setEditing(j.id)}
+                            review={() => setReviewing(j.id)}
+                          />
                         ),
                       },
                     ]}
@@ -237,8 +255,33 @@ export function ReplicationPage({ client }: { client: Client }) {
           description={<Copyable text={current.id} />}
           onClose={() => setOpen(undefined)}
           width={560}
-          footer={<Button onClick={() => setOpen(undefined)}>Done</Button>}
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                icon="file-text"
+                onClick={() => setReviewing(current.id)}
+              >
+                Configuration template
+              </Button>
+              <Button
+                variant="secondary"
+                icon="pencil"
+                onClick={() => setEditing(current.id)}
+              >
+                Edit job
+              </Button>
+              <Button onClick={() => setOpen(undefined)}>Done</Button>
+            </>
+          }
         >
+          {current.status.reseeding && (
+            <Alert tone="info" title="Reseeding">
+              The peer purged change history this job still needed, so the job
+              is re-reading the full manifest. Content already present is not
+              transferred again and nothing here is deleted.
+            </Alert>
+          )}
           <PropertyList
             items={[
               { label: "Phase", value: current.status.phase, mono: true },
@@ -280,9 +323,22 @@ export function ReplicationPage({ client }: { client: Client }) {
               },
               { label: "Conflicts", value: count(current.status.conflicts) },
               {
-                label: "Consecutive failures",
-                value: count(current.status.consecutive_failures),
+                label: "Failures",
+                value: `${count(current.status.consecutive_failures)} in a row · ${count(current.status.failures_total)} total`,
               },
+              {
+                label: "Reseeds",
+                value: `${count(current.status.reseeds)}${
+                  current.status.source_low_water == null
+                    ? ""
+                    : ` · peer history starts after ${count(current.status.source_low_water)}`
+                }`,
+              },
+              {
+                label: "Back-fills",
+                value: `${count(current.status.backfills_pending)} pending · ${count(current.status.backfills_completed)} done`,
+              },
+              { label: "Resumed", value: bytes(current.status.resumed_bytes) },
               ...(current.status.last_error
                 ? [{ label: "Last error", value: current.status.last_error }]
                 : []),
@@ -297,9 +353,43 @@ export function ReplicationPage({ client }: { client: Client }) {
                 mono: true,
               },
               { label: "Deletion policy", value: current.deletion_policy },
+              {
+                label: "Filters",
+                value:
+                  [
+                    ...(current.filters.namespaces ?? []).map(
+                      (v) => `namespace ${v}`,
+                    ),
+                    ...(current.filters.packages ?? []).map(
+                      (v) => `package ${v}`,
+                    ),
+                    ...(current.filters.version_prefixes ?? []).map(
+                      (v) => `version ${v}*`,
+                    ),
+                  ].join(", ") || "None (whole feed)",
+              },
             ]}
           />
         </Drawer>
+      )}
+      {editJob && (
+        <EditJobModal
+          client={client}
+          job={editJob}
+          onClose={() => setEditing(undefined)}
+          done={() => {
+            setEditing(undefined);
+            reload();
+          }}
+        />
+      )}
+      {reviewJob && (
+        <TemplateModal
+          client={client}
+          job={reviewJob}
+          onClose={() => setReviewing(undefined)}
+          done={reload}
+        />
       )}
     </>
   );
@@ -309,10 +399,14 @@ function JobMenu({
   client,
   job,
   changed,
+  edit,
+  review,
 }: {
   client: Client;
   job: ReplicationJob;
   changed: () => void;
+  edit: () => void;
+  review: () => void;
 }) {
   const action = useAction();
   const toast = useToast();
@@ -342,6 +436,12 @@ function JobMenu({
                   }),
                 "Replication run queued",
               ),
+          },
+          { label: "Edit job", icon: "pencil", onSelect: edit },
+          {
+            label: "Configuration template",
+            icon: "file-text",
+            onSelect: review,
           },
           {
             label: job.enabled ? "Pause" : "Resume",
@@ -388,14 +488,38 @@ function PeerMenu({
 }) {
   const action = useAction();
   const toast = useToast();
+  const [editing, setEditing] = useState<"token" | "connection">();
   return (
     <span onClick={(e) => e.stopPropagation()}>
+      {editing && (
+        <PeerEditModal
+          client={client}
+          peer={peer}
+          mode={editing}
+          onClose={() => setEditing(undefined)}
+          done={() => {
+            setEditing(undefined);
+            changed();
+          }}
+        />
+      )}
       <DropdownMenu
         align="end"
         trigger={
           <IconButton icon="ellipsis" label={`Actions for ${peer.name}`} />
         }
         items={[
+          {
+            label: "Rotate token",
+            icon: "key-round",
+            onSelect: () => setEditing("token"),
+          },
+          {
+            label: "Edit connection",
+            icon: "pencil",
+            onSelect: () => setEditing("connection"),
+          },
+          { divider: true },
           {
             label: "Delete peer",
             icon: "trash-2",

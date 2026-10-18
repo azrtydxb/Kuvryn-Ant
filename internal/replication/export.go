@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -21,6 +22,9 @@ import (
 type Exporter struct {
 	DB      *pgxpool.Pool
 	Storage func(context.Context, string) (blob.Store, error)
+	// Lease fences history purging by the instance writer lease. Optional for
+	// the read-only export methods; PurgeHistory requires it.
+	Lease func() ownership.Lease
 }
 
 const (
@@ -57,7 +61,7 @@ func (e Exporter) Head(ctx context.Context, instance, feed string) (Head, error)
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	var h Head
-	err := e.DB.QueryRow(ctx, `SELECT f.format,COALESCE(h.seq,0),h.changed_at,clock_timestamp() FROM feeds f LEFT JOIN replication_heads h ON h.instance_id=f.instance_id WHERE f.instance_id=$1 AND f.id=$2`, instance, feed).Scan(&h.Format, &h.Seq, &h.ChangedAt, &h.Now)
+	err := e.DB.QueryRow(ctx, `SELECT f.format,COALESCE(h.seq,0),h.changed_at,clock_timestamp(),COALESCE(h.low_water,0) FROM feeds f LEFT JOIN replication_heads h ON h.instance_id=f.instance_id WHERE f.instance_id=$1 AND f.id=$2`, instance, feed).Scan(&h.Format, &h.Seq, &h.ChangedAt, &h.Now, &h.LowWater)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Head{}, ErrNotFound
 	}
@@ -116,11 +120,12 @@ func scanTag(row pgx.Row) (TagItem, error) {
 }
 
 // Shared filter predicate: $1 instance, $2 feed, $3 kinds, $4 namespaces,
-// $5 packages, $6 version prefixes.
+// $5 packages, $6 version prefixes, $7 restrict to one source (empty: all).
 const scope = ` WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND s.kind=ANY($3::text[])
  AND (cardinality($4::text[])=0 OR COALESCE(c.namespace,'')=ANY($4::text[]))
  AND (cardinality($5::text[])=0 OR c.coordinate=ANY($5::text[]))
- AND (cardinality($6::text[])=0 OR EXISTS(SELECT 1 FROM unnest($6::text[]) p WHERE starts_with(v.version,p)))`
+ AND (cardinality($6::text[])=0 OR EXISTS(SELECT 1 FROM unnest($6::text[]) p WHERE starts_with(v.version,p)))
+ AND ($7::text='' OR s.id::text=$7::text)`
 
 func encodeCursor(parts ...string) string {
 	b, _ := json.Marshal(parts)
@@ -142,6 +147,14 @@ var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 
 const zeroUUID = "00000000-0000-0000-0000-000000000000"
 
+// ChangeQuery selects a page of changes after a cursor.
+type ChangeQuery struct {
+	After         int64
+	Limit         int
+	IncludeCached bool
+	Filters       Filters
+}
+
 // ManifestQuery selects a manifest page.
 type ManifestQuery struct {
 	Kind          string // "asset" or "tag"
@@ -149,6 +162,8 @@ type ManifestQuery struct {
 	Limit         int
 	IncludeCached bool
 	Filters       Filters
+	// SourceID restricts the manifest to one attached source (back-fill).
+	SourceID string
 }
 
 // Manifest lists the feed's current assets or tags in a stable key order. The
@@ -158,11 +173,11 @@ type ManifestQuery struct {
 func (e Exporter) Manifest(ctx context.Context, instance, feed string, q ManifestQuery) (ManifestPage, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	if (q.Kind != manifestAssets && q.Kind != manifestTags) || !q.Filters.valid() {
+	if (q.Kind != manifestAssets && q.Kind != manifestTags) || !q.Filters.valid() || (q.SourceID != "" && !uuidPattern.MatchString(q.SourceID)) {
 		return ManifestPage{}, ErrInput
 	}
 	limit := clampLimit(q.Limit)
-	args := []any{instance, feed, kinds(q.IncludeCached), nonNil(q.Filters.Namespaces), nonNil(q.Filters.Packages), nonNil(q.Filters.VersionPrefixes)}
+	args := []any{instance, feed, kinds(q.IncludeCached), nonNil(q.Filters.Namespaces), nonNil(q.Filters.Packages), nonNil(q.Filters.VersionPrefixes), q.SourceID}
 	page := ManifestPage{Kind: q.Kind}
 	cursorArgs := []any{false, zeroUUID, "", "", ""}
 	if q.After != "" {
@@ -259,27 +274,46 @@ func itoa(n int) string {
 
 // Changes returns relevant changes with after < seq, in sequence order. Rows and
 // the head are read from one snapshot, so a cursor never skips a change.
-func (e Exporter) Changes(ctx context.Context, instance, feed string, after int64, limit int, includeCached bool) (ChangePage, error) {
+//
+// Filters are applied here, not only by the consumer: package and version
+// prefix match the change identity, and the namespace filter matches the
+// package's current namespace. A tombstone whose package is gone cannot be
+// resolved to a namespace and is passed through (consumers only ever delete
+// what they replicated). Attachment changes are never filtered. A cursor below
+// the purge low-water mark fails with *HistoryPurgedError.
+func (e Exporter) Changes(ctx context.Context, instance, feed string, q ChangeQuery) (ChangePage, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	if after < 0 {
+	after, includeCached := q.After, q.IncludeCached
+	if after < 0 || !q.Filters.valid() {
 		return ChangePage{}, ErrInput
 	}
-	limit = clampLimit(limit)
+	limit := clampLimit(q.Limit)
 	tx, err := e.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return ChangePage{}, ErrUnavailable
 	}
 	defer tx.Rollback(context.WithoutCancel(ctx))
 	page := ChangePage{Changes: []Change{}}
-	err = tx.QueryRow(ctx, `SELECT COALESCE(max(seq),0),max(changed_at) FROM replication_heads WHERE instance_id=$1`, instance).Scan(&page.Head, &page.HeadAt)
+	err = tx.QueryRow(ctx, `SELECT COALESCE(max(seq),0),max(changed_at),COALESCE(max(low_water),0) FROM replication_heads WHERE instance_id=$1`, instance).Scan(&page.Head, &page.HeadAt, &page.LowWater)
 	if err != nil {
 		return ChangePage{}, ErrUnavailable
 	}
+	if after < page.LowWater {
+		return ChangePage{}, &HistoryPurgedError{LowWater: page.LowWater}
+	}
 	rows, err := tx.Query(ctx, `SELECT ch.seq,ch.created_at,ch.kind,ch.op,ch.source_id::text,ch.coordinate,ch.version,ch.item_key
- FROM replication_changes ch JOIN feed_sources fs ON fs.instance_id=ch.instance_id AND fs.feed_id=$2 AND fs.source_id=ch.source_id
- JOIN sources s ON s.instance_id=ch.instance_id AND s.id=ch.source_id
- WHERE ch.instance_id=$1 AND ch.seq>$3 AND ch.seq<=$4 AND s.kind=ANY($5::text[]) ORDER BY ch.seq LIMIT $6`, instance, feed, after, page.Head, kinds(includeCached), limit)
+ FROM replication_changes ch LEFT JOIN sources s ON s.instance_id=ch.instance_id AND s.id=ch.source_id
+ WHERE ch.instance_id=$1 AND ch.seq>$3 AND ch.seq<=$4 AND (
+  (ch.kind='attachment' AND ch.item_key=($2::uuid)::text AND (s.id IS NULL OR s.kind=ANY($5::text[])))
+  OR (ch.kind<>'attachment' AND s.kind=ANY($5::text[])
+   AND EXISTS(SELECT 1 FROM feed_sources fs WHERE fs.instance_id=ch.instance_id AND fs.feed_id=$2::uuid AND fs.source_id=ch.source_id)
+   AND (cardinality($7::text[])=0 OR ch.coordinate=ANY($7::text[]))
+   AND (cardinality($8::text[])=0 OR ch.version='' OR EXISTS(SELECT 1 FROM unnest($8::text[]) p WHERE starts_with(ch.version,p)))
+   AND (cardinality($9::text[])=0
+    OR NOT EXISTS(SELECT 1 FROM components c WHERE c.instance_id=ch.instance_id AND c.source_id=ch.source_id AND c.coordinate=ch.coordinate)
+    OR EXISTS(SELECT 1 FROM components c WHERE c.instance_id=ch.instance_id AND c.source_id=ch.source_id AND c.coordinate=ch.coordinate AND COALESCE(c.namespace,'')=ANY($9::text[]))))
+ ) ORDER BY ch.seq LIMIT $6`, instance, feed, after, page.Head, kinds(includeCached), limit, nonNil(q.Filters.Packages), nonNil(q.Filters.VersionPrefixes), nonNil(q.Filters.Namespaces))
 	if err != nil {
 		return ChangePage{}, ErrUnavailable
 	}
@@ -301,6 +335,14 @@ func (e Exporter) Changes(ctx context.Context, instance, feed string, after int6
 			continue
 		}
 		switch c.Kind {
+		case "attachment":
+			var o Origin
+			err := tx.QueryRow(ctx, `SELECT s.id::text,s.name,s.kind,fs.priority FROM feed_sources fs JOIN sources s ON s.instance_id=fs.instance_id AND s.id=fs.source_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND s.id=$3`, instance, feed, c.SourceID).Scan(&o.SourceID, &o.Name, &o.Kind, &o.Priority)
+			if err == nil {
+				c.Attachment = &Attachment{Origin: o}
+			} else if !errors.Is(err, pgx.ErrNoRows) {
+				return ChangePage{}, ErrUnavailable
+			}
 		case "asset":
 			it, err := scanItem(tx.QueryRow(ctx, itemSelect+` WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND s.id=$3 AND c.coordinate=$4 AND v.version=$5 AND a.asset_key=$6`, instance, feed, c.SourceID, c.Coordinate, c.Version, c.Key))
 			if err == nil {

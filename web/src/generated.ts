@@ -116,7 +116,7 @@ export type ReplicationPeerList = { "items": Array<ReplicationPeer> };
 export type ReplicationPeerInput = { "name": string; "url": string; "ca_ref"?: string; "token": string };
 export type ReplicationPeerPatch = { "revision": number; "url"?: string; "ca_ref"?: string; "token"?: string };
 export type ReplicationFilters = { "namespaces"?: Array<string>; "packages"?: Array<string>; "version_prefixes"?: Array<string> };
-export type ReplicationStatus = { "phase": "new" | "seed_assets" | "seed_tags" | "incremental"; "running": boolean; "checkpoint": number; "remote_head"?: number; "changes_behind"?: number; "lag_seconds"?: number; "remote_checked_at"?: string; "seed_total"?: number; "seed_done": number; "last_attempt_at"?: string; "last_success_at"?: string; "next_run_at"?: string; "last_error"?: string; "consecutive_failures": number; "assets_applied": number; "blobs_transferred": number; "blobs_deduplicated": number; "bytes_transferred": number; "deletions_applied": number; "deletions_held": number; "conflicts": number };
+export type ReplicationStatus = { "phase": "new" | "seed_assets" | "seed_tags" | "incremental"; "running": boolean; "checkpoint": number; "remote_head"?: number; "changes_behind"?: number; "lag_seconds"?: number; "remote_checked_at"?: string; "seed_total"?: number; "seed_done": number; "last_attempt_at"?: string; "last_success_at"?: string; "next_run_at"?: string; "last_error"?: string; "consecutive_failures": number; "assets_applied": number; "blobs_transferred": number; "blobs_deduplicated": number; "bytes_transferred": number; "deletions_applied": number; "deletions_held": number; "conflicts": number; "failures_total": number; "reseeds": number; "reseeding": boolean; "last_reseed_at"?: string; "source_low_water"?: number; "backfills_pending": number; "backfills_completed": number; "resumed_bytes": number };
 export type ReplicationJob = { "id": string; "name": string; "peer_id": string; "remote_feed_id": string; "dest_feed_id": string; "replica_source_id": string; "mode": "continuous" | "scheduled" | "manual"; "interval_seconds": number; "include_cached": boolean; "filters": ReplicationFilters; "deletion_policy": "ignore" | "propagate"; "enabled": boolean; "revision": number; "created_at": string; "status": ReplicationStatus };
 export type ReplicationJobList = { "items": Array<ReplicationJob> };
 export type ReplicationJobInput = { "name": string; "peer_id": string; "remote_feed_id": string; "dest_feed_id": string; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: ReplicationFilters; "deletion_policy"?: "ignore" | "propagate" };
@@ -125,20 +125,31 @@ export type ReplicationStatusEntry = { "id": string; "name": string; "dest_feed_
 export type ReplicationStatusList = { "items": Array<ReplicationStatusEntry> };
 export type ReplicationTrigger = { "job_id": string; "state": string };
 export type ReplicationDeletionEntry = { "source": "held" | "pending"; "kind": string; "coordinate": string; "version"?: string; "key"?: string; "seq": number; "disposition": "would_delete" | "protected" | "absent" };
-export type ReplicationDeletionPreview = { "policy": string; "applies": boolean; "entries": Array<ReplicationDeletionEntry>; "counts": { "would_delete"?: number; "protected"?: number; "absent"?: number }; "truncated": boolean };
+export type ReplicationDeletionPreview = { "policy": string; "applies": boolean; "entries": Array<ReplicationDeletionEntry>; "counts": { "would_delete"?: number; "protected"?: number; "absent"?: number }; "truncated": boolean; "reseed_required"?: boolean };
 export type ReplicationOrigin = { "source_id": string; "name": string; "kind": string; "priority": number };
 export type ReplicationSubject = { "digest": string; "size": number; "media_type": string; "artifact_type": string; "annotations"?: {  } };
 export type ReplicationItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "version": string; "asset_key": string; "media_type": string; "digest": string; "size": number; "component_metadata"?: {  }; "subject"?: ReplicationSubject };
 export type ReplicationTagItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "tag": string; "version": string };
 export type ReplicationComponentItem = { "origin": ReplicationOrigin; "namespace"?: string; "coordinate": string; "metadata"?: {  } };
-export type ReplicationHead = { "seq": number; "changed_at"?: string; "now": string; "format": string };
+export type ReplicationHead = { "seq": number; "changed_at"?: string; "now": string; "format": string; "low_water": number };
 export type ReplicationManifestPage = { "kind": "asset" | "tag"; "items"?: Array<ReplicationItem>; "tags"?: Array<ReplicationTagItem>; "next"?: string; "total"?: number };
-export type ReplicationChange = { "seq": number; "at": string; "kind": string; "op": string; "source_id": string; "coordinate": string; "version"?: string; "key"?: string; "asset"?: ReplicationItem; "tag"?: ReplicationTagItem; "component"?: ReplicationComponentItem };
-export type ReplicationChangePage = { "changes": Array<ReplicationChange>; "next": number; "more": boolean; "head": number; "head_at"?: string };
+export type ReplicationChange = { "seq": number; "at": string; "kind": string; "op": string; "source_id": string; "coordinate": string; "version"?: string; "key"?: string; "asset"?: ReplicationItem; "tag"?: ReplicationTagItem; "component"?: ReplicationComponentItem; "attachment"?: ReplicationAttachment };
+export type ReplicationChangePage = { "changes": Array<ReplicationChange>; "next": number; "more": boolean; "head": number; "head_at"?: string; "low_water": number };
 export type StorageJob = { "id": string; "kind": "migrate" | "cleanup"; "from": "disk" | "s3"; "to": "disk" | "s3"; "dry_run": boolean; "state": "running" | "paused" | "failed" | "completed"; "throttle_bytes_per_second": number; "total_blobs": number; "total_bytes": number; "processed_blobs": number; "processed_bytes": number; "copied_blobs": number; "copied_bytes": number; "skipped_blobs": number; "deleted_blobs": number; "deleted_bytes": number; "failed_blobs": number; "pass": number; "last_error"?: string; "requested_by"?: string; "started_at": string; "updated_at": string; "finished_at"?: string; "switched_at"?: string };
 export type StorageJobPage = { "items": Array<StorageJob> };
 export type StorageMigrationStatus = { "active_backend": "disk" | "s3"; "previous_backend"?: "disk" | "s3"; "cleanup_pending": boolean; "available_backends": Array<"disk" | "s3">; "current_job"?: StorageJob };
 export type StartStorageJob = { "action": "migrate" | "cleanup"; "to"?: "disk" | "s3"; "dry_run": boolean; "throttle_bytes_per_second"?: number };
+export type ReplicationAttachment = { "origin": ReplicationOrigin };
+export type ReplicationTemplateRetention = { "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep": number; "include_tagged": boolean; "enabled": boolean };
+export type ReplicationTemplateCache = { "metadata_ttl_seconds": number; "negative_ttl_seconds": number; "stale_if_error_seconds": number; "max_entries": number; "max_bytes": number };
+export type ReplicationTemplateRemote = { "name": string; "timeout_seconds": number; "cache": ReplicationTemplateCache };
+export type ReplicationTemplateSource = { "name": string; "kind": string; "priority": number };
+export type ReplicationTemplate = { "version": number; "format": string; "retention"?: ReplicationTemplateRetention; "remote_sources": Array<ReplicationTemplateRemote>; "sources": Array<ReplicationTemplateSource>; "excluded": Array<string> };
+export type ReplicationTemplateDiff = { "section": string; "field": string; "action": "add" | "change" | "unchanged" | "preserved" | "blocked" | "info"; "current"?: unknown; "proposed"?: unknown; "reason"?: string };
+export type ReplicationTemplateRequest = { "template"?: ReplicationTemplate };
+export type ReplicationTemplatePreview = { "digest": string; "template": ReplicationTemplate; "diffs": Array<ReplicationTemplateDiff>; "applicable": number; "blocked": number };
+export type ReplicationTemplateApplyRequest = { "digest": string; "template"?: ReplicationTemplate };
+export type ReplicationTemplateApplyResult = { "digest": string; "applied": number; "diffs": Array<ReplicationTemplateDiff> };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -236,6 +247,9 @@ listStorageJobs: { body: undefined; response: StorageJobPage };
 startStorageJob: { body: StartStorageJob; response: StorageJob };
 getStorageJob: { body: undefined; response: StorageJob };
 storageJobAction: { body: undefined; response: StorageJob };
+getReplicationExportTemplate: { body: undefined; response: ReplicationTemplate };
+previewReplicationTemplate: { body: ReplicationTemplateRequest; response: ReplicationTemplatePreview };
+applyReplicationTemplate: { body: ReplicationTemplateApplyRequest; response: ReplicationTemplateApplyResult };
 }
 export const routes = {
   "getStatus": {
@@ -606,7 +620,7 @@ export const routes = {
   "createReplicationPeer": {
     "path": "/api/v1/replication/peers",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "getReplicationPeer": {
     "path": "/api/v1/replication/peers/{id}",
@@ -616,12 +630,12 @@ export const routes = {
   "patchReplicationPeer": {
     "path": "/api/v1/replication/peers/{id}",
     "method": "PATCH",
-    "idempotent": false
+    "idempotent": true
   },
   "deleteReplicationPeer": {
     "path": "/api/v1/replication/peers/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "listReplicationJobs": {
     "path": "/api/v1/replication/jobs",
@@ -631,7 +645,7 @@ export const routes = {
   "createReplicationJob": {
     "path": "/api/v1/replication/jobs",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "getReplicationJob": {
     "path": "/api/v1/replication/jobs/{id}",
@@ -641,12 +655,12 @@ export const routes = {
   "patchReplicationJob": {
     "path": "/api/v1/replication/jobs/{id}",
     "method": "PATCH",
-    "idempotent": false
+    "idempotent": true
   },
   "deleteReplicationJob": {
     "path": "/api/v1/replication/jobs/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "getReplicationJobStatus": {
     "path": "/api/v1/replication/jobs/{id}/status",
@@ -656,7 +670,7 @@ export const routes = {
   "triggerReplicationJob": {
     "path": "/api/v1/replication/jobs/{id}/runs",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "previewReplicationDeletions": {
     "path": "/api/v1/replication/jobs/{id}/deletions",
@@ -712,5 +726,20 @@ export const routes = {
     "path": "/api/v1/storage/migrations/{id}/{action}",
     "method": "POST",
     "idempotent": false
+  },
+  "getReplicationExportTemplate": {
+    "path": "/api/v1/replication/export/feeds/{feed}/template",
+    "method": "GET",
+    "idempotent": false
+  },
+  "previewReplicationTemplate": {
+    "path": "/api/v1/replication/jobs/{id}/template/preview",
+    "method": "POST",
+    "idempotent": false
+  },
+  "applyReplicationTemplate": {
+    "path": "/api/v1/replication/jobs/{id}/template/apply",
+    "method": "POST",
+    "idempotent": true
   }
 } as const;

@@ -59,14 +59,25 @@ func (s Store) Get(ctx context.Context, p identity.Principal, source string) (Re
 // It is not a management handler. Removed operator CA references remain visible
 // here; materializers must fail closed if they cannot resolve an approved CARef.
 func (s Store) Load(ctx context.Context, source string) (Record, error) {
-	if s.DB == nil || !uuid.MatchString(s.InstanceID) || !uuid.MatchString(source) {
+	if s.DB == nil {
+		return Record{}, ErrInput
+	}
+	return s.LoadTx(ctx, s.DB, source)
+}
+
+// LoadTx is Load on a caller-provided connection or transaction (the pool is
+// not used). The same trusted-runtime caveats apply.
+func (s Store) LoadTx(ctx context.Context, q interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}, source string) (Record, error) {
+	if q == nil || !uuid.MatchString(s.InstanceID) || !uuid.MatchString(source) {
 		return Record{}, ErrInput
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	var r Record
 	var raw []byte
-	err := s.DB.QueryRow(ctx, `SELECT s.id::text,s.revision,c.config FROM remote_source_configs c JOIN sources s ON (s.instance_id,s.id)=(c.instance_id,c.source_id) WHERE c.instance_id=$1 AND c.source_id=$2 AND s.kind='remote' AND c.schema_version=1`, s.InstanceID, source).Scan(&r.SourceID, &r.Revision, &raw)
+	err := q.QueryRow(ctx, `SELECT s.id::text,s.revision,c.config FROM remote_source_configs c JOIN sources s ON (s.instance_id,s.id)=(c.instance_id,c.source_id) WHERE c.instance_id=$1 AND c.source_id=$2 AND s.kind='remote' AND c.schema_version=1`, s.InstanceID, source).Scan(&r.SourceID, &r.Revision, &raw)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Record{}, ErrNotFound
 	}

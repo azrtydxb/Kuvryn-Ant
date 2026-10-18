@@ -42,6 +42,7 @@ type site struct {
 	source    string // local source of the primary feed
 	domain    string
 	publisher *artifact.Service
+	dir       string // blob storage directory
 }
 
 func testDSN(t *testing.T) string {
@@ -110,7 +111,8 @@ func newSite(t *testing.T, name, feedSlug string) *site {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s.stores, err = storage.New(storage.Config{Directory: t.TempDir()})
+	s.dir = t.TempDir()
+	s.stores, err = storage.New(storage.Config{Directory: s.dir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,19 +262,28 @@ type peerServer struct {
 	failAt int               // fail blob requests once this many succeeded (-1: never)
 	tamper map[string][]byte // digest -> bytes served instead
 	total  int
+
+	cutAt       int            // abort full (non-Range) blob responses after this many bytes (0: never)
+	ignoreRange bool           // serve the whole blob even when a Range is requested
+	bytesServed map[string]int // body bytes written per digest, all attempts
+	ranges      []string       // Range headers received, in order
 }
 
 func (s *site) serve(t *testing.T) *peerServer {
 	t.Helper()
 	mux := http.NewServeMux()
 	RegisterExport(mux, s.pool, Exporter{DB: s.pool, Storage: s.stores.Resolve})
-	p := &peerServer{served: map[string]int{}, failAt: -1, tamper: map[string][]byte{}}
+	p := &peerServer{served: map[string]int{}, failAt: -1, tamper: map[string][]byte{}, bytesServed: map[string]int{}}
 	p.Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if i := strings.Index(r.URL.Path, "/blobs/"); i >= 0 {
 			digest := r.URL.Path[i+len("/blobs/"):]
 			p.mu.Lock()
 			fail := p.failAt >= 0 && p.total >= p.failAt
 			bad, tampered := p.tamper[digest]
+			cut, ignore := p.cutAt, p.ignoreRange
+			if rg := r.Header.Get("Range"); rg != "" {
+				p.ranges = append(p.ranges, rg)
+			}
 			p.mu.Unlock()
 			if fail {
 				http.Error(w, "injected failure", http.StatusInternalServerError)
@@ -283,7 +294,14 @@ func (s *site) serve(t *testing.T) *peerServer {
 				_, _ = w.Write(bad)
 				return
 			}
+			if ignore {
+				r.Header.Del("Range")
+			}
 			rec := &statusWriter{ResponseWriter: w, status: 200}
+			if cut > 0 && r.Header.Get("Range") == "" {
+				rec.limit = cut
+			}
+			rec.count = func(n int) { p.mu.Lock(); p.bytesServed[digest] += n; p.mu.Unlock() }
 			mux.ServeHTTP(rec, r)
 			if rec.status == 200 {
 				p.mu.Lock()
@@ -306,7 +324,31 @@ func (s *site) serve(t *testing.T) *peerServer {
 
 type statusWriter struct {
 	http.ResponseWriter
-	status int
+	status  int
+	limit   int // when > 0, abort the connection after this many body bytes
+	written int
+	count   func(int)
+}
+
+func (w *statusWriter) Write(b []byte) (int, error) {
+	if w.limit > 0 && w.written+len(b) > w.limit {
+		b = b[:w.limit-w.written]
+		n, _ := w.ResponseWriter.Write(b)
+		w.written += n
+		if w.count != nil {
+			w.count(n)
+		}
+		if f, ok := w.ResponseWriter.(http.Flusher); ok {
+			f.Flush()
+		}
+		panic(http.ErrAbortHandler)
+	}
+	n, err := w.ResponseWriter.Write(b)
+	w.written += n
+	if w.count != nil {
+		w.count(n)
+	}
+	return n, err
 }
 
 func (w *statusWriter) WriteHeader(code int) { w.status = code; w.ResponseWriter.WriteHeader(code) }

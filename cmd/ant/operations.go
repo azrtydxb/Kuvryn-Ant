@@ -90,6 +90,9 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 			{Key: "gc_interval", Value: o.cfg.Retention.Interval.String(), Description: "Scheduled maintenance interval, 0s disables (ANT_GC_INTERVAL)."},
 			{Key: "gc_grace", Value: o.cfg.Retention.Grace.String(), Description: "Orphan blob grace period (ANT_GC_GRACE)."},
 			{Key: "gc_dry_run", Value: strconv.FormatBool(o.cfg.Retention.DryRun), Description: "Scheduled maintenance runs report only (ANT_GC_DRY_RUN)."},
+			{Key: "replication_history_max_age", Value: o.cfg.Replication.MaxAge.String(), Description: "Maximum age of replication change history before it is purged (ANT_REPLICATION_HISTORY_MAX_AGE)."},
+			{Key: "replication_history_max_rows", Value: strconv.FormatInt(o.cfg.Replication.MaxRows, 10), Description: "Maximum replication change-history rows kept (ANT_REPLICATION_HISTORY_MAX_ROWS)."},
+			{Key: "replication_purge_interval", Value: o.cfg.Replication.Interval.String(), Description: "Replication history purge interval, 0s disables (ANT_REPLICATION_PURGE_INTERVAL)."},
 		},
 	}
 	if o.cfg.PublicURL != "" {
