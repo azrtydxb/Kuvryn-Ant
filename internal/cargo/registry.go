@@ -148,10 +148,10 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(route, "api/v1/crates/") {
 		a := strings.Split(strings.TrimPrefix(route, "api/v1/crates/"), "/")
-		if len(a) == 3 && nameRE.MatchString(a[0]) && validVersion(a[1]) {
-			pub := artifact.Publication{FeedID: feed, Coordinate: a[0], Version: versionKey(a[1]), AssetKey: "crate"}
+		if len(a) == 3 && remoteNameRE.MatchString(a[0]) && validVersion(a[1]) {
+			pub := artifact.Publication{FeedID: feed, Coordinate: strings.ToLower(a[0]), Version: versionKey(a[1]), AssetKey: "crate"}
 			if a[2] == "download" && (r.Method == "GET" || r.Method == "HEAD") {
-				s.download(w, r, p, pub)
+				s.download(w, r, p, pub, a[0], a[1])
 				return
 			}
 			if (a[2] == "yank" && r.Method == "DELETE") || (a[2] == "unyank" && r.Method == "PUT") {
@@ -168,8 +168,8 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "GET" || r.Method == "HEAD" {
 		name := parts[len(parts)-1]
-		if nameRE.MatchString(name) && indexPath(name) == route {
-			s.index(w, r, p, feed, name)
+		if remoteNameRE.MatchString(name) && indexPath(name) == route {
+			s.index(w, r, p, feed, strings.ToLower(name))
 			return
 		}
 	}
@@ -219,8 +219,22 @@ func (s *Registry) publish(w http.ResponseWriter, r *http.Request, p identity.Pr
 	w.Header().Set("Content-Type", "application/json")
 	_, _ = io.WriteString(w, `{"warnings":{"invalid_categories":[],"invalid_badges":[],"other":[]}}`)
 }
-func (s *Registry) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
+func (s *Registry) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication, name, version string) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		retry, served, pe := s.pullThrough(w, r, p, pub, name, version)
+		switch {
+		case served:
+			return
+		case pe != nil:
+			if !errors.Is(pe, artifact.ErrNotFound) {
+				failService(w, pe)
+				return
+			}
+		case retry:
+			record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+		}
+	}
 	if e != nil {
 		failService(w, e)
 		return
@@ -235,8 +249,17 @@ func (s *Registry) download(w http.ResponseWriter, r *http.Request, p identity.P
 	}
 }
 func (s *Registry) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, name string) {
+	// Remote-owned (or unowned) crates are answered from upstream; a local
+	// owner, or an upstream outage, falls through to the local composition.
+	served, remoteErr := s.serveRemoteIndex(w, r, p, feed, name)
+	if served {
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	if remoteErr != nil {
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
 	// Only enumerate the selected package owner. Open re-authorizes every asset;
 	// source equality below prevents an ownership change from mixing generations.
 	rows, e := s.db.Query(ctx, `WITH owner AS (SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id WHERE a.asset_key='index' ORDER BY v.version LIMIT 10001`, p.InstanceID, feed, name)
@@ -262,6 +285,11 @@ func (s *Registry) index(w http.ResponseWriter, r *http.Request, p identity.Prin
 		return
 	}
 	if len(entries) == 0 {
+		if remoteErr != nil {
+			w.Header().Del("X-Kuvryn-Cache")
+			failure(w, 503, "upstream unavailable")
+			return
+		}
 		failure(w, 404, "crate not found")
 		return
 	}

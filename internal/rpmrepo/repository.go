@@ -97,7 +97,7 @@ func (s *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	p, _ := identity.PrincipalFromContext(r.Context())
 	a := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
-	if len(a) < 4 || len(a) > 5 || a[0] != "feeds" || a[2] != "rpm" || p.InstanceID != s.instance || strings.Contains(r.URL.EscapedPath(), "%") || strings.ContainsAny(r.URL.Path, "\\\x00") {
+	if len(a) < 4 || len(a) > 8 || a[0] != "feeds" || a[2] != "rpm" || p.InstanceID != s.instance || strings.Contains(r.URL.EscapedPath(), "%") || strings.ContainsAny(r.URL.Path, "\\\x00") {
 		failure(w, artifact.ErrNotFound)
 		return
 	}
@@ -123,7 +123,12 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	case len(rest) == 1 && rest[0] == "ant.repo" && (r.Method == "GET" || r.Method == "HEAD"):
 		s.repoFile(w, r, p, feed, a[1])
 	case len(rest) == 2 && rest[0] == "repodata" && (r.Method == "GET" || r.Method == "HEAD"):
-		s.repodata(w, r, p, feed, rest[1])
+		// Upstream signed metadata first; a local snapshot owner or an upstream
+		// outage falls through to the local composition.
+		served, remoteErr := s.remoteRepodata(w, r, p, feed, rest[1])
+		if !served {
+			s.repodata(w, r, p, feed, rest[1], remoteErr)
+		}
 	case len(rest) == 2 && rest[0] == "Packages":
 		pkg, ok := parseFilename(rest[1])
 		if !ok {
@@ -132,7 +137,7 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		switch r.Method {
 		case "GET", "HEAD":
-			s.download(w, r, p, feed, pkg)
+			s.download(w, r, p, feed, pkg, rest)
 		case "PUT":
 			s.ingest(w, r, p, feed, pkg)
 		case "DELETE":
@@ -140,6 +145,17 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		default:
 			w.Header().Set("Allow", "GET, HEAD, PUT, DELETE")
 			w.WriteHeader(405)
+		}
+	case len(rest) >= 2 && rest[0] != "repodata" && (r.Method == "GET" || r.Method == "HEAD") && strings.HasSuffix(rest[len(rest)-1], ".rpm"):
+		// Upstream layouts (Packages/<letter>/file.rpm) resolve against the feed root.
+		pkg, ok := parseFilename(rest[len(rest)-1])
+		if !ok {
+			failure(w, artifact.ErrNotFound)
+			return
+		}
+		served, err := s.remotePackage(w, r, p, feed, rest, pkg)
+		if !served {
+			failure(w, err)
 		}
 	default:
 		failure(w, artifact.ErrNotFound)
@@ -244,18 +260,31 @@ func (s *Repository) serveAsset(w http.ResponseWriter, r *http.Request, p identi
 	}
 }
 
-func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string, n nevra) {
+func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string, n nevra, rest []string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	owner, e := s.owner(ctx, feed)
+	if e == nil {
+		_, e = s.service.Lookup(ctx, p, n.pub(feed, packageAsset))
+	}
 	cancel()
-	if e != nil {
-		failure(w, e)
+	if e == nil {
+		s.serveAsset(w, r, p, owner, n.pub(feed, packageAsset), "application/x-rpm")
 		return
 	}
-	s.serveAsset(w, r, p, owner, n.pub(feed, packageAsset), "application/x-rpm")
+	if errors.Is(e, artifact.ErrNotFound) {
+		// Local miss: pull through from a remote source (verified, then cached).
+		served, err := s.remotePackage(w, r, p, feed, rest, n)
+		if served {
+			return
+		}
+		if err != nil && !errors.Is(err, artifact.ErrNotFound) {
+			e = err
+		}
+	}
+	failure(w, e)
 }
 
-func (s *Repository) repodata(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, file string) {
+func (s *Repository) repodata(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, file string, degraded error) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
 	if file == "repomd.xml.key" {
@@ -282,6 +311,9 @@ func (s *Repository) repodata(w http.ResponseWriter, r *http.Request, p identity
 			s.serveAsset(w, r, p, owner, pub, kind)
 			return
 		}
+	}
+	if degraded != nil && errors.Is(e, artifact.ErrNotFound) {
+		e = degraded // upstream outage with nothing cached locally
 	}
 	failure(w, e)
 }

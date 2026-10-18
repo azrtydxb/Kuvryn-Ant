@@ -48,6 +48,12 @@ func (r *Repository) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	_ = controller.SetWriteDeadline(time.Time{})
 	req = req.Clone(req.Context())
 	req.Body = idleBody{ReadCloser: req.Body, ctx: req.Context(), controller: controller}
+	// WebDAV clients commonly authenticate with Basic; the password is the token.
+	if len(req.Header.Values("Authorization")) == 1 {
+		if _, password, ok := req.BasicAuth(); ok {
+			req.Header.Set("Authorization", "Bearer "+password)
+		}
+	}
 	r.auth.ServeHTTP(&idleWriter{ResponseWriter: w, controller: controller}, req)
 }
 
@@ -67,6 +73,10 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 	p, ok := identity.PrincipalFromContext(req.Context())
 	if !ok || p.InstanceID != r.instance {
 		fail(w, artifact.ErrNotFound)
+		return
+	}
+	if isDAV(req.Method) {
+		r.webdav(w, req, p)
 		return
 	}
 	slug, key, err := parsePath(req)
@@ -96,7 +106,7 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 	case http.MethodGet, http.MethodHead:
 		r.get(w, req, p, pub)
 	default:
-		w.Header().Set("Allow", "GET, HEAD, PUT")
+		w.Header().Set("Allow", "GET, HEAD, PUT, PROPFIND, MKCOL, OPTIONS")
 		http.Error(w, "method unsupported; deletion requires an explicit policy", http.StatusMethodNotAllowed)
 	}
 }

@@ -91,6 +91,12 @@ func (s *Repository) hashed(ctx context.Context, p identity.Principal, feed, dis
 
 // dist serves Release, InRelease, Release.gpg, Packages[.gz] and by-hash paths.
 func (s *Repository) dist(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, dist string, rest []string) {
+	// A distribution owned by a local source is never answered from upstream;
+	// otherwise remote sources serve their signed metadata verbatim.
+	served, remoteErr := s.remoteDist(w, r, p, feed, dist, rest)
+	if served {
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	var data []byte
@@ -131,6 +137,9 @@ func (s *Repository) dist(w http.ResponseWriter, r *http.Request, p identity.Pri
 		e = artifact.ErrNotFound
 	}
 	if e != nil {
+		if remoteErr != nil && errors.Is(e, artifact.ErrNotFound) {
+			e = remoteErr // upstream outage with nothing cached locally
+		}
 		failure(w, e)
 		return
 	}
@@ -197,6 +206,20 @@ func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity
 	meta.AssetKey = "control"
 	ctl, _, e := s.readAsset(ctx, p, meta, maxControlFl+4096)
 	cancel()
+	if errors.Is(e, artifact.ErrNotFound) {
+		// Local miss: a pool file listed by a cached upstream index is fetched,
+		// verified against that index and cached.
+		rctx, rcancel := context.WithTimeout(r.Context(), 10*time.Minute)
+		retry, perr := s.remoteDeb(rctx, p, pub, strings.Split(pub.Coordinate, "/")[1], filename)
+		rcancel()
+		if retry {
+			ctx, cancel = context.WithTimeout(r.Context(), 5*time.Second)
+			ctl, _, e = s.readAsset(ctx, p, meta, maxControlFl+4096)
+			cancel()
+		} else if perr != nil && !errors.Is(perr, artifact.ErrNotFound) {
+			e = perr
+		}
+	}
 	if e != nil {
 		failure(w, e)
 		return
