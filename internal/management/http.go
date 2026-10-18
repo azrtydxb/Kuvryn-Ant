@@ -35,6 +35,11 @@ func JSON(w http.ResponseWriter, status int, body any) {
 }
 func Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/status", func(w http.ResponseWriter, r *http.Request) {
+		// Readiness detail is administrator-only; it is reached only with a bearer token.
+		if detail := statusDetail.Load(); detail != nil && r.Header.Get("Authorization") != "" {
+			(*detail).ServeHTTP(w, r)
+			return
+		}
 		JSON(w, http.StatusOK, api.ServiceStatus{Name: "kuvryn-ant", ApiVersion: "v1"})
 	})
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {

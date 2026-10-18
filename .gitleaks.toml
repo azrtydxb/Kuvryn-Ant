@@ -1,0 +1,10 @@
+# Default gitleaks rules plus one path allowlist.
+# api/generated.go embeds the OpenAPI spec as gzip+base64 (oapi-codegen
+# swaggerSpec); random base64 trips generic-api-key and the blob is rewritten
+# on every regeneration. Decided by the owner on 2026-10-18.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Generated OpenAPI embed"
+paths = ['''(^|/)api/generated\.go$''']

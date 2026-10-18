@@ -66,6 +66,9 @@ func (s *Service) Open(ctx context.Context, p identity.Principal, r Publication,
 	if err != nil {
 		return Record{}, nil, err
 	}
+	if s.Downloads != nil {
+		s.Downloads.Download(record.ID)
+	}
 	return record, reader, nil
 }
 
