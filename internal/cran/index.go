@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"io"
@@ -63,7 +64,27 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		failure(w, artifact.ErrUnavailable)
 		return
 	}
-	if len(entries) == 0 {
+	remote, doc, remoteErr := s.remotePackages(ctx, p, feed)
+	switch {
+	case remoteErr == nil:
+		if doc.Stale {
+			for k, v := range artifact.StaleHeaders() {
+				w.Header().Set(k, v)
+			}
+		}
+	case errors.Is(remoteErr, artifact.ErrUnavailable):
+		if len(entries) == 0 {
+			failure(w, artifact.ErrUnavailable)
+			return
+		}
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	case isNotFound(remoteErr):
+		remote = nil
+	default:
+		failure(w, remoteErr)
+		return
+	}
+	if len(entries) == 0 && remote == nil {
 		policy, e := (identity.Roles{DB: s.db}).Resolve(ctx, p)
 		if e != nil {
 			failure(w, e)
@@ -115,13 +136,28 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 			latest[m["Package"]] = m
 		}
 	}
-	names := make([]string, 0, len(latest))
+	// Each package name is served by exactly one side: local names never take
+	// upstream metadata.
+	remoteText := map[string]string{}
+	for _, blk := range remote {
+		if latest[blk.name] == nil {
+			remoteText[blk.name] = blk.text
+		}
+	}
+	names := make([]string, 0, len(latest)+len(remoteText))
 	for n := range latest {
+		names = append(names, n)
+	}
+	for n := range remoteText {
 		names = append(names, n)
 	}
 	sort.Strings(names)
 	var b bytes.Buffer
 	for _, n := range names {
+		if text, ok := remoteText[n]; ok {
+			b.WriteString(text + "\n\n")
+			continue
+		}
 		m := latest[n]
 		for _, key := range []string{"Package", "Version", "Depends", "Imports", "LinkingTo", "Suggests", "Enhances", "License", "OS_type", "Archs", "MD5sum", "NeedsCompilation"} {
 			if v := m[key]; v != "" {
