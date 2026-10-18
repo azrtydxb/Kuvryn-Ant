@@ -29,8 +29,8 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if len(args) > 0 {
 		mode = args[0]
 	}
-	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token]")
+	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" {
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -51,6 +51,13 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if err := database.Migrate(ctx, pool); err != nil {
 		logger.Error("schema initialization failed", "reason", err)
 		return 1
+	}
+	if mode == "rotate-secrets" {
+		if err := rotateSecrets(ctx, pool, cfg, output); err != nil {
+			logger.Error("secret rotation failed")
+			return 1
+		}
+		return 0
 	}
 	if mode != "serve" {
 		var owner identity.BootstrapIdentity
@@ -136,17 +143,12 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 			logger.Error("invalid ANT_PUBLIC_URL")
 			return 1
 		}
-		if err = artifacts.nuget.SetPublicURL(publicURL); err != nil {
-			logger.Error("invalid NuGet public origin")
-			return 1
-		}
-		if err = artifacts.npm.SetPublicURL(publicURL); err != nil {
-			logger.Error("invalid npm public origin")
-			return 1
-		}
-		if err = artifacts.cargo.SetPublicURL(publicURL); err != nil {
-			logger.Error("invalid artifact public origin")
-			return 1
+		origins := []interface{ SetPublicURL(string) error }{artifacts.nuget, artifacts.npm, artifacts.cargo, artifacts.gitlfs, artifacts.composer, artifacts.pubrepo, artifacts.conan, artifacts.conda, artifacts.ansible, artifacts.cran}
+		for _, adapter := range origins {
+			if err = adapter.SetPublicURL(publicURL); err != nil {
+				logger.Error("invalid artifact public origin")
+				return 1
+			}
 		}
 	}
 
@@ -155,6 +157,12 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterFeeds(mux, pool, management.NewCursorCodec(cfg.RootKey))
 		management.RegisterSources(mux, pool, management.NewCursorCodec(cfg.RootKey))
 		management.RegisterPublishPolicies(mux, pool)
+		management.RegisterPackages(mux, pool, management.NewCursorCodec(cfg.RootKey))
+		caRefs := make([]string, 0, len(cfg.UpstreamCAs))
+		for ref := range cfg.UpstreamCAs {
+			caRefs = append(caRefs, ref)
+		}
+		management.RegisterRemoteSources(mux, pool, cfg.SecretKeys, caRefs, cfg.RootKey)
 		management.RegisterIdentities(mux, pool)
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		artifacts.Register(mux)

@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-18",
+  "platform": "macos_arm64",
+  "client": "Dart SDK",
+  "version": "3.13.1",
+  "executable_sha256": "af66836aef8f4fbb5c033da166498350b3880a78d26091d060d1c758039198fd",
+  "origin": "existing local Homebrew dart-sdk installation",
+  "contract_baseline": "3.13.5",
+  "baseline_conformance": false,
+  "scenarios": ["native authenticated publish", "fresh cache pub get", "lockfile archive sha256"]
+}
