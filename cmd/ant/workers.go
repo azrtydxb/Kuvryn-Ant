@@ -22,6 +22,7 @@ type backgroundWorkers struct {
 	cancel     context.CancelFunc
 	done       sync.WaitGroup
 	dispatcher *events.Dispatcher
+	workCtx    context.Context
 }
 
 func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, keys *secrets.Keyring, browser ...*browserRuntime) (*backgroundWorkers, error) {
@@ -37,7 +38,7 @@ func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, k
 		return nil, err
 	}
 	workCtx, cancel := context.WithCancel(ctx)
-	workers := &backgroundWorkers{cancel: cancel, dispatcher: dispatcher}
+	workers := &backgroundWorkers{cancel: cancel, dispatcher: dispatcher, workCtx: workCtx}
 	if len(browser) > 0 && browser[0] != nil {
 		workers.done.Add(1)
 		go func() {
