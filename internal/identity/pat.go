@@ -180,8 +180,21 @@ func (t PATs) Revoke(ctx context.Context, instance, principal, id string) error 
 		return ErrUnavailable
 	}
 	defer rollback(tx)
+	if err = RevokePATTx(ctx, tx, instance, principal, id); err != nil {
+		return err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return ErrUnavailable
+	}
+	return nil
+}
+
+// RevokePATTx revokes inside the caller's transaction (idempotency store,
+// audit). Revoking an already revoked token is a no-op without a second audit
+// row; tokens owned by others report not found.
+func RevokePATTx(ctx context.Context, tx pgx.Tx, instance, principal, id string) error {
 	var exists bool
-	if err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM personal_access_tokens WHERE instance_id=$1 AND id::text=$2 AND principal_id=$3)", instance, id, principal).Scan(&exists); err != nil {
+	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM personal_access_tokens WHERE instance_id=$1 AND id::text=$2 AND principal_id=$3)", instance, id, principal).Scan(&exists); err != nil {
 		return ErrUnavailable
 	}
 	if !exists {
@@ -192,12 +205,7 @@ func (t PATs) Revoke(ctx context.Context, instance, principal, id string) error 
 		return ErrUnavailable
 	}
 	if tag.RowsAffected() > 0 {
-		if err = tokenEvent(ctx, tx, instance, principal, id, "pat.revoke"); err != nil {
-			return err
-		}
-	}
-	if err = tx.Commit(ctx); err != nil {
-		return ErrUnavailable
+		return tokenEvent(ctx, tx, instance, principal, id, "pat.revoke")
 	}
 	return nil
 }

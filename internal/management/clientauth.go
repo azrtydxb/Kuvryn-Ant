@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -213,21 +214,6 @@ func (h authHandlers) changed() {
 		h.d.Invalidate()
 	}
 }
-func authRollback(tx pgx.Tx) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_ = tx.Rollback(ctx)
-}
-func (h authHandlers) tx(w http.ResponseWriter, r *http.Request) (pgx.Tx, context.Context, context.CancelFunc, bool) {
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-	tx, err := h.db.Begin(ctx)
-	if err != nil {
-		cancel()
-		identityError(w, r, err)
-		return nil, nil, nil, false
-	}
-	return tx, ctx, cancel, true
-}
 func bad(w http.ResponseWriter, r *http.Request, what string) {
 	Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid "+what)
 }
@@ -370,75 +356,64 @@ func (h authHandlers) writePolicy(w http.ResponseWriter, r *http.Request, p iden
 		bad(w, r, "client authentication policy")
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
+	out, ok := idempotentRun(w, r, h.db, p, "auth.policy.put", "auth-policy:"+feed, struct {
+		Feed string
+		In   PutClientAuthPolicy
+	}{feed, in}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		var found int
+		if err := tx.QueryRow(ctx, "SELECT count(*) FROM network_groups WHERE instance_id=$1 AND id::text=ANY($2)", p.InstanceID, in.AnonymousNetworkGroupIDs).Scan(&found); err != nil {
+			return nil, err
+		}
+		if found != len(in.AnonymousNetworkGroupIDs) {
+			return nil, badInput("network group")
+		}
+		var revision int64
+		var id string
+		var err error
+		if feed != "" {
+			err = tx.QueryRow(ctx, `INSERT INTO client_auth_policies(instance_id,feed_id,methods,anonymous_network_group_ids) VALUES($1,$2,$3,$4::uuid[])
+ ON CONFLICT(instance_id,feed_id) WHERE feed_id IS NOT NULL DO UPDATE SET methods=excluded.methods,anonymous_network_group_ids=excluded.anonymous_network_group_ids,revision=client_auth_policies.revision+1,updated_at=now() RETURNING revision,id::text`, p.InstanceID, feed, in.Methods, in.AnonymousNetworkGroupIDs).Scan(&revision, &id)
+		} else {
+			err = tx.QueryRow(ctx, `INSERT INTO client_auth_policies(instance_id,methods,anonymous_network_group_ids) VALUES($1,$2,$3::uuid[])
+ ON CONFLICT(instance_id) WHERE feed_id IS NULL DO UPDATE SET methods=excluded.methods,anonymous_network_group_ids=excluded.anonymous_network_group_ids,revision=client_auth_policies.revision+1,updated_at=now() RETURNING revision,id::text`, p.InstanceID, in.Methods, in.AnonymousNetworkGroupIDs).Scan(&revision, &id)
+		}
+		if err != nil {
+			return nil, identityDBError(err)
+		}
+		if err = identityEvent(ctx, tx, p, id, "auth.policy.put", revision); err != nil {
+			return nil, err
+		}
+		return ClientAuthPolicy{FeedID: feed, Methods: in.Methods, AnonymousNetworkGroupIDs: in.AnonymousNetworkGroupIDs, Revision: revision}, nil
+	})
 	if !ok {
 		return
 	}
-	defer cancel()
-	defer authRollback(tx)
-	var found int
-	if err := tx.QueryRow(ctx, "SELECT count(*) FROM network_groups WHERE instance_id=$1 AND id::text=ANY($2)", p.InstanceID, in.AnonymousNetworkGroupIDs).Scan(&found); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if found != len(in.AnonymousNetworkGroupIDs) {
-		bad(w, r, "network group")
-		return
-	}
-	var revision int64
-	var id string
-	var err error
-	if feed != "" {
-		err = tx.QueryRow(ctx, `INSERT INTO client_auth_policies(instance_id,feed_id,methods,anonymous_network_group_ids) VALUES($1,$2,$3,$4::uuid[])
- ON CONFLICT(instance_id,feed_id) WHERE feed_id IS NOT NULL DO UPDATE SET methods=excluded.methods,anonymous_network_group_ids=excluded.anonymous_network_group_ids,revision=client_auth_policies.revision+1,updated_at=now() RETURNING revision,id::text`, p.InstanceID, feed, in.Methods, in.AnonymousNetworkGroupIDs).Scan(&revision, &id)
-	} else {
-		err = tx.QueryRow(ctx, `INSERT INTO client_auth_policies(instance_id,methods,anonymous_network_group_ids) VALUES($1,$2,$3::uuid[])
- ON CONFLICT(instance_id) WHERE feed_id IS NULL DO UPDATE SET methods=excluded.methods,anonymous_network_group_ids=excluded.anonymous_network_group_ids,revision=client_auth_policies.revision+1,updated_at=now() RETURNING revision,id::text`, p.InstanceID, in.Methods, in.AnonymousNetworkGroupIDs).Scan(&revision, &id)
-	}
-	if err != nil {
-		identityError(w, r, identityDBError(err))
-		return
-	}
-	if err = identityEvent(ctx, tx, p, id, "auth.policy.put", revision); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if err = tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
-		return
-	}
 	h.changed()
-	JSON(w, 200, ClientAuthPolicy{FeedID: feed, Methods: in.Methods, AnonymousNetworkGroupIDs: in.AnonymousNetworkGroupIDs, Revision: revision})
+	replayWrite(w, r, out, 200)
 }
 func (h authHandlers) deleteFeedPolicy(w http.ResponseWriter, r *http.Request) {
 	p, feed, ok := h.feedConfigure(w, r)
 	if !ok {
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
+	out, ok := idempotentRun(w, r, h.db, p, "auth.policy.delete", "auth-policy:"+feed, struct{ Feed string }{feed}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		var id string
+		err := tx.QueryRow(ctx, "DELETE FROM client_auth_policies WHERE instance_id=$1 AND feed_id=$2 RETURNING id::text", p.InstanceID, feed).Scan(&id)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return nil, err
+		}
+		if err == nil {
+			if err = identityEvent(ctx, tx, p, id, "auth.policy.delete", 0); err != nil {
+				return nil, err
+			}
+		}
+		return struct{}{}, nil
+	})
 	if !ok {
 		return
 	}
-	defer cancel()
-	defer authRollback(tx)
-	var id string
-	err := tx.QueryRow(ctx, "DELETE FROM client_auth_policies WHERE instance_id=$1 AND feed_id=$2 RETURNING id::text", p.InstanceID, feed).Scan(&id)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		identityError(w, r, err)
-		return
-	}
-	if err == nil {
-		if err = identityEvent(ctx, tx, p, id, "auth.policy.delete", 0); err != nil {
-			identityError(w, r, err)
-			return
-		}
-	}
-	if err = tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
-		return
-	}
 	h.changed()
-	w.WriteHeader(204)
+	replayWrite(w, r, out, 204)
 }
 
 // --- network groups ---
@@ -516,36 +491,35 @@ func (h authHandlers) saveNetworkGroup(w http.ResponseWriter, r *http.Request, i
 		bad(w, r, "network group")
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
+	status := 201
+	action := "auth.network_group.create"
+	if id != "" {
+		status, action = 200, "auth.network_group.put"
+	}
+	out, ok := idempotentRun(w, r, h.db, p, action, "network-groups:"+id, struct {
+		ID string
+		In NetworkGroupInput
+	}{id, in}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		g := NetworkGroup{Name: in.Name, CIDRs: in.CIDRs}
+		var err error
+		if id == "" {
+			err = tx.QueryRow(ctx, "INSERT INTO network_groups(instance_id,name,cidrs) VALUES($1,$2,$3) RETURNING id::text,revision", p.InstanceID, in.Name, in.CIDRs).Scan(&g.ID, &g.Revision)
+		} else {
+			err = tx.QueryRow(ctx, "UPDATE network_groups SET name=$3,cidrs=$4,revision=revision+1,updated_at=now() WHERE instance_id=$1 AND id=$2 RETURNING id::text,revision", p.InstanceID, id, in.Name, in.CIDRs).Scan(&g.ID, &g.Revision)
+		}
+		if err != nil {
+			return nil, identityDBError(err)
+		}
+		if err = identityEvent(ctx, tx, p, g.ID, action, g.Revision); err != nil {
+			return nil, err
+		}
+		return g, nil
+	})
 	if !ok {
 		return
 	}
-	defer cancel()
-	defer authRollback(tx)
-	g := NetworkGroup{Name: in.Name, CIDRs: in.CIDRs}
-	var err error
-	status := 201
-	action := "auth.network_group.create"
-	if id == "" {
-		err = tx.QueryRow(ctx, "INSERT INTO network_groups(instance_id,name,cidrs) VALUES($1,$2,$3) RETURNING id::text,revision", p.InstanceID, in.Name, in.CIDRs).Scan(&g.ID, &g.Revision)
-	} else {
-		status, action = 200, "auth.network_group.put"
-		err = tx.QueryRow(ctx, "UPDATE network_groups SET name=$3,cidrs=$4,revision=revision+1,updated_at=now() WHERE instance_id=$1 AND id=$2 RETURNING id::text,revision", p.InstanceID, id, in.Name, in.CIDRs).Scan(&g.ID, &g.Revision)
-	}
-	if err != nil {
-		identityError(w, r, identityDBError(err))
-		return
-	}
-	if err = identityEvent(ctx, tx, p, g.ID, action, g.Revision); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if err = tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
-		return
-	}
 	h.changed()
-	JSON(w, status, g)
+	replayWrite(w, r, out, status)
 }
 func (h authHandlers) deleteNetworkGroup(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
@@ -557,42 +531,33 @@ func (h authHandlers) deleteNetworkGroup(w http.ResponseWriter, r *http.Request)
 		bad(w, r, "network group ID")
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
+	out, ok := idempotentRun(w, r, h.db, p, "auth.network_group.delete", "network-groups:"+id, struct{ ID string }{id}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		// A policy that references a deleted group would silently widen anonymous
+		// access to every network, so referenced groups cannot be deleted.
+		var used bool
+		if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM client_auth_policies WHERE instance_id=$1 AND $2::uuid=ANY(anonymous_network_group_ids))", p.InstanceID, id).Scan(&used); err != nil {
+			return nil, err
+		}
+		if used {
+			return nil, reqError{409, api.ErrorCodeConflict, "network group is referenced by a policy"}
+		}
+		tag, err := tx.Exec(ctx, "DELETE FROM network_groups WHERE instance_id=$1 AND id=$2", p.InstanceID, id)
+		if err != nil {
+			return nil, err
+		}
+		if tag.RowsAffected() == 0 {
+			return nil, database.ErrNotFound
+		}
+		if err = identityEvent(ctx, tx, p, id, "auth.network_group.delete", 0); err != nil {
+			return nil, err
+		}
+		return struct{}{}, nil
+	})
 	if !ok {
 		return
 	}
-	defer cancel()
-	defer authRollback(tx)
-	// A policy that references a deleted group would silently widen anonymous
-	// access to every network, so referenced groups cannot be deleted.
-	var used bool
-	if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM client_auth_policies WHERE instance_id=$1 AND $2::uuid=ANY(anonymous_network_group_ids))", p.InstanceID, id).Scan(&used); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if used {
-		Error(w, r, 409, api.ErrorCodeConflict, "network group is referenced by a policy")
-		return
-	}
-	tag, err := tx.Exec(ctx, "DELETE FROM network_groups WHERE instance_id=$1 AND id=$2", p.InstanceID, id)
-	if err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if tag.RowsAffected() == 0 {
-		identityError(w, r, identityDBError(pgx.ErrNoRows))
-		return
-	}
-	if err = identityEvent(ctx, tx, p, id, "auth.network_group.delete", 0); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if err = tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
-		return
-	}
 	h.changed()
-	w.WriteHeader(204)
+	replayWrite(w, r, out, 204)
 }
 
 // --- GitHub OIDC ---
@@ -623,30 +588,24 @@ func (h authHandlers) putGitHubConfig(w http.ResponseWriter, r *http.Request) {
 		bad(w, r, "audience")
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
-	if !ok {
-		return
-	}
-	defer cancel()
-	defer authRollback(tx)
-	out := GitHubOIDCConfig{Issuer: identity.GitHubIssuer, Audience: in.Audience}
-	if err := tx.QueryRow(ctx, `INSERT INTO github_oidc_config(instance_id,audience) VALUES($1,$2)
+	res, ok := idempotentRun(w, r, h.db, p, "auth.github_oidc.config", "github-oidc-config", in, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		out := GitHubOIDCConfig{Issuer: identity.GitHubIssuer, Audience: in.Audience}
+		if err := tx.QueryRow(ctx, `INSERT INTO github_oidc_config(instance_id,audience) VALUES($1,$2)
  ON CONFLICT(instance_id) DO UPDATE SET audience=excluded.audience,revision=github_oidc_config.revision+1,updated_at=now() RETURNING revision`, p.InstanceID, in.Audience).Scan(&out.Revision); err != nil {
-		identityError(w, r, identityDBError(err))
-		return
-	}
-	if err := identityEvent(ctx, tx, p, p.InstanceID, "auth.github_oidc.config", out.Revision); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if err := tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
+			return nil, identityDBError(err)
+		}
+		if err := identityEvent(ctx, tx, p, p.InstanceID, "auth.github_oidc.config", out.Revision); err != nil {
+			return nil, err
+		}
+		return out, nil
+	})
+	if !ok {
 		return
 	}
 	if h.d.GitHub != nil {
 		h.d.GitHub.InvalidateConfig()
 	}
-	JSON(w, 200, out)
+	replayWrite(w, r, res, 200)
 }
 
 var orgPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9-]{0,38}$`)
@@ -759,51 +718,49 @@ func (h authHandlers) saveRule(w http.ResponseWriter, r *http.Request, id string
 		bad(w, r, "trust rule")
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
+	status, action := 201, "auth.github_oidc.rule.create"
+	if id != "" {
+		status, action = 200, "auth.github_oidc.rule.put"
+	}
+	out, ok := idempotentRun(w, r, h.db, p, action, "github-oidc-rules:"+id, struct {
+		ID string
+		In GitHubTrustRuleInput
+	}{id, in}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		var service bool
+		if err := tx.QueryRow(ctx, "SELECT kind='service' AND NOT disabled FROM principals WHERE instance_id=$1 AND id=$2", p.InstanceID, in.PrincipalID).Scan(&service); err != nil || !service {
+			return nil, badInput("principal (must be an enabled service principal)")
+		}
+		for _, s := range scopes {
+			if s.FeedID == "" {
+				continue
+			}
+			var exists bool
+			if err := tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM feeds WHERE instance_id=$1 AND id=$2)", p.InstanceID, s.FeedID).Scan(&exists); err != nil || !exists {
+				return nil, badInput("scope feed")
+			}
+		}
+		encoded := encodeScopes(scopes)
+		g := GitHubTrustRule{Name: in.Name, Org: in.Org, Repo: in.Repo, Ref: in.Ref, Environment: in.Environment, Workflow: in.Workflow, PrincipalID: in.PrincipalID, Scopes: fromIdentityScopes(scopes), TTLSeconds: in.TTLSeconds, Enabled: *in.Enabled}
+		var err error
+		if id == "" {
+			err = tx.QueryRow(ctx, `INSERT INTO github_oidc_trust_rules(instance_id,name,org,repo,ref,environment,workflow,principal_id,scopes,ttl_seconds,enabled) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id::text,revision`,
+				p.InstanceID, g.Name, g.Org, g.Repo, g.Ref, g.Environment, g.Workflow, g.PrincipalID, encoded, g.TTLSeconds, g.Enabled).Scan(&g.ID, &g.Revision)
+		} else {
+			err = tx.QueryRow(ctx, `UPDATE github_oidc_trust_rules SET name=$3,org=$4,repo=$5,ref=$6,environment=$7,workflow=$8,principal_id=$9,scopes=$10,ttl_seconds=$11,enabled=$12,revision=revision+1,updated_at=now() WHERE instance_id=$1 AND id=$2 RETURNING id::text,revision`,
+				p.InstanceID, id, g.Name, g.Org, g.Repo, g.Ref, g.Environment, g.Workflow, g.PrincipalID, encoded, g.TTLSeconds, g.Enabled).Scan(&g.ID, &g.Revision)
+		}
+		if err != nil {
+			return nil, identityDBError(err)
+		}
+		if err = identityEvent(ctx, tx, p, g.ID, action, g.Revision); err != nil {
+			return nil, err
+		}
+		return g, nil
+	})
 	if !ok {
 		return
 	}
-	defer cancel()
-	defer authRollback(tx)
-	var service bool
-	if err = tx.QueryRow(ctx, "SELECT kind='service' AND NOT disabled FROM principals WHERE instance_id=$1 AND id=$2", p.InstanceID, in.PrincipalID).Scan(&service); err != nil || !service {
-		bad(w, r, "principal (must be an enabled service principal)")
-		return
-	}
-	for _, s := range scopes {
-		if s.FeedID == "" {
-			continue
-		}
-		var exists bool
-		if err = tx.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM feeds WHERE instance_id=$1 AND id=$2)", p.InstanceID, s.FeedID).Scan(&exists); err != nil || !exists {
-			bad(w, r, "scope feed")
-			return
-		}
-	}
-	encoded := encodeScopes(scopes)
-	g := GitHubTrustRule{Name: in.Name, Org: in.Org, Repo: in.Repo, Ref: in.Ref, Environment: in.Environment, Workflow: in.Workflow, PrincipalID: in.PrincipalID, Scopes: fromIdentityScopes(scopes), TTLSeconds: in.TTLSeconds, Enabled: *in.Enabled}
-	status, action := 201, "auth.github_oidc.rule.create"
-	if id == "" {
-		err = tx.QueryRow(ctx, `INSERT INTO github_oidc_trust_rules(instance_id,name,org,repo,ref,environment,workflow,principal_id,scopes,ttl_seconds,enabled) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id::text,revision`,
-			p.InstanceID, g.Name, g.Org, g.Repo, g.Ref, g.Environment, g.Workflow, g.PrincipalID, encoded, g.TTLSeconds, g.Enabled).Scan(&g.ID, &g.Revision)
-	} else {
-		status, action = 200, "auth.github_oidc.rule.put"
-		err = tx.QueryRow(ctx, `UPDATE github_oidc_trust_rules SET name=$3,org=$4,repo=$5,ref=$6,environment=$7,workflow=$8,principal_id=$9,scopes=$10,ttl_seconds=$11,enabled=$12,revision=revision+1,updated_at=now() WHERE instance_id=$1 AND id=$2 RETURNING id::text,revision`,
-			p.InstanceID, id, g.Name, g.Org, g.Repo, g.Ref, g.Environment, g.Workflow, g.PrincipalID, encoded, g.TTLSeconds, g.Enabled).Scan(&g.ID, &g.Revision)
-	}
-	if err != nil {
-		identityError(w, r, identityDBError(err))
-		return
-	}
-	if err = identityEvent(ctx, tx, p, g.ID, action, g.Revision); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if err = tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	JSON(w, status, g)
+	replayWrite(w, r, out, status)
 }
 func (h authHandlers) deleteTrustRule(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
@@ -815,30 +772,23 @@ func (h authHandlers) deleteTrustRule(w http.ResponseWriter, r *http.Request) {
 		bad(w, r, "trust rule ID")
 		return
 	}
-	tx, ctx, cancel, ok := h.tx(w, r)
+	out, ok := idempotentRun(w, r, h.db, p, "auth.github_oidc.rule.delete", "github-oidc-rules:"+id, struct{ ID string }{id}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		tag, err := tx.Exec(ctx, "DELETE FROM github_oidc_trust_rules WHERE instance_id=$1 AND id=$2", p.InstanceID, id)
+		if err != nil {
+			return nil, err
+		}
+		if tag.RowsAffected() == 0 {
+			return nil, database.ErrNotFound
+		}
+		if err = identityEvent(ctx, tx, p, id, "auth.github_oidc.rule.delete", 0); err != nil {
+			return nil, err
+		}
+		return struct{}{}, nil
+	})
 	if !ok {
 		return
 	}
-	defer cancel()
-	defer authRollback(tx)
-	tag, err := tx.Exec(ctx, "DELETE FROM github_oidc_trust_rules WHERE instance_id=$1 AND id=$2", p.InstanceID, id)
-	if err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if tag.RowsAffected() == 0 {
-		identityError(w, r, identityDBError(pgx.ErrNoRows))
-		return
-	}
-	if err = identityEvent(ctx, tx, p, id, "auth.github_oidc.rule.delete", 0); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	if err = tx.Commit(ctx); err != nil {
-		identityError(w, r, err)
-		return
-	}
-	w.WriteHeader(204)
+	replayWrite(w, r, out, 204)
 }
 
 // exchange trades a GitHub Actions OIDC JWT for a short-lived scoped Ant token.
@@ -991,11 +941,16 @@ func (h authHandlers) revokePAT(w http.ResponseWriter, r *http.Request) {
 		bad(w, r, "token ID")
 		return
 	}
-	if err := (identity.PATs{DB: h.db}).Revoke(r.Context(), p.InstanceID, p.PrincipalID, id); err != nil {
-		patError(w, r, err)
+	out, ok := idempotentRun(w, r, h.db, p, "auth.pat.revoke", "pat:"+id, struct{ ID string }{id}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		if err := identity.RevokePATTx(ctx, tx, p.InstanceID, p.PrincipalID, id); err != nil {
+			return nil, patReqError(err)
+		}
+		return struct{}{}, nil
+	})
+	if !ok {
 		return
 	}
-	w.WriteHeader(204)
+	replayWrite(w, r, out, 204)
 }
 
 func identityNormalized(in []identity.Scope) ([]identity.Scope, error) {
@@ -1011,4 +966,15 @@ func decodeScopes(raw []byte) []TokenScope {
 		return []TokenScope{}
 	}
 	return fromIdentityScopes(scopes)
+}
+
+// patReqError maps PAT domain failures onto the statuses patError renders.
+func patReqError(err error) error {
+	switch {
+	case errors.Is(err, identity.ErrPATNotFound):
+		return reqError{404, api.ErrorCodeNotFound, "personal access token not found"}
+	case errors.Is(err, identity.ErrPATNotUser):
+		return reqError{403, api.ErrorCodeForbidden, "personal access tokens are only available to user accounts"}
+	}
+	return reqError{503, api.ErrorCodeUnavailable, "token management unavailable"}
 }

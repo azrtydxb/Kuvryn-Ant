@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -66,12 +67,18 @@ func (f *authFixture) as(session, method, path, body, credential string) *httpte
 	return f.asKeyed(session, "", method, path, body, credential)
 }
 
-// asKeyed is as with an Idempotency-Key header when key is not empty.
+// asKeyed is as with an Idempotency-Key header. An empty key on a mutation gets
+// a fresh one so tests exercise the handler, not the missing-key contract;
+// key "-" sends none.
 func (f *authFixture) asKeyed(session, key, method, path, body, credential string) *httptest.ResponseRecorder {
 	f.t.Helper()
 	r := httptest.NewRequest(method, "http://example.test"+path, strings.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
-	if key != "" {
+	switch {
+	case key == "-":
+	case key == "" && method != http.MethodGet:
+		r.Header.Set("Idempotency-Key", fmt.Sprintf("auth-test-%d", authKeySeq.Add(1)))
+	case key != "":
 		r.Header.Set("Idempotency-Key", key)
 	}
 	if credential != "" {
@@ -190,7 +197,7 @@ func TestPersonalAccessTokenAPI(t *testing.T) {
 	mustStatus(t, f.as("", "POST", "/api/v1/auth/personal-access-tokens", create, f.credential), 403)
 	mustStatus(t, f.as("", "POST", "/api/v1/auth/personal-access-tokens", create, ""), 401)
 	// Creation requires an Idempotency-Key.
-	mustStatus(t, f.as(alice.ID, "POST", "/api/v1/auth/personal-access-tokens", create, ""), 400)
+	mustStatus(t, f.asKeyed(alice.ID, "-", "POST", "/api/v1/auth/personal-access-tokens", create, ""), 400)
 	created := decodeJSON[CreatedPersonalAccessToken](t, mustStatus(t, f.asKeyed(alice.ID, "pat-laptop-1", "POST", "/api/v1/auth/personal-access-tokens", create, ""), 201))
 	if !strings.HasPrefix(created.Token, "antp_") || created.Name != "laptop" || time.Until(created.ExpiresAt) < 29*24*time.Hour {
 		t.Fatalf("created: %+v", created)
@@ -328,5 +335,113 @@ func TestGitHubOIDCTrustRulesAndExchangeAPI(t *testing.T) {
 	}
 	if last != 429 {
 		t.Fatalf("exchange failures not limited: %d", last)
+	}
+}
+
+var authKeySeq atomic.Int64
+
+func TestClientAuthMutationsAreIdempotent(t *testing.T) {
+	f := newAuthFixture(t)
+	ci := createIdentityPrincipal(f.sourceHTTPFixture, "ci-idem", "service")
+	alice := createIdentityPrincipal(f.sourceHTTPFixture, "alice-idem", "user")
+	feed := f.feed("idem-feed", "raw")
+	keyed := func(key, method, path, body string) *httptest.ResponseRecorder {
+		return f.asKeyed("", key, method, path, body, f.credential)
+	}
+	count := func(query string, args ...any) int {
+		var n int
+		if err := f.db.QueryRow(context.Background(), query, args...).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	audits := func(action string) int {
+		return count("SELECT count(*) FROM audit_events WHERE action=$1", action)
+	}
+
+	// Every mutation demands the header.
+	rule := fmt.Sprintf(`{"name":"idem","org":"acme","repo":"*","principal_id":%q,"scopes":[{"actions":["read"]}]}`, ci.ID)
+	id := "3f8b8d58-8f0f-4a0f-9e55-4f6f1b0f6d11"
+	for _, c := range [][3]string{
+		{"PUT", "/api/v1/auth/policy", `{"methods":["token"],"anonymous_network_group_ids":[]}`},
+		{"PUT", "/api/v1/feeds/" + feed.ID + "/auth-policy", `{"methods":["token"],"anonymous_network_group_ids":[]}`},
+		{"DELETE", "/api/v1/feeds/" + feed.ID + "/auth-policy", ""},
+		{"POST", "/api/v1/auth/network-groups", `{"name":"g","cidrs":["10.0.0.0/8"]}`},
+		{"PUT", "/api/v1/auth/network-groups/" + id, `{"name":"g","cidrs":["10.0.0.0/8"]}`},
+		{"DELETE", "/api/v1/auth/network-groups/" + id, ""},
+		{"PUT", "/api/v1/auth/github-oidc/config", `{"audience":"x"}`},
+		{"POST", "/api/v1/auth/github-oidc/trust-rules", rule},
+		{"PUT", "/api/v1/auth/github-oidc/trust-rules/" + id, rule},
+		{"DELETE", "/api/v1/auth/github-oidc/trust-rules/" + id, ""},
+	} {
+		if w := keyed("-", c[0], c[1], c[2]); w.Code != 400 || !strings.Contains(w.Body.String(), "Idempotency-Key") {
+			t.Fatalf("%s %s without key: %d %s", c[0], c[1], w.Code, w.Body.String())
+		}
+	}
+	if w := f.asKeyed(alice.ID, "-", "DELETE", "/api/v1/auth/personal-access-tokens/"+id, "", ""); w.Code != 400 {
+		t.Fatalf("PAT revoke without key: %d", w.Code)
+	}
+
+	// Network group create replays to the same group; a different body is a conflict.
+	g1 := keyed("grp-1", "POST", "/api/v1/auth/network-groups", `{"name":"idem","cidrs":["10.0.0.0/8"]}`)
+	g2 := keyed("grp-1", "POST", "/api/v1/auth/network-groups", `{"name":"idem","cidrs":["10.0.0.0/8"]}`)
+	if g1.Code != 201 || g2.Code != 201 || g1.Body.String() != g2.Body.String() {
+		t.Fatalf("group replay: %d %s / %d %s", g1.Code, g1.Body.String(), g2.Code, g2.Body.String())
+	}
+	group := decodeJSON[NetworkGroup](t, g1)
+	if n := count("SELECT count(*) FROM network_groups WHERE name='idem'"); n != 1 {
+		t.Fatalf("groups=%d", n)
+	}
+	mustStatus(t, keyed("grp-1", "POST", "/api/v1/auth/network-groups", `{"name":"idem","cidrs":["10.1.0.0/16"]}`), 409)
+	// A replayed update does not bump the revision again.
+	body := `{"name":"idem","cidrs":["10.0.0.0/8","192.168.0.0/16"]}`
+	u1 := decodeJSON[NetworkGroup](t, mustStatus(t, keyed("grp-put", "PUT", "/api/v1/auth/network-groups/"+group.ID, body), 200))
+	u2 := decodeJSON[NetworkGroup](t, mustStatus(t, keyed("grp-put", "PUT", "/api/v1/auth/network-groups/"+group.ID, body), 200))
+	if u1.Revision != 2 || u2.Revision != 2 {
+		t.Fatalf("revisions %d %d", u1.Revision, u2.Revision)
+	}
+
+	// Feed policy put and delete.
+	pol := fmt.Sprintf(`{"methods":["anonymous","pat"],"anonymous_network_group_ids":[%q]}`, group.ID)
+	p1 := decodeJSON[ClientAuthPolicy](t, mustStatus(t, keyed("pol-1", "PUT", "/api/v1/feeds/"+feed.ID+"/auth-policy", pol), 200))
+	p2 := decodeJSON[ClientAuthPolicy](t, mustStatus(t, keyed("pol-1", "PUT", "/api/v1/feeds/"+feed.ID+"/auth-policy", pol), 200))
+	if p1.Revision != 1 || p2.Revision != 1 || audits("auth.policy.put") != 1 {
+		t.Fatalf("policy replay: %+v %+v audits=%d", p1, p2, audits("auth.policy.put"))
+	}
+	mustStatus(t, keyed("pol-del", "DELETE", "/api/v1/feeds/"+feed.ID+"/auth-policy", ""), 204)
+	mustStatus(t, keyed("pol-del", "DELETE", "/api/v1/feeds/"+feed.ID+"/auth-policy", ""), 204)
+	if audits("auth.policy.delete") != 1 {
+		t.Fatalf("delete audited %d times", audits("auth.policy.delete"))
+	}
+
+	// Group delete: the replay is 204, not 404.
+	mustStatus(t, keyed("grp-del", "DELETE", "/api/v1/auth/network-groups/"+group.ID, ""), 204)
+	mustStatus(t, keyed("grp-del", "DELETE", "/api/v1/auth/network-groups/"+group.ID, ""), 204)
+	mustStatus(t, keyed("grp-del-2", "DELETE", "/api/v1/auth/network-groups/"+group.ID, ""), 404)
+
+	// GitHub config and trust rules.
+	cfg := `{"audience":"https://idem.example"}`
+	c1 := decodeJSON[GitHubOIDCConfig](t, mustStatus(t, keyed("cfg-1", "PUT", "/api/v1/auth/github-oidc/config", cfg), 200))
+	c2 := decodeJSON[GitHubOIDCConfig](t, mustStatus(t, keyed("cfg-1", "PUT", "/api/v1/auth/github-oidc/config", cfg), 200))
+	if c1.Revision != c2.Revision {
+		t.Fatalf("config revision moved on replay: %d %d", c1.Revision, c2.Revision)
+	}
+	r1 := decodeJSON[GitHubTrustRule](t, mustStatus(t, keyed("rule-1", "POST", "/api/v1/auth/github-oidc/trust-rules", rule), 201))
+	r2 := decodeJSON[GitHubTrustRule](t, mustStatus(t, keyed("rule-1", "POST", "/api/v1/auth/github-oidc/trust-rules", rule), 201))
+	if r1.ID != r2.ID || count("SELECT count(*) FROM github_oidc_trust_rules") != 1 {
+		t.Fatalf("rule replay created a second rule: %s %s", r1.ID, r2.ID)
+	}
+	mustStatus(t, keyed("rule-del", "DELETE", "/api/v1/auth/github-oidc/trust-rules/"+r1.ID, ""), 204)
+	mustStatus(t, keyed("rule-del", "DELETE", "/api/v1/auth/github-oidc/trust-rules/"+r1.ID, ""), 204)
+
+	// Authorization is rechecked on replay.
+	mustStatus(t, f.asKeyed("", "grp-1", "POST", "/api/v1/auth/network-groups", `{"name":"idem","cidrs":["10.0.0.0/8"]}`, f.limited), 403)
+
+	// PAT revoke replays; the owner scope still applies.
+	pat := decodeJSON[CreatedPersonalAccessToken](t, mustStatus(t, f.asKeyed(alice.ID, "pat-new", "POST", "/api/v1/auth/personal-access-tokens", `{"name":"a","scopes":[{"actions":["read"]}],"expires_in_days":30}`, ""), 201))
+	mustStatus(t, f.asKeyed(alice.ID, "pat-rev", "DELETE", "/api/v1/auth/personal-access-tokens/"+pat.ID, "", ""), 204)
+	mustStatus(t, f.asKeyed(alice.ID, "pat-rev", "DELETE", "/api/v1/auth/personal-access-tokens/"+pat.ID, "", ""), 204)
+	if n := audits("pat.revoke"); n != 1 {
+		t.Fatalf("revoke audited %d times", n)
 	}
 }

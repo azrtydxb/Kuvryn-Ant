@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -262,4 +263,94 @@ func TestLocalAccountTOTPOnlyByBreakGlassItself(t *testing.T) {
 	expectSourceStatus(t, f.request("POST", "/api/v1/local-account/totp", "", "", ""), 403)
 	expectSourceStatus(t, f.request("DELETE", "/api/v1/local-account/totp", "", "", ""), 403)
 	expectSourceStatus(t, f.request("POST", "/api/v1/local-account/unlock", "", "", ""), 204)
+}
+
+var idpKeySeq atomic.Int64
+
+// requestAs adds a fresh Idempotency-Key to mutations that do not name one; key
+// "-" sends none so the missing-key contract stays testable.
+func (f *idpFixture) requestAs(method, path, body, key, revision, credential string) *httptest.ResponseRecorder {
+	f.t.Helper()
+	switch {
+	case key == "-":
+		key = ""
+	case key == "" && method != http.MethodGet:
+		key = fmt.Sprintf("idp-test-%d", idpKeySeq.Add(1))
+	}
+	return f.sourceHTTPFixture.requestAs(method, path, body, key, revision, credential)
+}
+func (f *idpFixture) request(method, path, body, key, revision string) *httptest.ResponseRecorder {
+	f.t.Helper()
+	return f.requestAs(method, path, body, key, revision, f.credential)
+}
+
+func TestIdentityAdminMutationsAreIdempotent(t *testing.T) {
+	f := newIDPFixture(t)
+	count := func(query string) int {
+		var n int
+		if err := f.db.QueryRow(context.Background(), query).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	// Missing key.
+	expectSourceStatus(t, f.request("POST", "/api/v1/identity-providers", ldapBody("nokey", false, "pw-pw-pw-pw"), "-", ""), 400)
+	expectSourceStatus(t, f.request("PUT", "/api/v1/identity-policy", `{"sso_mandatory":false}`, "-", ""), 400)
+	expectSourceStatus(t, f.request("POST", "/api/v1/local-account/unlock", "", "-", ""), 400)
+
+	// Create replays to the same provider without a second row or audit event.
+	body := ldapBody("idem", false, "bind-password-xyz")
+	a := f.request("POST", "/api/v1/identity-providers", body, "idp-create", "")
+	b := f.request("POST", "/api/v1/identity-providers", body, "idp-create", "")
+	expectSourceStatus(t, a, 201)
+	expectSourceStatus(t, b, 201)
+	if strings.Contains(b.Body.String(), "bind-password-xyz") {
+		t.Fatal("secret in replay")
+	}
+	p := decodeJSON[IdentityProvider](t, a)
+	if q := decodeJSON[IdentityProvider](t, b); q.ID != p.ID || etag(a) != etag(b) {
+		t.Fatalf("replay differs: %+v", q)
+	}
+	if n := count(`SELECT count(*) FROM identity_providers`); n != 1 {
+		t.Fatalf("providers=%d", n)
+	}
+	if n := count(`SELECT count(*) FROM mutation_results WHERE response::text LIKE '%bind-password-xyz%'`); n != 0 {
+		t.Fatal("secret persisted in replay store")
+	}
+	expectSourceStatus(t, f.request("POST", "/api/v1/identity-providers", ldapBody("other", false, "pw-pw-pw-pw"), "idp-create", ""), 409)
+	reloads := f.reloads
+
+	// Update with If-Match: the replay does not 412 on the now-stale revision.
+	upd := ldapBody("idem", true, "")
+	u1 := f.request("PUT", "/api/v1/identity-providers/"+p.ID, strings.Replace(upd, `"secret":"",`, "", 1), "idp-upd", etag(a))
+	u2 := f.request("PUT", "/api/v1/identity-providers/"+p.ID, strings.Replace(upd, `"secret":"",`, "", 1), "idp-upd", etag(a))
+	expectSourceStatus(t, u1, 200)
+	expectSourceStatus(t, u2, 200)
+	if etag(u1) != etag(u2) || etag(u1) == etag(a) {
+		t.Fatalf("etags %s %s %s", etag(a), etag(u1), etag(u2))
+	}
+	if f.reloads != reloads+1 {
+		t.Fatalf("reloads %d -> %d: replay must not reload", reloads, f.reloads)
+	}
+	// Toggle replays.
+	d1 := f.request("POST", "/api/v1/identity-providers/"+p.ID+"/disable", "", "idp-dis", etag(u1))
+	d2 := f.request("POST", "/api/v1/identity-providers/"+p.ID+"/disable", "", "idp-dis", etag(u1))
+	expectSourceStatus(t, d1, 200)
+	expectSourceStatus(t, d2, 200)
+
+	// Policy and local account.
+	expectSourceStatus(t, f.request("PUT", "/api/v1/identity-policy", `{"sso_mandatory":false}`, "pol-1", ""), 200)
+	expectSourceStatus(t, f.request("PUT", "/api/v1/identity-policy", `{"sso_mandatory":false}`, "pol-1", ""), 200)
+	expectSourceStatus(t, f.request("POST", "/api/v1/local-account/unlock", "", "unlock-1", ""), 204)
+	expectSourceStatus(t, f.request("POST", "/api/v1/local-account/unlock", "", "unlock-1", ""), 204)
+	if n := count(`SELECT count(*) FROM audit_events WHERE action='auth.local.unlocked'`); n != 1 {
+		t.Fatalf("unlock audited %d times", n)
+	}
+
+	// Delete replays to 204 rather than 404.
+	cur := etag(d1)
+	expectSourceStatus(t, f.request("DELETE", "/api/v1/identity-providers/"+p.ID, "", "idp-del", cur), 204)
+	expectSourceStatus(t, f.request("DELETE", "/api/v1/identity-providers/"+p.ID, "", "idp-del", cur), 204)
+	// Authorization is rechecked on replay.
+	expectSourceStatus(t, f.requestAs("DELETE", "/api/v1/identity-providers/"+p.ID, "", "idp-del", cur, f.limited), 403)
 }

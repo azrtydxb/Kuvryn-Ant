@@ -9501,6 +9501,18 @@
       },
       "post": {
         "operationId": "createIdentityProvider",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Requires instance admin. Creates a provider. An enabled provider is built (OIDC discovery, SAML metadata and keys) before it is stored, so a broken configuration is rejected with 422 and nothing changes. Enabling replaces any other enabled provider of the same protocol and takes effect immediately.",
         "requestBody": {
           "required": true,
@@ -9767,6 +9779,16 @@
         "description": "Requires instance admin. Replaces a provider at an exact revision. Omit secret to keep the stored one.",
         "parameters": [
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
             "name": "id",
             "in": "path",
             "required": true,
@@ -9868,6 +9890,16 @@
         "description": "Requires instance admin. Deletes a provider and its secret. Refused while SSO is mandatory and it is the last enabled provider.",
         "parameters": [
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
             "name": "id",
             "in": "path",
             "required": true,
@@ -9937,6 +9969,16 @@
         "operationId": "enableIdentityProvider",
         "description": "Requires instance admin. Builds and enables a provider, replacing any other of the same protocol, without restart.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -10024,6 +10066,16 @@
         "operationId": "disableIdentityProvider",
         "description": "Requires instance admin. Disables a provider. Refused while SSO is mandatory and it is the last enabled provider.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -10289,6 +10341,18 @@
       },
       "put": {
         "operationId": "putIdentityPolicy",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Requires instance admin. Sets SSO-mandatory. Enabling requires an enabled provider and an existing break-glass account (409 otherwise); the break-glass account always keeps working.",
         "requestBody": {
           "required": true,
@@ -10398,6 +10462,18 @@
     "/api/v1/local-account/unlock": {
       "post": {
         "operationId": "unlockLocalAccount",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Requires instance admin. Clears the login lockout.",
         "responses": {
           "204": {
@@ -10436,6 +10512,18 @@
     "/api/v1/local-account/totp": {
       "post": {
         "operationId": "beginLocalTotp",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.",
         "responses": {
           "200": {
@@ -10482,6 +10570,18 @@
       },
       "delete": {
         "operationId": "disableLocalTotp",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Only the signed-in break-glass account may call this. Removes the second factor.",
         "responses": {
           "204": {
@@ -10520,6 +10620,18 @@
     "/api/v1/local-account/totp/confirm": {
       "post": {
         "operationId": "confirmLocalTotp",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.",
         "requestBody": {
           "required": true,
@@ -10711,6 +10823,18 @@
       },
       "put": {
         "operationId": "putClientAuthPolicy",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Replaces the instance default policy applied to feeds without their own policy. Publish is never anonymous regardless of policy. Requires instance admin.",
         "requestBody": {
           "required": true,
@@ -10838,6 +10962,16 @@
         "description": "Sets the feed's own client authentication policy. Requires configure on the feed.",
         "parameters": [
           {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
             "name": "id",
             "in": "path",
             "required": true,
@@ -10913,6 +11047,16 @@
         "operationId": "deleteFeedClientAuthPolicy",
         "description": "Removes the feed's own policy so it inherits the instance default. Requires configure on the feed.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -11009,6 +11153,18 @@
       },
       "post": {
         "operationId": "createNetworkGroup",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Creates a named network group. Requires instance admin.",
         "requestBody": {
           "required": true,
@@ -11078,6 +11234,16 @@
         "operationId": "putNetworkGroup",
         "description": "Replaces a network group. Requires instance admin.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -11154,6 +11320,16 @@
         "operationId": "deleteNetworkGroup",
         "description": "Deletes a network group that no policy references (409 otherwise). Requires instance admin.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -11253,6 +11429,18 @@
       },
       "put": {
         "operationId": "putGitHubOIDCConfig",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Sets the accepted OIDC audience. Requires instance admin.",
         "requestBody": {
           "required": true,
@@ -11366,6 +11554,18 @@
       },
       "post": {
         "operationId": "createGitHubTrustRule",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
         "description": "Creates a trust rule. The principal must be an enabled service principal; effective access is its role grants intersected with the scopes. Requires instance admin.",
         "requestBody": {
           "required": true,
@@ -11435,6 +11635,16 @@
         "operationId": "putGitHubTrustRule",
         "description": "Replaces a trust rule. Requires instance admin.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -11511,6 +11721,16 @@
         "operationId": "deleteGitHubTrustRule",
         "description": "Deletes a trust rule. Requires instance admin.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -11756,6 +11976,16 @@
         "operationId": "revokePersonalAccessToken",
         "description": "Revokes one of the signed-in user's tokens.",
         "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
           {
             "name": "id",
             "in": "path",

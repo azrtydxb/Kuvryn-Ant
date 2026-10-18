@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
@@ -56,4 +57,61 @@ func storeError(w http.ResponseWriter, r *http.Request, err error) {
 	default:
 		Error(w, r, 503, api.ErrorCodeUnavailable, "mutation unavailable")
 	}
+}
+
+// reqError is a client-visible domain failure raised inside an idempotent
+// apply callback. It is rendered with its own status instead of the generic
+// store mapping.
+type reqError struct {
+	status  int
+	code    api.ErrorCode
+	message string
+}
+
+func (e reqError) Error() string { return e.message }
+
+func badInput(what string) error {
+	return reqError{400, api.ErrorCodeInvalidRequest, "invalid " + what}
+}
+
+// replayWrite renders a stored idempotent outcome with the original status.
+// 204 has no body; documents that carry a revision keep their ETag on replay.
+func replayWrite(w http.ResponseWriter, r *http.Request, out idempotentOutcome, status int) {
+	if status == http.StatusNoContent {
+		w.WriteHeader(status)
+		return
+	}
+	var rev struct {
+		Revision int64 `json:"revision"`
+	}
+	if json.Unmarshal(out.JSON, &rev) == nil && rev.Revision > 0 {
+		w.Header().Set("ETag", strconv.Quote(strconv.FormatInt(rev.Revision, 10)))
+	}
+	JSON(w, status, out.JSON)
+}
+
+// idempotentRun requires the Idempotency-Key, runs apply under the shared
+// replay store and renders domain/store failures. ok is false when a response
+// has already been written. Callers write the success response themselves via
+// replayWrite so secrets (never stored) can be added to first-time responses.
+func idempotentRun(w http.ResponseWriter, r *http.Request, db *pgxpool.Pool, p identity.Principal, operation, resource string, input any, apply func(context.Context, pgx.Tx) (any, error)) (idempotentOutcome, bool) {
+	key, ok := mutationKey(w, r)
+	if !ok {
+		return idempotentOutcome{}, false
+	}
+	out, callErr, storeErr := idempotent(r, db, p, key, operation, resource, input, apply)
+	if callErr != nil {
+		var re reqError
+		if errors.As(callErr, &re) {
+			Error(w, r, re.status, re.code, re.message)
+			return out, false
+		}
+		identityError(w, r, identityDBError(callErr))
+		return out, false
+	}
+	if storeErr != nil {
+		storeError(w, r, storeErr)
+		return out, false
+	}
+	return out, true
 }
