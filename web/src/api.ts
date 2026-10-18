@@ -68,12 +68,20 @@ export class Client {
     if (this.token) headers.set("Authorization", "Bearer " + this.token);
     if (body !== undefined) headers.set("Content-Type", "application/json");
     if (options.etag) headers.set("If-Match", options.etag);
-    const fingerprint = JSON.stringify([
-      route.method,
-      path,
-      body,
-      options.etag,
-    ]);
+    // Retain only a digest for replay matching, never submitted credentials.
+    const fingerprint = route.idempotent
+      ? Array.from(
+          new Uint8Array(
+            await crypto.subtle.digest(
+              "SHA-256",
+              new TextEncoder().encode(
+                JSON.stringify([route.method, path, body, options.etag]),
+              ),
+            ),
+          ),
+          (b) => b.toString(16).padStart(2, "0"),
+        ).join("")
+      : "";
     if (this.csrf && route.method !== "GET")
       headers.set("X-CSRF-Token", this.csrf);
     if (route.idempotent) {

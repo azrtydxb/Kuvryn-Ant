@@ -38,6 +38,18 @@ export type PatchWebhook = { "enabled": boolean };
 export type RotateWebhookSecret = { "secret": string };
 export type WebhookDelivery = { "event_id": number; "state": "pending" | "delivered" | "dead"; "attempts": number; "available_at": string; "last_failure"?: "invalid_destination" | "invalid_payload" | "secret_unavailable" | "transport_failure" | "http_failure" | "attempts_exhausted" | "delivery_failure"; "delivered_at"?: string };
 export type WebhookDeliveryPage = { "items": Array<WebhookDelivery>; "next_after"?: number };
+export type DiscoveredPackage = { "id": string; "coordinate": string; "namespace": string; "source_id": string; "metadata": {  } };
+export type DiscoveredVersion = { "id": string; "component_id": string; "version": string; "revision": number; "created_at": string };
+export type DiscoveredTag = { "name": string; "version_id": string; "revision": number };
+export type DiscoveredAsset = { "id": string; "component_id": string; "version_id": string; "source_id": string; "key": string; "media_type": string; "digest": string; "size_bytes": number; "created_at": string; "uploader_id"?: string; "provenance": {  } };
+export type DiscoveredPackagePage = { "items": Array<DiscoveredPackage>; "page": PageInfo };
+export type DiscoveredVersionPage = { "items": Array<DiscoveredVersion>; "page": PageInfo };
+export type DiscoveredTagPage = { "items": Array<DiscoveredTag>; "page": PageInfo };
+export type DiscoveredAssetPage = { "items": Array<DiscoveredAsset>; "page": PageInfo };
+export type RemoteCachePolicy = { "metadata_ttl_seconds": number; "negative_ttl_seconds": number; "stale_if_error_seconds": number; "max_entries": number; "max_bytes": number };
+export type RemoteSourceConfig = { "origin": string; "redirect_origins": Array<string>; "credential_id"?: string; "ca_ref"?: string; "allow_private": boolean; "timeout_seconds": number; "cache": RemoteCachePolicy };
+export type RemoteSourceRecord = { "source_id": string; "revision": number; "config": RemoteSourceConfig };
+export type RemoteCredentialInput = { "authorization"?: string; "api_key"?: string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -69,6 +81,14 @@ patchWebhook: { body: PatchWebhook; response: Webhook };
 rotateWebhookSecret: { body: RotateWebhookSecret; response: Webhook };
 listWebhookDeliveries: { body: undefined; response: WebhookDeliveryPage };
 listWebhookFailures: { body: undefined; response: WebhookDeliveryPage };
+listPackages: { body: undefined; response: DiscoveredPackagePage };
+listPackageVersions: { body: undefined; response: DiscoveredVersionPage };
+listPackageTags: { body: undefined; response: DiscoveredTagPage };
+listPackageAssets: { body: undefined; response: DiscoveredAssetPage };
+getPackageAsset: { body: undefined; response: DiscoveredAsset };
+getRemoteSourceConfig: { body: undefined; response: RemoteSourceRecord };
+setRemoteSourceConfig: { body: RemoteSourceConfig; response: RemoteSourceRecord };
+setRemoteSourceCredential: { body: RemoteCredentialInput; response: RemoteSourceRecord };
 }
 export const routes = {
   "getStatus": {
@@ -215,5 +235,45 @@ export const routes = {
     "path": "/api/v1/webhooks/{id}/failures",
     "method": "GET",
     "idempotent": false
+  },
+  "listPackages": {
+    "path": "/api/v1/feeds/{id}/packages",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listPackageVersions": {
+    "path": "/api/v1/feeds/{id}/packages/{component}/versions",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listPackageTags": {
+    "path": "/api/v1/feeds/{id}/packages/{component}/tags",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listPackageAssets": {
+    "path": "/api/v1/feeds/{id}/packages/{component}/versions/{version}/assets",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getPackageAsset": {
+    "path": "/api/v1/feeds/{id}/assets/{asset}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getRemoteSourceConfig": {
+    "path": "/api/v1/sources/{id}/remote-config",
+    "method": "GET",
+    "idempotent": false
+  },
+  "setRemoteSourceConfig": {
+    "path": "/api/v1/sources/{id}/remote-config",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "setRemoteSourceCredential": {
+    "path": "/api/v1/sources/{id}/remote-credential",
+    "method": "PUT",
+    "idempotent": true
   }
 } as const;

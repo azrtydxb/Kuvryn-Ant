@@ -29,11 +29,13 @@ beforeEach(() => {
         ? { name: "kuvryn-ant", api_version: "v1" }
         : url.endsWith("/publish-policy")
           ? { feed_id: feed.id, revision: 2, default_source_id: "", rules: [] }
-          : url.includes("/sources?")
-            ? { items: [], page: { has_more: false }, feed_revision: 2 }
-            : url.includes("/feeds?")
-              ? { items: [feed], page: { has_more: false } }
-              : feed;
+          : url.includes("/packages")
+            ? { items: [], page: { has_more: false } }
+            : url.includes("/sources?")
+              ? { items: [], page: { has_more: false }, feed_revision: 2 }
+              : url.includes("/feeds?")
+                ? { items: [feed], page: { has_more: false } }
+                : feed;
       return new Response(JSON.stringify(data), { headers: { ETag: '"2"' } });
     }),
   );

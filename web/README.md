@@ -36,7 +36,7 @@ For development, run the real service on localhost:8080 and `npm run dev` (local
 ## Behavior and limits
 
 - Overview displays the real status endpoint and last successful check. Reachability is not database/storage readiness. Operational metrics and deployed protocol capabilities are not present in this contract, and the UI says so.
-- Feed and source lists are permission-filtered and paginated, with prefix filters. Feeds can be created/edited; sources can be created. Source kind and format are configuration only. No upstream credentials or addresses are solicited.
+- Feed and source lists are permission-filtered and paginated, with prefix filters. Feeds can be created/edited; sources can be created. Source kind and format are configuration only. Remote sources must be configured (HTTPS origin, redirect allowlist, optional operator CA ID, timeout and cache bounds) before upstream credentials can be attached; credentials stay encrypted per source and are never returned.
 - Feed attachments use explicit priorities (lower first) and the feed's ETag. Set an unoccupied priority to move a source; there is no atomic swap endpoint. Hidden sources may occupy priorities, so server conflicts remain authoritative.
 - Publish policy is a full replacement with structured selectors, deny rules, default destination, and local target UUIDs. Each destination is shown before saving. The server validates attachments, overlap, and permissions. There is no routing-explanation endpoint, so the console does not fabricate a resolution preview.
 - Mutations whose OpenAPI parameters require replay protection send idempotency keys. Token issuance explicitly rejects a replay key and is treated as a one-shot operation. An unchanged retry after a network/server/unreadable-response failure reuses the key within the current session. Feed/source/policy edits send the exact returned ETag in If-Match. Principal memberships and role grants quote the revision returned in their collection records, as the identity API has no individual GET endpoint. HTTP 412 asks the operator to refresh; drafts are not silently retried over newer configuration. Refresh discards unsaved drafts.
@@ -55,7 +55,7 @@ HTTP revision behavior follows [RFC 9110 If-Match](https://www.rfc-editor.org/rf
 
 The parent mounts `/console` and `/console/`; no additional Go modules are needed. Session responses currently use the Go field names `session.PrincipalID`, `session.InstanceID`, `session.ExpiresAt`, with top-level `csrf_token`. The console validates that envelope and never reads the HttpOnly cookies directly. The API client generation now records whether each operation declares an Idempotency-Key; this is essential for the non-replayable service-token endpoint.
 
-New administration screens use the existing principal/role/token/binding contract. Webhook administration is deliberately not included in this handoff. The contract generator may include webhook operation types as the parent updates OpenAPI; unused generated operations are not advertised as UI capabilities.
+New administration screens use the existing principal/role/token/binding contract. Webhook administration (create/update/rotate/disable and delivery history) and the package discovery view are included; both use generated operations from the current OpenAPI. Unused generated operations are not advertised as UI capabilities.
 
 Run `python3 web/scripts/qa-fixture.py start` from the repository root to build the real app, initialize a private socket-only PostgreSQL cluster, bootstrap a token into a mode-0600 credential file, and start a loopback app. It prints only the origin, private credential filename, and process ID. Use T3 preview to enter that token without echoing it, then exercise normal UI forms. `python3 web/scripts/qa-fixture.py stop` stops the app/PostgreSQL and removes all private fixture data. The state pointer `web/.qa-fixture.json` is ignored. No fake API is provided by this fixture.
 
@@ -73,3 +73,16 @@ On 2026-10-18, the production embedded build was exercised in T3 preview against
 - All temporary app/PostgreSQL processes and private fixture data were stopped/removed after QA.
 
 Live OIDC/SAML/LDAP providers were not configured in this fixture. Their browser-session transport, CSRF, LDAP prelogin/password clearing, and logout retry behavior are covered by frontend tests, not claimed as end-to-end provider authentication evidence. No remaining console/backend integration failure was observed in the exercised flows. The temporary shared keyfile compile blocker was resolved by its owner before QA.
+
+### Run 3: packages, remote sources, webhooks (2026-10-18)
+
+Took over the run-3 increment after the delegated console agent stalled. First fixed the three failing frontend tests (abort/session-end timing in `web/src/api.test.ts`, and the `Packages` mock fallback crashing two `App.test.tsx` flows), then re-verified against a fresh disposable socket-only PostgreSQL + real Go app served from this checkout (loopback, bootstrapped token, local image push over the OCI registry).
+
+- Full web suite green again: 24/24 tests, `npm run build` (contract check + tsc + vite), prettier clean.
+- Exercise pass in ego-browser against the real backend: created an OCI feed (201) and local source (201), attached the source at priority 10 with the feed's ETag (200, revision bumped), saved a structured publish policy default (200).
+- Published a minimal OCI config blob + manifest through `/v2/packages-oci/team/app` (201). The new package discovery view listed `team/app` with its namespace and owning source; prefix filter (`team/`) still matched, exact-namespace filter (`team`) matched, and a wrong SHA-256 checksum returned an empty list.
+- Created a remote OCI source (201), saved a full remote-config (HTTPS origin, cache bounds, private-flag default off) through the remote-config form (revision 3), then saved an upstream `Bearer` credential. The config read-back returned only the opaque credential reference (`credential_id`), never the secret, and the console rendered a detach toggle instead of the value.
+- Webhook administration: created a webhook (201) with endpoint + cleared signing secret, revision 1 shown, and opened the delivery-history view.
+- Identity: tokens tab rendered the revoke view; token issuance/revocation flows were already covered in run 2.
+
+No regressions or remaining console/backend integration failures observed in the exercised run-3 flows.

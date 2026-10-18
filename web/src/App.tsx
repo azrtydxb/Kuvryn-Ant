@@ -1,3 +1,6 @@
+import { Packages } from "./Packages";
+import { Webhooks } from "./Webhooks";
+import { RemoteSource } from "./RemoteSource";
 import { SignIn } from "./SignIn";
 import { useSession } from "./useSession";
 import { Identity } from "./Identity";
@@ -71,8 +74,8 @@ function Status({ client }: { client: Client }) {
         </p>
         {notice}
         <p className="muted">
-          Capacity, cache acceleration, upstream health, replication, package
-          browsing are not exposed by this management contract.
+          Capacity, cache acceleration, upstream health, replication are not
+          exposed by this management contract.
         </p>
       </section>
     </>
@@ -277,6 +280,7 @@ function Pager({
   );
 }
 function Sources({ client }: { client: Client }) {
+  const [remote, setRemote] = useState<Source>();
   const [cursor, setCursor] = useState("");
   const [prefix, setPrefix] = useState("");
   const [filter, setFilter] = useState("");
@@ -304,6 +308,14 @@ function Sources({ client }: { client: Client }) {
         Configure content origins, then attach them to a matching feed.
       </p>
       {notice}
+      {remote && (
+        <RemoteSource
+          key={remote.id}
+          client={client}
+          source={remote}
+          close={() => setRemote(undefined)}
+        />
+      )}
       {creating && (
         <section className="card">
           <h2>Create source</h2>
@@ -341,8 +353,9 @@ function Sources({ client }: { client: Client }) {
               </select>
             </Field>
             <p className="muted">
-              This creates configuration only. Upstream addresses, credentials,
-              and replication setup are not accepted by this API.
+              This creates the source record. Configure remote upstream trust,
+              cache, and credentials after creation. Replication setup is not
+              available here.
             </p>
           </Mutation>
         </section>
@@ -384,6 +397,11 @@ function Sources({ client }: { client: Client }) {
                   <tr key={s.id}>
                     <td>
                       <strong>{s.name}</strong>
+                      {s.kind === "remote" && (
+                        <button onClick={() => setRemote(s)}>
+                          Configure remote source
+                        </button>
+                      )}
                       <code>{s.id}</code>
                     </td>
                     <td>{s.kind}</td>
@@ -448,6 +466,7 @@ function FeedDetail({
               done={refresh}
             />
           </section>
+          <Packages client={client} id={id} />
           <Attachments
             key={"sources" + epoch}
             client={client}
@@ -814,7 +833,7 @@ export default function App() {
           </span>
         </a>
         <nav aria-label="Main navigation">
-          {["overview", "feeds", "sources", "identity"].map((t) => (
+          {["overview", "feeds", "sources", "identity", "webhooks"].map((t) => (
             <button
               key={t}
               aria-current={tab === t ? "page" : undefined}
@@ -877,12 +896,16 @@ export default function App() {
                 ? "Feeds"
                 : tab === "sources"
                   ? "Sources"
-                  : "Identity administration"}
+                  : tab === "webhooks"
+                    ? "Webhooks"
+                    : "Identity administration"}
             </h1>
             <p>Sign in to load resources permitted by your grants.</p>
           </>
         ) : tab === "feeds" ? (
           <Feeds key="feeds" client={client} />
+        ) : tab === "webhooks" ? (
+          <Webhooks client={client} />
         ) : tab === "identity" ? (
           <Identity client={client} />
         ) : (
