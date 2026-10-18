@@ -3,3 +3,6 @@
 .env
 *.test
 __pycache__/
+
+# Local AI coding hosts (procoder init); .procoder/ stays trackable.
+/.claude/
