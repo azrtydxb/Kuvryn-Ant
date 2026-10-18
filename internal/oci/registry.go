@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,7 +126,15 @@ func failure(w http.ResponseWriter, status int, code, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"errors": []map[string]string{{"code": code, "message": message}}})
 }
 func failService(w http.ResponseWriter, err error) {
+	var limited *artifact.RateLimitedError
 	switch {
+	case errors.As(err, &limited):
+		after := int(limited.RetryAfter.Seconds())
+		if after < 1 {
+			after = 30
+		}
+		w.Header().Set("Retry-After", strconv.Itoa(after))
+		failure(w, 429, "TOOMANYREQUESTS", "upstream registry rate limit reached")
 	case errors.Is(err, artifact.ErrDenied):
 		failure(w, 403, "DENIED", "repository access denied")
 	case errors.Is(err, artifact.ErrNotFound), errors.Is(err, blob.ErrNotFound):
@@ -194,6 +203,10 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 	path := strings.TrimPrefix(req.URL.Path, "/v2/")
 	var name, action, reference string
 	bestIndex := 0
+	// Some clients omit the trailing slash when starting an upload.
+	if strings.HasSuffix(path, "/blobs/uploads") && len(path) > len("/blobs/uploads") {
+		path += "/"
+	}
 	for _, candidate := range []string{"/blobs/uploads/", "/manifests/", "/referrers/", "/blobs/", "/tags/list"} {
 		if index := strings.LastIndex(path, candidate); index > bestIndex {
 			name = path[:index]
@@ -213,10 +226,17 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 	}
 	switch action {
 	case "/blobs/uploads/":
+		// Multi-platform pushes upload several blobs at once. Queue briefly for a
+		// slot instead of failing so the client does not have to retry-storm.
+		wait := time.NewTimer(15 * time.Second)
 		select {
 		case r.transfers <- struct{}{}:
+			wait.Stop()
 			defer func() { <-r.transfers }()
-		default:
+		case <-req.Context().Done():
+			wait.Stop()
+			return
+		case <-wait.C:
 			w.Header().Set("Retry-After", "1")
 			failure(w, 503, "UNKNOWN", "upload capacity exhausted")
 			return
