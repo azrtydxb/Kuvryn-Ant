@@ -360,20 +360,23 @@ WHERE instance_id=$1 AND federation_id=$2 ORDER BY created_at DESC,id LIMIT 500`
 
 // RevokeInvitation revokes a pending invitation.
 func (s *Service) RevokeInvitation(ctx context.Context, actor, id string) error {
-	return s.tx(ctx, func(tx pgx.Tx) error {
-		st, _, err := s.authorityState(ctx, tx)
-		if err != nil {
-			return err
-		}
-		tag, err := tx.Exec(ctx, `UPDATE federation_invitations SET revoked_at=clock_timestamp() WHERE instance_id=$1 AND federation_id=$2 AND id=$3 AND revoked_at IS NULL AND consumed_at IS NULL`, s.cfg.InstanceID, st.FederationID, id)
-		if err != nil {
-			return err
-		}
-		if tag.RowsAffected() != 1 {
-			return ErrNotFound
-		}
-		return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.invitation.revoked", id, "success", map[string]any{})
-	})
+	return s.tx(ctx, func(tx pgx.Tx) error { return s.RevokeInvitationTx(ctx, tx, actor, id) })
+}
+
+// RevokeInvitationTx revokes a pending invitation inside the caller's transaction.
+func (s *Service) RevokeInvitationTx(ctx context.Context, tx pgx.Tx, actor, id string) error {
+	st, _, err := s.authorityState(ctx, tx)
+	if err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `UPDATE federation_invitations SET revoked_at=clock_timestamp() WHERE instance_id=$1 AND federation_id=$2 AND id=$3 AND revoked_at IS NULL AND consumed_at IS NULL`, s.cfg.InstanceID, st.FederationID, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return ErrNotFound
+	}
+	return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.invitation.revoked", id, "success", map[string]any{})
 }
 
 // --- join ---
@@ -713,28 +716,46 @@ func (s *Service) Leave(ctx context.Context, actor string, force bool) (Status, 
 func (s *Service) SetMemberStatus(ctx context.Context, actor, member, action string) (MemberView, error) {
 	var doc *Membership
 	err := s.tx(ctx, func(tx pgx.Tx) error {
-		st, applied, err := s.authorityState(ctx, tx)
-		if err != nil {
-			return err
-		}
-		if member == s.cfg.InstanceID {
-			return ErrSelf
-		}
-		cur, ok := applied.Member(member)
-		if !ok {
-			return ErrNotFound
-		}
-		target := map[string]string{"suspend": "suspended", "resume": "active", "remove": "removed"}[action]
-		if target == "" {
-			return invalid("unknown action")
-		}
-		if cur.Status == target {
-			doc = nil // already in the requested state: idempotent no-op
-			return nil
-		}
-		if cur.Status == "removed" {
-			return ErrNotFound
-		}
+		var err error
+		_, doc, err = s.SetMemberStatusTx(ctx, tx, actor, member, action)
+		return err
+	})
+	if err != nil {
+		return MemberView{}, err
+	}
+	s.AfterPublish(ctx, doc, member)
+	return s.Member(ctx, member)
+}
+
+// SetMemberStatusTx is SetMemberStatus inside the caller's transaction (used
+// by the management API's idempotency store). It returns the member as
+// published and the new document, or a nil document when the member already
+// had the requested status. Call AfterPublish after commit.
+func (s *Service) SetMemberStatusTx(ctx context.Context, tx pgx.Tx, actor, member, action string) (MemberView, *Membership, error) {
+	st, applied, err := s.authorityState(ctx, tx)
+	if err != nil {
+		return MemberView{}, nil, err
+	}
+	if member == s.cfg.InstanceID {
+		return MemberView{}, nil, ErrSelf
+	}
+	cur, ok := applied.Member(member)
+	if !ok {
+		return MemberView{}, nil, ErrNotFound
+	}
+	target := map[string]string{"suspend": "suspended", "resume": "active", "remove": "removed"}[action]
+	if target == "" {
+		return MemberView{}, nil, invalid("unknown action")
+	}
+	if cur.Status == target {
+		return viewFromDocument(applied, member, s.cfg.InstanceID), nil, nil // idempotent no-op
+	}
+	if cur.Status == "removed" {
+		return MemberView{}, nil, ErrNotFound
+	}
+	var doc *Membership
+	err = func() error {
+		var err error
 		doc, err = s.publish(ctx, tx, st, applied, actor, func(next *Membership) error {
 			for i := range next.Members {
 				if next.Members[i].InstanceID == member {
@@ -751,12 +772,28 @@ func (s *Service) SetMemberStatus(ctx context.Context, actor, member, action str
 		}
 		return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.member."+map[string]string{"suspend": "suspended", "resume": "resumed", "remove": "removed"}[action],
 			member, "success", map[string]any{"name": cur.Name, "generation": doc.Generation})
-	})
+	}()
 	if err != nil {
-		return MemberView{}, err
+		return MemberView{}, nil, err
 	}
-	s.afterPublish(ctx, doc, member)
-	return s.Member(ctx, member)
+	return viewFromDocument(doc, member, s.cfg.InstanceID), doc, nil
+}
+
+// viewFromDocument renders a member from a document (no local observations).
+func viewFromDocument(doc *Membership, member, self string) MemberView {
+	m, _ := doc.Member(member)
+	v := MemberView{InstanceID: m.InstanceID, Name: m.Name, Status: m.Status, APIURL: m.APIURL, FederationURL: m.FederationURL, CertSHA256: m.CertSHA256,
+		CertSerial: m.CertSerial, Labels: nonNil(m.Labels), SoftwareVersion: m.SoftwareVersion, Protocol: m.Protocol, Authority: m.InstanceID == doc.Authority.InstanceID,
+		Self: m.InstanceID == self, Generation: doc.Generation}
+	if t, err := time.Parse(time.RFC3339Nano, m.JoinedAt); err == nil {
+		v.JoinedAt = &t
+	}
+	return v
+}
+
+// AfterPublish refreshes trust and nudges members after a committed change.
+func (s *Service) AfterPublish(ctx context.Context, doc *Membership, extra ...string) {
+	s.afterPublish(ctx, doc, extra...)
 }
 
 // RotateRecoveryKey replaces the offline recovery key. The caller proves

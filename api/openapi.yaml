@@ -11788,7 +11788,7 @@
     "/api/v1/federation": {
       "post": {
         "operationId": "foundFederation",
-        "description": "Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Not replay-cached (secret result).",
+        "description": "Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.",
         "responses": {
           "201": {
             "description": "Successful response",
@@ -11900,7 +11900,7 @@
     "/api/v1/federation/join": {
       "post": {
         "operationId": "joinFederation",
-        "description": "Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL.",
+        "description": "Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -11961,7 +11961,7 @@
     "/api/v1/federation/leave": {
       "post": {
         "operationId": "leaveFederation",
-        "description": "Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable.",
+        "description": "Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12133,7 +12133,7 @@
       },
       "delete": {
         "operationId": "removeFederationMember",
-        "description": "Removes a member and revokes its certificate serial (authority only, destructive). Idempotent. Requires instance admin and confirm=true.",
+        "description": "Removes a member and revokes its certificate serial (authority only, destructive). Requires instance admin and confirm=true. Replay-safe with Idempotency-Key.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12199,6 +12199,16 @@
                 "true"
               ]
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
           }
         ]
       }
@@ -12206,7 +12216,7 @@
     "/api/v1/federation/members/{id}/suspend": {
       "post": {
         "operationId": "suspendFederationMember",
-        "description": "Suspends a member: peers refuse its federation calls (authority only). Idempotent. Requires instance admin.",
+        "description": "Suspends a member: peers refuse its federation calls (authority only). Requires instance admin. Replay-safe with Idempotency-Key.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12260,6 +12270,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ]
@@ -12268,7 +12288,7 @@
     "/api/v1/federation/members/{id}/resume": {
       "post": {
         "operationId": "resumeFederationMember",
-        "description": "Resumes a suspended member (authority only). Idempotent. Requires instance admin.",
+        "description": "Resumes a suspended member (authority only). Requires instance admin. Replay-safe with Idempotency-Key.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12322,6 +12342,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ]
@@ -12379,7 +12409,7 @@
       },
       "post": {
         "operationId": "createFederationInvitation",
-        "description": "Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Not replay-cached (secret result).",
+        "description": "Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.",
         "responses": {
           "201": {
             "description": "Successful response",
@@ -12440,7 +12470,7 @@
     "/api/v1/federation/invitations/{id}": {
       "delete": {
         "operationId": "revokeFederationInvitation",
-        "description": "Revokes a pending invitation (authority only). Requires instance admin.",
+        "description": "Revokes a pending invitation (authority only). Requires instance admin. Replay-safe with Idempotency-Key.",
         "responses": {
           "204": {
             "description": "Successful response",
@@ -12487,6 +12517,16 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
             }
           }
         ]
@@ -12633,7 +12673,7 @@
     "/api/v1/federation/recovery-key/rotate": {
       "post": {
         "operationId": "rotateFederationRecoveryKey",
-        "description": "Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Not replay-cached (secret result).",
+        "description": "Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.",
         "responses": {
           "200": {
             "description": "Successful response",

@@ -198,6 +198,9 @@ func (in *instance) call(method, path string, body any, out any) int {
 		in.t.Fatal(err)
 	}
 	req.Header.Set("Authorization", "Bearer "+in.token)
+	if replaySafe(method, path) {
+		req.Header.Set("Idempotency-Key", fmt.Sprintf("harness-%d", dbCounter.Add(1)))
+	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
@@ -228,6 +231,11 @@ func (in *instance) call(method, path string, body any, out any) int {
 		}
 	}
 	return resp.StatusCode
+}
+
+// replaySafe reports the federation mutations that require Idempotency-Key.
+func replaySafe(method, path string) bool {
+	return method == "DELETE" || strings.HasSuffix(path, "/suspend") || strings.HasSuffix(path, "/resume")
 }
 
 func (in *instance) status() federation.Status {
@@ -352,6 +360,16 @@ func TestFederationMembershipScenarios(t *testing.T) {
 	}
 	if !strings.HasPrefix(founded.RecoveryKey, "ant-recovery-v1:") || founded.Status.Role != "authority" || founded.Status.Membership.Generation != 1 || len(founded.CASHA256) != 64 {
 		t.Fatalf("found result: %+v", founded.Status)
+	}
+	// Secret-returning operations are not replayable: Idempotency-Key is refused.
+	keyed, _ := http.NewRequest("POST", alpha.api.URL+"/api/v1/federation/invitations", strings.NewReader(`{"name":"keyed"}`))
+	keyed.Header.Set("Authorization", "Bearer "+alpha.token)
+	keyed.Header.Set("Content-Type", "application/json")
+	keyed.Header.Set("Idempotency-Key", "k")
+	if resp, err := http.DefaultClient.Do(keyed); err != nil || resp.StatusCode != 400 {
+		t.Fatalf("invitation with Idempotency-Key: %v %v", resp, err)
+	} else {
+		resp.Body.Close()
 	}
 	if code := alpha.call("POST", "/api/v1/federation", map[string]any{"name": "again"}, nil); code != 409 {
 		t.Fatalf("second found: %d", code)

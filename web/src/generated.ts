@@ -1199,17 +1199,17 @@ export const routes = {
   "removeFederationMember": {
     "path": "/api/v1/federation/members/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "suspendFederationMember": {
     "path": "/api/v1/federation/members/{id}/suspend",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "resumeFederationMember": {
     "path": "/api/v1/federation/members/{id}/resume",
     "method": "POST",
-    "idempotent": false
+    "idempotent": true
   },
   "listFederationInvitations": {
     "path": "/api/v1/federation/invitations",
@@ -1224,7 +1224,7 @@ export const routes = {
   "revokeFederationInvitation": {
     "path": "/api/v1/federation/invitations/{id}",
     "method": "DELETE",
-    "idempotent": false
+    "idempotent": true
   },
   "getFederationDocument": {
     "path": "/api/v1/federation/documents/{kind}",

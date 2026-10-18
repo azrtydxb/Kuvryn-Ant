@@ -10,6 +10,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,8 +18,10 @@ import (
 // Reads need read on the instance; every mutation needs instance admin, and
 // authority-only operations answer 409 not_authority on other members.
 // Founding, invitations and recovery-key rotation return a secret exactly
-// once and are therefore never replay-cached; the remaining mutations are
-// idempotent by construction (they set a state).
+// once and reject Idempotency-Key (like token issuance). Suspend, resume,
+// remove and invitation revocation require Idempotency-Key and replay from
+// the shared store. Join and leave call another member; they are guarded by
+// the federation state instead (a repeat answers 409).
 
 type federationHandlers struct {
 	identityHandlers
@@ -145,6 +148,9 @@ func (h federationHandlers) found(w http.ResponseWriter, r *http.Request) {
 	}
 	svc, ok := h.service(w, r, p)
 	if !ok {
+		return
+	}
+	if !noReplay(w, r) {
 		return
 	}
 	var in struct {
@@ -280,14 +286,38 @@ func (h federationHandlers) setMember(w http.ResponseWriter, r *http.Request, ac
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid member ID")
 		return
 	}
-	ctx, cancel := h.ctx(r, 30*time.Second)
-	defer cancel()
-	m, err := svc.SetMemberStatus(ctx, p.PrincipalID, id, action)
-	if err != nil {
-		federationError(w, r, err)
+	key, ok := mutationKey(w, r)
+	if !ok {
 		return
 	}
-	JSON(w, 200, m)
+	var published *federation.Membership
+	out, callErr, storeErr := idempotent(r, h.db, p, key, "federation.member."+action, id, struct{ Action string }{action}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		m, doc, err := svc.SetMemberStatusTx(ctx, tx, p.PrincipalID, id, action)
+		published = doc
+		return m, err
+	})
+	switch {
+	case callErr != nil:
+		federationError(w, r, callErr)
+		return
+	case storeErr != nil:
+		storeError(w, r, storeErr)
+		return
+	}
+	if !out.Replayed {
+		svc.AfterPublish(r.Context(), published, id)
+	}
+	JSON(w, 200, out.JSON)
+}
+
+// noReplay rejects Idempotency-Key on operations that return a secret once:
+// a replay could never return the original secret again.
+func noReplay(w http.ResponseWriter, r *http.Request) bool {
+	if len(r.Header.Values("Idempotency-Key")) > 0 {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "this operation returns a secret once and is not replayable; omit Idempotency-Key")
+		return false
+	}
+	return true
 }
 
 func (h federationHandlers) memberAction(w http.ResponseWriter, r *http.Request) {
@@ -337,6 +367,9 @@ func (h federationHandlers) createInvitation(w http.ResponseWriter, r *http.Requ
 	if !ok {
 		return
 	}
+	if !noReplay(w, r) {
+		return
+	}
 	var in struct {
 		Name       string            `json:"name"`
 		Labels     map[string]string `json:"labels"`
@@ -373,13 +406,21 @@ func (h federationHandlers) revokeInvitation(w http.ResponseWriter, r *http.Requ
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid invitation ID")
 		return
 	}
-	ctx, cancel := h.ctx(r, 10*time.Second)
-	defer cancel()
-	if err := svc.RevokeInvitation(ctx, p.PrincipalID, id); err != nil {
-		federationError(w, r, err)
+	key, ok := mutationKey(w, r)
+	if !ok {
 		return
 	}
-	w.WriteHeader(204)
+	_, callErr, storeErr := idempotent(r, h.db, p, key, "federation.invitation.revoke", id, struct{}{}, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		return struct{}{}, svc.RevokeInvitationTx(ctx, tx, p.PrincipalID, id)
+	})
+	switch {
+	case callErr != nil:
+		federationError(w, r, callErr)
+	case storeErr != nil:
+		storeError(w, r, storeErr)
+	default:
+		w.WriteHeader(204)
+	}
 }
 
 func (h federationHandlers) document(w http.ResponseWriter, r *http.Request) {
@@ -416,6 +457,9 @@ func (h federationHandlers) rotateRecovery(w http.ResponseWriter, r *http.Reques
 	}
 	svc, ok := h.service(w, r, p)
 	if !ok {
+		return
+	}
+	if !noReplay(w, r) {
 		return
 	}
 	var in struct {
