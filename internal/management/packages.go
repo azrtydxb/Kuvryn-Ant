@@ -68,6 +68,7 @@ func RegisterPackages(mux *http.ServeMux, pool *pgxpool.Pool, codec CursorCodec)
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
+	h.registerDeletes(mux, bearer)
 }
 
 type packagePermission struct {

@@ -336,12 +336,19 @@ var gemNamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
 // (immutable release, unlist-only, denied) refuses the yank; bytes are reclaimed
 // later by garbage collection.
 func (s *Repository) yank(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string) {
-	r.Body = http.MaxBytesReader(w, r.Body, 8<<10)
-	if e := r.ParseForm(); e != nil {
+	// net/http does not parse DELETE bodies; the gem client sends a form body.
+	raw, e := io.ReadAll(http.MaxBytesReader(w, r.Body, 8<<10))
+	form, pe := url.ParseQuery(string(raw))
+	if e != nil || pe != nil {
 		failure(w, errInvalid)
 		return
 	}
-	name, version, platform := r.Form.Get("gem_name"), r.Form.Get("version"), r.Form.Get("platform")
+	for k, v := range r.URL.Query() {
+		if _, set := form[k]; !set {
+			form[k] = v
+		}
+	}
+	name, version, platform := form.Get("gem_name"), form.Get("version"), form.Get("platform")
 	if !gemNamePattern.MatchString(name) || version == "" || len(version) > 128 || len(platform) > 128 || strings.ContainsAny(version+platform, "\x00\r\n/") {
 		failure(w, errInvalid)
 		return

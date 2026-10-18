@@ -94,14 +94,14 @@ func TestInitializeAndListing(t *testing.T) {
 		m := x.(map[string]any)
 		names[m["name"].(string)] = m
 	}
-	for _, n := range []string{"list_feeds", "get_feed", "list_sources", "get_source", "search_packages", "list_package_versions", "list_package_assets", "lookup_checksum", "get_health", "get_cache_insight", "create_feed", "attach_source", "set_publish_policy", "rotate_webhook_secret", "detach_source", "disable_webhook"} {
+	for _, n := range []string{"list_feeds", "get_feed", "list_sources", "get_source", "search_packages", "list_package_versions", "list_package_assets", "lookup_checksum", "get_health", "get_cache_insight", "create_feed", "attach_source", "set_publish_policy", "rotate_webhook_secret", "detach_source", "disable_webhook", "delete_package_version"} {
 		if names[n] == nil {
 			t.Fatalf("missing tool %s", n)
 		}
 	}
 	for n, m := range names {
 		ann := m["annotations"].(map[string]any)
-		destructive := n == "detach_source" || n == "disable_webhook"
+		destructive := n == "detach_source" || n == "disable_webhook" || n == "delete_package_version"
 		if got, _ := ann["destructiveHint"].(bool); got != destructive && !ann["readOnlyHint"].(bool) {
 			t.Fatalf("%s destructiveHint=%v", n, got)
 		}

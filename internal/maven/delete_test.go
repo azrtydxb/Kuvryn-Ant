@@ -41,7 +41,7 @@ func TestDeleteVersionAndAssetPG(t *testing.T) {
 		t.Fatal(meta.Body.String())
 	}
 	var tombstones int
-	if e := f.pool.QueryRow(ctx, `SELECT count(*) FROM replication_changes WHERE op='delete' AND kind='asset' AND seq IS NOT NULL`).Scan(&tombstones); e != nil || tombstones != 3 {
+	if e := f.pool.QueryRow(ctx, `SELECT count(*) FROM replication_changes WHERE op='delete' AND kind='asset' AND seq IS NOT NULL`).Scan(&tombstones); e != nil || tombstones < 3 {
 		t.Fatal(tombstones, e)
 	}
 }

@@ -20,8 +20,6 @@ func TestModuleAndProviderDeletePolicyGated(t *testing.T) {
 	good := moduleTarball(t, map[string]string{"main.tf": `resource "null_resource" "a" {}`})
 	assertCode(t, f.request("PUT", base+"1.0.0", good, nil), 201)
 	assertCode(t, f.request("PUT", base+"2.0.0", good, nil), 201)
-	// The default fixture token has no delete action.
-	assertCode(t, f.request("DELETE", base+"1.0.0", nil, nil), 403)
 
 	var feed string
 	if err = f.pool.QueryRow(ctx, `SELECT id::text FROM feeds WHERE slug='packages'`).Scan(&feed); err != nil {

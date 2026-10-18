@@ -150,6 +150,8 @@ export type ReplicationTemplateRequest = { "template"?: ReplicationTemplate };
 export type ReplicationTemplatePreview = { "digest": string; "template": ReplicationTemplate; "diffs": Array<ReplicationTemplateDiff>; "applicable": number; "blocked": number };
 export type ReplicationTemplateApplyRequest = { "digest": string; "template"?: ReplicationTemplate };
 export type ReplicationTemplateApplyResult = { "digest": string; "applied": number; "diffs": Array<ReplicationTemplateDiff> };
+export type PackageMutation = { "action": "delete" | "unlist" | "relist"; "version_removed": boolean; "component_removed"?: boolean; "assets_removed": number; "tags_removed": number; "unchanged": boolean };
+export type DeletePolicy = { "namespace"?: string; "mode": "allowed" | "denied" | "unlist_only"; "immutable_releases": boolean; "revision"?: number };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -189,6 +191,7 @@ listPackageVersions: { body: undefined; response: DiscoveredVersionPage };
 listPackageTags: { body: undefined; response: DiscoveredTagPage };
 listPackageAssets: { body: undefined; response: DiscoveredAssetPage };
 getPackageAsset: { body: undefined; response: DiscoveredAsset };
+deletePackageAsset: { body: undefined; response: PackageMutation };
 getRemoteSourceConfig: { body: undefined; response: RemoteSourceRecord };
 setRemoteSourceConfig: { body: RemoteSourceConfig; response: RemoteSourceRecord };
 setRemoteSourceCredential: { body: RemoteCredentialInput; response: RemoteSourceRecord };
@@ -251,6 +254,9 @@ getDiagnostics: { body: undefined; response: undefined };
 getReplicationExportTemplate: { body: undefined; response: ReplicationTemplate };
 previewReplicationTemplate: { body: ReplicationTemplateRequest; response: ReplicationTemplatePreview };
 applyReplicationTemplate: { body: ReplicationTemplateApplyRequest; response: ReplicationTemplateApplyResult };
+deletePackageVersion: { body: undefined; response: PackageMutation };
+getDeletePolicy: { body: undefined; response: DeletePolicy };
+setDeletePolicy: { body: DeletePolicy; response: DeletePolicy };
 }
 export const routes = {
   "getStatus": {
@@ -436,6 +442,11 @@ export const routes = {
   "getPackageAsset": {
     "path": "/api/v1/feeds/{id}/assets/{asset}",
     "method": "GET",
+    "idempotent": false
+  },
+  "deletePackageAsset": {
+    "path": "/api/v1/feeds/{id}/assets/{asset}",
+    "method": "DELETE",
     "idempotent": false
   },
   "getRemoteSourceConfig": {
@@ -747,5 +758,20 @@ export const routes = {
     "path": "/api/v1/replication/jobs/{id}/template/apply",
     "method": "POST",
     "idempotent": true
+  },
+  "deletePackageVersion": {
+    "path": "/api/v1/feeds/{id}/packages/{component}/versions/{version}",
+    "method": "DELETE",
+    "idempotent": false
+  },
+  "getDeletePolicy": {
+    "path": "/api/v1/feeds/{id}/delete-policy",
+    "method": "GET",
+    "idempotent": false
+  },
+  "setDeletePolicy": {
+    "path": "/api/v1/feeds/{id}/delete-policy",
+    "method": "PUT",
+    "idempotent": false
   }
 } as const;

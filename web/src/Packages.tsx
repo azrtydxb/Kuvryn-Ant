@@ -17,6 +17,7 @@ import {
   Drawer,
   EmptyState,
   Input,
+  Modal,
   PropertyList,
   SegmentedControl,
   Select,
@@ -33,8 +34,10 @@ import {
   Toolbar,
   bytes,
   count,
+  useAction,
   useDebounced,
   useResource,
+  useToast,
   when,
 } from "./ui";
 
@@ -657,6 +660,23 @@ function PackageDetail({
               More tags
             </Button>
           )}
+          {version && versions.value && (
+            <VersionActions
+              key={"act" + version}
+              client={client}
+              feedId={feedId}
+              component={pkg.id}
+              version={
+                versions.value.data.items.find((v) => v.id === version)
+                  ?.version ?? ""
+              }
+              done={() => {
+                setVersion("");
+                setVersionCursor("");
+                versions.reload();
+              }}
+            />
+          )}
           {version && (
             <Assets
               key={version}
@@ -887,6 +907,93 @@ export function AssetRecord({
         <summary>Recorded provenance metadata</summary>
         <pre className="json">{JSON.stringify(item.provenance, null, 2)}</pre>
       </details>
+    </>
+  );
+}
+
+// Delete and unlist for one version. The server enforces the feed delete
+// policy (denied, unlist-only, immutable releases) and the delete permission;
+// the console only confirms intent and shows the server's refusal.
+function VersionActions({
+  client,
+  feedId,
+  component,
+  version,
+  done,
+}: {
+  client: Client;
+  feedId: string;
+  component: string;
+  version: string;
+  done: () => void;
+}) {
+  const [mode, setMode] = useState<"" | "delete" | "unlist">("");
+  const action = useAction();
+  const toast = useToast();
+  if (!version) return null;
+  const verb = mode === "delete" ? "Delete" : "Unlist";
+  return (
+    <>
+      <div className="row">
+        <Button
+          size="sm"
+          variant="secondary"
+          icon="eye-off"
+          onClick={() => setMode("unlist")}
+        >
+          Unlist {version}
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
+          icon="trash-2"
+          onClick={() => setMode("delete")}
+        >
+          Delete {version}
+        </Button>
+      </div>
+      {mode && (
+        <Modal
+          title={`${verb} version ${version}`}
+          description={
+            mode === "delete"
+              ? "Removes this version, its assets and tags from the feed. Stored bytes are reclaimed later by garbage collection. This cannot be undone."
+              : "Hides this version from listings. Its content is kept and the version can be listed again."
+          }
+          onClose={() => setMode("")}
+          actions={
+            <>
+              <Button variant="secondary" onClick={() => setMode("")}>
+                Cancel
+              </Button>
+              <Button
+                variant={mode === "delete" ? "danger" : "primary"}
+                disabled={action.busy}
+                onClick={async () => {
+                  const ok = await action.run(async () => {
+                    await client.call("deletePackageVersion", {
+                      params: { id: feedId, component, version },
+                      query: { action: mode },
+                    });
+                    toast(
+                      mode === "delete"
+                        ? "Version deleted"
+                        : "Version unlisted",
+                      version,
+                    );
+                    done();
+                  });
+                  void ok;
+                }}
+              >
+                {verb} version
+              </Button>
+            </>
+          }
+        >
+          <Failure error={action.error} />
+        </Modal>
+      )}
     </>
   );
 }

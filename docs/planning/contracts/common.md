@@ -20,7 +20,7 @@ TLS is required for deployed clients. Native registry token/API-key/basic scheme
 
 Each adapter maps component identity/version, asset roles/digests, tags, raw metadata, search fields and retained references into the shared domain. Search is scoped and paginated. A full feed seed includes cached artifacts, indexes, tags and metadata unless an explicit selective policy excludes them. Preflight reports unresolved external references; it cannot claim a complete offline replica until required dependency/source archives are materialized. Replicas preserve exact immutable byte identities and authoritative ownership. Tombstones never remove destination-only assets.
 
-Each adapter implements metadata-aware cleanup and health checks plus publish/resolve/cache/validation metrics. Read explain and publish routing diagnostics must be available in API, UI and MCP. Distinct forms of deletion (unlist/yank/tag removal/blob dereference) remain format-specific.
+Each adapter implements metadata-aware cleanup and health checks plus publish/resolve/cache/validation metrics. Read explain and publish routing diagnostics must be available in API, UI and MCP. Distinct forms of deletion (unlist/yank/tag removal/blob dereference) remain format-specific. All of them are implemented once in `artifact.Service.Delete/Unlist/Relist` (policy-gated, audited, tombstoned, bytes left to garbage collection); each F-file records the native method and any unsupported case.
 
 ## Conformance evidence required during implementation
 

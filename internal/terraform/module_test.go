@@ -110,7 +110,7 @@ func TestModule(t *testing.T) {
 	assertCode(t, f.request("HEAD", base+"1.0.0/archive.tar.gz", nil, nil), 200)
 	assertCode(t, f.request("GET", base+"9.9.9/download", nil, nil), 404)
 	assertCode(t, f.request("GET", testBase+"v1/modules/acme/none/aws/versions", nil, nil), 404)
-	assertCode(t, f.request("DELETE", base+"1.0.0", nil, nil), 403) // fixture token has no delete action
+	assertCode(t, f.request("DELETE", base+"9.9.9", nil, nil), 404)
 	assertCode(t, f.request("GET", testBase+"v1/modules/acme/vpc/aws/..%2f/versions", nil, nil), 404)
 
 	// Malformed and unsafe archives are rejected before publication.

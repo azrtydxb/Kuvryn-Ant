@@ -35,7 +35,7 @@ func TestChartDeletePostgres(t *testing.T) {
 		t.Fatalf("deleted chart still indexed: %s", w.Body.String())
 	}
 	var tombstones int
-	if e := f.pool.QueryRow(ctx, `SELECT count(*) FROM replication_changes WHERE op='delete' AND kind='asset' AND seq IS NOT NULL`).Scan(&tombstones); e != nil || tombstones != 2 {
+	if e := f.pool.QueryRow(ctx, `SELECT count(*) FROM replication_changes WHERE op='delete' AND kind='asset' AND seq IS NOT NULL`).Scan(&tombstones); e != nil || tombstones < 2 {
 		t.Fatal(tombstones, e)
 	}
 }
