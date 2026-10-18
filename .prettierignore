@@ -4,3 +4,6 @@ internal/console/dist/
 web/src/ds/
 web/src/generated.ts
 web/node_modules/
+# api/openapi.yaml is JSON stored with a .yaml extension and is read by
+# JSON.parse; Prettier's YAML formatter would rewrite it and break that read.
+api/openapi.yaml
