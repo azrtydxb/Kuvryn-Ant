@@ -35,8 +35,10 @@ import (
 	"hash"
 	"io"
 	"mime"
+	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -607,4 +609,61 @@ func ResolveReference(documentPath, reference string) (path, absolute string, er
 		return "", "", ErrInput
 	}
 	return resolved.Path[1:], "", nil
+}
+
+// EscapePath percent-encodes each segment of a slash-separated upstream path so
+// that coordinates containing spaces or other reserved characters round-trip
+// through the runtime's relative-path validation.
+func EscapePath(path string) string {
+	parts := strings.Split(path, "/")
+	for i, part := range parts {
+		parts[i] = url.PathEscape(part)
+	}
+	return strings.Join(parts, "/")
+}
+
+// ServeStream writes a streamed (cache-miss) artifact as a plain 200 response.
+// Range and conditional headers are intentionally not honoured on a miss: the
+// complete object is needed to populate the cache, and a full response is
+// always valid. After the first byte, any failure aborts the connection so a
+// truncated transfer can never be mistaken for a complete one, even when the
+// length was not declared. HEAD requests cache nothing.
+func (m *Materialized) ServeStream(w http.ResponseWriter, method string) {
+	defer m.Body.Close()
+	h := w.Header()
+	if h.Get("Content-Type") == "" {
+		h.Set("Content-Type", m.MediaType)
+	}
+	if m.Size >= 0 {
+		h.Set("Content-Length", strconv.FormatInt(m.Size, 10))
+	}
+	h.Set("X-Kuvryn-Cache", "miss")
+	w.WriteHeader(http.StatusOK)
+	if method == http.MethodHead {
+		return
+	}
+	if _, err := io.CopyBuffer(struct{ io.Writer }{w}, m.Body, make([]byte, 64<<10)); err != nil {
+		panic(http.ErrAbortHandler)
+	}
+}
+
+// PullThrough is the adapter-facing entry point for an artifact read that just
+// missed locally. It returns exactly one of:
+//   - (stream, false, nil): a streamed miss; call stream.ServeStream.
+//   - (nil, true, nil): the asset is now in the store (verified fetch or a
+//     coalesced follower); repeat the adapter's normal local read, which also
+//     provides ranges and conditionals.
+//   - (nil, false, err): ErrNotFound (nothing upstream or not applicable),
+//     ErrUnavailable (upstream failed; nothing is served from another source),
+//     or an authorization/input error.
+func (s *Service) PullThrough(ctx context.Context, p identity.Principal, r Publication, o Origin) (*Materialized, bool, error) {
+	m, err := s.Materialize(ctx, p, r, o)
+	if err != nil {
+		return nil, false, err
+	}
+	if m.Committed {
+		_ = m.Body.Close()
+		return nil, true, nil
+	}
+	return m, false, nil
 }
