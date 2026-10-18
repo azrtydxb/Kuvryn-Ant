@@ -1,0 +1,21 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 14px; }
+body {
+  margin: 0;
+  background: var(--az-bg);
+  color: var(--az-text);
+  font-family: var(--az-font-sans);
+  font-size: var(--az-text-base);
+  line-height: 1.5;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font: inherit; }
+a { color: var(--az-accent-text); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--az-indicator); outline-offset: 2px; }
+::selection { background: color-mix(in oklch, var(--az-brand-mint) 35%, transparent); }
+code, kbd, pre { font-family: var(--az-font-mono); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
