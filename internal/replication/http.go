@@ -251,6 +251,9 @@ func (h handlers) patchPeer(w http.ResponseWriter, r *http.Request) {
 	if !decode(w, r, &in) {
 		return
 	}
+	if !applyIfMatch(w, r, &in.Revision) {
+		return
+	}
 	id := r.PathValue("id")
 	raw, ok := h.mutate(w, r, a.p, "replication.peer.update", id, in, true, func(ctx context.Context, tx pgx.Tx) (any, error) {
 		return h.s.UpdatePeerTx(ctx, tx, a.p.InstanceID, a.p.PrincipalID, id, in)
@@ -350,6 +353,9 @@ func (h handlers) patchJob(w http.ResponseWriter, r *http.Request) {
 	}
 	var in JobPatch
 	if !decode(w, r, &in) {
+		return
+	}
+	if !applyIfMatch(w, r, &in.Revision) {
 		return
 	}
 	raw, ok := h.mutate(w, r, a.p, "replication.job.update", job.ID, in, false, func(ctx context.Context, tx pgx.Tx) (any, error) {

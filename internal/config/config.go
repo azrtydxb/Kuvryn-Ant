@@ -3,11 +3,13 @@ package config
 
 import (
 	"errors"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"io"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -33,6 +35,9 @@ type Config struct {
 	Tracing         tracing.Config
 	AuditRetention  AuditRetention
 	Federation      Federation
+	// TrustedProxies are the reverse proxies whose X-Forwarded-For / X-Real-IP
+	// headers are believed (ANT_TRUSTED_PROXIES, comma separated CIDRs; default none).
+	TrustedProxies []netip.Prefix
 }
 
 func Load(getenv func(string) string) (Config, error) {
@@ -84,6 +89,9 @@ func Load(getenv func(string) string) (Config, error) {
 	c.Retention, err = loadRetention(getenv)
 	if err != nil {
 		return Config{}, err
+	}
+	if c.TrustedProxies, err = identity.ParseTrustedProxies(trustedProxyList(getenv)); err != nil {
+		return Config{}, errors.New("ANT_TRUSTED_PROXIES must be comma separated CIDRs or addresses")
 	}
 	c.Replication, err = loadReplicationHistory(getenv)
 	if err != nil {

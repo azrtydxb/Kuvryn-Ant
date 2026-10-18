@@ -93,8 +93,9 @@ func (r *Registry) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	}
 	req := request.Clone(request.Context())
 	if len(req.Header.Values("Authorization")) == 1 {
-		if _, password, ok := req.BasicAuth(); ok {
+		if username, password, ok := req.BasicAuth(); ok {
 			req.Header.Set("Authorization", "Bearer "+password)
+			req = req.WithContext(identity.WithUsernameHint(req.Context(), username))
 		}
 	}
 	capture := &authResponse{header: make(http.Header)}
@@ -152,7 +153,7 @@ func failService(w http.ResponseWriter, err error) {
 	case errors.Is(err, artifact.ErrNotFound), errors.Is(err, blob.ErrNotFound):
 		failure(w, 404, "BLOB_UNKNOWN", "content not found")
 	case errors.Is(err, artifact.ErrConflict):
-		failure(w, 409, "DENIED", "immutable content conflicts")
+		failure(w, 409, "DENIED", artifact.ConflictMessage(err, "immutable content conflicts"))
 	case errors.Is(err, blob.ErrIntegrity):
 		failure(w, 400, "DIGEST_INVALID", "content digest does not match")
 	case errors.Is(err, artifact.ErrInput):

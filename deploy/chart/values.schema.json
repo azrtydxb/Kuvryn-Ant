@@ -104,6 +104,10 @@
         "purgeInterval": { "type": "string", "pattern": "^[0-9]+(m|h)$" }
       }
     },
+    "trustedProxies": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
     "maxRequests": {
       "type": "integer",
       "minimum": 1,

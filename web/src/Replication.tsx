@@ -354,6 +354,12 @@ export function ReplicationPage({ client }: { client: Client }) {
               },
               { label: "Deletion policy", value: current.deletion_policy },
               {
+                label: "Destination",
+                value: current.destination_read_only
+                  ? "Read-only replica"
+                  : "Publishes allowed",
+              },
+              {
                 label: "Filters",
                 value:
                   [
@@ -658,6 +664,7 @@ function JobModal({
   const [interval, setInterval] = useState("300");
   const [cached, setCached] = useState(false);
   const [propagate, setPropagate] = useState(false);
+  const [readOnly, setReadOnly] = useState(true);
   const action = useAction();
   const toast = useToast();
   return (
@@ -699,6 +706,7 @@ function JobModal({
                   : { interval_seconds: Number(interval) }),
                 include_cached: cached,
                 deletion_policy: propagate ? "propagate" : "ignore",
+                destination_read_only: readOnly,
               },
             }),
           );
@@ -772,6 +780,12 @@ function JobModal({
           labelPosition="end"
           checked={propagate}
           onChange={chk(setPropagate)}
+        />
+        <Switch
+          label="Read-only replica (reject publishes to the destination feed)"
+          labelPosition="end"
+          checked={readOnly}
+          onChange={chk(setReadOnly)}
         />
         <Failure error={action.error} />
       </form>

@@ -69,6 +69,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		return 1
 	}
 	defer clear(cfg.RootKey)
+	identity.SetTrustedProxies(cfg.TrustedProxies)
 	cfg.Tracing.Version = buildVersion()
 	shutdownTracing, err := tracing.Setup(ctx, cfg.Tracing)
 	if err != nil {

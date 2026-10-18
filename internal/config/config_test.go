@@ -21,6 +21,7 @@ func TestLoad(t *testing.T) {
 		{"invalid port", "ANT_LISTEN", "localhost:99999"},
 		{"unbounded requests", "ANT_MAX_REQUESTS", "0"},
 		{"invalid duration", "ANT_SHUTDOWN_TIMEOUT", "0s"},
+		{"invalid trusted proxy", "ANT_TRUSTED_PROXIES", "10.0.0.0/8,sensitive"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -44,6 +45,18 @@ func TestLoad(t *testing.T) {
 	}
 	if len(c.RootKey) != 32 || c.Database.MaxConns != 16 {
 		t.Fatal("invalid config")
+	}
+	if len(c.TrustedProxies) != 0 {
+		t.Fatal("proxies trusted by default")
+	}
+	c, err = Load(func(k string) string {
+		if k == "ANT_TRUSTED_PROXIES" {
+			return "10.42.0.0/16, 192.168.10.5"
+		}
+		return valid[k]
+	})
+	if err != nil || len(c.TrustedProxies) != 2 {
+		t.Fatalf("trusted proxies: %v %v", c.TrustedProxies, err)
 	}
 	if err := os.WriteFile(key, []byte("short"), 0600); err != nil {
 		t.Fatal(err)

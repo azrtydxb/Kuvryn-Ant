@@ -349,38 +349,6 @@ func LoadEffectivePolicy(ctx context.Context, db *pgxpool.Pool, instance, feedID
 	return p, prefixes, nil
 }
 
-// ClientIP returns the TCP peer, or the right-most X-Forwarded-For hop that is
-// not a trusted proxy when the peer itself is one.
-func ClientIP(r *http.Request, trusted []netip.Prefix) netip.Addr {
-	peer, err := netip.ParseAddr(peerIP(r.RemoteAddr))
-	if err != nil {
-		return netip.Addr{}
-	}
-	in := func(a netip.Addr) bool {
-		for _, p := range trusted {
-			if p.Contains(a) {
-				return true
-			}
-		}
-		return false
-	}
-	if !in(peer) {
-		return peer
-	}
-	hops := strings.Split(strings.Join(r.Header.Values("X-Forwarded-For"), ","), ",")
-	for i := len(hops) - 1; i >= 0; i-- {
-		a, err := netip.ParseAddr(strings.TrimSpace(hops[i]))
-		if err != nil {
-			return peer
-		}
-		a = a.Unmap()
-		if !in(a) {
-			return a
-		}
-	}
-	return peer
-}
-
 func networkAllowed(p ClientPolicy, prefixes []netip.Prefix, ip netip.Addr) bool {
 	if len(p.AnonymousNetworkGroupIDs) == 0 {
 		return true
@@ -502,7 +470,7 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 	if len(headers) == 0 {
 		// Publish and every non-read request is never anonymous.
 		read := r.Method == http.MethodGet || r.Method == http.MethodHead
-		if !read || feedID == "" || !target.AnonymousRead || !policy.Allows(MethodAnonymous) || !networkAllowed(policy, prefixes, ClientIP(r, c.TrustedProxies)) {
+		if !read || feedID == "" || !target.AnonymousRead || !policy.Allows(MethodAnonymous) || !networkAllowed(policy, prefixes, ClientIP(r, c.trustedSet())) {
 			next.ServeHTTP(w, enforced)
 			return
 		}
@@ -542,7 +510,7 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 		return
 	}
 	now := c.now()
-	peer := "p:" + peerIP(r.RemoteAddr)
+	peer := "p:" + c.clientKey(r)
 	if c.peers.blocked(peer, now) {
 		w.Header().Set("Retry-After", "60")
 		c.deny(w, r, http.StatusTooManyRequests, "authentication attempts limited")
