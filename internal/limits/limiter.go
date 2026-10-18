@@ -7,7 +7,6 @@ import (
 	"errors"
 	"log/slog"
 	"math"
-	"net"
 	"net/http"
 	"net/netip"
 	"strconv"
@@ -221,15 +220,6 @@ func classify(path string) (req request, kind int) {
 	return req, kind
 }
 
-func clientAddr(remote string) netip.Addr {
-	host, _, err := net.SplitHostPort(remote)
-	if err != nil {
-		host = remote
-	}
-	a, _ := netip.ParseAddr(host)
-	return a.Unmap()
-}
-
 // take consumes one token from every bucket or none. It returns the scope that
 // throttled and the wait until a token is available.
 func (l *Limiter) take(buckets []*bucket, scopes []string) (scope string, wait time.Duration, ok bool) {
@@ -283,7 +273,7 @@ func (l *Limiter) Middleware(next http.Handler) http.Handler {
 			scopes := make([]string, 0, 4)
 			add := func(b *bucket, scope string) { buckets, scopes = append(buckets, b), append(scopes, scope) }
 			if len(s.sites) > 0 {
-				addr := clientAddr(r.RemoteAddr)
+				addr := identity.ClientAddr(r)
 				for _, site := range s.sites {
 					if len(site.prefixes) == 0 {
 						add(site.b, ScopeSite)

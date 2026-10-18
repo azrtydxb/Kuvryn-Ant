@@ -186,6 +186,13 @@ func TestSeedIncrementalLagAndSourceOutage(t *testing.T) {
 	if err := svc.RunNow(ctx, job.ID); err == nil {
 		t.Fatal("expected peer failure")
 	}
+	// An unreachable peer cannot refresh the head, so lag must grow from the
+	// last success instead of staying at the caught-up 0.
+	dst.exec(`UPDATE replication_jobs SET last_success_at=clock_timestamp()-interval '5 minutes' WHERE id=$1`, job.ID)
+	st = status(t, svc, dst, job.ID)
+	if st.ConsecutiveFailures == 0 || st.LagSeconds == nil || *st.LagSeconds < 299 || *st.LagSeconds > 330 {
+		t.Fatalf("lag did not grow while the peer is unreachable: %+v", st)
+	}
 	if got, err := dst.read(dst.feed, "team", "team/app", "1.0", "app-1.0.bin"); err != nil || !bytes.Equal(got, data("app-1.0")) {
 		t.Fatalf("destination cannot serve during source outage: %v", err)
 	}
@@ -696,6 +703,40 @@ func TestManagementAPIAndScheduler(t *testing.T) {
 	}
 	if code, _ = call(t, c, "PATCH", api.URL+"/api/v1/replication/jobs/"+job.ID, adm, JobPatch{Revision: job.Revision, Mode: ptr("manual")}); code != 200 {
 		t.Fatalf("switch to manual: %d", code)
+	}
+	// If-Match carries the revision like the rest of the API; the body field
+	// stays supported; disagreement and malformed values are rejected.
+	if !job.DestinationReadOnly {
+		t.Fatal("new job is not a read-only replica by default")
+	}
+	code, body = call(t, c, "GET", api.URL+"/api/v1/replication/jobs/"+job.ID, adm, nil)
+	var cur Job
+	if code != 200 || json.Unmarshal(body, &cur) != nil {
+		t.Fatalf("get job: %d", code)
+	}
+	quoted := func(n int64) string { return fmt.Sprintf(`"%d"`, n) }
+	jobURL := api.URL + "/api/v1/replication/jobs/" + job.ID
+	if code, _ = call(t, c, "PATCH", jobURL, adm, JobPatch{DestinationReadOnly: ptr(false)}, "If-Match", quoted(cur.Revision+7)); code != 409 {
+		t.Fatalf("stale If-Match: %d", code)
+	}
+	for _, bad := range []string{"3", `W/"3"`, `"x"`, `"0"`, `"03"`} {
+		if code, _ = call(t, c, "PATCH", jobURL, adm, JobPatch{DestinationReadOnly: ptr(false)}, "If-Match", bad); code != 400 {
+			t.Fatalf("malformed If-Match %s: %d", bad, code)
+		}
+	}
+	if code, _ = call(t, c, "PATCH", jobURL, adm, JobPatch{Revision: cur.Revision + 1, DestinationReadOnly: ptr(false)}, "If-Match", quoted(cur.Revision)); code != 400 {
+		t.Fatalf("If-Match and body disagree: %d", code)
+	}
+	code, body = call(t, c, "PATCH", jobURL, adm, JobPatch{DestinationReadOnly: ptr(false)}, "If-Match", quoted(cur.Revision))
+	var updated Job
+	if code != 200 || json.Unmarshal(body, &updated) != nil || updated.DestinationReadOnly || updated.Revision != cur.Revision+1 {
+		t.Fatalf("If-Match patch: %d %s", code, body)
+	}
+	if code, _ = call(t, c, "PATCH", jobURL, adm, JobPatch{Revision: updated.Revision, DestinationReadOnly: ptr(true)}, "If-Match", quoted(updated.Revision)); code != 200 {
+		t.Fatalf("matching header and body: %d", code)
+	}
+	if code, _ = call(t, c, "PATCH", api.URL+"/api/v1/replication/peers/"+peer.ID, adm, PeerPatch{CARef: ptr("peer-ca")}, "If-Match", quoted(peer.Revision)); code != 200 {
+		t.Fatalf("peer If-Match: %d", code)
 	}
 	waitFor(t, "idle", func() bool { return !status(t, svc, dst, job.ID).Running })
 	src.publish(src.publisher, src.feed, "n", "n/three", "1", "f.bin", "", data("three"))

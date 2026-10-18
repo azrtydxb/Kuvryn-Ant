@@ -150,6 +150,7 @@ export function EditJobModal({
   const [propagate, setPropagate] = useState(
     job.deletion_policy === "propagate",
   );
+  const [readOnly, setReadOnly] = useState(job.destination_read_only);
   const [namespaces, setNamespaces] = useState(
     joinList(job.filters.namespaces),
   );
@@ -190,6 +191,7 @@ export function EditJobModal({
                 interval_seconds: Number(interval),
                 include_cached: cached,
                 deletion_policy: propagate ? "propagate" : "ignore",
+                destination_read_only: readOnly,
                 filters: {
                   namespaces: splitList(namespaces),
                   packages: splitList(packages),
@@ -258,6 +260,12 @@ export function EditJobModal({
           labelPosition="end"
           checked={propagate}
           onChange={chk(setPropagate)}
+        />
+        <Switch
+          label="Read-only replica (reject publishes to the destination feed)"
+          labelPosition="end"
+          checked={readOnly}
+          onChange={chk(setReadOnly)}
         />
         <Failure error={action.error} />
       </form>

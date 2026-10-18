@@ -63,7 +63,7 @@ func failure(w http.ResponseWriter, status int, msg string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": http.StatusText(status), "reason": msg})
 }
 func failService(w http.ResponseWriter, e error) {
-	status := 503
+	status, msg := 503, ""
 	switch {
 	case errors.Is(e, artifact.ErrDenied):
 		status = 403
@@ -71,10 +71,14 @@ func failService(w http.ResponseWriter, e error) {
 		status = 404
 	case errors.Is(e, artifact.ErrConflict):
 		status = 409
+		msg = artifact.ConflictMessage(e, "")
 	case errors.Is(e, artifact.ErrInput), errors.Is(e, errInvalid), errors.Is(e, blob.ErrIntegrity):
 		status = 400
 	}
-	failure(w, status, http.StatusText(status))
+	if msg == "" {
+		msg = http.StatusText(status)
+	}
+	failure(w, status, msg)
 }
 func (s *Registry) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := http.NewResponseController(w)

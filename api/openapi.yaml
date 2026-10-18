@@ -6594,7 +6594,7 @@
       },
       "patch": {
         "operationId": "patchReplicationPeer",
-        "description": "Replication (destination side). Requires instance admin. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
+        "description": "Replication (destination side). Requires instance admin. The expected revision is the If-Match header (preferred) or the body revision field. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -6613,6 +6613,15 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
             }
           }
         ],
@@ -6951,7 +6960,7 @@
       },
       "patch": {
         "operationId": "patchReplicationJob",
-        "description": "Replication (destination side). Requires configure on the destination feed. The expected revision is in the body. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
+        "description": "Replication (destination side). Requires configure on the destination feed. The expected revision is the If-Match header (preferred) or the body revision field. Requires an Idempotency-Key header; a retry with the same key and request replays the stored result, and the same key with a different request is rejected with 409.",
         "parameters": [
           {
             "name": "id",
@@ -6970,6 +6979,15 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
             }
           }
         ],
@@ -16960,14 +16978,13 @@
       "ReplicationPeerPatch": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "revision"
-        ],
+        "required": [],
         "properties": {
           "revision": {
             "type": "integer",
             "format": "int64",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Expected revision; alternatively send If-Match."
           },
           "url": {
             "type": "string"
@@ -17057,7 +17074,8 @@
             "format": "int64"
           },
           "lag_seconds": {
-            "type": "number"
+            "type": "number",
+            "description": "Age of the oldest unapplied change; while the peer is unreachable it grows from the last successful run."
           },
           "remote_checked_at": {
             "type": "string",
@@ -17169,7 +17187,8 @@
           "enabled",
           "revision",
           "created_at",
-          "status"
+          "status",
+          "destination_read_only"
         ],
         "properties": {
           "id": {
@@ -17234,6 +17253,10 @@
           },
           "status": {
             "$ref": "#/components/schemas/ReplicationStatus"
+          },
+          "destination_read_only": {
+            "type": "boolean",
+            "description": "When true the destination feed rejects publishes with 409 (replica feed, publish to the peer) unless an explicit publish rule routes them to a separate local source."
           }
         }
       },
@@ -17301,20 +17324,23 @@
               "ignore",
               "propagate"
             ]
+          },
+          "destination_read_only": {
+            "type": "boolean",
+            "description": "Defaults to true for new jobs."
           }
         }
       },
       "ReplicationJobPatch": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "revision"
-        ],
+        "required": [],
         "properties": {
           "revision": {
             "type": "integer",
             "format": "int64",
-            "minimum": 1
+            "minimum": 1,
+            "description": "Expected revision; alternatively send If-Match."
           },
           "mode": {
             "type": "string",
@@ -17342,6 +17368,9 @@
             ]
           },
           "enabled": {
+            "type": "boolean"
+          },
+          "destination_read_only": {
             "type": "boolean"
           }
         }

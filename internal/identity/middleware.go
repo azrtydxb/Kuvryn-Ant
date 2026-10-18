@@ -5,9 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"net"
 	"net/http"
-	"net/netip"
 	"strconv"
 	"strings"
 	"sync"
@@ -66,8 +64,20 @@ func (b *Bearer) Wrap(next http.Handler) http.Handler {
 				return
 			}
 		}
-		key := peerIP(r.RemoteAddr)
-		entry, ok := b.reserve(key)
+		values := r.Header.Values("Authorization")
+		if len(values) == 0 {
+			// A credential-free request is the expected first leg of a challenge
+			// flow (docker, npm, ...). It verifies nothing, so it neither consumes
+			// nor is blocked by the failure budget.
+			w.Header().Set("WWW-Authenticate", `Bearer realm="kuvryn-ant"`)
+			authError(w, r, http.StatusUnauthorized, api.ErrorCodeUnauthenticated, "authentication required")
+			return
+		}
+		// Failures are budgeted per (client, presented username) with a looser
+		// aggregate per client, so one misconfigured client cannot lock out others
+		// that share an address and a guessing client cannot rotate usernames.
+		client := ClientKey(r)
+		entry, ok := b.reserve("u:"+client+"|"+usernameHint(r, values), "ip:"+client)
 		if !ok {
 			w.Header().Set("Retry-After", strconv.Itoa(int(b.window.Seconds())+1))
 			authError(w, r, http.StatusTooManyRequests, api.ErrorCodeUnavailable, "authentication attempts limited")
@@ -75,7 +85,6 @@ func (b *Bearer) Wrap(next http.Handler) http.Handler {
 		}
 		success := false
 		defer func() { b.finish(entry, success) }()
-		values := r.Header.Values("Authorization")
 		var p Principal
 		var err error
 		valid := len(values) == 1 && len(values[0]) <= 1024
@@ -106,60 +115,6 @@ func (b *Bearer) Wrap(next http.Handler) http.Handler {
 		NoteAuthenticated(r.Context(), p)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), principalKey{}, p)))
 	})
-}
-func peerIP(remote string) string {
-	host, _, err := net.SplitHostPort(remote)
-	if err != nil {
-		host = remote
-	}
-	ip, err := netip.ParseAddr(host)
-	if err != nil {
-		return "unknown"
-	}
-	return ip.Unmap().WithZone("").String()
-}
-func (b *Bearer) reserve(key string) (*attempt, bool) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	now := b.now()
-	e := b.attempts[key]
-	if e != nil && e.inflight == 0 && !now.Before(e.started.Add(b.window)) {
-		delete(b.attempts, key)
-		e = nil
-	}
-	if e == nil {
-		if len(b.attempts) >= b.maxEntries {
-			oldest := ""
-			var stamp time.Time
-			for k, v := range b.attempts {
-				if v.inflight == 0 && (oldest == "" || v.started.Before(stamp)) {
-					oldest, stamp = k, v.started
-				}
-			}
-			if oldest == "" {
-				return nil, false
-			}
-			delete(b.attempts, oldest)
-		}
-		e = &attempt{started: now}
-		b.attempts[key] = e
-	}
-	if e.failures >= b.maxFailures || e.inflight >= b.maxInflight {
-		return nil, false
-	}
-	e.inflight++
-	return e, true
-}
-func (b *Bearer) finish(e *attempt, success bool) {
-	if e == nil {
-		return
-	}
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	e.inflight--
-	if !success {
-		e.failures++
-	}
 }
 
 func authError(w http.ResponseWriter, r *http.Request, status int, code api.ErrorCode, message string) {

@@ -124,6 +124,10 @@ spec:
               value: /run/ant/federation-join
             {{- end }}
             {{- end }}
+            {{- if .Values.trustedProxies }}
+            - name: ANT_TRUSTED_PROXIES
+              value: {{ join "," .Values.trustedProxies | quote }}
+            {{- end }}
             - name: ANT_AUDIT_RETENTION
               value: {{ .Values.auditRetention.retain | quote }}
             - name: ANT_AUDIT_PURGE_INTERVAL

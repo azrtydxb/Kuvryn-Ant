@@ -11,7 +11,6 @@ package denyaudit
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -237,14 +236,7 @@ func (r *Recorder) Middleware(next http.Handler) http.Handler {
 		if len(path) > 200 {
 			path = path[:200]
 		}
-		r.Record(surface, sw.status, note.Principal(), peerIP(req.RemoteAddr), req.Method, path)
+		r.Record(surface, sw.status, note.Principal(), identity.ClientKey(req), req.Method, path)
 	})
 }
 
-func peerIP(remote string) string {
-	host, _, err := net.SplitHostPort(remote)
-	if err != nil {
-		return "unknown"
-	}
-	return host
-}

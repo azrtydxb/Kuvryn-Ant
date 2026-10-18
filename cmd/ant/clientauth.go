@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"net/netip"
-	"os"
-	"strings"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/directory"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
@@ -32,21 +29,6 @@ func (d directoryVerifier) VerifyPassword(ctx context.Context, username string, 
 	}
 }
 
-// trustedProxies parses ANT_TRUSTED_PROXY_CIDRS (comma separated). Without it
-// only the TCP peer is used for anonymous network restrictions.
-func trustedProxies() []netip.Prefix {
-	var out []netip.Prefix
-	for _, part := range strings.Split(os.Getenv("ANT_TRUSTED_PROXY_CIDRS"), ",") {
-		if part = strings.TrimSpace(part); part == "" {
-			continue
-		}
-		if p, err := netip.ParsePrefix(part); err == nil {
-			out = append(out, p.Masked())
-		}
-	}
-	return out
-}
-
 // newClientAuth builds the shared package-protocol authentication middleware.
 // It returns nil when this process does not serve package protocols.
 func newClientAuth(pool *pgxpool.Pool, artifacts *artifactRuntime, browser *browserRuntime) (*identity.ClientAuth, *identity.GitHubOIDC) {
@@ -54,7 +36,7 @@ func newClientAuth(pool *pgxpool.Pool, artifacts *artifactRuntime, browser *brow
 		return nil, nil
 	}
 	github := &identity.GitHubOIDC{DB: pool, InstanceID: artifacts.instanceID}
-	auth := &identity.ClientAuth{DB: pool, InstanceID: artifacts.instanceID, GitHub: github, ResolveOCI: artifacts.registry.ClientAuthTarget, TrustedProxies: trustedProxies()}
+	auth := &identity.ClientAuth{DB: pool, InstanceID: artifacts.instanceID, GitHub: github, ResolveOCI: artifacts.registry.ClientAuthTarget, TrustedProxies: identity.TrustedProxies()}
 	if browser != nil && browser.enterprise != nil && browser.enterprise.ldap != nil {
 		auth.Directory = directoryVerifier{provider: browser.enterprise.ldap, issuer: browser.enterprise.ldapIssuer}
 	}

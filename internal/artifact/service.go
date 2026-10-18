@@ -203,6 +203,17 @@ func (s *Service) publish(ctx context.Context, p identity.Principal, r Publicati
 	if err = s.authorize(ctx, p, r, source); err != nil {
 		return Record{}, false, err
 	}
+	// A replica feed rejects publishes unless an explicit publish rule routed
+	// this one to a (separate) local source. The default route never qualifies.
+	if decision.RuleID == "" {
+		peer, readOnly, rerr := readOnlyReplicaPeer(ctx, s.DB, p.InstanceID, r.FeedID)
+		if rerr != nil {
+			return Record{}, false, ErrUnavailable
+		}
+		if readOnly {
+			return Record{}, false, &ReplicaFeedError{Peer: peer}
+		}
+	}
 	// Check the configured relationship before reading any body. Recheck while
 	// holding the feed row at commit so concurrent detach cannot authorize a write.
 	var domain string

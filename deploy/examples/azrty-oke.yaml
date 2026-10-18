@@ -46,3 +46,5 @@ extraEnv:
 #   service:
 #     type: LoadBalancer
 #     loadBalancerSourceRanges: [] # restrict to the other members
+trustedProxies:
+  - 10.244.0.0/16 # OKE pod network (Envoy Gateway proxies)

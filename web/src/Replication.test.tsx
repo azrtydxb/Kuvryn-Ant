@@ -84,6 +84,7 @@ const job = {
   include_cached: true,
   filters: { namespaces: ["team"], version_prefixes: ["1."] },
   deletion_policy: "ignore",
+  destination_read_only: true,
   enabled: true,
   revision: 7,
   created_at: "2026-01-01T00:00:00Z",
@@ -199,6 +200,7 @@ it("edits a job through the API with filters split per line", async () => {
     target: { value: "team/a\nteam/b, team/a" },
   });
   fireEvent.click(within(dialog).getByLabelText("Propagate deletions"));
+  fireEvent.click(within(dialog).getByLabelText(/Read-only replica/));
   fireEvent.click(within(dialog).getByRole("button", { name: "Save job" }));
   await waitFor(() => expect(writes("PATCH")).toHaveLength(1));
   const call = writes("PATCH")[0];
@@ -210,6 +212,7 @@ it("edits a job through the API with filters split per line", async () => {
     interval_seconds: 30,
     include_cached: true,
     deletion_policy: "propagate",
+    destination_read_only: false,
     filters: {
       namespaces: ["team"],
       packages: ["team/a", "team/b"],

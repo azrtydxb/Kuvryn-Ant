@@ -380,21 +380,24 @@ type Status struct {
 
 // Job is a replication job for one destination feed.
 type Job struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	PeerID          string    `json:"peer_id"`
-	RemoteFeedID    string    `json:"remote_feed_id"`
-	DestFeedID      string    `json:"dest_feed_id"`
-	ReplicaSourceID string    `json:"replica_source_id"`
-	Mode            string    `json:"mode"`
-	IntervalSeconds int       `json:"interval_seconds"`
-	IncludeCached   bool      `json:"include_cached"`
-	Filters         Filters   `json:"filters"`
-	DeletionPolicy  string    `json:"deletion_policy"`
-	Enabled         bool      `json:"enabled"`
-	Revision        int64     `json:"revision"`
-	CreatedAt       time.Time `json:"created_at"`
-	Status          Status    `json:"status"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	PeerID          string  `json:"peer_id"`
+	RemoteFeedID    string  `json:"remote_feed_id"`
+	DestFeedID      string  `json:"dest_feed_id"`
+	ReplicaSourceID string  `json:"replica_source_id"`
+	Mode            string  `json:"mode"`
+	IntervalSeconds int     `json:"interval_seconds"`
+	IncludeCached   bool    `json:"include_cached"`
+	Filters         Filters `json:"filters"`
+	DeletionPolicy  string  `json:"deletion_policy"`
+	Enabled         bool    `json:"enabled"`
+	// DestinationReadOnly makes the destination feed reject publishes unless an
+	// explicit publish rule routes them to a separate local source.
+	DestinationReadOnly bool      `json:"destination_read_only"`
+	Revision            int64     `json:"revision"`
+	CreatedAt           time.Time `json:"created_at"`
+	Status              Status    `json:"status"`
 }
 
 // jobRow carries internal-only fields in addition to the public job.
@@ -417,7 +420,7 @@ const jobColumns = `j.id::text,j.name,j.peer_id::text,j.remote_feed_id::text,j.d
  j.phase,j.seed_head,j.seed_cursor,j.seed_total,j.seed_done,j.checkpoint,j.checkpoint_change_at,j.remote_head,j.remote_head_at,j.remote_checked_at,j.next_run_at,j.run_requested,j.lease_owner::text,j.lease_until,
  j.last_attempt_at,j.last_success_at,COALESCE(j.last_error,''),j.consecutive_failures,j.assets_applied,j.blobs_transferred,j.blobs_deduplicated,j.bytes_transferred,j.deletions_applied,j.conflicts,
  (SELECT count(*) FROM replication_held_deletions h WHERE h.job_id=j.id),clock_timestamp(),
- j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id)`
+ j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id),j.destination_read_only`
 
 func scanJob(row pgx.Row) (jobRow, error) {
 	var j jobRow
@@ -428,7 +431,7 @@ func scanJob(row pgx.Row) (jobRow, error) {
 		&st.Phase, &j.seedHead, &j.seedCursor, &st.SeedTotal, &st.SeedDone, &st.Checkpoint, &j.checkpointChangeAt, &st.RemoteHead, &j.remoteHeadAt, &st.RemoteCheckedAt, &st.NextRunAt, &j.runRequested, &j.leaseOwner, &j.leaseUntil,
 		&st.LastAttemptAt, &st.LastSuccessAt, &st.LastError, &st.ConsecutiveFailures, &st.AssetsApplied, &st.BlobsTransferred, &st.BlobsDeduplicated, &st.BytesTransferred, &st.DeletionsApplied, &st.Conflicts,
 		&j.held, &now,
-		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending)
+		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending, &j.DestinationReadOnly)
 	if err != nil {
 		return jobRow{}, err
 	}
@@ -461,20 +464,29 @@ func scanJob(row pgx.Row) (jobRow, error) {
 			st.LagSeconds = &lag
 		}
 	}
+	// While the peer cannot be reached the head is not refreshed, so "changes
+	// behind" is stale and cannot show lag. Staleness grows from the last
+	// success instead.
+	if st.Phase == "incremental" && st.ConsecutiveFailures > 0 && st.LastSuccessAt != nil {
+		if stale := now.Sub(*st.LastSuccessAt).Seconds(); stale > 0 && (st.LagSeconds == nil || stale > *st.LagSeconds) {
+			st.LagSeconds = &stale
+		}
+	}
 	return j, nil
 }
 
 // JobInput creates a job and its read-only replica source on the destination feed.
 type JobInput struct {
-	Name            string   `json:"name"`
-	PeerID          string   `json:"peer_id"`
-	RemoteFeedID    string   `json:"remote_feed_id"`
-	DestFeedID      string   `json:"dest_feed_id"`
-	Mode            string   `json:"mode"`
-	IntervalSeconds *int     `json:"interval_seconds"`
-	IncludeCached   *bool    `json:"include_cached"`
-	Filters         *Filters `json:"filters"`
-	DeletionPolicy  string   `json:"deletion_policy"`
+	Name                string   `json:"name"`
+	PeerID              string   `json:"peer_id"`
+	RemoteFeedID        string   `json:"remote_feed_id"`
+	DestFeedID          string   `json:"dest_feed_id"`
+	Mode                string   `json:"mode"`
+	IntervalSeconds     *int     `json:"interval_seconds"`
+	IncludeCached       *bool    `json:"include_cached"`
+	Filters             *Filters `json:"filters"`
+	DeletionPolicy      string   `json:"deletion_policy"`
+	DestinationReadOnly *bool    `json:"destination_read_only"`
 }
 
 func validMode(m string) bool { return m == "continuous" || m == "scheduled" || m == "manual" }
@@ -500,6 +512,10 @@ func (s *Service) CreateJobTx(ctx context.Context, tx pgx.Tx, instance, actor st
 	include := true
 	if in.IncludeCached != nil {
 		include = *in.IncludeCached
+	}
+	readOnly := true // replicas are read-only by default (spec 6.7)
+	if in.DestinationReadOnly != nil {
+		readOnly = *in.DestinationReadOnly
 	}
 	filters := Filters{}
 	if in.Filters != nil {
@@ -540,8 +556,8 @@ func (s *Service) CreateJobTx(ctx context.Context, tx pgx.Tx, instance, actor st
 		next = time.Now().UTC()
 	}
 	var id string
-	err = tx.QueryRow(ctx, `INSERT INTO replication_jobs(instance_id,name,peer_id,remote_feed_id,dest_feed_id,replica_source_id,mode,interval_seconds,include_cached,filters,deletion_policy,next_run_at)
- VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id::text`, instance, in.Name, in.PeerID, in.RemoteFeedID, in.DestFeedID, source, in.Mode, interval, include, encoded, in.DeletionPolicy, next).Scan(&id)
+	err = tx.QueryRow(ctx, `INSERT INTO replication_jobs(instance_id,name,peer_id,remote_feed_id,dest_feed_id,replica_source_id,mode,interval_seconds,include_cached,filters,deletion_policy,next_run_at,destination_read_only)
+ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id::text`, instance, in.Name, in.PeerID, in.RemoteFeedID, in.DestFeedID, source, in.Mode, interval, include, encoded, in.DeletionPolicy, next, readOnly).Scan(&id)
 	if err != nil {
 		return Job{}, dbError(err)
 	}
@@ -604,13 +620,14 @@ func (s *Service) ListJobs(ctx context.Context, instance string) ([]Job, error) 
 // revision. Filter and cache changes apply to future changes only; content
 // already replicated is never removed by them.
 type JobPatch struct {
-	Revision        int64    `json:"revision"`
-	Mode            *string  `json:"mode"`
-	IntervalSeconds *int     `json:"interval_seconds"`
-	IncludeCached   *bool    `json:"include_cached"`
-	Filters         *Filters `json:"filters"`
-	DeletionPolicy  *string  `json:"deletion_policy"`
-	Enabled         *bool    `json:"enabled"`
+	Revision            int64    `json:"revision"`
+	Mode                *string  `json:"mode"`
+	IntervalSeconds     *int     `json:"interval_seconds"`
+	IncludeCached       *bool    `json:"include_cached"`
+	Filters             *Filters `json:"filters"`
+	DeletionPolicy      *string  `json:"deletion_policy"`
+	DestinationReadOnly *bool    `json:"destination_read_only"`
+	Enabled             *bool    `json:"enabled"`
 }
 
 // UpdateJobTx updates a job inside the caller's transaction.
@@ -626,7 +643,10 @@ func (s *Service) UpdateJobTx(ctx context.Context, tx pgx.Tx, instance, actor, i
 	if cur.Revision != in.Revision {
 		return Job{}, ErrConflict
 	}
-	mode, interval, include, filters, policy, enabled := cur.Mode, cur.IntervalSeconds, cur.IncludeCached, cur.Filters, cur.DeletionPolicy, cur.Enabled
+	mode, interval, include, filters, policy, enabled, readOnly := cur.Mode, cur.IntervalSeconds, cur.IncludeCached, cur.Filters, cur.DeletionPolicy, cur.Enabled, cur.DestinationReadOnly
+	if in.DestinationReadOnly != nil {
+		readOnly = *in.DestinationReadOnly
+	}
 	if in.Mode != nil {
 		mode = *in.Mode
 	}
@@ -651,13 +671,13 @@ func (s *Service) UpdateJobTx(ctx context.Context, tx pgx.Tx, instance, actor, i
 	encoded, _ := json.Marshal(filters)
 	// Re-enable or a switch away from manual schedules a run; a switch to
 	// manual stops automatic runs unless one was explicitly requested.
-	_, err = tx.Exec(ctx, `UPDATE replication_jobs SET mode=$3,interval_seconds=$4,include_cached=$5,filters=$6,deletion_policy=$7,enabled=$8,revision=revision+1,
+	_, err = tx.Exec(ctx, `UPDATE replication_jobs SET mode=$3,interval_seconds=$4,include_cached=$5,filters=$6,deletion_policy=$7,enabled=$8,destination_read_only=$9,revision=revision+1,
  next_run_at=CASE WHEN NOT $8 THEN NULL WHEN $3='manual' THEN CASE WHEN run_requested THEN next_run_at END ELSE COALESCE(next_run_at,clock_timestamp()) END
- WHERE instance_id=$1 AND id=$2`, instance, id, mode, interval, include, encoded, policy, enabled)
+ WHERE instance_id=$1 AND id=$2`, instance, id, mode, interval, include, encoded, policy, enabled, readOnly)
 	if err != nil {
 		return Job{}, dbError(err)
 	}
-	if err = audit(ctx, tx, instance, actor, "replication.job.update", id, map[string]any{"deletion_policy": policy, "mode": mode, "enabled": enabled}); err != nil {
+	if err = audit(ctx, tx, instance, actor, "replication.job.update", id, map[string]any{"deletion_policy": policy, "mode": mode, "enabled": enabled, "destination_read_only": readOnly}); err != nil {
 		return Job{}, ErrUnavailable
 	}
 	return jobInTx(ctx, tx, instance, id)

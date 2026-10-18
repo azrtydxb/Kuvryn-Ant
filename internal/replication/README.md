@@ -21,13 +21,13 @@ Peer-facing API, all requiring a bearer token that is authorized for the
 `replicate` action on the feed (role grant on the feed resource **and** token
 scope):
 
-| Route | Purpose |
-|---|---|
-| `GET /api/v1/replication/export/feeds/{feed}/head` | feed format, change high-water mark |
-| `GET .../manifest?kind=asset\|tag&after=&limit=&include_cached=&namespace=&package=&version_prefix=&source=` | current-state manifest, keyset paged; `source` restricts it to one attached source (back-fill) |
-| `GET .../changes?after=&limit=&include_cached=&namespace=&package=&version_prefix=` | ordered publish / metadata / tombstone / attachment changes, filtered on the server; **410** when `after` is below the low-water mark |
-| `GET .../blobs/{digest}` | blob by digest (single `Range` supported) |
-| `GET .../template` | non-secret feed configuration template (see below) |
+| Route                                                                                                        | Purpose                                                                                                                               |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/replication/export/feeds/{feed}/head`                                                           | feed format, change high-water mark                                                                                                   |
+| `GET .../manifest?kind=asset\|tag&after=&limit=&include_cached=&namespace=&package=&version_prefix=&source=` | current-state manifest, keyset paged; `source` restricts it to one attached source (back-fill)                                        |
+| `GET .../changes?after=&limit=&include_cached=&namespace=&package=&version_prefix=`                          | ordered publish / metadata / tombstone / attachment changes, filtered on the server; **410** when `after` is below the low-water mark |
+| `GET .../blobs/{digest}`                                                                                     | blob by digest (single `Range` supported)                                                                                             |
+| `GET .../template`                                                                                           | non-secret feed configuration template (see below)                                                                                    |
 
 A blob is served only if an exportable asset of that feed references it.
 Tombstones carry identity only; puts carry the item state at export time.
@@ -53,20 +53,24 @@ exports without touching any asset row, so the attachment is recorded as an
 
 ## Destination side
 
-* **Peers** (`replication_peers`): HTTPS URL (plain HTTP only for loopback), an
+- **Peers** (`replication_peers`): HTTPS URL (plain HTTP only for loopback), an
   optional operator-configured CA reference (`ANT_UPSTREAM_CA_MAP_FILE` IDs, never
   paths) and a per-peer token stored through `internal/secrets` with a purpose
   bound to the peer. Tokens are never returned. Redirects are never followed.
-* **Jobs** (`replication_jobs`): one per destination feed. Creating a job attaches
+- **Jobs** (`replication_jobs`): one per destination feed. Creating a job attaches
   a new `replica`-kind source at the lowest precedence of the destination feed.
-  Replica sources cannot be published to, so replicas are read-only by default;
+  Replica sources cannot be published to. The job option `destination_read_only`
+  (default true for new jobs) additionally makes the destination feed reject
+  publishes with 409 `replica feed — publish to <peer URL>` (OCI and npm show the
+  text; other adapters return a plain 409) unless an explicit publish rule routes
+  the request to a separate local source (the default route never qualifies);
   destination policy, credentials and identity settings are never touched.
-* **Seed**: records the peer head, pages the asset manifest, then the tag
+- **Seed**: records the peer head, pages the asset manifest, then the tag
   manifest, then switches to incremental from the recorded head. Cached
   pull-through content is included by default (`include_cached=false` excludes it).
-* **Incremental**: `continuous` (poll), `scheduled` (interval) or `manual`
+- **Incremental**: `continuous` (poll), `scheduled` (interval) or `manual`
   (trigger). Changes are applied in sequence order.
-* **Reseed**: when the peer's low-water mark is above the job's checkpoint (seen
+- **Reseed**: when the peer's low-water mark is above the job's checkpoint (seen
   on the head, or via a 410), the job restarts the manifest walk automatically
   (`phase` returns to `seed_assets`, `reseeding=true`, `reseeds` increments). It
   is the seed protocol again and as restartable: the cursor commits per page and
@@ -77,47 +81,47 @@ exports without touching any asset row, so the attachment is recorded as an
   are recorded as **held deletions**, exactly as an `ignore`-policy tombstone:
   the dry run lists them and the deletion policy decides. Destination-only
   content is never touched.
-* **Back-fill**: an `attachment` change queues the attached source in
+- **Back-fill**: an `attachment` change queues the attached source in
   `replication_backfills` in the same transaction that advances the checkpoint.
   Before the next change page the job walks the manifest restricted to that
   source (assets, then tags) with its own durable cursor, so a restart resumes
   where it stopped. Cached (`remote`) sources are skipped when
   `include_cached=false`; flipping it later does not back-fill by itself.
-* **Resumable blob transfer**: stores that implement `blob.Resumable` (local
+- **Resumable blob transfer**: stores that implement `blob.Resumable` (local
   disk) keep a partial transfer in a private staging file named by digest. The
   next attempt re-hashes it and continues with `Range: bytes=<offset>-`, so
   completed bytes are not fetched again; the full digest and size are verified
   at the end, a corrupt partial is discarded (`ErrCorrupt`), a peer that ignores
   `Range` restarts from zero, and abandoned partials are swept after 7 days.
   Status shows `resumed_bytes`. S3 stores fall back to a plain restart.
-* **Selective sync**: filters on namespace, package (exact) and version prefix
+- **Selective sync**: filters on namespace, package (exact) and version prefix
   apply to seed and incrementals and are evaluated on the peer for both the
   manifest and change pages (tombstones of packages that no longer exist cannot
   be resolved to a namespace and are passed through; consumers only delete what
   they replicated). Filter changes only affect future changes.
-* **Durability and idempotency**: every page (metadata, cursor/checkpoint and
+- **Durability and idempotency**: every page (metadata, cursor/checkpoint and
   counters) commits in one transaction fenced by the instance writer lease and
   the job claim. A restart resumes at the last committed cursor. Applying a
   change twice is harmless.
-* **Dedup and verification**: a blob already present in the replica store (digest
+- **Dedup and verification**: a blob already present in the replica store (digest
   and size) is never fetched again, which also covers blobs stored by an
   interrupted page. Arriving bytes are staged and finalized against the manifest
   digest and size; mismatch is `ErrCorrupt`, nothing is stored, no metadata
   commits and the checkpoint does not move.
-* **Deletions** are a per-job policy: `ignore` (default; tombstones are recorded
+- **Deletions** are a per-job policy: `ignore` (default; tombstones are recorded
   as held) or `propagate`. Deletes only touch rows in the job's own replica source
   that carry this job's provenance; anything else is classified `protected`.
   `GET .../deletions` is the dry run: it lists held and not-yet-applied
   tombstones and what each would do, and changes nothing.
-* **Conflicts**: the authority wins over its own earlier replicas. An item from a
+- **Conflicts**: the authority wins over its own earlier replicas. An item from a
   higher-precedence origin source, or destination-only content inside the replica
   source, is never overwritten (counted in `conflicts`).
-* **Status**: phase, seed progress, checkpoint, remote head, changes behind, lag
+- **Status**: phase, seed progress, checkpoint, remote head, changes behind, lag
   seconds, last attempt/success, next run, last error, consecutive and total
   failures, reseeds, the peer's low-water mark, pending/completed back-fills,
   resumed bytes and transfer/dedup/deletion/conflict counters. Failures retry
   with capped exponential backoff.
-* **Metrics** (`/metrics`, read from the durable job rows at scrape time, label
+- **Metrics** (`/metrics`, read from the durable job rows at scrape time, label
   `job` only): `ant_replication_lag_seconds`, `_changes_behind`,
   `_seconds_since_last_success`, `_running`, `_consecutive_failures`,
   `_failures_total`, `_bytes_transferred_total`, `_blobs_transferred_total`,
@@ -150,9 +154,9 @@ Peers need instance `admin`; jobs are authorized on the destination feed
 
 ```
 GET/POST        /api/v1/replication/peers
-GET/PATCH/DELETE /api/v1/replication/peers/{id}        (PATCH: url, ca_ref, token rotation; revision CAS)
+GET/PATCH/DELETE /api/v1/replication/peers/{id}        (PATCH: url, ca_ref, token rotation; revision CAS via If-Match "N" or body revision)
 GET/POST        /api/v1/replication/jobs
-GET/PATCH/DELETE /api/v1/replication/jobs/{id}         (PATCH: mode, interval, filters, include_cached, deletion_policy, enabled)
+GET/PATCH/DELETE /api/v1/replication/jobs/{id}         (PATCH: mode, interval, filters, include_cached, deletion_policy, destination_read_only, enabled)
 GET             /api/v1/replication/jobs/{id}/status
 POST            /api/v1/replication/jobs/{id}/runs     (manual trigger)
 GET             /api/v1/replication/jobs/{id}/deletions (dry-run preview)
@@ -177,17 +181,17 @@ under the instance lease context; `main.go` mounts both route sets.
 
 ## Limitations
 
-* The history purge is global per instance (one low-water mark), not per
+- The history purge is global per instance (one low-water mark), not per
   consumer: a consumer that lags past the configured bounds reseeds. Size the
   bounds to the slowest peer you want to serve incrementally.
-* Reseed detects vanished items for assets only; vanished tags and package
+- Reseed detects vanished items for assets only; vanished tags and package
   metadata are not tracked (tags and components carry no provenance).
-* Detaching a source from the source feed is not recorded or propagated.
+- Detaching a source from the source feed is not recorded or propagated.
   Flipping `include_cached` from false to true does not back-fill cached
   content seen earlier.
-* Resumable transfer needs a store with resumable staging (local disk); S3
+- Resumable transfer needs a store with resumable staging (local disk); S3
   stores restart a failed blob from byte zero.
-* Templates cover retention and remote-source cache/timeout tunables only.
+- Templates cover retention and remote-source cache/timeout tunables only.
   Publish policy, grants, identities and endpoints are deliberately excluded,
   and remote sources are never created from a template.
-* Unreferenced replicated blobs after a delete are left to retention/GC.
+- Unreferenced replicated blobs after a delete are left to retention/GC.
