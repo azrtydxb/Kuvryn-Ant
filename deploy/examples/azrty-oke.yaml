@@ -21,7 +21,7 @@ storage:
     credentialsExistingSecret: ant-s3
 postgres:
   existingSecret: ant-postgres
-  tlsExistingSecret: ant-pg-ca
+  tlsExistingSecret: ant-pg-rootcert
 rootKey:
   existingSecret: ant-root-key
 httpRoute:

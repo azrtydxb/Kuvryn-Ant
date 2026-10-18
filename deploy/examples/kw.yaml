@@ -20,7 +20,7 @@ storage:
     caExistingSecret: ant-s3-ca
 postgres:
   existingSecret: ant-postgres
-  tlsExistingSecret: ant-pg-ca
+  tlsExistingSecret: ant-pg-rootcert
 rootKey:
   existingSecret: ant-root-key
 ingress:
