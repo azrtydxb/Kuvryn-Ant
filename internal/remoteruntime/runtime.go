@@ -9,10 +9,12 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -28,9 +30,12 @@ import (
 )
 
 var (
-	ErrInput       = errors.New("invalid remote runtime request")
-	ErrClosed      = errors.New("remote runtime closed")
-	ErrCapacity    = errors.New("remote runtime capacity exceeded")
+	ErrInput    = errors.New("invalid remote runtime request")
+	ErrClosed   = errors.New("remote runtime closed")
+	ErrCapacity = errors.New("remote runtime capacity exceeded")
+	// ErrTooLarge reports a metadata document above the in-memory cache bound; it
+	// is a capacity error whose caller may stream the document instead.
+	ErrTooLarge    = fmt.Errorf("%w: metadata document exceeds the cache bound", ErrCapacity)
 	ErrUnavailable = errors.New("remote runtime unavailable")
 	ErrReloaded    = errors.New("remote source generation changed")
 	ErrPolicy      = errors.New("remote source policy denied request")
@@ -186,6 +191,8 @@ func safeError(err error) error {
 		return err // typed so callers can surface 429 and Retry-After
 	case errors.Is(err, upstream.ErrPolicy), errors.Is(err, ErrPolicy):
 		return ErrPolicy
+	case errors.Is(err, ErrTooLarge):
+		return ErrTooLarge
 	case errors.Is(err, cache.ErrCapacity), errors.Is(err, ErrCapacity):
 		return ErrCapacity
 	case errors.Is(err, ErrReloaded):
@@ -370,7 +377,7 @@ func (m *Manager) acquire(ctx context.Context, source string) (*entry, error) {
 			// not publish a stale generation under a newer revision's identity.
 			credentialRevision = secretRecord.Revision
 		}
-		fetcher, err := upstream.New(upstream.Config{Origin: record.Config.Origin, RedirectOrigins: record.Config.RedirectOrigins, Credentials: headers, Roots: roots, AllowPrivate: record.Config.AllowPrivate})
+		fetcher, err := upstream.New(upstream.Config{Origin: record.Config.Origin, RedirectOrigins: withPublicOrigins(record.Config.RedirectOrigins), Credentials: headers, Roots: roots, AllowPrivate: record.Config.AllowPrivate})
 		for key := range headers {
 			delete(headers, key)
 		}
@@ -541,12 +548,15 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 		if response.StatusCode != 200 && response.StatusCode != 304 && response.StatusCode != 404 {
 			return cache.Value{}, ErrUnavailable
 		}
+		if response.ContentLength > m.options.MaxMetadataBytes {
+			return cache.Value{}, ErrTooLarge
+		}
 		body, err := io.ReadAll(io.LimitReader(response.Body, m.options.MaxMetadataBytes+1))
 		if err != nil {
 			return cache.Value{}, safeError(err)
 		}
 		if int64(len(body)) > m.options.MaxMetadataBytes {
-			return cache.Value{}, ErrCapacity
+			return cache.Value{}, ErrTooLarge
 		}
 		return cache.Value{Status: response.StatusCode, Body: body, ETag: response.Header.Get("ETag"), LastModified: response.Header.Get("Last-Modified"), MediaType: response.Header.Get("Content-Type")}, nil
 	})
@@ -664,4 +674,20 @@ func (m *Manager) Close() error {
 		m.mu.Unlock()
 	})
 	return nil
+}
+
+// publicOrigins are signed, public, unauthenticated services every source may
+// reference by absolute URL (the Go checksum database, which a GOPROXY serves
+// on behalf of clients). Credentials are never attached to them.
+var publicOrigins = []string{"https://sum.golang.org"}
+
+func withPublicOrigins(configured []string) []string {
+	out := make([]string, 0, len(configured)+len(publicOrigins))
+	out = append(out, configured...)
+	for _, o := range publicOrigins {
+		if !slices.Contains(out, o) {
+			out = append(out, o)
+		}
+	}
+	return out
 }

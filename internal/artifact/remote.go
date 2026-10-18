@@ -126,6 +126,8 @@ func mapRemoteError(err error) error {
 		return err
 	case errors.Is(err, remoteruntime.ErrInput):
 		return ErrInput
+	case errors.Is(err, remoteruntime.ErrTooLarge):
+		return ErrTooLarge
 	case errors.As(err, new(*upstream.RateLimitError)):
 		var rl *upstream.RateLimitError
 		errors.As(err, &rl)
@@ -762,4 +764,37 @@ func (s *Service) CacheDocument(ctx context.Context, p identity.Principal, r Pub
 	}
 	_, err = s.commitMaterialized(ctx, p, r, source, domain)
 	return err
+}
+
+// StreamDocument is an uncached upstream metadata response read incrementally.
+type StreamDocument struct {
+	Body                      io.ReadCloser
+	MediaType, ETag, SourceID string
+}
+
+// RemoteStream fetches a mutable upstream document without holding it in
+// memory or the metadata cache. It exists for documents above the cache bound
+// (RemoteMetadata returned ErrTooLarge); the caller must transform the body as
+// it reads and close it.
+func (s *Service) RemoteStream(ctx context.Context, p identity.Principal, r Publication, o Origin) (*StreamDocument, error) {
+	plan, err := s.plan(ctx, p, r, o.SourceID)
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range plan.sources {
+		response, err := s.Remote.Fetch(ctx, remoteruntime.Request{SourceID: id, AuthorizationDomain: plan.domain, Path: o.Path, URL: o.URL, Representation: o.Representation})
+		if err != nil {
+			return nil, mapRemoteError(err)
+		}
+		switch response.StatusCode {
+		case 200:
+			return &StreamDocument{Body: response.Body, MediaType: response.Header.Get("Content-Type"), ETag: response.Header.Get("ETag"), SourceID: id}, nil
+		case 404, 410:
+			response.Body.Close()
+		default:
+			response.Body.Close()
+			return nil, ErrUnavailable
+		}
+	}
+	return nil, ErrNotFound
 }

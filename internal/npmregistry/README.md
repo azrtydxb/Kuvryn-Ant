@@ -82,3 +82,7 @@ References: [F14 contract](../../docs/planning/contracts/F14.md),
 [shared contract](../../docs/planning/contracts/common.md),
 [official npm registry API](https://github.com/npm/registry/blob/main/docs/REGISTRY-API.md),
 [official npm publish implementation](https://github.com/npm/cli/blob/latest/workspaces/libnpmpublish/lib/publish.js).
+
+Remote packuments are rewritten as a stream (one version in memory at a time), so
+the 16 MiB limit applies only to locally stored packuments. A remote packument
+above the metadata cache bound is streamed uncached from upstream on each request.
