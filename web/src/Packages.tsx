@@ -8,6 +8,7 @@ import {
 import type { Client } from "./api";
 import { useAllFeeds, useAllSources } from "./data";
 import { useOptionalCall } from "./gaps";
+import { FederatedSearch } from "./FederatedSearch";
 import type { DiscoveredAsset, Feed, PackageSearchResult } from "./generated";
 import {
   Alert,
@@ -155,8 +156,45 @@ export function PackagesPage({
         text="Everything you can read through your feeds. Metadata only; shadowed sources do not fall through."
       />
       <SourceNamesProvider client={client}>
-        <CrossFeed client={client} openPackage={openPackage} />
+        <ScopedSearch client={client} openPackage={openPackage} />
       </SourceNamesProvider>
+    </>
+  );
+}
+
+// The scope toggle appears only on an active federation member: "This
+// instance" is the cross-feed search of this server, "Federation" fans out to
+// every member, each applying its own authorization.
+function ScopedSearch({
+  client,
+  openPackage,
+}: {
+  client: Client;
+  openPackage: (p: PackageRef) => void;
+}) {
+  const status = useOptionalCall(client, "getFederationStatus");
+  const [scope, setScope] = useState("local");
+  const member = status.state === "ready" && status.data.state === "active";
+  return (
+    <>
+      {member && (
+        <div className="row spaced">
+          <SegmentedControl
+            aria-label="Search scope"
+            options={[
+              { value: "local", label: "This instance" },
+              { value: "federation", label: "Federation" },
+            ]}
+            value={scope}
+            onChange={setScope}
+          />
+        </div>
+      )}
+      {member && scope === "federation" ? (
+        <FederatedSearch client={client} />
+      ) : (
+        <CrossFeed client={client} openPackage={openPackage} />
+      )}
     </>
   );
 }

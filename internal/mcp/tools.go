@@ -264,6 +264,18 @@ func catalog() []*tool {
 				}
 				return c.api(http.MethodPost, "/api/v1/federation/access-check", nil, body, nil).result()
 			}},
+		{name: "federated_search", title: "Federated package search", desc: "Search packages across every federation member. The query fans out over the mTLS peer listener with a signed assertion of the calling federated principal; each member applies its own authorization and policy, so the caller sees only what each member allows. Slow, unreachable or refusing members are reported in members[] with partial=true and never fail the query. Hits are merged on (feed_key, coordinate); replicas collapse under the home copy in copies[]. Only feeds bound to a federation feed key take part. Local-only principals get not_federated.", readOnly: true,
+			params: with(pageParams, param{name: "q", typ: "string", desc: "Case-insensitive substring of the package coordinate."}, param{name: "format", typ: "string", desc: "Package format filter."},
+				param{name: "namespace", typ: "string", desc: "Exact namespace filter."}, param{name: "digest", typ: "string", desc: "Only packages with an asset of this digest, sha256:<64 lowercase hex>."},
+				param{name: "feed_key", typ: "string", desc: "Restrict to one federation feed key."}, param{name: "members", typ: "string", desc: "Comma-separated member IDs or names to query; default all."}),
+			run: func(c *call) *toolResult {
+				return c.get("/api/v1/federation/search", c.page(nil, "q", "format", "namespace", "digest", "feed_key", "members", "limit", "cursor"))
+			}},
+		{name: "federated_lookup_checksum", title: "Federated checksum lookup", desc: "Find every federation member and feed holding a package with an asset of the given sha256 digest (same fan-out, per-member authorization and partial-result reporting as federated_search). Input for placement decisions.", readOnly: true,
+			params: []param{{name: "digest", typ: "string", required: true, desc: "sha256:<64 lowercase hex>."}, {name: "members", typ: "string", desc: "Comma-separated member IDs or names to query; default all."}},
+			run: func(c *call) *toolResult {
+				return c.get("/api/v1/federation/search", c.page(nil, "digest", "members"))
+			}},
 		{name: "publish_federation_policy", title: "Publish federation policy", desc: "DESTRUCTIVE: sign and publish the next federation policy generation on the authority, from the saved draft or from the policy argument, and push it to every member. base_generation must be the applied generation you reviewed (stale_generation otherwise). Federated roles, bindings and revocations take effect on every member. Requires instance admin on the authority and confirm: true.", destructive: true, idempotent: true,
 			params: []param{{name: "base_generation", typ: "integer", required: true, desc: "Applied policy generation the change is based on (0 for the first policy)."},
 				{name: "policy", typ: "object", desc: "Policy body (identity_domains, roles, principal_bindings, group_bindings, service_accounts, revocations). Omit to publish the saved draft."}},

@@ -250,6 +250,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
 		management.RegisterFederation(mux, pool, fed.service())
+		management.RegisterFederationSearch(mux, pool, fed.service(), management.NewCursorCodec(cfg.RootKey))
 		var transferStores transfer.Stores
 		if artifacts != nil {
 			transferStores = artifacts.stores

@@ -94,7 +94,7 @@ func TestInitializeAndListing(t *testing.T) {
 		m := x.(map[string]any)
 		names[m["name"].(string)] = m
 	}
-	for _, n := range []string{"list_feeds", "get_feed", "list_sources", "get_source", "search_packages", "list_package_versions", "list_package_assets", "lookup_checksum", "get_health", "get_cache_insight", "create_feed", "attach_source", "set_publish_policy", "rotate_webhook_secret", "detach_source", "disable_webhook", "delete_package_version", "get_federation_status", "list_federation_members", "get_federation_policy", "publish_federation_policy", "check_federation_access", "list_federated_principals"} {
+	for _, n := range []string{"list_feeds", "get_feed", "list_sources", "get_source", "search_packages", "list_package_versions", "list_package_assets", "lookup_checksum", "get_health", "get_cache_insight", "create_feed", "attach_source", "set_publish_policy", "rotate_webhook_secret", "detach_source", "disable_webhook", "delete_package_version", "get_federation_status", "list_federation_members", "get_federation_policy", "publish_federation_policy", "check_federation_access", "list_federated_principals", "federated_search", "federated_lookup_checksum"} {
 		if names[n] == nil {
 			t.Fatalf("missing tool %s", n)
 		}
