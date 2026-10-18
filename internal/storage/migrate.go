@@ -166,9 +166,23 @@ func (m *Migrator) Status(ctx context.Context) (Status, error) {
 	return st, nil
 }
 
+// Querier is the pool or transaction a job-state change runs on. Passing a
+// transaction lets the caller commit the job row together with its audit and
+// idempotency records, so a retried request can neither double-start nor
+// strand a job that nothing will run.
+type Querier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
 // Get returns one job.
 func (m *Migrator) Get(ctx context.Context, id string) (Job, error) {
-	return scanJob(m.DB.QueryRow(ctx, `SELECT `+jobColumns+` FROM storage_migrations WHERE instance_id=$1 AND id::text=$2`, m.InstanceID, id))
+	return m.GetIn(ctx, m.DB, id)
+}
+
+// GetIn is Get on a specific pool or transaction.
+func (m *Migrator) GetIn(ctx context.Context, q Querier, id string) (Job, error) {
+	return scanJob(q.QueryRow(ctx, `SELECT `+jobColumns+` FROM storage_migrations WHERE instance_id=$1 AND id::text=$2`, m.InstanceID, id))
 }
 
 // List returns recent jobs, newest first.
@@ -193,6 +207,13 @@ func (m *Migrator) List(ctx context.Context, limit int) ([]Job, error) {
 // (paused, or running with a stale heartbeat). The job is owned by this process
 // but not executed; call Run. The second result reports a takeover.
 func (m *Migrator) Start(ctx context.Context, o StartOptions) (Job, bool, error) {
+	return m.StartIn(ctx, m.DB, o)
+}
+
+// StartIn is Start on a specific pool or transaction. Inside a transaction the
+// job becomes visible only when the caller commits; a unique-violation
+// (another job running) aborts that transaction and reports ErrBusy.
+func (m *Migrator) StartIn(ctx context.Context, q Querier, o StartOptions) (Job, bool, error) {
 	rt, err := m.Route(ctx)
 	if err != nil {
 		return Job{}, false, err
@@ -219,7 +240,7 @@ func (m *Migrator) Start(ctx context.Context, o StartOptions) (Job, bool, error)
 		return Job{}, false, ErrBadTarget
 	}
 	// Take over an interrupted job of the same shape.
-	j, err := scanJob(m.DB.QueryRow(ctx, `UPDATE storage_migrations SET state='running',owner=$2,updated_at=now(),throttle_bytes_per_second=$3
+	j, err := scanJob(q.QueryRow(ctx, `UPDATE storage_migrations SET state='running',owner=$2,updated_at=now(),throttle_bytes_per_second=$3
  WHERE id=(SELECT id FROM storage_migrations WHERE instance_id=$1 AND kind=$4 AND from_backend=$5 AND to_backend=$6 AND dry_run=$7
    AND (state='paused' OR (state='running' AND updated_at<now()-$8::interval)) LIMIT 1 FOR UPDATE SKIP LOCKED)
  RETURNING `+jobColumns, m.InstanceID, m.owner(), o.BytesPerSec, o.Kind, from, to, o.DryRun, fmt.Sprintf("%d seconds", int(staleAfter.Seconds()))))
@@ -234,10 +255,10 @@ func (m *Migrator) Start(ctx context.Context, o StartOptions) (Job, bool, error)
 		requestedBy = o.RequestedBy
 	}
 	var total, totalBytes int64
-	if err = m.DB.QueryRow(ctx, `SELECT count(*),COALESCE(sum(size_bytes),0)::bigint FROM blobs WHERE instance_id=$1`, m.InstanceID).Scan(&total, &totalBytes); err != nil {
+	if err = q.QueryRow(ctx, `SELECT count(*),COALESCE(sum(size_bytes),0)::bigint FROM blobs WHERE instance_id=$1`, m.InstanceID).Scan(&total, &totalBytes); err != nil {
 		return Job{}, false, err
 	}
-	j, err = scanJob(m.DB.QueryRow(ctx, `INSERT INTO storage_migrations(instance_id,kind,from_backend,to_backend,dry_run,state,owner,throttle_bytes_per_second,total_blobs,total_bytes,requested_by)
+	j, err = scanJob(q.QueryRow(ctx, `INSERT INTO storage_migrations(instance_id,kind,from_backend,to_backend,dry_run,state,owner,throttle_bytes_per_second,total_blobs,total_bytes,requested_by)
  VALUES($1,$2,$3,$4,$5,'running',$6,$7,$8,$9,$10) RETURNING `+jobColumns, m.InstanceID, o.Kind, from, to, o.DryRun, m.owner(), o.BytesPerSec, total, totalBytes, requestedBy))
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -248,25 +269,43 @@ func (m *Migrator) Start(ctx context.Context, o StartOptions) (Job, bool, error)
 
 // Pause stops a running job at its next checkpoint; its cursor is kept.
 func (m *Migrator) Pause(ctx context.Context, id string) (Job, error) {
+	m.StopRun(id)
+	return m.PauseIn(ctx, m.DB, id)
+}
+
+// StopRun cancels this process's runner for the job, if any; the runner then
+// parks the job as paused. Callers using PauseIn in a transaction call it
+// after the commit.
+func (m *Migrator) StopRun(id string) {
 	m.mu.Lock()
 	cancel := m.running[id]
 	m.mu.Unlock()
 	if cancel != nil {
 		cancel()
 	}
-	_, err := m.DB.Exec(ctx, `UPDATE storage_migrations SET state='paused',updated_at=now() WHERE instance_id=$1 AND id::text=$2 AND state='running'`, m.InstanceID, id)
+}
+
+// PauseIn marks a running job paused on a specific pool or transaction. It is
+// naturally idempotent: pausing a job that is not running changes nothing.
+func (m *Migrator) PauseIn(ctx context.Context, q Querier, id string) (Job, error) {
+	_, err := q.Exec(ctx, `UPDATE storage_migrations SET state='paused',updated_at=now() WHERE instance_id=$1 AND id::text=$2 AND state='running'`, m.InstanceID, id)
 	if err != nil {
 		return Job{}, err
 	}
-	return m.Get(ctx, id)
+	return m.GetIn(ctx, q, id)
 }
 
 // Resume takes over a paused (or abandoned) job so Run can continue it.
 func (m *Migrator) Resume(ctx context.Context, id string) (Job, error) {
-	j, err := scanJob(m.DB.QueryRow(ctx, `UPDATE storage_migrations SET state='running',owner=$3,updated_at=now() WHERE instance_id=$1 AND id::text=$2
+	return m.ResumeIn(ctx, m.DB, id)
+}
+
+// ResumeIn is Resume on a specific pool or transaction.
+func (m *Migrator) ResumeIn(ctx context.Context, q Querier, id string) (Job, error) {
+	j, err := scanJob(q.QueryRow(ctx, `UPDATE storage_migrations SET state='running',owner=$3,updated_at=now() WHERE instance_id=$1 AND id::text=$2
  AND (state='paused' OR (state='running' AND updated_at<now()-$4::interval)) RETURNING `+jobColumns, m.InstanceID, id, m.owner(), fmt.Sprintf("%d seconds", int(staleAfter.Seconds()))))
 	if errors.Is(err, ErrNotFoundJob) {
-		if cur, gerr := m.Get(ctx, id); gerr == nil {
+		if cur, gerr := m.GetIn(ctx, q, id); gerr == nil {
 			if cur.State == StateRunning {
 				return cur, ErrBusy
 			}
