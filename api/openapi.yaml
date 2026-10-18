@@ -363,6 +363,98 @@
             "$ref": "#/components/responses/Error"
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteFeed",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Also remove replication jobs targeting the feed. Requires instance administration."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedDeleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Delete a feed. Sources and their content are kept; only attachments, the publish policy, feed-scoped grants and retention policies are removed. Refused with 409 while replication jobs target the feed unless force=true."
       }
     },
     "/api/v1/sources": {
@@ -781,6 +873,105 @@
           }
         },
         "description": "Ordered by ascending priority. Requires feed read; sources without source read permission are omitted. Cursor is invalidated by feed revision changes."
+      },
+      "put": {
+        "operationId": "reorderFeedSources",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderSources"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceOrder"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Atomically replace the read order. The list must name exactly the attached sources. Requires configure on the feed and read on every source; If-Match is the feed revision, incremented with the audit event."
       }
     },
     "/api/v1/feeds/{id}/sources/{source_id}": {
@@ -1983,6 +2174,83 @@
           }
         },
         "description": "Requires instance admin permission. Metadata mutations require an Idempotency-Key; collection reads use bounded UUID keyset pagination."
+      },
+      "get": {
+        "operationId": "listIdentityBindings",
+        "parameters": [
+          {
+            "name": "principal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityBindingPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Requires instance admin."
       }
     },
     "/api/v1/webhooks": {
@@ -3337,6 +3605,911 @@
           }
         },
         "description": "Create or update the encrypted source-bound credential attached to an existing remote config. Requires Source Configure, source If-Match and idempotency. Returns nonsecret config/credential reference only. Credential bytes are never cached, audited or returned; request fingerprint is keyed. Root-key rotation may invalidate old credential replay keys."
+      }
+    },
+    "/api/v1/packages": {
+      "get": {
+        "operationId": "searchPackages",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "description": "Case-insensitive literal substring of the package coordinate."
+          },
+          {
+            "name": "feed",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "apk",
+                "ansible",
+                "apt",
+                "cocoapods",
+                "composer",
+                "conan",
+                "conda",
+                "oci",
+                "git-lfs",
+                "go",
+                "helm",
+                "huggingface",
+                "maven",
+                "npm",
+                "nuget",
+                "oci-artifacts",
+                "p2",
+                "pub",
+                "pypi",
+                "cran",
+                "raw",
+                "rubygems",
+                "cargo",
+                "swift",
+                "terraform",
+                "rpm"
+              ]
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "remote",
+                "replica"
+              ]
+            },
+            "description": "Kind of the owning source."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PackageSearchPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Cross-feed package search. Package-owner composition and per-feed/namespace read authorization apply exactly as for the per-feed listing; total counts only authorized matches."
+      }
+    },
+    "/api/v1/feeds/batch": {
+      "post": {
+        "operationId": "createFeedBatch",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFeedBatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedBatchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Create a feed, attach sources in order and set its publish policy in one idempotent transaction. Requires configure on the feed collection and on every referenced source."
+      }
+    },
+    "/api/v1/feeds/{id}/resolve": {
+      "get": {
+        "operationId": "resolveFeedCoordinate",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "coordinate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "namespace",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveExplanation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Explain read resolution: the owning source, shadowed sources with reasons, and remote cache freshness. Sources the caller cannot read are omitted and counted."
+      }
+    },
+    "/api/v1/feeds/{id}/publish-policy:test": {
+      "post": {
+        "operationId": "testPublishPolicy",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishPolicyTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPolicyTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Dry-run an unsaved publish policy against the feed's attached sources. Nothing is persisted. Requires configure on the feed and on every referenced source."
+      }
+    },
+    "/api/v1/sources/{id}/cache": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "purgeSourceCache",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "coordinate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "description": "Purge a single package instead of the whole source cache."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CachePurge"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Purge cached content of a remote source. Requires configure on the source. Unreferenced blobs are reclaimed by garbage collection."
+      }
+    },
+    "/api/v1/tokens": {
+      "get": {
+        "operationId": "listServiceTokens",
+        "parameters": [
+          {
+            "name": "principal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "expired",
+                "revoked"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Token metadata with expiry and last use. Requires instance admin. Secrets and verifiers are never returned. Revoke with DELETE /tokens/{id}."
+      }
+    },
+    "/api/v1/identity-bindings/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "deleteIdentityBinding",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentityBindingDeleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Remove a binding and, by cascade, browser sessions that depend on it. Requires instance admin."
+      }
+    },
+    "/api/v1/audit": {
+      "get": {
+        "operationId": "listAuditEvents",
+        "parameters": [
+          {
+            "name": "principal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Exact action name, e.g. feed.create."
+          },
+          {
+            "name": "result",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "denied",
+                "failure"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Inclusive lower bound on created_at."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Exclusive upper bound on created_at."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Newest-first audit events with keyset pagination. Requires instance admin."
+      }
+    },
+    "/api/v1/audit/export": {
+      "get": {
+        "parameters": [
+          {
+            "name": "principal",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Exact action name, e.g. feed.create."
+          },
+          {
+            "name": "result",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "denied",
+                "failure"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Inclusive lower bound on created_at."
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Exclusive upper bound on created_at."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "ndjson"
+              ],
+              "default": "ndjson"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Streamed export, newest first; one JSON object per line for ndjson.",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Export every matching audit event. Requires instance admin; the export is itself audited as audit.export."
       }
     }
   },
@@ -4861,6 +6034,826 @@
           }
         },
         "description": "At least one nonempty value required. Stored encrypted, never returned. Only printable ASCII header values; no control characters or whitespace-only values. authorization maps to Authorization; api_key maps to X-Api-Key."
+      },
+      "PackageSearchResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "feed_slug",
+          "format",
+          "id",
+          "coordinate",
+          "namespace",
+          "source_id",
+          "origin",
+          "metadata"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_slug": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "apk",
+              "ansible",
+              "apt",
+              "cocoapods",
+              "composer",
+              "conan",
+              "conda",
+              "oci",
+              "git-lfs",
+              "go",
+              "helm",
+              "huggingface",
+              "maven",
+              "npm",
+              "nuget",
+              "oci-artifacts",
+              "p2",
+              "pub",
+              "pypi",
+              "cran",
+              "raw",
+              "rubygems",
+              "cargo",
+              "swift",
+              "terraform",
+              "rpm"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "remote",
+              "replica"
+            ],
+            "description": "Kind of the owning source."
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Format-owned JSON metadata, bounded to 64 KiB."
+          }
+        }
+      },
+      "PackageSearchPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/PackageSearchResult"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Authorized matches across all pages."
+          }
+        }
+      },
+      "ReorderSources": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_ids"
+        ],
+        "properties": {
+          "source_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1024,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Every attached source, in the new read order (index = priority)."
+          }
+        }
+      },
+      "SourceOrderItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "priority"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "SourceOrder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "feed_revision",
+          "items"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceOrderItem"
+            }
+          }
+        }
+      },
+      "CreateFeedBatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "slug",
+          "format"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,62}$"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "apk",
+              "ansible",
+              "apt",
+              "cocoapods",
+              "composer",
+              "conan",
+              "conda",
+              "oci",
+              "git-lfs",
+              "go",
+              "helm",
+              "huggingface",
+              "maven",
+              "npm",
+              "nuget",
+              "oci-artifacts",
+              "p2",
+              "pub",
+              "pypi",
+              "cran",
+              "raw",
+              "rubygems",
+              "cargo",
+              "swift",
+              "terraform",
+              "rpm"
+            ]
+          },
+          "anonymous_read": {
+            "type": "boolean",
+            "default": false
+          },
+          "source_ids": {
+            "type": "array",
+            "maxItems": 64,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Same-format sources to attach, in read order."
+          },
+          "publish_policy": {
+            "$ref": "#/components/schemas/PutPublishPolicy"
+          }
+        }
+      },
+      "FeedBatchResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed",
+          "sources"
+        ],
+        "properties": {
+          "feed": {
+            "$ref": "#/components/schemas/Feed"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceOrderItem"
+            }
+          },
+          "publish_policy": {
+            "$ref": "#/components/schemas/PublishPolicy"
+          }
+        }
+      },
+      "ResolveSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "name",
+          "kind",
+          "priority",
+          "role",
+          "reason",
+          "versions"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "local",
+              "remote",
+              "replica"
+            ]
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "serving",
+              "shadowed",
+              "absent",
+              "pull_through_candidate"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "versions": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "ResolveCache": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "metadata_ttl_seconds",
+          "stale_if_error_seconds",
+          "servable_stale_on_error"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_applicable",
+              "not_cached",
+              "fresh",
+              "stale"
+            ]
+          },
+          "last_cached_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_accessed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "metadata_ttl_seconds": {
+            "type": "integer"
+          },
+          "stale_if_error_seconds": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "servable_stale_on_error": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResolveExplanation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "coordinate",
+          "namespace",
+          "status",
+          "sources",
+          "cache",
+          "hidden_sources"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "served",
+              "pull_through",
+              "not_found",
+              "namespace_mismatch"
+            ]
+          },
+          "serving": {
+            "$ref": "#/components/schemas/ResolveSource"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolveSource"
+            },
+            "description": "Readable attached sources in read order."
+          },
+          "cache": {
+            "$ref": "#/components/schemas/ResolveCache"
+          },
+          "hidden_sources": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Attached sources omitted because the caller cannot read them."
+          }
+        }
+      },
+      "PublishPolicyTestRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "policy",
+          "coordinate"
+        ],
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/PutPublishPolicy"
+          },
+          "coordinate": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "path": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Absolute slash path, as the publish route would supply (/ + asset key)."
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Defaults to the caller. Evaluating another principal requires instance administration."
+          }
+        }
+      },
+      "PublishPolicyTestTrace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule_id",
+          "priority",
+          "matched",
+          "selected",
+          "reason"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "selected": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "PublishPolicyTestResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "allowed",
+          "reason",
+          "principal_id",
+          "trace"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "matched_rule_id": {
+            "type": "string"
+          },
+          "target_source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "target_source_name": {
+            "type": "string"
+          },
+          "denial": {
+            "type": "string",
+            "description": "Reason code when the publish would be refused, including principal_not_permitted."
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "principal_authorized": {
+            "type": "boolean"
+          },
+          "trace": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublishPolicyTestTrace"
+            }
+          }
+        }
+      },
+      "FeedDeleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "deleted",
+          "sources_detached",
+          "replication_jobs_removed",
+          "role_grants_removed",
+          "retention_policies_removed",
+          "upload_sessions_removed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "sources_detached": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "replication_jobs_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "role_grants_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "retention_policies_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "upload_sessions_removed": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CachePurge": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_id",
+          "components_removed",
+          "versions_removed",
+          "assets_removed",
+          "bytes_released"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "components_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "versions_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "assets_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes_released": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Logical bytes of purged assets; storage is reclaimed by garbage collection."
+          }
+        }
+      },
+      "TokenRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "principal_id",
+          "scopes",
+          "status",
+          "created_at",
+          "expires_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "actions"
+              ],
+              "properties": {
+                "feed_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "namespace": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "actions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "read",
+                      "publish",
+                      "delete",
+                      "configure",
+                      "replicate",
+                      "admin"
+                    ]
+                  },
+                  "maxItems": 6,
+                  "minItems": 1,
+                  "uniqueItems": true
+                }
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TokenPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TokenRecord"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "IdentityBindingRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "issuer",
+          "subject",
+          "principal_id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IdentityBindingPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdentityBindingRecord"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
+      },
+      "IdentityBindingDeleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuditEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "created_at",
+          "action",
+          "result",
+          "details"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "success",
+              "denied",
+              "failure"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "AuditPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEvent"
+            }
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        }
       }
     }
   }

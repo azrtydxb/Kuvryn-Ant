@@ -137,9 +137,19 @@ func readPublishPolicy(w http.ResponseWriter, r *http.Request) (PublishPolicyInp
 	if !sourceJSON(w, r, &raw, "default_source_id", "rules") {
 		return PublishPolicyInput{}, nil, false
 	}
-	fail := func() (PublishPolicyInput, []routing.Rule, bool) {
-		policyError(w, r, artifact.ErrInput)
+	input, rules, err := parsePublishPolicy(raw)
+	if err != nil {
+		policyError(w, r, err)
 		return PublishPolicyInput{}, nil, false
+	}
+	return input, rules, true
+}
+
+// parsePublishPolicy strictly validates an already-decoded policy object. It is
+// shared by the saved-policy, batch-create and dry-run endpoints.
+func parsePublishPolicy(raw map[string]json.RawMessage) (PublishPolicyInput, []routing.Rule, error) {
+	fail := func() (PublishPolicyInput, []routing.Rule, error) {
+		return PublishPolicyInput{}, nil, artifact.ErrInput
 	}
 	if raw["rules"] == nil {
 		return fail()
@@ -203,7 +213,7 @@ func readPublishPolicy(w http.ResponseWriter, r *http.Request) (PublishPolicyInp
 	if _, err := routing.Compile(routing.Config{Sources: sources, Rules: rules, DefaultTarget: input.DefaultSourceID}); err != nil {
 		return fail()
 	}
-	return input, rules, true
+	return input, rules, nil
 }
 func (s sourceHandlers) setPublishPolicy(w http.ResponseWriter, r *http.Request) {
 	feed, valid := feedID(r.PathValue("id"))

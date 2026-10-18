@@ -162,7 +162,14 @@ func (t Tokens) Authenticate(ctx context.Context, raw string) (Principal, error)
 	if err != nil || json.Unmarshal(scopes, &p.Scopes) != nil || !validScopes(p.Scopes) {
 		return Principal{}, ErrUnauthenticated
 	}
+	t.touch(ctx, p.TokenID)
 	return p, nil
+}
+
+// touch records token use for the console's token list. It is best effort and
+// throttled to one write per token per minute; failures never affect authentication.
+func (t Tokens) touch(ctx context.Context, id string) {
+	_, _ = t.DB.Exec(ctx, "UPDATE service_tokens SET last_used_at=clock_timestamp() WHERE id=$1 AND (last_used_at IS NULL OR last_used_at<clock_timestamp()-interval '1 minute')", id)
 }
 
 // Revoke scopes the lookup to one instance and records the mutation atomically.

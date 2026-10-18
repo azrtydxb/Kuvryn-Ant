@@ -176,6 +176,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterSources(mux, pool, management.NewCursorCodec(cfg.RootKey))
 		management.RegisterPublishPolicies(mux, pool)
 		management.RegisterPackages(mux, pool, management.NewCursorCodec(cfg.RootKey))
+		management.RegisterConsole(mux, pool, management.NewCursorCodec(cfg.RootKey))
 		caRefs := make([]string, 0, len(cfg.UpstreamCAs))
 		for ref := range cfg.UpstreamCAs {
 			caRefs = append(caRefs, ref)
