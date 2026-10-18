@@ -417,39 +417,38 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 	if req.Protocol.Min > ProtocolMax || req.Protocol.Max < ProtocolMin || req.Protocol.Min < 1 || req.Protocol.Max < req.Protocol.Min {
 		return JoinResponse{}, ErrProtocol
 	}
+	// The invitation is checked before the federation state row is locked:
+	// the join endpoint is unauthenticated, and a stream of bogus invitations
+	// must not serialize every federation change on the authority.
+	pre, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil {
+		return JoinResponse{}, err
+	}
+	if pre.State != "active" || pre.FederationID == "" {
+		return JoinResponse{}, ErrNotConfigured
+	}
+	if pre.Role != "authority" {
+		return JoinResponse{}, ErrNotAuthority
+	}
+	if _, _, reason, err := s.checkInvitation(ctx, s.cfg.DB, pre.FederationID, invID, req.Invitation, false); err != nil {
+		if reason != "" {
+			s.rejectInvitation(ctx, invID, req.InstanceID, reason)
+		}
+		return JoinResponse{}, err
+	}
 	var resp JoinResponse
 	var published *Membership
 	var reason string
-	err := s.tx(ctx, func(tx pgx.Tx) error {
+	err = s.tx(ctx, func(tx pgx.Tx) error {
 		st, applied, err := s.authorityState(ctx, tx)
 		if err != nil {
 			return err
 		}
-		var name string
-		var labelsRaw []byte
-		var verifier []byte
-		var expires time.Time
-		var consumed, revoked *time.Time
-		err = tx.QueryRow(ctx, `SELECT name,labels,verifier,expires_at,consumed_at,revoked_at FROM federation_invitations WHERE instance_id=$1 AND federation_id=$2 AND id=$3 FOR UPDATE`,
-			s.cfg.InstanceID, st.FederationID, invID).Scan(&name, &labelsRaw, &verifier, &expires, &consumed, &revoked)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			reason = "unknown"
-			return ErrInvitationInvalid
-		case err != nil:
+		// Re-check under the lock: another join may have consumed it.
+		name, labelsRaw, why, err := s.checkInvitation(ctx, tx, st.FederationID, invID, req.Invitation, true)
+		if err != nil {
+			reason = why
 			return err
-		case subtle.ConstantTimeCompare(verifier, invitationVerifier(req.Invitation)) != 1:
-			reason = "secret_mismatch"
-			return ErrInvitationInvalid
-		case revoked != nil:
-			reason = "revoked"
-			return ErrInvitationInvalid
-		case consumed != nil:
-			reason = "consumed"
-			return ErrInvitationInvalid
-		case !expires.After(s.now()):
-			reason = "expired"
-			return ErrInvitationInvalid
 		}
 		if req.InstanceID == s.cfg.InstanceID {
 			reason = "duplicate_instance"
@@ -511,16 +510,58 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 	return resp, nil
 }
 
-// rejectInvitation records a failed join as a security event.
+// checkInvitation validates an invitation secret. It returns the bound name
+// and labels, or ErrInvitationInvalid with the audit reason. With lock the
+// invitation row is locked for the caller's transaction.
+func (s *Service) checkInvitation(ctx context.Context, q queryer, federationID, invID, secret string, lock bool) (string, []byte, string, error) {
+	var name string
+	var labelsRaw, verifier []byte
+	var expires time.Time
+	var consumed, revoked *time.Time
+	query := `SELECT name,labels,verifier,expires_at,consumed_at,revoked_at FROM federation_invitations WHERE instance_id=$1 AND federation_id=$2 AND id=$3`
+	if lock {
+		query += ` FOR UPDATE`
+	}
+	err := q.QueryRow(ctx, query, s.cfg.InstanceID, federationID, invID).Scan(&name, &labelsRaw, &verifier, &expires, &consumed, &revoked)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return "", nil, "unknown", ErrInvitationInvalid
+	case err != nil:
+		return "", nil, "", err
+	case subtle.ConstantTimeCompare(verifier, invitationVerifier(secret)) != 1:
+		return "", nil, "secret_mismatch", ErrInvitationInvalid
+	case revoked != nil:
+		return "", nil, "revoked", ErrInvitationInvalid
+	case consumed != nil:
+		return "", nil, "consumed", ErrInvitationInvalid
+	case !expires.After(s.now()):
+		return "", nil, "expired", ErrInvitationInvalid
+	}
+	return name, labelsRaw, "", nil
+}
+
+// rejectionAuditWindow throttles federation.invitation.rejected records: at
+// most one per reason per window, carrying the number suppressed since the
+// previous record. Every rejection still counts in metrics.
+const rejectionAuditWindow = 10 * time.Second
+
+// rejectInvitation records a failed join as a security event (throttled, so
+// an unauthenticated flood cannot fill the audit log).
 func (s *Service) rejectInvitation(ctx context.Context, invitation, instance, reason string) {
+	s.metrics.joinRejected.Add(1)
+	ok, suppressed := s.throttle("invitation-rejected:"+reason, rejectionAuditWindow)
+	if !ok {
+		return
+	}
 	if !uuidPattern.MatchString(invitation) {
 		invitation = ""
 	}
 	if !uuidPattern.MatchString(instance) {
 		instance = ""
 	}
-	_ = s.tx(context.WithoutCancel(ctx), func(tx pgx.Tx) error {
-		return audit(ctx, tx, s.cfg.InstanceID, "", "federation.invitation.rejected", invitation, "denied", map[string]any{"reason": reason, "instance_id": instance})
+	ctx = context.WithoutCancel(ctx)
+	_ = s.tx(ctx, func(tx pgx.Tx) error {
+		return audit(ctx, tx, s.cfg.InstanceID, "", "federation.invitation.rejected", invitation, "denied", map[string]any{"reason": reason, "instance_id": instance, "suppressed": suppressed})
 	})
 }
 

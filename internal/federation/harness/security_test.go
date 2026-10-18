@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 )
 
 // found founds federation "lab" on alpha and joins the other instances.
@@ -133,5 +135,57 @@ func TestFederationSnapshotResync(t *testing.T) {
 	}
 	if beta.policyGeneration() != 2 || beta.policyView().Status.Hash != alpha.policyView().Status.Hash {
 		t.Fatalf("beta policy did not recover: %+v", beta.policyView().Status)
+	}
+}
+
+// An invalid invitation is refused without waiting for the federation state
+// lock, and a stream of refusals produces throttled audit records.
+func TestFederationJoinRejectsBeforeLocking(t *testing.T) {
+	ctx := context.Background()
+	alpha := newInstance(t, "alpha")
+	founded := found(t, alpha)
+	bogus := func() error {
+		var id string
+		_ = alpha.pool.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&id)
+		var inst string
+		_ = alpha.pool.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&inst)
+		body, _ := json.Marshal(cloneJoinRequest(t, id+".not-the-secret-not-the-secret", inst))
+		cctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+		_, err := (peer.Client{}).DoPinned(cctx, alpha.fedURL, founded.CASHA256, "POST", "/federation/v1/join", body)
+		return err
+	}
+	// Hold the federation state lock (as a long federation change would).
+	tx, err := alpha.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `SELECT 1 FROM federation_state WHERE instance_id=$1 FOR UPDATE`, alpha.id); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	err = bogus()
+	_ = tx.Rollback(ctx)
+	if peerCode(err) != "invitation_invalid" || time.Since(start) > 2*time.Second {
+		t.Fatalf("bogus join while the state is locked: %v after %v", err, time.Since(start))
+	}
+	for range 7 {
+		if err := bogus(); peerCode(err) != "invitation_invalid" {
+			t.Fatalf("bogus join: %v", err)
+		}
+	}
+	if n := alpha.auditCount("federation.invitation.rejected", "denied"); n != 1 {
+		t.Fatalf("rejection audit records for 8 refusals within the window: %d, want 1", n)
+	}
+	// Beyond the per-IP burst the endpoint answers 429 before any work.
+	limited := false
+	for range 2 * peer.DefaultPublicBurst {
+		if peerCode(bogus()) == "rate_limited" {
+			limited = true
+			break
+		}
+	}
+	if !limited {
+		t.Fatal("join endpoint not rate-limited")
 	}
 }

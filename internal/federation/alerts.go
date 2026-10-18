@@ -160,4 +160,5 @@ func (s *Service) EvaluateAlerts(ctx context.Context) ([]Alert, error) {
 // assertionMetrics counts assertion outcomes for ant_federation_assertions_total.
 type assertionMetrics struct {
 	accepted, rejected, issued atomic.Int64
+	joinRejected               atomic.Int64
 }

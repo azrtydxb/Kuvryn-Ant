@@ -103,8 +103,20 @@ type Handler struct {
 	Logger *slog.Logger
 	// Reject is called for every refused request (for audit and metrics).
 	Reject func(r *http.Request, member, reason string)
-	nonces nonceCache
+	// PublicRate and PublicBurst limit unauthenticated requests (public
+	// routes) per remote IP; zero selects DefaultPublicRate/DefaultPublicBurst.
+	PublicRate  float64
+	PublicBurst int
+	nonces      nonceCache
+	public      keyedLimiter
 }
+
+// Default per-IP limit of unauthenticated peer requests (the join endpoint):
+// a burst of 10, then one request every 6 seconds.
+const (
+	DefaultPublicRate  = 1.0 / 6
+	DefaultPublicBurst = 10
+)
 
 func (h *Handler) refuse(w http.ResponseWriter, r *http.Request, status int, member, reason string) {
 	if h.Reject != nil {
@@ -122,6 +134,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.Public[r.Method+" "+r.URL.Path] {
+		rate, burst := h.PublicRate, h.PublicBurst
+		if rate <= 0 || burst <= 0 {
+			rate, burst = DefaultPublicRate, DefaultPublicBurst
+		}
+		if !h.public.allow(remoteIP(r), h.Trust.Now(), rate, burst) {
+			w.Header().Set("Retry-After", "6")
+			h.refuse(w, r, http.StatusTooManyRequests, "", "rate_limited")
+			return
+		}
 		r.Body = http.MaxBytesReader(w, r.Body, MaxBody)
 		h.Mux.ServeHTTP(w, r)
 		return

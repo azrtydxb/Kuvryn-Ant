@@ -35,6 +35,10 @@ Members poll the authority every 30 seconds and receive signed nudges after each
 
 Alert when health is `degraded` for more than 15 minutes (critical after 24 hours). Audit events: `federation.created`, `federation.joined`, `federation.left`, `federation.member.added|left|removed|suspended|resumed`, `federation.invitation.created|revoked|rejected`, `federation.document.published|applied|rejected|resynced`, `federation.peer.rejected`, `federation.certificate.issued|renewed`, `federation.recovery_key.rotated`. Rejections are recorded with result `denied`.
 
+## Security controls
+
+- **Join endpoint.** `POST /federation/v1/join` is the only unauthenticated peer route. It is rate-limited per remote IP (burst 10, then one request every 6 seconds; `429 rate_limited`), and the invitation is verified before the authority takes its federation state lock, so invalid invitations cannot stall federation changes. Refusals count in `ant_federation_join_rejected_total`; `federation.invitation.rejected` audit records are throttled to one per reason every 10 seconds and carry the number of suppressed refusals (`suppressed`).
+
 Requirements: NTP on every member (signed requests are rejected beyond 60 seconds of clock skew), and a reachable federation port between members. Member certificates last 30 days and renew automatically after two thirds of their lifetime.
 
 ## Shared identity and policy (P2-M2)

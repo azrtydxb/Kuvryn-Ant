@@ -102,6 +102,8 @@ type Service struct {
 	nudge  chan struct{}
 	logMu  sync.Mutex
 	logged map[string]time.Time
+	// suppressed counts throttled events per key (guarded by logMu).
+	suppressed map[string]int
 	// policyCache holds the applied policy document for sign-in and
 	// assertion lookups; nil means reload from the database.
 	policyCache atomic.Pointer[PolicyDocument]
@@ -594,4 +596,24 @@ func (t *trust) authorityID() string {
 		return ""
 	}
 	return t.doc.Authority.InstanceID
+}
+
+// throttle allows one event per key and window. It returns whether this
+// event may be recorded and how many were suppressed since the last one.
+// Keys must come from a bounded set (reasons, member IDs).
+func (s *Service) throttle(key string, window time.Duration) (bool, int) {
+	now := s.cfg.Now()
+	s.logMu.Lock()
+	defer s.logMu.Unlock()
+	if s.suppressed == nil {
+		s.suppressed = map[string]int{}
+	}
+	if last, ok := s.logged[key]; ok && now.Sub(last) < window {
+		s.suppressed[key]++
+		return false, 0
+	}
+	s.logged[key] = now
+	n := s.suppressed[key]
+	delete(s.suppressed, key)
+	return true, n
 }
