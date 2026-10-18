@@ -561,6 +561,13 @@ func (s *Service) commitMaterialized(ctx context.Context, p identity.Principal, 
 	if size != r.Info.Size {
 		return Record{}, blob.ErrIntegrity
 	}
+	store, serr := s.Storage(ctx, domain)
+	if serr != nil {
+		return Record{}, ErrUnavailable
+	}
+	if err = requireBlobBytes(ctx, store, r.Info); err != nil {
+		return Record{}, err
+	}
 	if err = tx.QueryRow(ctx, `INSERT INTO assets(instance_id,version_id,asset_key,blob_id,media_type,provenance) VALUES($1,$2,$3,$4,$5,jsonb_build_object('source_id',$6::text,'principal_id',$7::text,'feed_id',$8::text,'origin','remote')) RETURNING id::text`, p.InstanceID, version, r.AssetKey, blobID, r.MediaType, source, p.PrincipalID, r.FeedID).Scan(&result.ID); err != nil {
 		return Record{}, ErrUnavailable
 	}
