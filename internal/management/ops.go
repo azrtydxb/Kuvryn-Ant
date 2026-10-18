@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -70,6 +71,8 @@ type OpsDeps struct {
 	Retention func(instance string) *retention.Service
 	// StorageMigrator returns the storage migration service for the serving instance, or nil.
 	StorageMigrator func(instance string) *storage.Migrator
+	// Diagnostics writes the redacted support bundle (tar.gz) to w.
+	Diagnostics func(ctx context.Context, w io.Writer) error
 }
 
 type opsHandlers struct {
@@ -133,6 +136,7 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"POST /api/v1/retention/runs":                   h.startRetentionRun,
 		"GET /api/v1/retention/runs/{id}":               h.getRetentionRun,
 		"GET /api/v1/retention/integrity-findings":      h.integrityFindings,
+		"GET /api/v1/diagnostics":                       h.getDiagnostics,
 		"GET /api/v1/audit-sink":                        h.getAuditSink,
 		"PUT /api/v1/audit-sink":                        h.putAuditSink,
 		"DELETE /api/v1/audit-sink":                     h.deleteAuditSink,

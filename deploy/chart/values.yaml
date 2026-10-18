@@ -55,6 +55,21 @@ auth:
 # Additional plain (non-secret) environment variables, e.g. ANT_OCI_DEFAULT_FEED,
 # ANT_OCI_MIRROR_MAP or ANT_GC_* settings. Names must start with ANT_.
 extraEnv: {}
+# OpenTelemetry tracing (off by default). The endpoint is a plain URL, never a
+# credential: put OTLP auth headers in a Secret and reference them through a
+# platform mechanism, not here. See docs/operations/observability.md.
+observability:
+  tracing:
+    enabled: false
+    endpoint: "" # e.g. http://otel-collector.observability:4318 (http/protobuf) or :4317 (grpc)
+    protocol: http/protobuf # http/protobuf | grpc
+    serviceName: kuvryn-ant
+    sampleRatio: 1 # 0 < ratio <= 1, parent-based
+# audit_events retention. Events a configured audit sink has not exported yet
+# are never purged. "0" keeps events forever.
+auditRetention:
+  retain: 9600h # 400 days
+  purgeInterval: 1h
 service:
   port: 8080
 ingress:

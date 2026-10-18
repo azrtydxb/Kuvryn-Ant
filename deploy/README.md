@@ -92,6 +92,13 @@ instance, preserve PostgreSQL, the root key, blobs and staging PVC; skip bootstr
 Upgrade migrations are forward-only. Snapshot/back up a consistent PostgreSQL/blob
 reference set before upgrades; an image rollback does not undo migrations.
 
+Operations guides: [upgrade and rollback](../docs/operations/upgrade.md),
+[observability (metrics, tracing, logs, diagnostics, audit retention, metadata
+repair)](../docs/operations/observability.md) and
+[backup and restore](../docs/operations/backup-restore.md). Tracing is enabled
+with `observability.tracing.*` chart values; audit retention with
+`auditRetention.*`.
+
 ## MinIO / other S3 endpoints
 
 Use `storage.backend: s3`, the HTTPS object API endpoint, configured region, existing

@@ -93,6 +93,24 @@ spec:
               value: /run/ant/s3-ca/ca.crt
             {{- end }}
             {{- end }}
+            {{- if .Values.observability.tracing.enabled }}
+            - name: ANT_OTEL_ENABLED
+              value: "true"
+            {{- if .Values.observability.tracing.endpoint }}
+            - name: ANT_OTEL_ENDPOINT
+              value: {{ .Values.observability.tracing.endpoint | quote }}
+            {{- end }}
+            - name: ANT_OTEL_PROTOCOL
+              value: {{ .Values.observability.tracing.protocol | quote }}
+            - name: ANT_OTEL_SERVICE_NAME
+              value: {{ .Values.observability.tracing.serviceName | quote }}
+            - name: ANT_OTEL_SAMPLE_RATIO
+              value: {{ .Values.observability.tracing.sampleRatio | quote }}
+            {{- end }}
+            - name: ANT_AUDIT_RETENTION
+              value: {{ .Values.auditRetention.retain | quote }}
+            - name: ANT_AUDIT_PURGE_INTERVAL
+              value: {{ .Values.auditRetention.purgeInterval | quote }}
             {{- range $name, $value := .Values.extraEnv }}
             {{- if not (hasPrefix "ANT_" $name) }}{{ fail "extraEnv names must start with ANT_" }}{{ end }}
             - name: {{ $name | quote }}

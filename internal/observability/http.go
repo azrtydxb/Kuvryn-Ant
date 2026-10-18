@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 )
 
 var bounds = [...]float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
@@ -109,7 +111,11 @@ func (h *HTTP) Wrap(logger *slog.Logger, resolve func(*http.Request) string, nex
 			// Health/scrape success traffic is intentionally silent. Failure logs retain
 			// only fixed labels and the generated correlation ID, never caller input.
 			if logger != nil && (status >= 400 || (route != "/health/live" && route != "/health/ready" && route != "/metrics")) {
-				logger.Info("HTTP request completed", "request_id", w.Header().Get("X-Request-ID"), "route", route, "method", verb, "status", status, "duration_seconds", elapsed)
+				args := []any{"request_id", w.Header().Get("X-Request-ID"), "route", route, "method", verb, "status", status, "duration_seconds", elapsed}
+				if id := tracing.TraceID(r.Context()); id != "" {
+					args = append(args, "trace_id", id)
+				}
+				logger.InfoContext(r.Context(), "HTTP request completed", args...)
 			}
 			if failure != nil {
 				panic(failure)

@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"io"
 	"net/http"
 	"os"
@@ -219,13 +220,28 @@ type limited struct {
 	slots chan struct{}
 }
 
+func (s *limited) Stat(ctx context.Context, d blob.Digest) (info blob.Info, err error) {
+	ctx, span := tracing.Start(ctx, "blob stat")
+	defer func() { tracing.End(span, err) }()
+	return s.Store.Stat(ctx, d)
+}
+
+// OpenRange traces only opening the object; the caller streams the body.
+func (s *limited) OpenRange(ctx context.Context, d blob.Digest, offset, length int64) (rc io.ReadCloser, err error) {
+	ctx, span := tracing.Start(ctx, "blob open")
+	defer func() { tracing.End(span, err) }()
+	return s.Store.OpenRange(ctx, d, offset, length)
+}
+
 func (s *limited) Stage(ctx context.Context) (blob.Upload, error) {
 	select {
 	case s.slots <- struct{}{}:
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+	_, span := tracing.Start(ctx, "blob stage")
 	u, err := s.Store.Stage(ctx)
+	tracing.End(span, err)
 	if err != nil {
 		<-s.slots
 		return nil, err
@@ -234,7 +250,9 @@ func (s *limited) Stage(ctx context.Context) (blob.Upload, error) {
 }
 
 // Delete and List expose optional retention capabilities of the wrapped store.
-func (s *limited) Delete(ctx context.Context, d blob.Digest) error {
+func (s *limited) Delete(ctx context.Context, d blob.Digest) (err error) {
+	ctx, span := tracing.Start(ctx, "blob delete")
+	defer func() { tracing.End(span, err) }()
 	if x, ok := s.Store.(blob.Deleter); ok {
 		return x.Delete(ctx, d)
 	}
@@ -273,7 +291,9 @@ type resumableUpload struct {
 
 func (u *resumableUpload) Offset() int64 { return u.offset() }
 
-func (s *limited) List(ctx context.Context, after blob.Digest, limit int) ([]blob.Object, error) {
+func (s *limited) List(ctx context.Context, after blob.Digest, limit int) (_ []blob.Object, err error) {
+	ctx, span := tracing.Start(ctx, "blob list")
+	defer func() { tracing.End(span, err) }()
 	if x, ok := s.Store.(blob.Lister); ok {
 		return x.List(ctx, after, limit)
 	}
@@ -287,7 +307,9 @@ type upload struct {
 }
 
 func (u *upload) Finalize(ctx context.Context, i blob.Info) (blob.Info, error) {
+	_, span := tracing.Start(ctx, "blob finalize")
 	result, err := u.Upload.Finalize(ctx, i)
+	tracing.End(span, err)
 	// Both configured backends close their upload on every Finalize outcome.
 	// Releasing only on success would retain admission after integrity failures.
 	u.once.Do(u.release)
