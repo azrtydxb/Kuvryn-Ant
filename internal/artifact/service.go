@@ -119,40 +119,89 @@ func (s *Service) authorize(ctx context.Context, p identity.Principal, r Publica
 // A metadata failure can leave unreferenced bytes, never a visible partial asset.
 // Byte-identical retries return the original asset without another success event.
 func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publication, body io.Reader) (Record, error) {
-	if s == nil || s.DB == nil || s.Lease == nil || s.Router == nil || s.Storage == nil || body == nil || !valid(r) || p.PrincipalID == "" {
+	if body == nil {
 		return Record{}, ErrInput
+	}
+	rec, _, err := s.publish(ctx, p, r, body, nil)
+	return rec, err
+}
+
+// PublishStaged publishes bytes already written to an upload obtained from
+// ResumableStage (same source as r.ExpectedSource, which is required). The
+// publication Info must describe the complete staged content. consumed reports
+// whether the upload was finalized or aborted: false means the call failed
+// before touching it (authorization, routing, availability) and the caller still
+// owns it; true means it is gone and the session cannot continue.
+func (s *Service) PublishStaged(ctx context.Context, p identity.Principal, r Publication, staged blob.Upload) (rec Record, consumed bool, err error) {
+	if staged == nil || r.ExpectedSource == "" {
+		return Record{}, false, ErrInput
+	}
+	return s.publish(ctx, p, r, nil, staged)
+}
+
+// ResumableStage starts or resumes the persistent staging upload named id on the
+// store of a local source's deduplication domain. The error wraps
+// blob.CapabilityError when the active backend cannot resume uploads.
+func (s *Service) ResumableStage(ctx context.Context, instanceID, sourceID, id string) (blob.ResumableUpload, error) {
+	if s == nil || s.DB == nil || s.Storage == nil {
+		return nil, ErrInput
+	}
+	var domain string
+	qctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	err := s.DB.QueryRow(qctx, `SELECT id::text FROM dedup_domains WHERE instance_id=$1 AND name='source:'||$2::text`, instanceID, sourceID).Scan(&domain)
+	cancel()
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, ErrUnavailable
+	}
+	store, err := s.Storage(ctx, domain)
+	if err != nil || store == nil {
+		return nil, ErrUnavailable
+	}
+	stager, ok := store.(blob.ResumableStager)
+	if !ok {
+		return nil, &blob.CapabilityError{Feature: "resumable uploads"}
+	}
+	return stager.StageResumable(ctx, id)
+}
+
+func (s *Service) publish(ctx context.Context, p identity.Principal, r Publication, body io.Reader, staged blob.Upload) (Record, bool, error) {
+	if s == nil || s.DB == nil || s.Lease == nil || s.Router == nil || s.Storage == nil || !valid(r) || p.PrincipalID == "" {
+		return Record{}, false, ErrInput
 	}
 	var initialRevision int64
 	initialCtx, initialCancel := context.WithTimeout(ctx, 5*time.Second)
 	initialErr := s.DB.QueryRow(initialCtx, "SELECT revision FROM feeds WHERE instance_id=$1 AND id=$2", p.InstanceID, r.FeedID).Scan(&initialRevision)
 	initialCancel()
 	if errors.Is(initialErr, pgx.ErrNoRows) {
-		return Record{}, ErrNotFound
+		return Record{}, false, ErrNotFound
 	}
 	if initialErr != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, false, ErrUnavailable
 	}
 	router, err := s.Router(ctx, r.FeedID)
 	if err != nil || router == nil {
-		return Record{}, ErrUnavailable
+		return Record{}, false, ErrUnavailable
 	}
 	decision, err := router.Resolve(routing.Request{Namespace: r.Namespace, Package: r.Coordinate, Path: "/" + r.AssetKey, Principal: p.PrincipalID})
 	if err != nil {
-		return Record{}, ErrInput
+		return Record{}, false, ErrInput
 	}
 	if !decision.Allowed {
-		return Record{}, ErrDenied
+		return Record{}, false, ErrDenied
 	}
 	source := decision.TargetID
 	r.MatchedRule = decision.RuleID
 	if r.ExpectedSource != "" && r.ExpectedSource != source {
-		return Record{}, ErrConflict
+		return Record{}, false, ErrConflict
 	}
 	if _, err = s.Prepare(ctx, p, r.FeedID, r.Namespace, r.Coordinate, r.AssetKey); err != nil {
-		return Record{}, err
+		return Record{}, false, err
 	}
 	if err = s.authorize(ctx, p, r, source); err != nil {
-		return Record{}, err
+		return Record{}, false, err
 	}
 	// Check the configured relationship before reading any body. Recheck while
 	// holding the feed row at commit so concurrent detach cannot authorize a write.
@@ -162,47 +211,56 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 	err = s.DB.QueryRow(checkCtx, `SELECT d.id::text,f.revision FROM feeds f JOIN feed_sources fs ON fs.feed_id=f.id AND fs.instance_id=f.instance_id JOIN sources s ON s.id=fs.source_id AND s.instance_id=f.instance_id JOIN dedup_domains d ON d.instance_id=f.instance_id AND d.name='source:'||s.id::text WHERE f.instance_id=$1 AND f.id=$2 AND s.id=$3 AND s.kind='local' AND s.format=f.format`, p.InstanceID, r.FeedID, source).Scan(&domain, &feedRevision)
 	cancel()
 	if errors.Is(err, pgx.ErrNoRows) {
-		return Record{}, ErrNotFound
+		return Record{}, false, ErrNotFound
 	}
 	if err != nil {
-		return Record{}, ErrUnavailable
+		return Record{}, false, ErrUnavailable
 	}
 	if feedRevision != initialRevision {
-		return Record{}, ErrConflict
+		return Record{}, false, ErrConflict
 	}
 	store, err := s.Storage(ctx, domain)
 	if err != nil || store == nil {
-		return Record{}, ErrUnavailable
+		return Record{}, false, ErrUnavailable
 	}
-	upload, err := store.Stage(ctx)
-	if err != nil {
-		return Record{}, err
+	var upload blob.Upload
+	consumed := false
+	if staged != nil {
+		upload = staged
+	} else {
+		upload, err = store.Stage(ctx)
+		if err != nil {
+			return Record{}, false, err
+		}
+		defer upload.Abort()
+		// Copy at most the declared content plus one byte, detecting overlong input
+		// without accepting an unbounded stream. LimitReader cannot overflow at MaxInt64.
+		remaining := r.Info.Size
+		buffer := make([]byte, 64*1024)
+		n, err := io.CopyBuffer(upload, io.LimitReader(body, remaining), buffer)
+		if err != nil {
+			return Record{}, false, err
+		}
+		if n != remaining {
+			return Record{}, false, blob.ErrIntegrity
+		}
+		var extra [1]byte
+		nExtra, extraErr := io.ReadFull(body, extra[:])
+		if nExtra != 0 {
+			return Record{}, false, blob.ErrIntegrity
+		}
+		if extraErr != io.EOF {
+			return Record{}, false, extraErr
+		}
 	}
-	defer upload.Abort()
-	// Copy at most the declared content plus one byte, detecting overlong input
-	// without accepting an unbounded stream. LimitReader cannot overflow at MaxInt64.
-	remaining := r.Info.Size
-	buffer := make([]byte, 64*1024)
-	n, err := io.CopyBuffer(upload, io.LimitReader(body, remaining), buffer)
-	if err != nil {
-		return Record{}, err
-	}
-	if n != remaining {
-		return Record{}, blob.ErrIntegrity
-	}
-	var extra [1]byte
-	nExtra, extraErr := io.ReadFull(body, extra[:])
-	if nExtra != 0 {
-		return Record{}, blob.ErrIntegrity
-	}
-	if extraErr != io.EOF {
-		return Record{}, extraErr
+	if staged != nil {
+		consumed = true // Finalize always releases the staged upload.
 	}
 	if _, err = upload.Finalize(ctx, r.Info); err != nil {
-		return Record{}, err
+		return Record{}, consumed, err
 	}
 	if err = s.authorize(ctx, p, r, source); err != nil {
-		return Record{}, err
+		return Record{}, consumed, err
 	}
 	// Concurrent publishes (a multi-platform image pushes several blobs at once)
 	// contend on the feed/source rows and on foreign-key share locks taken by
@@ -216,7 +274,7 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 		}
 		time.Sleep(time.Duration(20*(attempt+1)) * time.Millisecond)
 	}
-	return result, err
+	return result, consumed, err
 }
 
 // dbErr reports a database failure as ErrUnavailable while keeping the cause

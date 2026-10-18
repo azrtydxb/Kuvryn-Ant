@@ -156,8 +156,8 @@ func (r *Registry) upload(w http.ResponseWriter, req *http.Request, p identity.P
 	defer rollback(tx)
 	var offset int64
 	var target, state string
-	var completed *string
-	err = tx.QueryRow(lockCtx, `SELECT offset_bytes,source_id,state,digest FROM oci_uploads WHERE id=$1 AND instance_id=$2 AND principal_id=$3 AND feed_id=$4 AND repository=$5 AND upload_root=$6 AND expires_at>clock_timestamp() FOR UPDATE`, id, p.InstanceID, p.PrincipalID, rep.feed, rep.name, r.rootID).Scan(&offset, &target, &state, &completed)
+	var completed, staging *string
+	err = tx.QueryRow(lockCtx, `SELECT offset_bytes,source_id,state,digest,staging FROM oci_uploads WHERE id=$1 AND instance_id=$2 AND principal_id=$3 AND feed_id=$4 AND repository=$5 AND upload_root=$6 AND expires_at>clock_timestamp() FOR UPDATE`, id, p.InstanceID, p.PrincipalID, rep.feed, rep.name, r.rootID).Scan(&offset, &target, &state, &completed, &staging)
 	lockCancel()
 	if errors.Is(err, pgx.ErrNoRows) {
 		failure(w, 404, "BLOB_UPLOAD_UNKNOWN", "upload not found")
@@ -197,9 +197,29 @@ func (r *Registry) upload(w http.ResponseWriter, req *http.Request, p identity.P
 			failService(w, err)
 			return
 		}
-		_ = r.root.Remove(id)
-		_ = r.syncRoot()
+		if staging != nil && *staging == "resumable" {
+			r.abortResumable(ctx, p.InstanceID, source, id)
+		} else {
+			_ = r.root.Remove(id)
+			_ = r.syncRoot()
+		}
 		w.WriteHeader(204)
+		return
+	}
+	if staging == nil && offset == 0 {
+		// First bytes of a new session: stage in the store's resumable
+		// storage when it supports it, otherwise in the local session file.
+		if ru, rerr := r.service.ResumableStage(ctx, p.InstanceID, source, id); rerr == nil {
+			r.uploadResumable(ctx, w, req, tx, p, rep, id, source, offset, ru)
+			return
+		}
+	} else if staging != nil && *staging == "resumable" {
+		ru, rerr := r.service.ResumableStage(ctx, p.InstanceID, source, id)
+		if rerr != nil {
+			failure(w, 503, "UNKNOWN", "upload staging unavailable")
+			return
+		}
+		r.uploadResumable(ctx, w, req, tx, p, rep, id, source, offset, ru)
 		return
 	}
 	digest := blob.Digest("")
@@ -304,7 +324,7 @@ func (r *Registry) upload(w http.ResponseWriter, req *http.Request, p identity.P
 			failService(w, err)
 			return
 		}
-		if _, err = execute(ctx, tx, "UPDATE oci_uploads SET offset_bytes=$2 WHERE id=$1", id, offset+n); err != nil {
+		if _, err = execute(ctx, tx, "UPDATE oci_uploads SET offset_bytes=$2,staging=COALESCE(staging,'file') WHERE id=$1", id, offset+n); err != nil {
 			failService(w, err)
 			return
 		}
@@ -335,7 +355,7 @@ func (r *Registry) upload(w http.ResponseWriter, req *http.Request, p identity.P
 		failService(w, err)
 		return
 	}
-	if _, err = execute(ctx, tx, "UPDATE oci_uploads SET state='complete',digest=$2,offset_bytes=$3 WHERE id=$1", id, string(digest), offset+n); err != nil {
+	if _, err = execute(ctx, tx, "UPDATE oci_uploads SET state='complete',digest=$2,offset_bytes=$3,staging=COALESCE(staging,'file') WHERE id=$1", id, string(digest), offset+n); err != nil {
 		failService(w, err)
 		return
 	}
@@ -403,18 +423,23 @@ func (r *Registry) ReapExpired(ctx context.Context, limit int) (int, error) {
 		return 0, err
 	}
 	defer rollback(tx)
-	rows, err := tx.Query(ctx, `SELECT id FROM oci_uploads WHERE expires_at<=clock_timestamp() AND instance_id=$2 AND upload_root=$3 ORDER BY expires_at FOR UPDATE SKIP LOCKED LIMIT $1`, limit, r.instance, r.rootID)
+	rows, err := tx.Query(ctx, `SELECT id,source_id,staging FROM oci_uploads WHERE expires_at<=clock_timestamp() AND instance_id=$2 AND upload_root=$3 ORDER BY expires_at FOR UPDATE SKIP LOCKED LIMIT $1`, limit, r.instance, r.rootID)
 	if err != nil {
 		return 0, err
 	}
 	var ids []string
+	resumable := map[string]string{} // id -> source for resumable staging
 	for rows.Next() {
-		var id string
-		if err = rows.Scan(&id); err != nil {
+		var id, source string
+		var staging *string
+		if err = rows.Scan(&id, &source, &staging); err != nil {
 			rows.Close()
 			return 0, err
 		}
 		ids = append(ids, id)
+		if staging != nil && *staging == "resumable" {
+			resumable[id] = source
+		}
 	}
 	err = rows.Err()
 	rows.Close()
@@ -422,9 +447,13 @@ func (r *Registry) ReapExpired(ctx context.Context, limit int) (int, error) {
 		return 0, err
 	}
 	for _, id := range ids {
+		if source, ok := resumable[id]; ok {
+			r.abortResumable(ctx, r.instance, source, id)
+		}
 		if err = r.root.Remove(id); err != nil && !errors.Is(err, os.ErrNotExist) {
 			return 0, err
 		}
+		_ = r.root.Remove(id + ".tmp")
 		if _, err = execute(ctx, tx, `DELETE FROM oci_uploads WHERE id=$1`, id); err != nil {
 			return 0, err
 		}
