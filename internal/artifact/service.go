@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -36,6 +37,13 @@ type Service struct {
 	Lease   func() ownership.Lease
 	Router  func(context.Context, string) (*routing.Router, error)
 	Storage func(context.Context, string) (blob.Store, error)
+	// Remote enables pull-through reads (see remote.go). Nil disables them.
+	Remote RemoteBackend
+	// MaxMaterializeBytes bounds one cached upstream artifact; zero means 8 GiB.
+	MaxMaterializeBytes int64
+
+	flightMu sync.Mutex
+	flights  map[string]*flight
 }
 type Reference struct {
 	Version, AssetKey string
@@ -229,7 +237,7 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 	if err != nil {
 		return Record{}, ErrUnavailable
 	}
-	result, err := commitAsset(commitCtx, tx, p, r, source, domain, component, version, true)
+	result, err := commitAsset(commitCtx, tx, store, p, r, source, domain, component, version, true)
 	if err != nil {
 		return Record{}, err
 	}
@@ -240,7 +248,7 @@ func (s *Service) Publish(ctx context.Context, p identity.Principal, r Publicati
 }
 
 // commitAsset never commits: its caller owns atomic visibility and rollback.
-func commitAsset(commitCtx context.Context, tx pgx.Tx, p identity.Principal, r Publication, source, domain, component, version string, checkReferences bool) (Record, error) {
+func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p identity.Principal, r Publication, source, domain, component, version string, checkReferences bool) (Record, error) {
 	var err error
 	// Manifest/index closures are checked in the same transaction as publication.
 	if checkReferences {
@@ -312,6 +320,9 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, p identity.Principal, r P
 	if size != r.Info.Size {
 		return Record{}, blob.ErrIntegrity
 	}
+	if err = requireBlobBytes(commitCtx, store, r.Info); err != nil {
+		return Record{}, err
+	}
 	err = tx.QueryRow(commitCtx, `INSERT INTO assets(instance_id,version_id,asset_key,blob_id,media_type,provenance) VALUES($1,$2,$3,$4,$5,jsonb_build_object('source_id',$6::text,'principal_id',$7::text,'feed_id',$8::text)) RETURNING id::text`, p.InstanceID, version, r.AssetKey, blobID, r.MediaType, source, p.PrincipalID, r.FeedID).Scan(&result.ID)
 	if err != nil {
 		return Record{}, ErrUnavailable
@@ -334,4 +345,19 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, p identity.Principal, r P
 		return Record{}, ErrUnavailable
 	}
 	return result, nil
+}
+
+// requireBlobBytes verifies, inside the commit transaction and after the blobs
+// row has been inserted or locked, that the bytes still exist. The garbage
+// collector deletes bytes only while holding that row's lock, so once this check
+// passes the sweep cannot remove the bytes before the metadata commits.
+func requireBlobBytes(ctx context.Context, store blob.Store, info blob.Info) error {
+	if store == nil {
+		return ErrUnavailable
+	}
+	got, err := store.Stat(ctx, info.Digest)
+	if err != nil || got.Size != info.Size {
+		return ErrUnavailable
+	}
+	return nil
 }

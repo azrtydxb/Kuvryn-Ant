@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -29,6 +30,42 @@ type versioningXML struct {
 }
 
 func (r *Repository) metadata(w http.ResponseWriter, req *http.Request, p identity.Principal, l location, feed string) {
+	ctx, cancel := context.WithTimeout(req.Context(), 15*time.Second)
+	defer cancel()
+	// Remote-owned (or unowned) artifacts: the upstream maven-metadata.xml and its
+	// checksum sidecars are authoritative and carry no absolute URLs, so they are
+	// proxied verbatim through the cached metadata path. Versions already cached
+	// locally never replace the upstream version list; they only answer when the
+	// upstream is unreachable.
+	doc, remoteErr := r.service.RemoteMetadata(ctx, p, artifact.Publication{FeedID: feed, Namespace: l.group, Coordinate: l.group + ":" + l.name}, artifact.Origin{Path: artifact.EscapePath(l.key)})
+	switch {
+	case remoteErr == nil:
+		w.Header().Set("Content-Type", doc.MediaType)
+		if doc.MediaType == "" {
+			w.Header().Set("Content-Type", "application/xml")
+		}
+		if doc.Stale {
+			for k, v := range artifact.StaleHeaders() {
+				w.Header().Set(k, v)
+			}
+		}
+		w.Header().Set("ETag", `"sha256:`+string(info(doc.Body).Digest)+`"`)
+		http.ServeContent(w, req, "", time.Time{}, bytes.NewReader(doc.Body))
+		return
+	case errors.Is(remoteErr, artifact.ErrNotFound):
+		remoteErr = nil
+	case !errors.Is(remoteErr, artifact.ErrUnavailable):
+		fail(w, remoteErr)
+		return
+	default:
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
+	r.localMetadata(w, req, p, l, feed, remoteErr)
+}
+
+// localMetadata composes maven-metadata.xml from the owning source's stored
+// versions. upstreamErr is non-nil when an upstream outage forced this path.
+func (r *Repository) localMetadata(w http.ResponseWriter, req *http.Request, p identity.Principal, l location, feed string, upstreamErr error) {
 	ctx, cancel := context.WithTimeout(req.Context(), 15*time.Second)
 	defer cancel()
 	// One owner, one statement snapshot; never combine sources or fall back.
@@ -61,6 +98,10 @@ func (r *Repository) metadata(w http.ResponseWriter, req *http.Request, p identi
 		return
 	}
 	if len(versions) == 0 {
+		if upstreamErr != nil {
+			fail(w, upstreamErr)
+			return
+		}
 		fail(w, artifact.ErrNotFound)
 		return
 	}

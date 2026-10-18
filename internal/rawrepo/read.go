@@ -12,6 +12,21 @@ import (
 
 func (r *Repository) get(w http.ResponseWriter, req *http.Request, p identity.Principal, pub artifact.Publication) {
 	rec, err := r.service.Lookup(req.Context(), p, pub)
+	if errors.Is(err, artifact.ErrNotFound) {
+		// Pull-through: each normalized raw path is its own ownership unit and
+		// maps 1:1 onto the same path under the remote source origin.
+		stream, retry, through := r.service.PullThrough(req.Context(), p, pub, artifact.Origin{Path: artifact.EscapePath(pub.AssetKey)})
+		switch {
+		case through != nil:
+			err = through
+		case retry:
+			rec, err = r.service.Lookup(req.Context(), p, pub)
+		default:
+			w.Header().Set("Content-Disposition", "attachment")
+			stream.ServeStream(w, req.Method)
+			return
+		}
+	}
 	if err != nil {
 		fail(w, err)
 		return

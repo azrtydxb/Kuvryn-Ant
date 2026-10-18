@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -45,6 +47,47 @@ func latest(versions []string) string {
 	return pseudo
 }
 func (s *Proxy) index(w http.ResponseWriter, r *http.Request, p identity.Principal, target route, feed string) {
+	// Version lists and @latest are mutable upstream documents without embedded
+	// URLs. They are proxied through the cached metadata path (TTL, negative
+	// cache, stale-if-error). Locally cached versions only answer, as a degraded
+	// offline view, when the upstream cannot.
+	escaped, err := moduleEscape(target.module, "")
+	if err != nil {
+		fail(w, artifact.ErrInput)
+		return
+	}
+	origin := artifact.Origin{Path: escaped.path + "/@v/list", Representation: "text/plain"}
+	contentType := "text/plain; charset=utf-8"
+	if target.kind == "latest" {
+		origin = artifact.Origin{Path: escaped.path + "/@latest", Representation: "application/json"}
+		contentType = "application/json"
+	}
+	doc, remoteErr := s.service.RemoteMetadata(r.Context(), p, artifact.Publication{FeedID: feed, Namespace: path.Dir(target.module), Coordinate: target.module}, origin)
+	switch {
+	case remoteErr == nil:
+		if doc.Stale {
+			for k, v := range artifact.StaleHeaders() {
+				w.Header().Set(k, v)
+			}
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Length", strconv.Itoa(len(doc.Body)))
+		w.WriteHeader(200)
+		if r.Method != "HEAD" {
+			_, _ = w.Write(doc.Body)
+		}
+		return
+	case errors.Is(remoteErr, artifact.ErrNotFound):
+		remoteErr = nil
+	case !errors.Is(remoteErr, artifact.ErrUnavailable):
+		fail(w, remoteErr)
+		return
+	default:
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
+	s.localIndex(w, r, p, target, feed, remoteErr)
+}
+func (s *Proxy) localIndex(w http.ResponseWriter, r *http.Request, p identity.Principal, target route, feed string, upstreamErr error) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	policy, err := (identity.Roles{DB: s.db}).Resolve(ctx, p)
@@ -66,6 +109,9 @@ func (s *Proxy) index(w http.ResponseWriter, r *http.Request, p identity.Princip
 	err = tx.QueryRow(ctx, `SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1`, p.InstanceID, feed, target.module).Scan(&component, &source)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = artifact.ErrNotFound
+		if upstreamErr != nil {
+			err = upstreamErr
+		}
 	}
 	if err != nil {
 		fail(w, err)

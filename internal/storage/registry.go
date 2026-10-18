@@ -160,6 +160,20 @@ func (s *limited) Stage(ctx context.Context) (blob.Upload, error) {
 	return &upload{Upload: u, release: func() { <-s.slots }}, nil
 }
 
+// Delete and List expose optional retention capabilities of the wrapped store.
+func (s *limited) Delete(ctx context.Context, d blob.Digest) error {
+	if x, ok := s.Store.(blob.Deleter); ok {
+		return x.Delete(ctx, d)
+	}
+	return &blob.CapabilityError{Feature: "object deletion"}
+}
+func (s *limited) List(ctx context.Context, after blob.Digest, limit int) ([]blob.Object, error) {
+	if x, ok := s.Store.(blob.Lister); ok {
+		return x.List(ctx, after, limit)
+	}
+	return nil, &blob.CapabilityError{Feature: "object listing"}
+}
+
 type upload struct {
 	blob.Upload
 	once    sync.Once

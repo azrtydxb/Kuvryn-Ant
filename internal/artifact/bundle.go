@@ -206,7 +206,7 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 	}
 	records := make([]Record, 0, len(publications))
 	for _, item := range publications {
-		record, err := commitAsset(commitCtx, tx, p, item, source, domain, component, version, false)
+		record, err := commitAsset(commitCtx, tx, store, p, item, source, domain, component, version, false)
 		if err != nil {
 			return nil, err
 		}

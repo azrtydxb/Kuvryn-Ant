@@ -208,6 +208,22 @@ func (s *Registry) publish(w http.ResponseWriter, r *http.Request, p identity.Pr
 }
 func (s *Registry) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		// Pull-through: registries serve tarballs at <name>/-/<base>-<version>.tgz.
+		// The source token minted into the packument pins the remote source.
+		pub.MediaType = "application/octet-stream"
+		origin := artifact.Origin{Path: artifact.EscapePath(pub.Coordinate) + "/-/" + pathBase(pub.Coordinate) + "-" + pub.Version + ".tgz", SourceID: r.URL.Query().Get("source")}
+		stream, retry, through := s.service.PullThrough(r.Context(), p, pub, origin)
+		switch {
+		case through != nil:
+			e = through
+		case retry:
+			record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+		default:
+			stream.ServeStream(w, r.Method)
+			return
+		}
+	}
 	if e != nil {
 		failService(w, e)
 		return
@@ -225,6 +241,13 @@ func (s *Registry) download(w http.ResponseWriter, r *http.Request, p identity.P
 	}
 }
 func (s *Registry) packument(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, name, slug, tail string, tagsOnly bool) {
+	remoteErr := s.remotePackument(w, r, p, feed, name, slug, tail, tagsOnly)
+	if remoteErr == errServed {
+		return
+	}
+	s.localPackument(w, r, p, feed, name, slug, tail, tagsOnly, remoteErr)
+}
+func (s *Registry) localPackument(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, name, slug, tail string, tagsOnly bool, upstreamErr error) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	rows, e := s.db.Query(ctx, `WITH owner AS (SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version,COALESCE((SELECT json_object_agg(t.name,v.version) FROM tags t WHERE t.component_id=o.id AND t.version_id=v.id),'{}'::json) FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id WHERE a.asset_key='metadata' ORDER BY v.version LIMIT 10001`, p.InstanceID, feed, name)
@@ -253,6 +276,10 @@ func (s *Registry) packument(w http.ResponseWriter, r *http.Request, p identity.
 		return
 	}
 	if len(entries) == 0 {
+		if upstreamErr != nil {
+			failService(w, upstreamErr)
+			return
+		}
 		failure(w, 404, "package not found")
 		return
 	}
@@ -302,7 +329,13 @@ func (s *Registry) packument(w http.ResponseWriter, r *http.Request, p identity.
 			tags[tag] = v
 		}
 	}
-	var result any = map[string]any{"name": name, "_id": name, "versions": versions, "dist-tags": tags}
+	s.respond(w, r, map[string]any{"name": name, "_id": name, "versions": versions, "dist-tags": tags}, versions, tags, tail, tagsOnly, "application/json")
+}
+
+// respond selects the full document, the dist-tags map or one version (by
+// version or tag) and writes it with a content ETag.
+func (s *Registry) respond(w http.ResponseWriter, r *http.Request, full any, versions map[string]any, tags map[string]string, tail string, tagsOnly bool, contentType string) {
+	result := full
 	if tagsOnly {
 		if tail != "dist-tags" {
 			failure(w, 404, "route not found")
@@ -326,7 +359,7 @@ func (s *Registry) packument(w http.ResponseWriter, r *http.Request, p identity.
 		failure(w, 503, "packument too large")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	etag := `"` + string(info(data).Digest) + `"`
 	w.Header().Set("ETag", etag)

@@ -64,6 +64,9 @@ func (r *Registry) read(w http.ResponseWriter, req *http.Request, p identity.Pri
 		}
 		var err error
 		version, err = r.service.ResolveTag(req.Context(), p, rep.publication("", key), reference)
+		if errors.Is(err, artifact.ErrNotFound) && r.remoteTag(w, req, p, rep, reference) {
+			return
+		}
 		if err != nil {
 			if errors.Is(err, artifact.ErrNotFound) || errors.Is(err, artifact.ErrDenied) {
 				failure(w, 404, "MANIFEST_UNKNOWN", "manifest not found")
@@ -75,6 +78,17 @@ func (r *Registry) read(w http.ResponseWriter, req *http.Request, p identity.Pri
 	}
 	publication := rep.publication(version, key)
 	record, err := r.service.Lookup(req.Context(), p, publication)
+	if errors.Is(err, artifact.ErrNotFound) {
+		retry, handled, through := r.pullThroughDigest(w, req, p, rep, version, key)
+		switch {
+		case through != nil:
+			err = through
+		case handled:
+			return
+		case retry:
+			record, err = r.service.Lookup(req.Context(), p, publication)
+		}
+	}
 	if err != nil {
 		if errors.Is(err, artifact.ErrNotFound) {
 			code := "BLOB_UNKNOWN"
@@ -171,6 +185,9 @@ func (r *Registry) tags(w http.ResponseWriter, req *http.Request, p identity.Pri
 	last := query.Get("last")
 	if last != "" && !tagPattern.MatchString(last) {
 		failure(w, 400, "NAME_INVALID", "invalid tag cursor")
+		return
+	}
+	if len(query) == 0 && r.remoteTags(w, req, p, rep) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
