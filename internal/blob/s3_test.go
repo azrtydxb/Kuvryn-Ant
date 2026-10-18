@@ -32,7 +32,7 @@ type s3Fixture struct {
 	uploads                                          map[string]*fixtureMultipart
 	sequence, partCalls, copyCalls, conditionalCalls int
 	failPart, failCopy, failConditional, failDelete  bool
-	ignoreRange                                      bool
+	ignoreRange, allowPublishedDelete                bool
 }
 
 func fixture(t *testing.T) (*S3, *s3Fixture) {
@@ -197,7 +197,7 @@ func (f *s3Fixture) DeleteObject(ctx context.Context, in *s3.DeleteObjectInput, 
 	if f.failDelete {
 		return nil, apiError("FixtureDeleteFailure")
 	}
-	if !strings.Contains(aws.ToString(in.Key), "/staging/") {
+	if !f.allowPublishedDelete && !strings.Contains(aws.ToString(in.Key), "/staging/") {
 		return nil, errors.New("fixture refuses published-object deletion")
 	}
 	delete(f.objects, aws.ToString(in.Key))
