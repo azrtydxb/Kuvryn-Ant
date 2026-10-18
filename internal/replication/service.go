@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
@@ -540,6 +541,10 @@ func (s *Service) CreateJobTx(ctx context.Context, tx pgx.Tx, instance, actor st
  VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id::text`, instance, in.Name, in.PeerID, in.RemoteFeedID, in.DestFeedID, source, in.Mode, interval, include, encoded, in.DeletionPolicy, next).Scan(&id)
 	if err != nil {
 		return Job{}, dbError(err)
+	}
+	// A replica must not (transitively) replicate from its own feed.
+	if err = feedgraph.Check(ctx, tx, instance); err != nil {
+		return Job{}, err
 	}
 	if err = audit(ctx, tx, instance, actor, "replication.job.create", id, map[string]any{"name": in.Name, "dest_feed_id": in.DestFeedID}); err != nil {
 		return Job{}, ErrUnavailable

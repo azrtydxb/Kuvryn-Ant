@@ -1,6 +1,6 @@
 // Generated from api/openapi.yaml by npm run generate. Do not edit.
 export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1"; "readiness"?: ReadinessDetail };
-export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error"; "message": string; "request_id": string };
+export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited"; "message": string; "request_id": string };
 export type PageInfo = { "has_more": boolean; "next_cursor"?: string };
 export type Feed = { "id": string; "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number; "anonymous_read": boolean };
 export type CreateFeed = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean };
@@ -152,6 +152,23 @@ export type ReplicationTemplateApplyRequest = { "digest": string; "template"?: R
 export type ReplicationTemplateApplyResult = { "digest": string; "applied": number; "diffs": Array<ReplicationTemplateDiff> };
 export type PackageMutation = { "action": "delete" | "unlist" | "relist"; "version_removed": boolean; "component_removed"?: boolean; "assets_removed": number; "tags_removed": number; "unchanged": boolean };
 export type DeletePolicy = { "namespace"?: string; "mode": "allowed" | "denied" | "unlist_only"; "immutable_releases": boolean; "revision"?: number };
+export type RateLimitRule = { "scope": "principal" | "feed" | "namespace" | "site"; "subject": string; "namespace"?: string; "cidrs"?: Array<string>; "requests_per_minute": number; "burst": number };
+export type QuotaRule = { "scope": "feed" | "namespace"; "feed_id": string; "namespace"?: string; "max_bytes"?: number; "max_packages"?: number };
+export type LimitsConfig = { "revision": number; "rate_limits": Array<RateLimitRule>; "quotas": Array<QuotaRule>; "updated_at"?: string };
+export type PutLimits = { "rate_limits": Array<RateLimitRule>; "quotas": Array<QuotaRule> };
+export type QuotaUsage = { "scope": "feed" | "namespace"; "feed_id": string; "namespace"?: string; "bytes_used": number; "packages_used": number; "max_bytes"?: number; "max_packages"?: number };
+export type ThrottleCounts = { "principal": number; "feed": number; "namespace": number; "site": number };
+export type LimitsUsage = { "quotas": Array<QuotaUsage>; "throttled": ThrottleCounts; "measured_at": string };
+export type ReadPolicySettings = { "local_first"?: boolean; "fallback_on_not_found"?: boolean; "failover_on_upstream_error"?: boolean };
+export type PublishTemplateBody = { "default_source_id": string; "rules": Array<PublishRule> };
+export type PolicyTemplateInput = { "name": string; "description"?: string; "kind": "publish" | "read"; "extends_id"?: string; "publish"?: PublishTemplateBody; "read"?: ReadPolicySettings };
+export type PolicyTemplate = { "id": string; "revision": number; "bound_feeds": number; "description": string; "name": string; "kind": "publish" | "read"; "extends_id"?: string; "publish"?: PublishTemplateBody; "read"?: ReadPolicySettings };
+export type PolicyTemplateList = { "items": Array<PolicyTemplate> };
+export type FeedPolicyBinding = { "feed_id": string; "revision": number; "publish_template_id"?: string; "read_template_id"?: string };
+export type PutFeedPolicyBinding = { "publish_template_id"?: string; "read_template_id"?: string };
+export type EffectivePublishRule = { "id": string; "priority": number; "selector": PublishSelector; "target_source_id"?: string; "deny": boolean; "origin": string };
+export type EffectiveReadOrigins = { "local_first"?: string; "fallback_on_not_found"?: string; "failover_on_upstream_error"?: string };
+export type EffectivePolicy = { "feed_id": string; "revision": number; "publish_template_chain": Array<string>; "read_template_chain": Array<string>; "default_source_id": string; "default_origin": string; "rules": Array<EffectivePublishRule>; "read": ReadPolicySettings; "read_origins": EffectiveReadOrigins };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -257,6 +274,17 @@ applyReplicationTemplate: { body: ReplicationTemplateApplyRequest; response: Rep
 deletePackageVersion: { body: undefined; response: PackageMutation };
 getDeletePolicy: { body: undefined; response: DeletePolicy };
 setDeletePolicy: { body: DeletePolicy; response: DeletePolicy };
+getLimits: { body: undefined; response: LimitsConfig };
+putLimits: { body: PutLimits; response: LimitsConfig };
+getLimitsUsage: { body: undefined; response: LimitsUsage };
+listPolicyTemplates: { body: undefined; response: PolicyTemplateList };
+createPolicyTemplate: { body: PolicyTemplateInput; response: PolicyTemplate };
+getPolicyTemplate: { body: undefined; response: PolicyTemplate };
+putPolicyTemplate: { body: PolicyTemplateInput; response: PolicyTemplate };
+deletePolicyTemplate: { body: undefined; response: undefined };
+getFeedPolicyTemplates: { body: undefined; response: FeedPolicyBinding };
+putFeedPolicyTemplates: { body: PutFeedPolicyBinding; response: FeedPolicyBinding };
+getEffectivePolicy: { body: undefined; response: EffectivePolicy };
 }
 export const routes = {
   "getStatus": {
@@ -772,6 +800,61 @@ export const routes = {
   "setDeletePolicy": {
     "path": "/api/v1/feeds/{id}/delete-policy",
     "method": "PUT",
+    "idempotent": false
+  },
+  "getLimits": {
+    "path": "/api/v1/limits",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putLimits": {
+    "path": "/api/v1/limits",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "getLimitsUsage": {
+    "path": "/api/v1/limits/usage",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listPolicyTemplates": {
+    "path": "/api/v1/policy-templates",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createPolicyTemplate": {
+    "path": "/api/v1/policy-templates",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getPolicyTemplate": {
+    "path": "/api/v1/policy-templates/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putPolicyTemplate": {
+    "path": "/api/v1/policy-templates/{id}",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "deletePolicyTemplate": {
+    "path": "/api/v1/policy-templates/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "getFeedPolicyTemplates": {
+    "path": "/api/v1/feeds/{id}/policy-templates",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putFeedPolicyTemplates": {
+    "path": "/api/v1/feeds/{id}/policy-templates",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "getEffectivePolicy": {
+    "path": "/api/v1/feeds/{id}/effective-policy",
+    "method": "GET",
     "idempotent": false
   }
 } as const;

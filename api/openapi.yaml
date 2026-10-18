@@ -8580,6 +8580,798 @@
           }
         }
       }
+    },
+    "/api/v1/limits": {
+      "get": {
+        "operationId": "getLimits",
+        "description": "Rate limits and storage quotas. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitsConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putLimits",
+        "description": "Replaces rate limits and storage quotas atomically; changes apply immediately on this instance. Requires instance admin.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutLimits"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitsConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/limits/usage": {
+      "get": {
+        "operationId": "getLimitsUsage",
+        "description": "Current quota usage and throttle counters. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitsUsage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/policy-templates": {
+      "get": {
+        "operationId": "listPolicyTemplates",
+        "description": "Lists reusable policy templates. Requires feed configuration permission.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyTemplateList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPolicyTemplate",
+        "description": "Creates a template. Extends cycles and invalid rules are rejected with 400 and a specific message.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/policy-templates/{id}": {
+      "get": {
+        "operationId": "getPolicyTemplate",
+        "description": "Reads a template.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putPolicyTemplate",
+        "description": "Replaces a template. Every feed that resolves through it is revalidated; the change is rejected if any would become invalid.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePolicyTemplate",
+        "description": "Deletes an unreferenced template (409 while a feed or template references it).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/feeds/{id}/policy-templates": {
+      "get": {
+        "operationId": "getFeedPolicyTemplates",
+        "description": "Templates a feed references.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedPolicyBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putFeedPolicyTemplates",
+        "description": "Binds the feed to templates. The resulting effective configuration is validated (sources, ambiguity, cycles) before it is accepted, and the change is audited.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutFeedPolicyBinding"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedPolicyBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/feeds/{id}/effective-policy": {
+      "get": {
+        "operationId": "getEffectivePolicy",
+        "description": "The merged template and feed configuration with the origin of every value. Requires configure permission on the feed.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectivePolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8656,7 +9448,8 @@
               "conflict",
               "precondition_failed",
               "unavailable",
-              "internal_error"
+              "internal_error",
+              "rate_limited"
             ],
             "x-enum-varnames": [
               "ErrorCodeInvalidRequest",
@@ -8666,7 +9459,8 @@
               "ErrorCodeConflict",
               "ErrorCodePreconditionFailed",
               "ErrorCodeUnavailable",
-              "ErrorCodeInternalError"
+              "ErrorCodeInternalError",
+              "ErrorCodeRateLimited"
             ]
           },
           "message": {
@@ -13908,6 +14702,529 @@
             "format": "int64"
           }
         }
+      },
+      "RateLimitRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "principal",
+              "feed",
+              "namespace",
+              "site"
+            ]
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "cidrs": {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "type": "string"
+            }
+          },
+          "requests_per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6000000
+          },
+          "burst": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "scope",
+          "subject",
+          "requests_per_minute",
+          "burst"
+        ],
+        "description": "principal: subject is a principal ID. feed: subject is a feed ID. namespace: subject is the feed ID and namespace the first path segment below the feed. site: subject is a site label and cidrs the client networks (TCP peer address) of the site; no cidrs makes an instance-wide limit. Token buckets are held in memory per instance (single-instance scope)."
+      },
+      "QuotaRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "feed",
+              "namespace"
+            ]
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "max_packages": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "scope",
+          "feed_id"
+        ],
+        "description": "Bounds logical content (sum of asset sizes) and package count of a feed or one namespace of a feed. Enforced when a publication commits; at least one bound is required."
+      },
+      "LimitsConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "rate_limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RateLimitRule"
+            }
+          },
+          "quotas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuotaRule"
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "revision",
+          "rate_limits",
+          "quotas"
+        ]
+      },
+      "PutLimits": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rate_limits": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/RateLimitRule"
+            }
+          },
+          "quotas": {
+            "type": "array",
+            "maxItems": 1000,
+            "items": {
+              "$ref": "#/components/schemas/QuotaRule"
+            }
+          }
+        },
+        "required": [
+          "rate_limits",
+          "quotas"
+        ]
+      },
+      "QuotaUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "feed",
+              "namespace"
+            ]
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "namespace": {
+            "type": "string"
+          },
+          "bytes_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "packages_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_packages": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "scope",
+          "feed_id",
+          "bytes_used",
+          "packages_used"
+        ]
+      },
+      "ThrottleCounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "principal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "feed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "namespace": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "site": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "principal",
+          "feed",
+          "namespace",
+          "site"
+        ]
+      },
+      "LimitsUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "quotas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuotaUsage"
+            }
+          },
+          "throttled": {
+            "$ref": "#/components/schemas/ThrottleCounts"
+          },
+          "measured_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "quotas",
+          "throttled",
+          "measured_at"
+        ],
+        "description": "Throttle counters are per process since start."
+      },
+      "ReadPolicySettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "local_first": {
+            "type": "boolean"
+          },
+          "fallback_on_not_found": {
+            "type": "boolean"
+          },
+          "failover_on_upstream_error": {
+            "type": "boolean"
+          }
+        },
+        "description": "Read-resolution primitives. Unset fields are inherited from the extended template. Recorded and shown in the effective view; adapters adopt them individually."
+      },
+      "PublishTemplateBody": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "default_source_id": {
+            "type": "string"
+          },
+          "rules": {
+            "type": "array",
+            "maxItems": 256,
+            "items": {
+              "$ref": "#/components/schemas/PublishRule"
+            }
+          }
+        },
+        "required": [
+          "default_source_id",
+          "rules"
+        ]
+      },
+      "PolicyTemplateInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "publish",
+              "read"
+            ]
+          },
+          "extends_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "publish": {
+            "$ref": "#/components/schemas/PublishTemplateBody"
+          },
+          "read": {
+            "$ref": "#/components/schemas/ReadPolicySettings"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "description": "A publish template needs publish, a read template read. extends_id must name a template of the same kind and must not create a cycle."
+      },
+      "PolicyTemplate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "bound_feeds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,62}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "publish",
+              "read"
+            ]
+          },
+          "extends_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "publish": {
+            "$ref": "#/components/schemas/PublishTemplateBody"
+          },
+          "read": {
+            "$ref": "#/components/schemas/ReadPolicySettings"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "name",
+          "description",
+          "kind",
+          "bound_feeds"
+        ]
+      },
+      "PolicyTemplateList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyTemplate"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FeedPolicyBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "publish_template_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "read_template_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "feed_id",
+          "revision"
+        ]
+      },
+      "PutFeedPolicyBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "publish_template_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "read_template_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "description": "Omitted fields unbind. Requires If-Match with the feed revision."
+      },
+      "EffectivePublishRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9_.:-]+$"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "selector": {
+            "$ref": "#/components/schemas/PublishSelector"
+          },
+          "target_source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deny": {
+            "type": "boolean"
+          },
+          "origin": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "priority",
+          "selector",
+          "deny",
+          "origin"
+        ]
+      },
+      "EffectiveReadOrigins": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "local_first": {
+            "type": "string"
+          },
+          "fallback_on_not_found": {
+            "type": "string"
+          },
+          "failover_on_upstream_error": {
+            "type": "string"
+          }
+        }
+      },
+      "EffectivePolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "publish_template_chain": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "read_template_chain": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default_source_id": {
+            "type": "string"
+          },
+          "default_origin": {
+            "type": "string"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EffectivePublishRule"
+            }
+          },
+          "read": {
+            "$ref": "#/components/schemas/ReadPolicySettings"
+          },
+          "read_origins": {
+            "$ref": "#/components/schemas/EffectiveReadOrigins"
+          }
+        },
+        "required": [
+          "feed_id",
+          "revision",
+          "publish_template_chain",
+          "read_template_chain",
+          "default_source_id",
+          "default_origin",
+          "rules",
+          "read",
+          "read_origins"
+        ],
+        "description": "The merged result of the feed's bound templates (root first) and the feed's own publish policy. Origins are template:<name> or feed."
       }
     }
   }

@@ -59,16 +59,21 @@ func (p Policies) Load(ctx context.Context, feed string) (*routing.Router, error
 		return nil, err
 	}
 	var encoded []byte
-	err = tx.QueryRow(ctx, "SELECT COALESCE(default_source_id::text,''),rules FROM publish_policies WHERE instance_id=$1 AND feed_id=$2", p.InstanceID, feed).Scan(&config.DefaultTarget, &encoded)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return routing.Compile(config)
-	}
-	if err != nil {
+	var ownDefault string
+	var own []routing.Rule
+	err = tx.QueryRow(ctx, "SELECT COALESCE(default_source_id::text,''),rules FROM publish_policies WHERE instance_id=$1 AND feed_id=$2", p.InstanceID, feed).Scan(&ownDefault, &encoded)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrUnavailable
 	}
-	if len(encoded) > 256*4096 || json.Unmarshal(encoded, &config.Rules) != nil {
+	if err == nil && (len(encoded) > 256*4096 || json.Unmarshal(encoded, &own) != nil) {
 		return nil, ErrInput
 	}
+	// Bound templates are merged under the feed's own policy.
+	eff, _, err := effectivePublish(ctx, tx, p.InstanceID, feed, ownDefault, own)
+	if err != nil {
+		return nil, err
+	}
+	config = eff.Config(config.Sources)
 	router, err := routing.Compile(config)
 	if err != nil {
 		return nil, err
@@ -155,7 +160,12 @@ func (p Policies) SetTx(ctx context.Context, tx pgx.Tx, principal identity.Princ
 			return 0, ErrNotFound
 		}
 	}
-	if _, err = routing.Compile(routing.Config{Sources: sources, DefaultTarget: defaultSource, Rules: rules}); err != nil {
+	// The configuration that will apply is the bound templates plus these rules.
+	eff, _, err := effectivePublish(ctx, tx, p.InstanceID, feed, defaultSource, rules)
+	if err != nil {
+		return 0, err
+	}
+	if _, err = routing.Compile(eff.Config(sources)); err != nil {
 		return 0, err
 	}
 	if rules == nil {

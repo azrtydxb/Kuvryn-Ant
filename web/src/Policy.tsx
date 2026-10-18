@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { requireETag, type Client } from "./api";
 import { isUnavailable } from "./gaps";
+import { FeedTemplates } from "./Templates";
 import type {
   Feed,
   IdentityPrincipal,
@@ -72,6 +73,9 @@ export function PolicyTab({ client, feed }: { client: Client; feed: Feed }) {
           principals={principals.value?.data.items}
           reload={policy.reload}
         />
+      )}
+      {policy.value && (
+        <FeedTemplates client={client} feed={feed} changed={policy.reload} />
       )}
     </>
   );

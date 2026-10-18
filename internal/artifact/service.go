@@ -17,6 +17,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/routing"
 	"github.com/jackc/pgx/v5"
@@ -351,6 +352,17 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p ident
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return Record{}, ErrUnavailable
+	}
+	// Storage quotas are checked in this transaction, before any row of the new
+	// asset exists, so a rejection leaves nothing behind.
+	if err = limits.CheckPublish(commitCtx, tx, p.InstanceID, r.FeedID, r.Namespace, component, r.Info.Size); err != nil {
+		var quota *limits.QuotaError
+		if errors.As(err, &quota) {
+			// Conflict keeps adapters that only know the artifact errors on a 4xx;
+			// the limits middleware reports the precise 507.
+			return Record{}, fmt.Errorf("%w: %w", ErrConflict, quota)
+		}
+		return Record{}, dbErr(err)
 	}
 	var blobID string
 	var size int64
