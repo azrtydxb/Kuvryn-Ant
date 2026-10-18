@@ -221,6 +221,16 @@ func (s *Repository) push(w http.ResponseWriter, r *http.Request, p identity.Pri
 }
 func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		if retry, pe := s.pullThrough(r.Context(), p, pub); pe != nil {
+			if !errors.Is(pe, artifact.ErrNotFound) {
+				failure(w, pe)
+				return
+			}
+		} else if retry {
+			record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+		}
+	}
 	if e != nil {
 		failure(w, e)
 		return

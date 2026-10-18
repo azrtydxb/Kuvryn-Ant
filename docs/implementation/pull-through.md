@@ -2,7 +2,7 @@
 
 Pull-through is implemented once, in `internal/artifact` (`remote.go`), on top of
 `internal/remoteruntime`. Adapters add a small hook to their existing read path.
-Enabled today: raw, npm, pypi, maven, go, oci (blobs and manifests by digest, tags,
+Enabled today: raw, npm, pypi, maven, go, rubygems, conda, conan, composer, terraform, oci (blobs and manifests by digest, tags,
 tag lists), helm, cargo, nuget, apt, rpm (see "Format notes"). `cmd/ant/artifacts.go` builds the `remoteruntime.Manager` from the
 secret keyring and `ANT_UPSTREAM_CA_MAP_FILE` and sets `artifact.Service.Remote`;
 without a keyring pull-through is off and feeds serve local content only.
@@ -55,6 +55,7 @@ without a keyring pull-through is off and feeds serve local content only.
    Set `Publication.MediaType` for deterministic types, otherwise the upstream
    `Content-Type` is used. If the metadata served earlier carries a source token, pass it
    as `Origin.SourceID` so bytes come from the same source as the metadata.
+
 2. **Metadata.** Call `service.RemoteMetadata(ctx, principal, publication, origin)` before
    the local composition. `ErrNotFound`: continue locally. `ErrUnavailable`: continue locally
    as the degraded offline view, and report 503 instead of 404 if that also finds nothing.
@@ -149,3 +150,68 @@ is a 409, which sccache only logs. The S3 backend is not covered by this adapter
   circuit breaker are not exposed yet.
 - A cache fill is not rolled back if the source's configuration changes mid-stream; the
   next read re-resolves ownership.
+
+## Format notes (rubygems, conda, conan, composer, terraform)
+
+Enabled in addition to the formats above. In all five the remote source origin is the
+upstream registry root, package ownership is decided before any upstream request (a local
+owner is never completed from upstream), only GET is sent upstream, and metadata is served
+through the metadata cache (stale-if-error) while immutable artifacts are cached on first
+download and listed from the store during an outage.
+
+- **RubyGems** (`internal/rubygems`). Origin is the registry root (`https://rubygems.org`).
+  `info/<gem>` (compact index) is validated line by line and served as received: it carries
+  no URLs, and each line's `checksum` is the sha256 of the `.gem`. A `.gem` is fetched from
+  `gems/<file>.gem` on first download, verified against that checksum and cached with a
+  metadata record rebuilt from the info line, so the local composition lists it afterwards.
+  Gem names contain dashes, so a `<name>-<version>[-<platform>]` filename is resolved by
+  trying each split before a digit against the upstream info file. `quick/Marshal.4.8/*.gemspec.rz`
+  is cached for gems already cached. `/versions`, `/names` and `specs.4.8.gz` stay feed-local
+  (the upstream `/versions` is far larger than the metadata limit and is never unioned), so a
+  pure-remote feed is used with the compact index per gem; Bundler falls back to `info/` files.
+- **Conda** (`internal/condarepo`). Origin is the channel root (`https://conda.anaconda.org/conda-forge`).
+  `<subdir>/repodata.json` is validated entry by entry (filename must equal name-version-build,
+  sha256 required) and re-rendered with `info` reduced to the subdir (a `base_url` would send
+  clients around the feed). A subdir is one ownership unit, as for local channels. `.tar.bz2` and
+  `.conda` packages are verified against the repodata sha256 before they are served or cached; the
+  verified `.tar.bz2` entry is cached beside it for offline listing. `current_repodata.json`, `.zst`
+  and `.bz2` variants and sharded repodata are not served. **Limit:** repodata is bounded by the
+  runtime metadata limit (at most 8 MiB, default 1 MiB), so very large channels such as
+  conda-forge `linux-64`/`noarch` cannot be proxied today; small channels and mirrors work.
+- **Conan** (`internal/conan`). Origin is the server root (`https://center2.conan.io`); the Conan v2
+  API has no absolute URLs. `latest`, `revisions`, package-id `search` and `files` listings are
+  validated and re-rendered. Revision files are immutable and cached on first download. Conan
+  publishes md5, not sha256: `conanmanifest.txt` is checked against the revision in the URL (the
+  revision is the md5 of the sorted manifest lines) and every other file against the manifest (md5 of
+  a file, or of each tarball member). This uses the additive `artifact.Origin.Verify` hook, which
+  stages the bytes, runs the check and only then commits and serves. `v2/conans/search` stays local.
+- **Composer** (`internal/composer`). Origin is the repository root (`https://repo.packagist.org`).
+  The metadata template comes from the upstream `packages.json` (`metadata-url`, default
+  `/p2/%package%.json`). `p2/<vendor>/<pkg>.json` and the `~dev` file are expanded from Composer's
+  minified form and re-rendered without `source` (a VCS URL would bypass the feed) and with every
+  `dist.url` pointing at `dist/<id>/<version>/archive.zip` on the feed; the feed resolves the upstream
+  dist URL again from the cached metadata, so clients never choose it. Packagist publishes no archive
+  digest (`shasum` is empty): archives are checked to be well-formed ZIPs of bounded size and against a
+  SHA-1 `shasum` when upstream states one. Dist URLs live on GitHub: add `https://api.github.com` and
+  `https://codeload.github.com` (and `https://gitlab.com`/`https://bitbucket.org` if used) to the
+  source's redirect origins; the credential is never sent there. Cached versions keep their entry as
+  asset `remote-metadata` (ignored by the local composition) for the offline listing.
+- **Terraform** (`internal/terraform`). Origin is the registry root (`https://registry.terraform.io`),
+  `v1/modules` and `v1/providers` map one to one. Providers: `versions` and the per-platform `download`
+  document are validated; the feed answer keeps `shasum` and `signing_keys` verbatim and points
+  `download_url`, `shasums_url` and `shasums_signature_url` at the feed's `files/<name>` routes, so Terraform
+  verifies the zip, SHA256SUMS and the signature against the publisher key (HashiCorp's) itself. Ant also
+  verifies what it caches: the zip against `shasum`, SHA256SUMS against the zip line, and the signature against
+  the supplied key when it parses as a single public key. Add `https://releases.hashicorp.com` to the redirect
+  origins. Modules: the registry answers `download` with a 204 and an `X-Terraform-Get` header, which the
+  runtime does not expose (it forwards a fixed set of response headers). The feed therefore resolves the module
+  detail document (`source` GitHub repository and `tag`) to the GitHub tarball, caches the tar.gz once (checked as
+  a bounded, safe tar.gz; no digest is published) and answers `download` with its own archive URL plus the `//*`
+  subdir that unwraps the GitHub top-level directory. Registries whose modules are not GitHub repositories, other git
+  hosts and zip archives are not supported (forwarding `X-Terraform-Get` from the runtime would lift this). Add
+  `https://codeload.github.com` to the redirect origins. Providers have no store-based offline listing (versions and
+  download documents rely on the metadata cache); cached files and module versions do.
+
+The seam gained one small helper for these formats: `Origin.Verify`, a format specific check run on the staged
+object before it is committed or served (Conan manifests, Composer zips, Terraform provider files and module
+archives).

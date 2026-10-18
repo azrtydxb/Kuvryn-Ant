@@ -142,7 +142,43 @@ func (s *Repository) read(w http.ResponseWriter, r *http.Request, p identity.Pri
 		failure(w, artifact.ErrNotFound)
 		return
 	}
+	var remoteErr error
+	if name != "" {
+		// Remote-owned (or unowned) gems are answered from upstream; a local
+		// owner, or an upstream outage, falls through to the local composition.
+		var served bool
+		if served, remoteErr = s.serveRemoteInfo(w, r, p, feed, name); served {
+			return
+		}
+		if remoteErr != nil {
+			w.Header().Set("X-Kuvryn-Cache", "offline")
+		}
+	}
 	ms, e := s.entries(ctx, p, feed, name, filename)
+	if e == nil && asset != "" {
+		// Local miss: try to materialize the gem (or its legacy gemspec).
+		var fe error
+		switch {
+		case len(ms) == 0:
+			fe = s.fillGem(ctx, p, feed, filename)
+			if fe == nil && asset == "gemspec" {
+				if ms, e = s.entries(ctx, p, feed, name, filename); e == nil && len(ms) == 1 {
+					fe = s.fillGemspec(ctx, p, artifact.Publication{FeedID: feed, Coordinate: ms[0].Name, Version: ms[0].key(), AssetKey: "gem"}, filename)
+				}
+			}
+		case len(ms) == 1 && asset == "gemspec":
+			if _, le := s.service.Lookup(ctx, p, artifact.Publication{FeedID: feed, Coordinate: ms[0].Name, Version: ms[0].key(), AssetKey: "gemspec"}); errors.Is(le, artifact.ErrNotFound) {
+				fe = s.fillGemspec(ctx, p, artifact.Publication{FeedID: feed, Coordinate: ms[0].Name, Version: ms[0].key(), AssetKey: "gem"}, filename)
+			}
+		}
+		if fe != nil && !errors.Is(fe, artifact.ErrNotFound) {
+			failure(w, fe)
+			return
+		}
+		if fe == nil {
+			ms, e = s.entries(ctx, p, feed, name, filename)
+		}
+	}
 	if e != nil {
 		failure(w, e)
 		return
@@ -158,6 +194,11 @@ func (s *Repository) read(w http.ResponseWriter, r *http.Request, p identity.Pri
 	}
 	if name != "" {
 		if len(ms) == 0 {
+			w.Header().Del("X-Kuvryn-Cache")
+			if remoteErr != nil {
+				failure(w, artifact.ErrUnavailable)
+				return
+			}
 			failure(w, artifact.ErrNotFound)
 			return
 		}

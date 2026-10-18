@@ -106,8 +106,17 @@ func (s *Repository) loadMetadata(ctx context.Context, p identity.Principal, pub
 func (s *Repository) providerVersions(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	// Remote-owned (or unowned) providers are answered from upstream; a local
+	// owner, or an upstream outage, falls through to the local composition.
+	served, remoteErr := s.serveRemoteProviderVersions(w, r, p, pub)
+	if served {
+		return
+	}
 	versions, e := s.listVersions(ctx, p, pub.FeedID, pub.Namespace, pub.Coordinate, metadataKey)
 	if e != nil {
+		if remoteErr != nil && errors.Is(e, artifact.ErrNotFound) {
+			e = artifact.ErrUnavailable
+		}
 		failure(w, e)
 		return
 	}
@@ -150,8 +159,15 @@ func (s *Repository) providerDownload(w http.ResponseWriter, r *http.Request, p 
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	served, remoteErr := s.serveRemoteProviderDownload(w, r, p, slug, pub, typ, osName, arch)
+	if served {
+		return
+	}
 	m, e := s.loadMetadata(ctx, p, pub, typ)
 	if e != nil {
+		if remoteErr != nil && errors.Is(e, artifact.ErrNotFound) {
+			e = artifact.ErrUnavailable
+		}
 		failure(w, e)
 		return
 	}
@@ -241,6 +257,13 @@ func (s *Repository) providerFile(w http.ResponseWriter, r *http.Request, p iden
 		}
 	}
 	pub.AssetKey = name
+	if _, e := s.service.Lookup(r.Context(), p, pub); errors.Is(e, artifact.ErrNotFound) {
+		// Local miss: fetch, verify and cache from the remote owner.
+		if e = s.fillProviderFile(r.Context(), p, pub, typ, name); e != nil && !errors.Is(e, artifact.ErrNotFound) {
+			failure(w, e)
+			return
+		}
+	}
 	s.serveAsset(w, r, p, pub)
 }
 

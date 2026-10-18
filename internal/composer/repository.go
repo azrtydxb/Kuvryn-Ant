@@ -142,7 +142,7 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if len(a) == 8 && a[3] == "dist" && namePattern.MatchString(a[4]+"/"+a[5]) && versionPattern.MatchString(a[6]) && a[7] == "archive.zip" {
+	if len(a) == 8 && a[3] == "dist" && namePattern.MatchString(a[4]+"/"+a[5]) && remoteVersionRE.MatchString(a[6]) && a[7] == "archive.zip" {
 		s.download(w, r, p, artifact.Publication{FeedID: feed, Namespace: a[4], Coordinate: a[4] + "/" + a[5], Version: a[6], AssetKey: "dist.zip"})
 		return
 	}
@@ -238,6 +238,18 @@ func (s *Repository) push(w http.ResponseWriter, r *http.Request, p identity.Pri
 }
 func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		// Local miss: fetch, verify and cache from the remote owner (a local
+		// owner or an unknown version stays a 404).
+		if retry, pe := s.pullThrough(r.Context(), p, pub); pe != nil {
+			if !errors.Is(pe, artifact.ErrNotFound) {
+				failure(w, pe)
+				return
+			}
+		} else if retry {
+			record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+		}
+	}
 	if e != nil {
 		failure(w, e)
 		return

@@ -146,7 +146,7 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 			s.upload(w, r, p, feed, v, tail[1])
 			return
 		case "GET", "HEAD":
-			s.download(w, r, p, v.pub(feed, tail[1]))
+			s.download(w, r, p, feed, v, tail[1])
 			return
 		}
 	}

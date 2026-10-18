@@ -278,8 +278,21 @@ func (s *Repository) assetKeys(ctx context.Context, p identity.Principal, feed s
 	return keys, nil
 }
 
-func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, pub artifact.Publication) {
+func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string, v reference, key string) {
+	pub := v.pub(feed, key)
 	record, body, e := s.service.Open(r.Context(), p, pub, 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		// Local miss: fetch, verify and cache from the remote owner (a local
+		// owner or an unknown revision stays a 404).
+		if retry, pe := s.pullThrough(r.Context(), p, feed, v, key); pe != nil {
+			if !errors.Is(pe, artifact.ErrNotFound) {
+				failure(w, pe)
+				return
+			}
+		} else if retry {
+			record, body, e = s.service.Open(r.Context(), p, pub, 0, -1)
+		}
+	}
 	if e != nil {
 		failure(w, e)
 		return
@@ -299,8 +312,21 @@ func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity
 func (s *Repository) metadata(w http.ResponseWriter, r *http.Request, p identity.Principal, feed string, v reference, route string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	// Remote-owned (or unowned) references are answered from upstream; a local
+	// owner, or an upstream outage, falls through to the local composition.
+	served, remoteErr := s.serveRemoteMetadata(w, r, p, feed, v, route)
+	if served {
+		return
+	}
+	if remoteErr != nil {
+		w.Header().Set("X-Kuvryn-Cache", "offline")
+	}
 	component, _, err := s.owner(ctx, p, feed, v.coordinate, v.namespace)
 	if err != nil {
+		if remoteErr != nil && errors.Is(err, artifact.ErrNotFound) {
+			w.Header().Del("X-Kuvryn-Cache")
+			err = artifact.ErrUnavailable
+		}
 		failure(w, err)
 		return
 	}
