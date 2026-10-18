@@ -1,0 +1,5 @@
+/bin/
+/.local/
+.env
+*.test
+__pycache__/
