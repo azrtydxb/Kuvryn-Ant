@@ -111,6 +111,9 @@ func (r *Registry) read(w http.ResponseWriter, req *http.Request, p identity.Pri
 	w.Header().Set("Content-Type", record.MediaType)
 	w.Header().Set("Accept-Ranges", "bytes")
 	w.Header().Set("Cache-Control", "private, no-cache")
+	// Streamed pull-through misses are labelled "miss" by ServeStream and tag
+	// documents served stale carry "stale"; anything reaching here is in store.
+	w.Header().Set("X-Kuvryn-Cache", "hit")
 	if req.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(304)
 		return

@@ -39,6 +39,12 @@ func (r *Registry) createUpload(ctx context.Context, p identity.Principal, rep r
 	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1,510))", p.InstanceID); err != nil {
 		return "", err
 	}
+	// Lock order must match artifact publication (writer lease, then feed
+	// rows). Inserting the session first takes a FK key-share lock on the feed
+	// row and deadlocks against a publish that already holds the lease.
+	if err = r.requireLease(ctx, tx, p); err != nil {
+		return "", err
+	}
 	var count int
 	if err = tx.QueryRow(ctx, `SELECT count(*) FROM oci_uploads WHERE instance_id=$1 AND state='active' AND expires_at>clock_timestamp()`, p.InstanceID).Scan(&count); err != nil {
 		return "", err
@@ -69,9 +75,6 @@ func (r *Registry) createUpload(ctx context.Context, p identity.Principal, rep r
 		return "", closeErr
 	}
 	if err = r.syncRoot(); err != nil {
-		return "", err
-	}
-	if err = r.requireLease(ctx, tx, p); err != nil {
 		return "", err
 	}
 	committed = true // Ambiguous commit must not delete a possibly committed session file.

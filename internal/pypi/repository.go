@@ -285,6 +285,22 @@ func (s *Repository) download(w http.ResponseWriter, r *http.Request, p identity
 	boundDigest := string(record.Info.Digest)
 	if file != original {
 		distribution, lookupErr := s.service.Lookup(r.Context(), p, artifact.Publication{FeedID: feed, Coordinate: name, Version: versionKey(original), AssetKey: original})
+		if errors.Is(lookupErr, artifact.ErrNotFound) {
+			// Pip fetches the PEP 658 sidecar before the wheel, so on a cold
+			// cache only the sidecar is stored. Bind the route digest to the
+			// distribution listed by the owning remote source instead.
+			files, _, remoteErr := s.remoteFiles(r.Context(), p, feed, name, source)
+			if remoteErr != nil {
+				fail(w, remoteErr)
+				return
+			}
+			for _, f := range files {
+				if f.Filename == original && f.SHA256 == digest {
+					lookupErr = nil
+					distribution = artifact.Record{SourceID: source, Info: blob.Info{Digest: blobDigest(digest)}}
+				}
+			}
+		}
 		if lookupErr != nil {
 			fail(w, lookupErr)
 			return
