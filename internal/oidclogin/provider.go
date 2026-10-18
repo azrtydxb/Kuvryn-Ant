@@ -3,6 +3,7 @@ package oidclogin
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -112,32 +113,48 @@ func (p *Provider) authorization(state, nonce, verifier string) string {
 	return p.oauth.AuthCodeURL(state, oidc.Nonce(nonce), oauth2.S256ChallengeOption(verifier))
 }
 func (p *Provider) exchange(ctx context.Context, code, verifier string, nonceHash []byte) (string, error) {
+	subject, _, err := p.exchangeIdentity(ctx, code, verifier, nonceHash)
+	return subject, err
+}
+
+// exchangeIdentity also returns the ID token "groups" claim (an array of
+// strings; anything else is ignored). Groups are used only for federated
+// group bindings (P2-M2) and never grant anything locally by themselves.
+func (p *Provider) exchangeIdentity(ctx context.Context, code, verifier string, nonceHash []byte) (string, []string, error) {
 	ctx = oidc.ClientContext(ctx, p.client)
 	token, e := p.oauth.Exchange(ctx, code, oauth2.VerifierOption(verifier))
 	if e != nil {
-		return "", ErrAuthentication
+		return "", nil, ErrAuthentication
 	}
 	raw, ok := token.Extra("id_token").(string)
 	if !ok {
-		return "", ErrAuthentication
+		return "", nil, ErrAuthentication
 	}
 	id, e := p.verifier.Verify(ctx, raw)
 	if e != nil {
-		return "", ErrAuthentication
+		return "", nil, ErrAuthentication
 	}
 	var claims struct {
-		AuthorizedParty string `json:"azp"`
-		NotBefore       int64  `json:"nbf"`
+		AuthorizedParty string          `json:"azp"`
+		NotBefore       int64           `json:"nbf"`
+		Groups          json.RawMessage `json:"groups"`
 	}
 	now := time.Now()
 	if id.Claims(&claims) != nil || id.Subject == "" || id.Issuer != p.issuer || id.IssuedAt.IsZero() || id.IssuedAt.After(now.Add(30*time.Second)) || !id.Expiry.After(now) || claims.NotBefore > now.Add(30*time.Second).Unix() || !matches(id.Nonce, nonceHash) {
-		return "", ErrAuthentication
+		return "", nil, ErrAuthentication
 	}
 	if (len(id.Audience) > 1 && claims.AuthorizedParty == "") || (claims.AuthorizedParty != "" && claims.AuthorizedParty != p.oauth.ClientID) {
-		return "", ErrAuthentication
+		return "", nil, ErrAuthentication
 	}
 	if id.AccessTokenHash != "" && id.VerifyAccessToken(token.AccessToken) != nil {
-		return "", ErrAuthentication
+		return "", nil, ErrAuthentication
 	}
-	return id.Subject, nil
+	var groups []string
+	if len(claims.Groups) > 0 && json.Unmarshal(claims.Groups, &groups) != nil {
+		groups = nil
+	}
+	if len(groups) > 500 {
+		groups = groups[:500]
+	}
+	return id.Subject, groups, nil
 }

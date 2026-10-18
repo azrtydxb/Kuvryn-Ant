@@ -36,7 +36,9 @@ type Grant struct {
 // Role memberships come from trusted identity/group resolution, never tokens.
 // A role grant's PrincipalID and Anonymous selectors must be empty/false.
 type Role struct {
-	Name         string
+	Name string
+	// Origin is local or federation (federation-managed roles, P2-M2).
+	Origin       string
 	PrincipalIDs []string
 	Grants       []Grant
 }
@@ -97,7 +99,10 @@ func (p Policy) Authorize(principal Principal, resource Resource, action Action)
 	if !allowed {
 		return false
 	}
-	if principal.TokenID == "" {
+	if principal.Delegated && principal.Scopes == nil {
+		return true // asserted browser session: no token narrowing
+	}
+	if principal.TokenID == "" && !principal.Delegated {
 		return len(principal.Scopes) == 0
 	}
 	for _, scope := range principal.Scopes {

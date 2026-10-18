@@ -247,6 +247,33 @@ func catalog() []*tool {
 			run: func(c *call) *toolResult { return c.get("/api/v1/federation/status", nil) }},
 		{name: "list_federation_members", title: "List federation members", desc: "Members of the applied, signed membership document (status, endpoints, labels, certificate fingerprint, authority flag) with locally observed RTT, clock skew and last-seen time. Requires read on the instance.", readOnly: true,
 			run: func(c *call) *toolResult { return c.get("/api/v1/federation/members", nil) }},
+		{name: "get_federation_policy", title: "Federation policy", desc: "The applied signed federation policy (federated roles, principal, group and service-account bindings, revocations) with its generation, age, staleness, last rejection and the local materialization report (unresolved feed keys, inert admin grants, conflicts with local principals), plus local settings and history. Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/policy", nil) }},
+		{name: "list_federated_principals", title: "List federated principals", desc: "Federated principals on this member with federation and local roles, and local principals that conflict with a federated binding. Requires instance admin.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/principals", nil) }},
+		{name: "check_federation_access", title: "Check access on another member", desc: "Asserts the calling federated principal to another member (signed, short-lived, replay-protected) and returns that member's own decision under its policy, including local overrides. Local-only principals get not_federated.", readOnly: true,
+			params: []param{{name: "member_id", typ: "uuid", required: true, desc: "Member instance ID."}, {name: "kind", typ: "string", required: true, desc: "artifact, feed or instance.", enum: []string{"artifact", "feed", "instance"}},
+				{name: "feed_key", typ: "string", desc: "<federation>/<feed-slug>; required for artifact and feed."}, {name: "namespace", typ: "string", desc: "Artifact namespace."},
+				{name: "action", typ: "string", required: true, desc: "read, publish, delete, configure, replicate or admin."}},
+			run: func(c *call) *toolResult {
+				body := map[string]any{"member_id": c.args["member_id"], "kind": c.args["kind"], "action": c.args["action"]}
+				for _, k := range []string{"feed_key", "namespace"} {
+					if v, ok := c.args[k]; ok {
+						body[k] = v
+					}
+				}
+				return c.api(http.MethodPost, "/api/v1/federation/access-check", nil, body, nil).result()
+			}},
+		{name: "publish_federation_policy", title: "Publish federation policy", desc: "DESTRUCTIVE: sign and publish the next federation policy generation on the authority, from the saved draft or from the policy argument, and push it to every member. base_generation must be the applied generation you reviewed (stale_generation otherwise). Federated roles, bindings and revocations take effect on every member. Requires instance admin on the authority and confirm: true.", destructive: true, idempotent: true,
+			params: []param{{name: "base_generation", typ: "integer", required: true, desc: "Applied policy generation the change is based on (0 for the first policy)."},
+				{name: "policy", typ: "object", desc: "Policy body (identity_domains, roles, principal_bindings, group_bindings, service_accounts, revocations). Omit to publish the saved draft."}},
+			run: func(c *call) *toolResult {
+				body := map[string]any{"base_generation": c.args["base_generation"], "confirm": true}
+				if v, ok := c.args["policy"]; ok {
+					body["policy"] = v
+				}
+				return c.api(http.MethodPost, "/api/v1/federation/policy/publish", nil, body, map[string]string{"Idempotency-Key": c.idempotencyKey()}).result()
+			}},
 		{name: "list_webhooks", title: "List webhooks", desc: "List webhook subscriptions (secrets are never returned).", readOnly: true,
 			params: []param{{name: "after", typ: "uuid", desc: "Return items after this webhook ID."}, pageParams[0]},
 			run: func(c *call) *toolResult {

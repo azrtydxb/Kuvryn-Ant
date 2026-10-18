@@ -1,6 +1,6 @@
 // Generated from api/openapi.yaml by npm run generate. Do not edit.
 export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1"; "readiness"?: ReadinessDetail };
-export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited" | "federation_not_configured" | "not_authority" | "member_unreachable" | "invitation_invalid" | "stale_generation" | "document_rejected"; "message": string; "request_id": string };
+export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited" | "federation_not_configured" | "not_authority" | "member_unreachable" | "invitation_invalid" | "stale_generation" | "document_rejected" | "federation_managed" | "not_federated"; "message": string; "request_id": string };
 export type PageInfo = { "has_more": boolean; "next_cursor"?: string };
 export type Feed = { "id": string; "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number; "anonymous_read": boolean };
 export type CreateFeed = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean };
@@ -18,10 +18,10 @@ export type PublishSelector = { "namespace"?: string; "package"?: string; "path_
 export type PublishRule = { "id": string; "priority": number; "selector": PublishSelector; "target_source_id"?: string; "deny": boolean };
 export type PutPublishPolicy = { "default_source_id"?: string; "rules": Array<PublishRule> };
 export type PublishPolicy = { "default_source_id": string; "rules": Array<PublishRule>; "feed_id": string; "revision": number };
-export type IdentityPrincipal = { "id": string; "subject": string; "kind": "user" | "service" | "emergency"; "disabled": boolean; "revision": number; "role_ids": Array<string> };
+export type IdentityPrincipal = { "id": string; "subject": string; "kind": "user" | "service" | "emergency"; "disabled": boolean; "revision": number; "role_ids": Array<string>; "origin": "local" | "federation" };
 export type CreatePrincipal = { "subject": string; "kind": "user" | "service" };
-export type IdentityRoleGrant = { "kind": "artifact" | "feed" | "source" | "instance"; "effect": "allow" | "deny"; "feed_id"?: string; "source_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin"> };
-export type IdentityRole = { "id": string; "name": string; "revision": number; "grants": Array<IdentityRoleGrant> };
+export type IdentityRoleGrant = { "kind": "artifact" | "feed" | "source" | "instance"; "effect": "allow" | "deny"; "feed_id"?: string; "source_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin">; "feed_key"?: string; "inert"?: "unresolved_feed" | "admin_not_accepted" };
+export type IdentityRole = { "id": string; "name": string; "revision": number; "grants": Array<IdentityRoleGrant>; "origin": "local" | "federation" };
 export type CreateRole = { "name": string };
 export type SetRoleGrants = { "grants": Array<IdentityRoleGrant> };
 export type SetPrincipalRoles = { "role_ids": Array<string> };
@@ -108,7 +108,7 @@ export type IntegrityFinding = { "id": number; "domain_id": string; "digest": st
 export type IntegrityFindingPage = { "items": Array<IntegrityFinding>; "next_after"?: string };
 export type EffectiveAction = { "action": "read" | "publish" | "delete" | "configure" | "replicate" | "admin"; "allowed": boolean; "via_roles": Array<string>; "denied_by_roles": Array<string> };
 export type EffectiveResource = { "kind": "instance" | "feed" | "source" | "artifact"; "feed_id"?: string; "source_id"?: string; "namespace"?: string };
-export type EffectivePermissions = { "principal_id": string; "disabled": boolean; "resource": EffectiveResource; "actions": Array<EffectiveAction> };
+export type EffectivePermissions = { "principal_id": string; "disabled": boolean; "resource": EffectiveResource; "actions": Array<EffectiveAction>; "origin": "local" | "federation"; "roles": Array<EffectiveRole>; "federation_policy_generation": number };
 export type AuditSink = { "configured": boolean; "kind"?: "syslog" | "http"; "endpoint"?: string; "enabled": boolean; "has_credential": boolean; "checkpoint": number; "last_forwarded_at"?: string; "last_error"?: string; "revision": number };
 export type PutAuditSink = { "kind": "syslog" | "http"; "endpoint": string; "enabled"?: boolean; "credential"?: string };
 export type ReplicationPeer = { "id": string; "name": string; "url": string; "ca_ref"?: string; "revision": number; "created_at": string; "updated_at": string };
@@ -217,7 +217,7 @@ export type FederationDocumentHead = { "generation": number; "hash": string; "ap
 export type FederationSyncStatus = { "last_attempt_at"?: string; "last_success_at"?: string; "last_error"?: string; "source"?: string };
 export type FederationCertificateStatus = { "serial": string; "expires_at"?: string };
 export type FederationMemberCounts = { "active": number; "suspended": number; "removed": number };
-export type FederationStatus = { "instance_id": string; "state": "none" | "joining" | "active" | "left" | "removed"; "role"?: "member" | "authority"; "health": "disabled" | "ok" | "degraded"; "federation_id"?: string; "federation_name"?: string; "authority_epoch"?: number; "authority_instance_id"?: string; "authority_url"?: string; "listener_configured": boolean; "listen_address"?: string; "federation_url"?: string; "ca_sha256"?: string; "recovery_key_fingerprint"?: string; "membership"?: FederationDocumentHead; "certificate"?: FederationCertificateStatus; "sync": FederationSyncStatus; "members": FederationMemberCounts; "software_version": string; "protocol": FederationProtocolRange };
+export type FederationStatus = { "instance_id": string; "state": "none" | "joining" | "active" | "left" | "removed"; "role"?: "member" | "authority"; "health": "disabled" | "ok" | "degraded"; "federation_id"?: string; "federation_name"?: string; "authority_epoch"?: number; "authority_instance_id"?: string; "authority_url"?: string; "listener_configured": boolean; "listen_address"?: string; "federation_url"?: string; "ca_sha256"?: string; "recovery_key_fingerprint"?: string; "membership"?: FederationDocumentHead; "certificate"?: FederationCertificateStatus; "sync": FederationSyncStatus; "members": FederationMemberCounts; "software_version": string; "protocol": FederationProtocolRange; "policy"?: FederationPolicyStatus; "alerts": Array<FederationAlert> };
 export type FederationMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url"?: string; "federation_url": string; "cert_sha256"?: string; "cert_serial"?: string; "labels": Record<string, string>; "software_version"?: string; "protocol": FederationProtocolRange; "joined_at"?: string; "authority": boolean; "self": boolean; "last_seen_at"?: string; "rtt_ms"?: number; "skew_ms"?: number; "membership_generation": number };
 export type FederationMemberList = { "items": Array<FederationMember> };
 export type FoundFederation = { "name": string; "member_name"?: string; "labels"?: Record<string, string> };
@@ -234,7 +234,7 @@ export type FederationAuthorityCertificate = { "epoch": number; "instance_id": s
 export type FederationRecoveryRotation = { "previous_key": string; "new_key": string; "generation": number; "signature": string };
 export type FederationSignature = { "key_id": string; "alg": string; "value": string };
 export type FederationMembershipDocument = { "kind": "membership"; "federation_id": string; "federation_name": string; "generation": number; "authority_epoch": number; "prev_hash": string; "protocol": FederationProtocolRange; "authority": FederationAuthorityCertificate; "recovery_public_key": string; "recovery_rotation"?: FederationRecoveryRotation; "ca_certificates": Array<string>; "members": Array<FederationDocumentMember>; "revoked_cert_serials": Array<string>; "issued_at": string; "issued_by": string; "signature"?: FederationSignature };
-export type FederationStoredDocument = { "kind": "membership"; "generation": number; "hash": string; "received_at": string; "applied": boolean; "document": FederationMembershipDocument };
+export type FederationStoredDocument = { "kind": "membership" | "policy"; "generation": number; "hash": string; "received_at": string; "applied": boolean; "document": unknown };
 export type TransferExportRequest = { "feeds"?: Array<string>; "namespaces"?: Array<string>; "include_content"?: boolean };
 export type TransferDocument = { "format_version": number; "created_at"?: string; "selection"?: {  }; "sources": Array<{  }>; "feeds": Array<{  }>; "components": Array<{  }>; "skipped_content"?: Array<string> };
 export type TransferImportRequest = { "document": TransferDocument; "dry_run"?: boolean };
@@ -252,6 +252,38 @@ export type MigrationCompareResult = { "repository": string; "path": string; "fe
 export type MigrationCompareReport = { "manager": string; "counts": Record<string, number>; "results": Array<MigrationCompareResult> };
 export type TransferRun = { "id": string; "kind": "export" | "import" | "migration" | "compare"; "dry_run": boolean; "summary": {  }; "created_at": string };
 export type TransferRunPage = { "items": Array<TransferRun> };
+export type FederationIdentityDomain = { "id": string; "type": "oidc" | "saml" | "ldap"; "issuer": string };
+export type FederationPolicyGrant = { "kind": "artifact" | "feed" | "instance"; "effect": "allow" | "deny"; "feed_key"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin"> };
+export type FederationPolicyRole = { "key": string; "revision": number; "grants": Array<FederationPolicyGrant> };
+export type FederationPrincipalBinding = { "domain": string; "subject": string; "roles": Array<string> };
+export type FederationGroupBinding = { "domain": string; "group_id": string; "roles": Array<string> };
+export type FederationServiceAccount = { "name": string; "roles": Array<string> };
+export type FederationRevocation = { "domain"?: string; "subject"?: string; "service_account"?: string; "effective_at"?: string; "reason"?: string };
+export type FederationMemberOverride = { "accept_admin_grants": boolean };
+export type FederationPolicyBody = { "identity_domains"?: Array<FederationIdentityDomain>; "roles"?: Array<FederationPolicyRole>; "principal_bindings"?: Array<FederationPrincipalBinding>; "group_bindings"?: Array<FederationGroupBinding>; "service_accounts"?: Array<FederationServiceAccount>; "revocations"?: Array<FederationRevocation>; "member_overrides"?: Record<string, FederationMemberOverride> };
+export type FederationPolicyDocument = { "kind": "policy"; "federation_id": string; "federation_name": string; "generation": number; "authority_epoch": number; "prev_hash": string; "identity_domains": Array<FederationIdentityDomain>; "roles": Array<FederationPolicyRole>; "principal_bindings": Array<FederationPrincipalBinding>; "group_bindings": Array<FederationGroupBinding>; "service_accounts": Array<FederationServiceAccount>; "revocations": Array<FederationRevocation>; "member_overrides": Record<string, FederationMemberOverride>; "issued_at": string; "issued_by": string; "signature"?: FederationSignature };
+export type FederationPrincipalConflict = { "domain": string; "subject": string; "principal_id": string; "reason": "conflict_local_principal" };
+export type FederationPolicyReport = { "roles": number; "grants": number; "principals": number; "revoked": number; "unresolved_feed_keys": Array<string>; "inert_admin_grants": number; "conflicts": Array<FederationPrincipalConflict> };
+export type FederationPolicyStatus = { "generation": number; "hash"?: string; "applied_at"?: string; "confirmed_at"?: string; "age_seconds": number; "staleness": "fresh" | "warning" | "critical"; "error"?: string; "error_at"?: string; "report": FederationPolicyReport };
+export type FederationAlert = { "code": "policy_stale" | "policy_rejected" | "membership_stale" | "policy_conflicts"; "severity": "warning" | "critical"; "message": string };
+export type FederationSettings = { "accept_admin_grants": boolean; "policy_max_age_seconds"?: number };
+export type FederationPolicyHistory = { "generation": number; "hash": string; "issued_at": string; "issued_by": string; "received_at": string };
+export type FederationPolicyView = { "status": FederationPolicyStatus; "document"?: FederationPolicyDocument; "has_draft": boolean; "settings": FederationSettings; "history": Array<FederationPolicyHistory> };
+export type FederationSectionDiff = { "added": Array<string>; "removed": Array<string>; "changed": Array<string> };
+export type FederationPolicyDiff = { "from_generation": number; "to_generation": number; "identity_domains": FederationSectionDiff; "roles": FederationSectionDiff; "principal_bindings": FederationSectionDiff; "group_bindings": FederationSectionDiff; "service_accounts": FederationSectionDiff; "revocations": FederationSectionDiff; "changes": number };
+export type FederationPolicyDraft = { "policy": FederationPolicyBody; "base_generation": number; "revision": number; "updated_at": string; "diff": FederationPolicyDiff };
+export type SaveFederationPolicyDraft = { "policy": FederationPolicyBody };
+export type PublishFederationPolicy = { "base_generation": number; "confirm": boolean; "policy"?: FederationPolicyBody };
+export type FederationPolicyPublishResult = { "generation": number; "hash": string; "report": FederationPolicyReport };
+export type FederationFeedBinding = { "feed_key": string; "feed_id": string; "feed_slug": string; "created_at": string };
+export type FederationFeedBindingList = { "items": Array<FederationFeedBinding> };
+export type BindFederationFeed = { "feed_key": string; "feed_id": string };
+export type FederatedPrincipal = { "id": string; "kind": string; "issuer": string; "subject": string; "origin": "local" | "federation"; "federated_id"?: string; "disabled": boolean; "roles": Array<string>; "local_roles": Array<string>; "conflict"?: string };
+export type FederatedPrincipalList = { "items": Array<FederatedPrincipal> };
+export type AdoptFederatedPrincipal = { "confirm": boolean };
+export type FederationAccessCheck = { "member_id": string; "kind": "artifact" | "feed" | "instance"; "feed_key"?: string; "namespace"?: string; "action": "read" | "publish" | "delete" | "configure" | "replicate" | "admin" };
+export type FederationAccessCheckResult = { "member_id": string; "allowed": boolean; "reason"?: string; "policy_generation": number; "federated_id"?: string };
+export type EffectiveRole = { "name": string; "origin": "local" | "federation" };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -426,6 +458,19 @@ importTransfer: { body: TransferImportRequest; response: TransferReport };
 listTransferRuns: { body: undefined; response: TransferRunPage };
 migrateNexus: { body: NexusMigrationRequest; response: MigrationReport };
 compareMigration: { body: MigrationCompareRequest; response: MigrationCompareReport };
+getFederationPolicy: { body: undefined; response: FederationPolicyView };
+getFederationPolicyDraft: { body: undefined; response: FederationPolicyDraft };
+saveFederationPolicyDraft: { body: SaveFederationPolicyDraft; response: FederationPolicyDraft };
+publishFederationPolicy: { body: PublishFederationPolicy; response: FederationPolicyPublishResult };
+diffFederationPolicy: { body: undefined; response: FederationPolicyDiff };
+listFederationFeedBindings: { body: undefined; response: FederationFeedBindingList };
+bindFederationFeed: { body: BindFederationFeed; response: FederationFeedBinding };
+unbindFederationFeed: { body: undefined; response: undefined };
+listFederatedPrincipals: { body: undefined; response: FederatedPrincipalList };
+adoptFederatedPrincipal: { body: AdoptFederatedPrincipal; response: FederationPolicyReport };
+getFederationSettings: { body: undefined; response: FederationSettings };
+setFederationSettings: { body: FederationSettings; response: FederationSettings };
+checkFederationAccess: { body: FederationAccessCheck; response: FederationAccessCheckResult };
 }
 export const routes = {
   "getStatus": {
@@ -1285,6 +1330,71 @@ export const routes = {
   },
   "compareMigration": {
     "path": "/api/v1/migrations/compare",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getFederationPolicy": {
+    "path": "/api/v1/federation/policy",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getFederationPolicyDraft": {
+    "path": "/api/v1/federation/policy/draft",
+    "method": "GET",
+    "idempotent": false
+  },
+  "saveFederationPolicyDraft": {
+    "path": "/api/v1/federation/policy/draft",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "publishFederationPolicy": {
+    "path": "/api/v1/federation/policy/publish",
+    "method": "POST",
+    "idempotent": true
+  },
+  "diffFederationPolicy": {
+    "path": "/api/v1/federation/policy/diff",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listFederationFeedBindings": {
+    "path": "/api/v1/federation/feed-bindings",
+    "method": "GET",
+    "idempotent": false
+  },
+  "bindFederationFeed": {
+    "path": "/api/v1/federation/feed-bindings",
+    "method": "POST",
+    "idempotent": true
+  },
+  "unbindFederationFeed": {
+    "path": "/api/v1/federation/feed-bindings/{fed}/{slug}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "listFederatedPrincipals": {
+    "path": "/api/v1/federation/principals",
+    "method": "GET",
+    "idempotent": false
+  },
+  "adoptFederatedPrincipal": {
+    "path": "/api/v1/federation/principals/{id}/adopt",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getFederationSettings": {
+    "path": "/api/v1/federation/settings",
+    "method": "GET",
+    "idempotent": false
+  },
+  "setFederationSettings": {
+    "path": "/api/v1/federation/settings",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "checkFederationAccess": {
+    "path": "/api/v1/federation/access-check",
     "method": "POST",
     "idempotent": false
   }

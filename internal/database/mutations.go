@@ -20,6 +20,9 @@ var (
 	ErrConflict            = errors.New("resource conflict")
 	ErrNotFound            = errors.New("resource not found")
 	ErrRevisionConflict    = errors.New("resource revision changed")
+	// ErrFederationManaged reports a change to a federation-managed row
+	// (SQLSTATE AFM01 from the origin guard triggers, P2-M2).
+	ErrFederationManaged = errors.New("resource is managed by the federation policy")
 )
 
 // MutationRequest scopes replay to an authenticated principal and one resource.
@@ -99,6 +102,8 @@ func ExecuteMutation(ctx context.Context, pool *pgxpool.Pool, req MutationReques
 			return fail(ErrNotFound)
 		case errors.Is(err, ErrRevisionConflict):
 			return fail(ErrRevisionConflict)
+		case errors.Is(err, ErrFederationManaged):
+			return fail(ErrFederationManaged)
 		default:
 			return fail(ErrMutationFailed)
 		}

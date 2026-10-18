@@ -30,7 +30,7 @@ func (r Roles) Resolve(ctx context.Context, p Principal) (Policy, error) {
 	}
 	// Long artifact transfers re-resolve policy before metadata commit. Recheck
 	// machine-token lifetime here so revocation during staging cannot publish.
-	if p.TokenID != "" {
+	if p.TokenID != "" && !p.Delegated {
 		var active bool
 		err := r.DB.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM service_tokens WHERE instance_id=$1 AND id=$2 AND principal_id=$3 AND revoked_at IS NULL AND expires_at>clock_timestamp()) OR EXISTS(SELECT 1 FROM personal_access_tokens WHERE instance_id=$1 AND id=$2 AND principal_id=$3 AND revoked_at IS NULL AND expires_at>clock_timestamp())", p.InstanceID, p.TokenID, p.PrincipalID).Scan(&active)
 		if err != nil {
@@ -40,11 +40,19 @@ func (r Roles) Resolve(ctx context.Context, p Principal) (Policy, error) {
 			return Policy{}, ErrUnauthenticated
 		}
 	}
-	rows, err := r.DB.Query(ctx, `SELECT r.name,g.kind,g.effect,g.feed_id::text,g.source_id::text,g.namespace,g.actions
+	// Inert federated grants (unresolved feed key, unaccepted instance admin)
+	// are never matched: an empty feed selector would otherwise mean "every
+	// feed". With the optional federation staleness limit (D4) exceeded,
+	// federated principals resolve to no grants; local principals are unaffected.
+	rows, err := r.DB.Query(ctx, `SELECT r.name,r.origin,g.kind,g.effect,g.feed_id::text,g.source_id::text,g.namespace,g.actions
  FROM principals p JOIN principal_roles pr ON (pr.instance_id,pr.principal_id)=(p.instance_id,p.id)
  JOIN roles r ON (r.instance_id,r.id)=(pr.instance_id,pr.role_id)
  JOIN role_grants g ON (g.instance_id,g.role_id)=(r.instance_id,r.id)
- WHERE p.instance_id=$1 AND p.id=$2 AND NOT p.disabled ORDER BY r.id,g.id`, p.InstanceID, p.PrincipalID)
+ WHERE p.instance_id=$1 AND p.id=$2 AND NOT p.disabled AND g.inert IS NULL
+ AND (p.origin='local' OR NOT EXISTS(SELECT 1 FROM instance_settings s JOIN federation_state f ON f.instance_id=s.instance_id
+  WHERE s.instance_id=p.instance_id AND s.federation_policy_max_age_seconds IS NOT NULL
+  AND coalesce(f.policy_confirmed_at,f.policy_applied_at,'-infinity'::timestamptz)+make_interval(secs=>s.federation_policy_max_age_seconds)<clock_timestamp()))
+ ORDER BY r.id,g.id`, p.InstanceID, p.PrincipalID)
 	if err != nil {
 		return Policy{}, ErrUnavailable
 	}
@@ -52,11 +60,11 @@ func (r Roles) Resolve(ctx context.Context, p Principal) (Policy, error) {
 	policy := Policy{}
 	indexes := map[string]int{}
 	for rows.Next() {
-		var name string
+		var name, origin string
 		var g Grant
 		var feed, source *string
 		var actions []string
-		if err := rows.Scan(&name, &g.Kind, &g.Effect, &feed, &source, &g.Namespace, &actions); err != nil {
+		if err := rows.Scan(&name, &origin, &g.Kind, &g.Effect, &feed, &source, &g.Namespace, &actions); err != nil {
 			return Policy{}, ErrUnavailable
 		}
 		g.InstanceID = p.InstanceID
@@ -73,7 +81,7 @@ func (r Roles) Resolve(ctx context.Context, p Principal) (Policy, error) {
 		if !ok {
 			i = len(policy.Roles)
 			indexes[name] = i
-			policy.Roles = append(policy.Roles, Role{Name: name, PrincipalIDs: []string{p.PrincipalID}})
+			policy.Roles = append(policy.Roles, Role{Name: name, Origin: origin, PrincipalIDs: []string{p.PrincipalID}})
 		}
 		policy.Roles[i].Grants = append(policy.Roles[i].Grants, g)
 	}

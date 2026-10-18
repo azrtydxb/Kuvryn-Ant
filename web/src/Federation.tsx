@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import type { Client } from "./api";
 import { useOptionalCall } from "./gaps";
+import { FederationPolicy } from "./FederationPolicy";
 import type {
   FederationIssuedInvitation,
   FederationMember,
@@ -208,6 +209,9 @@ export function FederationPage({ client }: { client: Client }) {
                   changed={reload}
                 />
               )}
+              {st.state === "active" && (
+                <FederationPolicy client={client} st={st} />
+              )}
             </>
           )}
         </>
@@ -310,9 +314,11 @@ function StatusCard({ st }: { st: FederationStatus }) {
         <Alert tone="warn" title="Federation degraded">
           {st.sync.last_error
             ? `Last sync failed: ${st.sync.last_error}. `
-            : "The applied membership is older than 15 minutes. "}
-          This instance keeps enforcing the last applied membership and keeps
-          serving.
+            : st.alerts?.length
+              ? "See the federation alerts below. "
+              : "The applied membership is older than 15 minutes. "}
+          This instance keeps enforcing the last applied membership and policy
+          and keeps serving.
         </Alert>
       )}
       {(st.state === "left" || st.state === "removed") && (

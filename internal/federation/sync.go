@@ -56,6 +56,9 @@ func (s *Service) applyDocuments(ctx context.Context, docs []Membership, source 
 				if _, err := tx.Exec(ctx, `UPDATE federation_state SET state=$2 WHERE instance_id=$1`, s.cfg.InstanceID, next); err != nil {
 					return err
 				}
+				if err := dropFederatedIdentity(ctx, tx, s.cfg.InstanceID); err != nil {
+					return err
+				}
 			}
 			applied++
 			return audit(ctx, tx, s.cfg.InstanceID, "", "federation.document.applied", st.FederationID, "success",
@@ -115,6 +118,7 @@ type heads struct {
 		Hash           string `json:"hash"`
 		AuthorityEpoch int64  `json:"authority_epoch"`
 	} `json:"membership"`
+	Policy policyHead `json:"policy"`
 }
 
 // SyncOnce fetches newer membership generations, trying the authority first
@@ -183,7 +187,8 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 			return &RejectedError{Reason: "wrong_federation", Err: ErrWrongFed}
 		}
 		if h.Membership.Generation <= st.AppliedGeneration {
-			return nil
+			// Membership is current: bring the policy up to this source.
+			return s.syncPolicyFrom(ctx, id, src, h.Policy)
 		}
 		raw, err = s.client.Do(ctx, id, src.FederationURL, "GET", "/federation/v1/documents/membership?after="+strconv.FormatInt(st.AppliedGeneration, 10)+"&limit=100", nil, src.InstanceID)
 		if err != nil {
@@ -236,6 +241,10 @@ func (s *Service) Run(ctx context.Context) {
 		if err := s.SyncOnce(step); err != nil && ctx.Err() == nil {
 			s.logOnce("sync", "federation sync failed", "reason", err)
 		}
+		if _, err := s.EvaluateAlerts(step); err != nil && ctx.Err() == nil {
+			s.logOnce("alerts", "federation alert evaluation failed", "reason", err)
+		}
+		s.purgeNonces(step)
 		s.PingMembers(step)
 		if err := s.RenewIfDue(step); err != nil && ctx.Err() == nil {
 			s.logOnce("renew", "federation certificate renewal failed", "reason", err)
@@ -300,7 +309,15 @@ func (s *Service) nudgeMembers(ctx context.Context, extra ...string) {
 	if err != nil {
 		return
 	}
-	body, _ := json.Marshal(map[string]any{"documents": docs})
+	ps, err := loadPolicyState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil {
+		return
+	}
+	policies, err := policyDocumentsAfter(ctx, s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, max(0, ps.Generation-16), 16)
+	if err != nil {
+		return
+	}
+	body, _ := json.Marshal(map[string]any{"documents": docs, "policy_documents": policies})
 	targets := map[string]Member{}
 	for _, m := range t.doc.Members {
 		if m.InstanceID != s.cfg.InstanceID && (m.Status == "active" || contains(extra, m.InstanceID)) {

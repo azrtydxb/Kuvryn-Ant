@@ -284,7 +284,7 @@ func target(base, path string) (string, error) {
 }
 
 func readResponse(resp *http.Response) ([]byte, error) {
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	b, err := io.ReadAll(io.LimitReader(resp.Body, MaxBody+1))
 	if err != nil {
 		return nil, err
@@ -305,6 +305,13 @@ func readResponse(resp *http.Response) ([]byte, error) {
 // Do sends a signed request over mTLS. expectID, when set, must be the CN of
 // the server certificate, so a member cannot answer in another's name.
 func (c Client) Do(ctx context.Context, id Identity, baseURL, method, path string, body []byte, expectID string) ([]byte, error) {
+	return c.DoHeader(ctx, id, baseURL, method, path, body, expectID, nil)
+}
+
+// DoHeader is Do with extra request headers (for example a principal
+// assertion). Headers are not covered by the member request signature; an
+// assertion carries its own signature and request binding.
+func (c Client) DoHeader(ctx context.Context, id Identity, baseURL, method, path string, body []byte, expectID string, hdr map[string]string) ([]byte, error) {
 	if id.Certificate == nil || id.Roots == nil || id.SigningKey == nil {
 		return nil, errors.New("federation: identity incomplete")
 	}
@@ -330,6 +337,9 @@ func (c Client) Do(ctx context.Context, id Identity, baseURL, method, path strin
 	}
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	for k, v := range hdr {
+		req.Header.Set(k, v)
 	}
 	ts := strconv.FormatInt(c.now().Unix(), 10)
 	nonce := randomNonce()

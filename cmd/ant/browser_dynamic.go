@@ -332,5 +332,5 @@ func (b *browserRuntime) localLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "browser authentication failed", http.StatusUnauthorized)
 		return
 	}
-	s.enterprise.issue(w, r, "local", localadmin.Issuer, res.Subject)
+	s.enterprise.issue(w, r, "local", localadmin.Issuer, res.Subject, nil)
 }

@@ -11,13 +11,17 @@ import (
 
 // Resources are read-only views backed by the same tools (and therefore the
 // same authorization): ant://feeds, ant://feeds/{id}, ant://sources,
-// ant://sources/{id}, ant://health.
+// ant://sources/{id}, ant://health, ant://federation, ant://federation/members,
+// ant://federation/policy.
 
 func (s *Server) listResources() any {
 	return map[string]any{"resources": []any{
 		map[string]any{"uri": "ant://feeds", "name": "feeds", "title": "Feeds", "description": "Feeds visible to the caller.", "mimeType": "application/json"},
 		map[string]any{"uri": "ant://sources", "name": "sources", "title": "Sources", "description": "Sources visible to the caller.", "mimeType": "application/json"},
 		map[string]any{"uri": "ant://health", "name": "health", "title": "Service health", "description": "Liveness, readiness and saturation.", "mimeType": "application/json"},
+		map[string]any{"uri": "ant://federation", "name": "federation", "title": "Federation status", "description": "Local federation view, policy head and alerts.", "mimeType": "application/json"},
+		map[string]any{"uri": "ant://federation/members", "name": "federation-members", "title": "Federation members", "description": "Members of the applied membership.", "mimeType": "application/json"},
+		map[string]any{"uri": "ant://federation/policy", "name": "federation-policy", "title": "Federation policy", "description": "The applied signed federation policy.", "mimeType": "application/json"},
 	}}
 }
 
@@ -55,6 +59,18 @@ func (s *Server) readResource(r *http.Request, p identity.Principal, params json
 		}
 	case "health":
 		name = "get_health"
+	case "federation":
+		switch id {
+		case "":
+			name = "get_federation_status"
+		case "members":
+			name = "list_federation_members"
+		case "policy":
+			name = "get_federation_policy"
+		default:
+			return nil, &rpcError{codeInvalidParams, "unknown resource"}
+		}
+		id = ""
 	default:
 		return nil, &rpcError{codeInvalidParams, "unknown resource"}
 	}

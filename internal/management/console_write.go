@@ -442,9 +442,27 @@ func (h consoleHandlers) deleteFeed(w http.ResponseWriter, r *http.Request) {
 				return nil, err
 			}
 		}
+		// Federated grants on this feed become inert again (their feed key stays
+		// unbound until another feed is bound to it); the feed-key binding goes
+		// with the feed.
+		if _, err = tx.Exec(ctx, `SELECT set_config('ant.federation_apply','on',true)`); err != nil {
+			return nil, err
+		}
+		for _, q := range []string{
+			`UPDATE role_grants SET feed_id=NULL,inert='unresolved_feed' WHERE instance_id=$1 AND feed_id=$2 AND origin='federation' AND feed_key IS NOT NULL`,
+			`DELETE FROM role_grants WHERE instance_id=$1 AND feed_id=$2 AND origin='federation'`,
+			`DELETE FROM federated_feed_bindings WHERE instance_id=$1 AND feed_id=$2`,
+		} {
+			if _, err = tx.Exec(ctx, q, p.InstanceID, feed); err != nil {
+				return nil, err
+			}
+		}
+		if _, err = tx.Exec(ctx, `SELECT set_config('ant.federation_apply','off',true)`); err != nil {
+			return nil, err
+		}
 		// Feed-scoped grants cannot outlive their feed; bump the affected roles so
 		// concurrent role edits are detected.
-		rows, err := tx.Query(ctx, `DELETE FROM role_grants WHERE instance_id=$1 AND feed_id=$2 RETURNING role_id::text`, p.InstanceID, feed)
+		rows, err := tx.Query(ctx, `DELETE FROM role_grants WHERE instance_id=$1 AND feed_id=$2 AND origin='local' RETURNING role_id::text`, p.InstanceID, feed)
 		if err != nil {
 			return nil, err
 		}

@@ -29,6 +29,18 @@ type EffectivePermissions struct {
 	Disabled    bool              `json:"disabled"`
 	Resource    EffectiveResource `json:"resource"`
 	Actions     []EffectiveAction `json:"actions"`
+	// Origin is local or federation for the principal; Roles lists every
+	// contributing role with its origin, so federated and local contributions
+	// are explained separately (P2-M2).
+	Origin                     string          `json:"origin"`
+	Roles                      []EffectiveRole `json:"roles"`
+	FederationPolicyGeneration int64           `json:"federation_policy_generation"`
+}
+
+// EffectiveRole is one role of the principal with its origin.
+type EffectiveRole struct {
+	Name   string `json:"name"`
+	Origin string `json:"origin"`
 }
 
 var allActions = []identity.Action{identity.Read, identity.Publish, identity.Delete, identity.Configure, identity.Replicate, identity.Admin}
@@ -121,7 +133,9 @@ func (h opsHandlers) effective(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := h.ctx(r)
 	defer cancel()
 	var disabled bool
-	err := h.db.QueryRow(ctx, `SELECT disabled FROM principals WHERE instance_id=$1 AND id=$2`, p.InstanceID, target).Scan(&disabled)
+	var origin string
+	var generation int64
+	err := h.db.QueryRow(ctx, `SELECT p.disabled,p.origin,coalesce((SELECT policy_generation FROM federation_state f WHERE f.instance_id=p.instance_id),0) FROM principals p WHERE p.instance_id=$1 AND p.id=$2`, p.InstanceID, target).Scan(&disabled, &origin, &generation)
 	if errors.Is(err, pgx.ErrNoRows) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "principal not found")
 		return
@@ -136,9 +150,12 @@ func (h opsHandlers) effective(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "authorization unavailable")
 		return
 	}
-	out := EffectivePermissions{PrincipalID: target, Disabled: disabled, Actions: []EffectiveAction{}, Resource: EffectiveResource{
+	out := EffectivePermissions{PrincipalID: target, Disabled: disabled, Actions: []EffectiveAction{}, Origin: origin, Roles: []EffectiveRole{}, FederationPolicyGeneration: generation, Resource: EffectiveResource{
 		Kind: string(res.Kind), FeedID: res.FeedID, SourceID: res.SourceID, Namespace: res.Namespace,
 	}}
+	for _, role := range targetPolicy.Roles {
+		out.Roles = append(out.Roles, EffectiveRole{Name: role.Name, Origin: role.Origin})
+	}
 	for _, action := range allActions {
 		item := EffectiveAction{Action: action, Allowed: !disabled && targetPolicy.Authorize(subject, res, action), ViaRoles: []string{}, DeniedByRoles: []string{}}
 		for _, role := range targetPolicy.Roles {

@@ -635,6 +635,10 @@ last_sync_error='',last_sync_source=$4,last_sync_attempt_at=clock_timestamp(),la
 	if err := s.Refresh(ctx); err != nil {
 		s.cfg.Logger.Warn("federation trust refresh failed", "reason", err)
 	}
+	// Fetch the applied policy right away (best effort; the worker retries).
+	if err := s.SyncOnce(ctx); err != nil {
+		s.cfg.Logger.Warn("federation policy fetch after join failed; the sync worker retries", "reason", err)
+	}
 	return s.Status(ctx)
 }
 
@@ -701,6 +705,9 @@ func (s *Service) Leave(ctx context.Context, actor string, force bool) (Status, 
 			if _, err := tx.Exec(ctx, `UPDATE federation_state SET state='left',revision=revision+1,updated_at=clock_timestamp() WHERE instance_id=$1`, s.cfg.InstanceID); err != nil {
 				return err
 			}
+		}
+		if err := dropFederatedIdentity(ctx, tx, s.cfg.InstanceID); err != nil {
+			return err
 		}
 		return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.left", cur.FederationID, "success", map[string]any{"forced": remoteErr != nil, "generation": cur.AppliedGeneration})
 	})

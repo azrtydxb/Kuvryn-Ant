@@ -41,6 +41,9 @@ var (
 	ErrKeysUnavailable   = errors.New("federation: secret keyring not configured")
 	ErrProtocol          = errors.New("federation: no common protocol version")
 	ErrSelf              = errors.New("federation: the authority cannot change its own membership")
+	ErrRevisionMismatch  = errors.New("federation: revision changed")
+	ErrStaleBase         = errors.New("federation: base generation is not the applied generation")
+	ErrNotFederated      = errors.New("federation: principal is not a federated principal")
 )
 
 // InputError is an invalid request with a client-safe message.
@@ -95,6 +98,14 @@ type Service struct {
 	nudge  chan struct{}
 	logMu  sync.Mutex
 	logged map[string]time.Time
+	// policyCache holds the applied policy document for sign-in and
+	// assertion lookups; nil means reload from the database.
+	policyCache atomic.Pointer[PolicyDocument]
+	metrics     assertionMetrics
+	// alerts is the last evaluated alert set (metrics without DB access).
+	alerts atomic.Pointer[[]Alert]
+	// policyHeadGauge is the last evaluated policy status (metrics).
+	policyHeadGauge atomic.Pointer[PolicyStatus]
 }
 
 type trust struct {
@@ -297,6 +308,8 @@ type Status struct {
 	Members                MemberCounts       `json:"members"`
 	SoftwareVersion        string             `json:"software_version"`
 	Protocol               ProtocolRange      `json:"protocol"`
+	Policy                 *PolicyStatus      `json:"policy,omitempty"`
+	Alerts                 []Alert            `json:"alerts"`
 }
 
 // Staleness thresholds (§3.2): reported, not enforced (D4).
@@ -314,7 +327,7 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 	out := Status{InstanceID: s.cfg.InstanceID, State: st.State, Role: st.Role, FederationID: st.FederationID, FederationName: st.Name,
 		AuthorityURL: st.AuthorityURL, ListenerConfigured: s.cfg.ListenAddress != "", ListenAddress: s.cfg.ListenAddress, FederationURL: st.FederationURL,
 		CASHA256: st.CASHA256, SoftwareVersion: s.cfg.SoftwareVersion, Protocol: ProtocolRange{ProtocolMin, ProtocolMax},
-		Sync: SyncStatus{LastAttemptAt: st.LastSyncAttemptAt, LastSuccessAt: st.LastSyncSuccessAt, LastError: st.LastSyncError, Source: st.LastSyncSource}}
+		Sync: SyncStatus{LastAttemptAt: st.LastSyncAttemptAt, LastSuccessAt: st.LastSyncSuccessAt, LastError: st.LastSyncError, Source: st.LastSyncSource}, Alerts: []Alert{}}
 	if out.FederationURL == "" {
 		out.FederationURL = s.cfg.PublicURL
 	}
@@ -365,6 +378,17 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 			out.Health = "disabled"
 		} else if time.Duration(head.AgeSeconds)*time.Second > StaleWarning || st.LastSyncError != "" {
 			out.Health = "degraded"
+		}
+		if st.State == "active" {
+			ps, err := loadPolicyState(ctx, s.cfg.DB, s.cfg.InstanceID)
+			if err != nil {
+				return Status{}, err
+			}
+			out.Policy = s.policyStatus(st, ps)
+			out.Alerts = computeAlerts(st, ps, out.Policy, s.now())
+			if len(out.Alerts) > 0 {
+				out.Health = "degraded"
+			}
 		}
 	}
 	return out, nil
@@ -441,20 +465,21 @@ func (s *Service) Member(ctx context.Context, id string) (MemberView, error) {
 	return MemberView{}, ErrNotFound
 }
 
-// StoredDocument is a document from the local log.
+// StoredDocument is a document from the local log. Document is a
+// *Membership or a *PolicyDocument depending on Kind.
 type StoredDocument struct {
-	Kind       string      `json:"kind"`
-	Generation int64       `json:"generation"`
-	Hash       string      `json:"hash"`
-	ReceivedAt time.Time   `json:"received_at"`
-	Applied    bool        `json:"applied"`
-	Document   *Membership `json:"document"`
+	Kind       string    `json:"kind"`
+	Generation int64     `json:"generation"`
+	Hash       string    `json:"hash"`
+	ReceivedAt time.Time `json:"received_at"`
+	Applied    bool      `json:"applied"`
+	Document   any       `json:"document"`
 }
 
 // Document returns the applied document of a kind (generation 0) or a
 // specific generation from the local log.
 func (s *Service) Document(ctx context.Context, kind string, generation int64) (StoredDocument, error) {
-	if kind != "membership" {
+	if kind != "membership" && kind != "policy" {
 		return StoredDocument{}, ErrNotFound
 	}
 	st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
@@ -464,13 +489,24 @@ func (s *Service) Document(ctx context.Context, kind string, generation int64) (
 	if st.FederationID == "" || st.AppliedGeneration == 0 {
 		return StoredDocument{}, ErrNotConfigured
 	}
+	current := st.AppliedGeneration
+	if kind == "policy" {
+		ps, err := loadPolicyState(ctx, s.cfg.DB, s.cfg.InstanceID)
+		if err != nil {
+			return StoredDocument{}, err
+		}
+		current = ps.Generation
+	}
 	if generation == 0 {
-		generation = st.AppliedGeneration
+		generation = current
+	}
+	if generation == 0 {
+		return StoredDocument{}, ErrNotFound
 	}
 	var out StoredDocument
 	var body []byte
-	err = s.cfg.DB.QueryRow(ctx, `SELECT generation,hash,received_at,body FROM federation_documents WHERE instance_id=$1 AND federation_id=$2 AND kind='membership' AND generation=$3`,
-		s.cfg.InstanceID, st.FederationID, generation).Scan(&out.Generation, &out.Hash, &out.ReceivedAt, &body)
+	err = s.cfg.DB.QueryRow(ctx, `SELECT generation,hash,received_at,body FROM federation_documents WHERE instance_id=$1 AND federation_id=$2 AND kind=$4 AND generation=$3`,
+		s.cfg.InstanceID, st.FederationID, generation, kind).Scan(&out.Generation, &out.Hash, &out.ReceivedAt, &body)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return StoredDocument{}, ErrNotFound
 	}
@@ -478,9 +514,15 @@ func (s *Service) Document(ctx context.Context, kind string, generation int64) (
 		return StoredDocument{}, err
 	}
 	out.Kind = kind
-	out.Applied = generation == st.AppliedGeneration
-	out.Document = &Membership{}
-	return out, json.Unmarshal(body, out.Document)
+	out.Applied = generation == current
+	if kind == "policy" {
+		d := &PolicyDocument{}
+		out.Document = d
+		return out, json.Unmarshal(body, d)
+	}
+	d := &Membership{}
+	out.Document = d
+	return out, json.Unmarshal(body, d)
 }
 
 // tx runs fn in a read-committed transaction.

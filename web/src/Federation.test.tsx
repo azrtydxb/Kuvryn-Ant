@@ -241,3 +241,182 @@ it("shows degraded federation and lets the authority remove a member with confir
     ).toBeTruthy(),
   );
 });
+
+const policyView = {
+  status: {
+    generation: 2,
+    hash: "sha256:" + "c".repeat(64),
+    applied_at: "2026-10-18T10:00:00Z",
+    age_seconds: 0,
+    staleness: "fresh",
+    report: {
+      roles: 1,
+      grants: 2,
+      principals: 1,
+      revoked: 0,
+      unresolved_feed_keys: ["lab/missing"],
+      inert_admin_grants: 1,
+      conflicts: [],
+    },
+  },
+  document: {
+    kind: "policy",
+    federation_id: active.federation_id,
+    federation_name: "lab",
+    generation: 2,
+    authority_epoch: 1,
+    prev_hash: "sha256:" + "d".repeat(64),
+    identity_domains: [
+      { id: "idp", type: "oidc", issuer: "https://idp.example" },
+    ],
+    roles: [
+      {
+        key: "fed:readers",
+        revision: 1,
+        grants: [
+          {
+            kind: "feed",
+            effect: "allow",
+            feed_key: "lab/release",
+            actions: ["read"],
+          },
+        ],
+      },
+    ],
+    principal_bindings: [],
+    group_bindings: [],
+    service_accounts: [{ name: "ci", roles: ["fed:readers"] }],
+    revocations: [],
+    member_overrides: {},
+    issued_at: "2026-10-18T10:00:00Z",
+    issued_by: "admin",
+  },
+  has_draft: false,
+  settings: { accept_admin_grants: false },
+  history: [
+    {
+      generation: 2,
+      hash: "sha256:" + "c".repeat(64),
+      issued_at: "2026-10-18T10:00:00Z",
+      issued_by: "admin",
+      received_at: "2026-10-18T10:00:00Z",
+    },
+  ],
+};
+
+it("shows the applied policy and publishes the next generation from the authority", async () => {
+  install((url, init) => {
+    if (url === "/api/v1/federation/status") return json(active);
+    if (url === "/api/v1/federation/members")
+      return json({
+        items: [member(alpha, "alpha", { authority: true, self: true })],
+      });
+    if (url === "/api/v1/federation/invitations") return json({ items: [] });
+    if (url === "/api/v1/federation/policy") return json(policyView);
+    if (url === "/api/v1/federation/policy/draft")
+      return json(
+        { code: "not_found", message: "none", request_id: "r".repeat(16) },
+        404,
+      );
+    if (url === "/api/v1/federation/feed-bindings") return json({ items: [] });
+    if (url === "/api/v1/federation/principals") return json({ items: [] });
+    if (url === "/api/v1/federation/policy/publish" && init.method === "POST")
+      return json({
+        generation: 3,
+        hash: "sha256:" + "e".repeat(64),
+        report: policyView.status.report,
+      });
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Federation");
+  await screen.findByText("Generation 2");
+  await screen.findByText(/lab\/missing \(inert until bound\)/);
+  screen.getByText("fed:readers");
+  fireEvent.click(screen.getByRole("button", { name: "Edit policy" }));
+  const dialog = await screen.findByRole("dialog", {
+    name: "Edit federation policy",
+  });
+  const publish = within(dialog).getByRole("button", { name: "Publish" });
+  expect((publish as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(
+    within(dialog).getByLabelText("Publish generation 3 to every member"),
+  );
+  fireEvent.click(publish);
+  await waitFor(() =>
+    expect(posts("/api/v1/federation/policy/publish")).toHaveLength(1),
+  );
+  const sent = JSON.parse(
+    posts("/api/v1/federation/policy/publish")[0].init.body as string,
+  );
+  expect(sent.base_generation).toBe(2);
+  expect(sent.confirm).toBe(true);
+  expect(sent.policy.service_accounts).toEqual([
+    { name: "ci", roles: ["fed:readers"] },
+  ]);
+});
+
+it("shows policy alerts on a member and adopts a conflicting local principal", async () => {
+  const local = "00000000-0000-4000-8000-0000000000aa";
+  install((url, init) => {
+    if (url === "/api/v1/federation/status")
+      return json({
+        ...active,
+        role: "member",
+        health: "degraded",
+        alerts: [
+          {
+            code: "policy_stale",
+            severity: "warning",
+            message: "federation policy not confirmed current for 20m0s",
+          },
+        ],
+      });
+    if (url === "/api/v1/federation/members")
+      return json({ items: [member(alpha, "alpha", { authority: true })] });
+    if (url === "/api/v1/federation/policy")
+      return json({
+        ...policyView,
+        status: {
+          ...policyView.status,
+          staleness: "warning",
+          age_seconds: 1200,
+        },
+      });
+    if (url === "/api/v1/federation/feed-bindings") return json({ items: [] });
+    if (url === "/api/v1/federation/principals")
+      return json({
+        items: [
+          {
+            id: local,
+            kind: "user",
+            issuer: "idp",
+            subject: "dave",
+            origin: "local",
+            disabled: false,
+            roles: [],
+            local_roles: [],
+            conflict: "conflict_local_principal",
+          },
+        ],
+      });
+    if (
+      url === `/api/v1/federation/principals/${local}/adopt` &&
+      init.method === "POST"
+    )
+      return json(policyView.status.report);
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Federation");
+  await screen.findByText(/not confirmed current for 20m0s/);
+  expect(screen.queryByRole("button", { name: "Edit policy" })).toBeNull();
+  fireEvent.click(await screen.findByRole("button", { name: "Adopt" }));
+  await waitFor(() =>
+    expect(posts(`/api/v1/federation/principals/${local}/adopt`)).toHaveLength(
+      1,
+    ),
+  );
+});
