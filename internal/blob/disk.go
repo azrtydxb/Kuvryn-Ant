@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 const TransferBufferSize = 64 << 10
@@ -24,6 +25,9 @@ const DefaultBufferBudget = 1 << 30
 type Disk struct {
 	root  *os.Root
 	slots chan struct{}
+
+	resumeMu sync.Mutex
+	resuming map[Digest]bool
 }
 
 func NewDisk(path string, bufferBudget int64) (*Disk, error) {
@@ -63,6 +67,7 @@ func NewDisk(path string, bufferBudget int64) (*Disk, error) {
 		root.Close()
 		return nil, err
 	}
+	d.sweepResumable(time.Now())
 	return d, nil
 }
 
@@ -133,6 +138,8 @@ type diskUpload struct {
 	size   int64
 	closed bool
 	buffer []byte
+	// onClose runs once when the upload is finalized, aborted or suspended.
+	onClose func()
 }
 
 func (u *diskUpload) Write(p []byte) (int, error) {
@@ -159,6 +166,9 @@ func (u *diskUpload) cleanup() error {
 	syncErr := u.disk.syncDir("staging")
 	u.buffer = nil
 	<-u.disk.slots
+	if u.onClose != nil {
+		u.onClose()
+	}
 	return errors.Join(closeErr, removeErr, syncErr)
 }
 func (u *diskUpload) Abort() error { u.mu.Lock(); defer u.mu.Unlock(); return u.cleanup() }

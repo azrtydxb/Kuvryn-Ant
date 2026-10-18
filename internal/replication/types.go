@@ -6,6 +6,7 @@ package replication
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -19,7 +20,18 @@ var (
 	ErrCorrupt     = errors.New("replicated blob failed digest verification")
 	ErrLeaseLost   = errors.New("replication job lease lost")
 	ErrPeer        = errors.New("replication peer request failed")
+	// ErrHistoryPurged means the peer no longer holds the change history the
+	// caller asked for (cursor below the low-water mark); the consumer must reseed.
+	ErrHistoryPurged = errors.New("replication change history purged below cursor")
 )
+
+// HistoryPurgedError carries the peer's low-water mark.
+type HistoryPurgedError struct{ LowWater int64 }
+
+func (e *HistoryPurgedError) Error() string {
+	return fmt.Sprintf("%v (low-water %d)", ErrHistoryPurged, e.LowWater)
+}
+func (e *HistoryPurgedError) Is(target error) bool { return target == ErrHistoryPurged }
 
 // Origin identifies the authoritative source an item belongs to. Kind "remote"
 // marks a cached pull-through entry.
@@ -76,6 +88,9 @@ type Head struct {
 	ChangedAt *time.Time `json:"changed_at,omitempty"`
 	Now       time.Time  `json:"now"`
 	Format    string     `json:"format"`
+	// LowWater is the highest purged change sequence: incremental service is
+	// only possible for cursors at or above it.
+	LowWater int64 `json:"low_water"`
 }
 
 // ManifestPage is one page of the current-state manifest. Next is empty at the
@@ -103,6 +118,14 @@ type Change struct {
 	Asset      *Item          `json:"asset,omitempty"`
 	Tag        *TagItem       `json:"tag,omitempty"`
 	Component  *ComponentItem `json:"component,omitempty"`
+	Attachment *Attachment    `json:"attachment,omitempty"`
+}
+
+// Attachment reports that a source was attached to (put) or detached from
+// (delete) the exported feed. A put means content already in the source is now
+// part of the feed and has to be back-filled by consumers.
+type Attachment struct {
+	Origin Origin `json:"origin"`
 }
 
 // ChangePage returns relevant changes after a cursor. Next is the new cursor:
@@ -114,6 +137,8 @@ type ChangePage struct {
 	More    bool       `json:"more"`
 	Head    int64      `json:"head"`
 	HeadAt  *time.Time `json:"head_at,omitempty"`
+	// LowWater is the peer's purge low-water mark at the time of the read.
+	LowWater int64 `json:"low_water"`
 }
 
 // Filters select a subset of a feed. Empty lists match everything. Namespaces

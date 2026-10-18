@@ -291,6 +291,18 @@ type resumableUpload struct {
 
 func (u *resumableUpload) Offset() int64 { return u.offset() }
 
+// Suspend releases the admission slot and keeps the wrapped store's durable
+// partial progress when it supports that (blob.Suspender); otherwise it aborts.
+func (u *resumableUpload) Suspend() error {
+	s, ok := u.upload.Upload.(blob.Suspender)
+	if !ok {
+		return u.Abort()
+	}
+	err := s.Suspend()
+	u.once.Do(u.release)
+	return err
+}
+
 func (s *limited) List(ctx context.Context, after blob.Digest, limit int) (_ []blob.Object, err error) {
 	ctx, span := tracing.Start(ctx, "blob list")
 	defer func() { tracing.End(span, err) }()

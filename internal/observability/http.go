@@ -193,4 +193,5 @@ func (h *HTTP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ant_http_saturation_total %d\n", h.saturated.Load())
 	fmt.Fprintln(w, "# HELP ant_database_readiness_failures_total Failed PostgreSQL readiness checks.\n# TYPE ant_database_readiness_failures_total counter")
 	fmt.Fprintf(w, "ant_database_readiness_failures_total %d\n", h.readinessFailures.Load())
+	writeCollectors(w)
 }

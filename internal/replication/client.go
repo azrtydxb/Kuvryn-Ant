@@ -80,6 +80,12 @@ func readBounded(path string, limit int64) ([]byte, error) {
 	return b, nil
 }
 func (c *peerClient) do(ctx context.Context, path string, q url.Values) (*http.Response, error) {
+	return c.doRange(ctx, path, q, -1)
+}
+
+// doRange issues a GET, with a "bytes=offset-" Range header when offset > 0.
+// 200 and 206 are accepted; 410 maps to *HistoryPurgedError.
+func (c *peerClient) doRange(ctx context.Context, path string, q url.Values, offset int64) (*http.Response, error) {
 	u := c.base + path
 	if len(q) > 0 {
 		u += "?" + q.Encode()
@@ -90,16 +96,26 @@ func (c *peerClient) do(ctx context.Context, path string, q url.Values) (*http.R
 	}
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Accept", "application/json")
+	if offset > 0 {
+		req.Header.Set("Range", "bytes="+strconv.FormatInt(offset, 10)+"-")
+	}
 	resp, err := c.http.Do(req)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		return nil, fmt.Errorf("%w: %s", ErrPeer, "request failed")
 	}
-	if resp.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-		resp.Body.Close()
-		return nil, fmt.Errorf("%w: status %d", ErrPeer, resp.StatusCode)
+	if resp.StatusCode == http.StatusOK || (offset > 0 && resp.StatusCode == http.StatusPartialContent) {
+		return resp, nil
 	}
-	return resp, nil
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+	resp.Body.Close()
+	if resp.StatusCode == http.StatusGone {
+		low, _ := strconv.ParseInt(resp.Header.Get("X-Replication-Low-Water"), 10, 64)
+		return nil, &HistoryPurgedError{LowWater: low}
+	}
+	return nil, fmt.Errorf("%w: status %d", ErrPeer, resp.StatusCode)
 }
 func (c *peerClient) json(ctx context.Context, path string, q url.Values, dst any) error {
 	resp, err := c.do(ctx, path, q)
@@ -119,11 +135,7 @@ func (c *peerClient) Head(ctx context.Context, feed string) (Head, error) {
 	err := c.json(ctx, feedPath(feed)+"/head", nil, &h)
 	return h, err
 }
-func (c *peerClient) Manifest(ctx context.Context, feed, kind, after string, limit int, includeCached bool, f Filters) (ManifestPage, error) {
-	q := url.Values{"kind": {kind}, "limit": {strconv.Itoa(limit)}, "include_cached": {strconv.FormatBool(includeCached)}}
-	if after != "" {
-		q.Set("after", after)
-	}
+func addFilters(q url.Values, f Filters) {
 	for _, v := range f.Namespaces {
 		q.Add("namespace", v)
 	}
@@ -133,22 +145,57 @@ func (c *peerClient) Manifest(ctx context.Context, feed, kind, after string, lim
 	for _, v := range f.VersionPrefixes {
 		q.Add("version_prefix", v)
 	}
+}
+
+// Manifest pages the peer's manifest. source, when set, restricts it to one
+// attached source (back-fill).
+func (c *peerClient) Manifest(ctx context.Context, feed, kind, after string, limit int, includeCached bool, f Filters, source string) (ManifestPage, error) {
+	q := url.Values{"kind": {kind}, "limit": {strconv.Itoa(limit)}, "include_cached": {strconv.FormatBool(includeCached)}}
+	if after != "" {
+		q.Set("after", after)
+	}
+	if source != "" {
+		q.Set("source", source)
+	}
+	addFilters(q, f)
 	var p ManifestPage
 	err := c.json(ctx, feedPath(feed)+"/manifest", q, &p)
 	return p, err
 }
-func (c *peerClient) Changes(ctx context.Context, feed string, after int64, limit int, includeCached bool) (ChangePage, error) {
+
+// Changes reads changes after a cursor with server-side filtering. A cursor
+// below the peer's low-water mark yields *HistoryPurgedError.
+func (c *peerClient) Changes(ctx context.Context, feed string, after int64, limit int, includeCached bool, f Filters) (ChangePage, error) {
 	q := url.Values{"after": {strconv.FormatInt(after, 10)}, "limit": {strconv.Itoa(limit)}, "include_cached": {strconv.FormatBool(includeCached)}}
+	addFilters(q, f)
 	var p ChangePage
 	err := c.json(ctx, feedPath(feed)+"/changes", q, &p)
 	return p, err
 }
 
-// Blob opens the full blob stream. The caller verifies size and digest.
-func (c *peerClient) Blob(ctx context.Context, feed, digest string, includeCached bool) (io.ReadCloser, int64, error) {
-	resp, err := c.do(ctx, feedPath(feed)+"/blobs/"+digest, url.Values{"include_cached": {strconv.FormatBool(includeCached)}})
+// Template fetches the peer's non-secret feed configuration template.
+func (c *peerClient) Template(ctx context.Context, feed string) (Template, error) {
+	var t Template
+	err := c.json(ctx, feedPath(feed)+"/template", nil, &t)
+	return t, err
+}
+
+// Blob opens the blob stream from offset. start is the offset the returned
+// stream actually begins at: offset when the peer honored the Range request
+// (206 with a matching Content-Range), otherwise 0 (the peer sent the whole
+// blob). length is the number of bytes the stream will deliver, or -1.
+func (c *peerClient) Blob(ctx context.Context, feed, digest string, includeCached bool, offset int64) (body io.ReadCloser, start, length int64, err error) {
+	resp, err := c.doRange(ctx, feedPath(feed)+"/blobs/"+digest, url.Values{"include_cached": {strconv.FormatBool(includeCached)}}, offset)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
-	return resp.Body, resp.ContentLength, nil
+	if resp.StatusCode == http.StatusPartialContent {
+		var from, to, total int64
+		if _, scanErr := fmt.Sscanf(resp.Header.Get("Content-Range"), "bytes %d-%d/%d", &from, &to, &total); scanErr != nil || from != offset {
+			resp.Body.Close()
+			return nil, 0, 0, fmt.Errorf("%w: unexpected Content-Range", ErrPeer)
+		}
+		return resp.Body, from, resp.ContentLength, nil
+	}
+	return resp.Body, 0, resp.ContentLength, nil
 }

@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/replication"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -74,12 +76,18 @@ func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, k
 
 // StartReplication runs the replication scheduler under the same context as the
 // other workers, which is cancelled when the instance writer lease is lost.
-func (w *backgroundWorkers) StartReplication(rr *replicationRuntime) {
+func (w *backgroundWorkers) StartReplication(rr *replicationRuntime, logger *slog.Logger) {
 	if w == nil || rr == nil {
 		return
 	}
-	w.done.Add(1)
+	w.done.Add(2)
 	go func() { defer w.done.Done(); rr.service.Run(w.ctx) }()
+	// The authority side trims its change history to the configured bounds and
+	// raises the low-water mark; lagging consumers then reseed automatically.
+	go func() {
+		defer w.done.Done()
+		rr.exporter.RunPurge(w.ctx, rr.instance, replication.PurgePolicy{MaxAge: rr.history.MaxAge, MaxRows: rr.history.MaxRows}, rr.history.Interval, logger)
+	}()
 }
 func (w *backgroundWorkers) Close() {
 	if w != nil {

@@ -3,6 +3,7 @@ const spec = JSON.parse(
   readFileSync(new URL("../../api/openapi.yaml", import.meta.url), "utf8"),
 );
 function type(s) {
+  if (Object.keys(s).length === 0) return "unknown";
   if (s.$ref) return s.$ref.split("/").at(-1);
   if (s.enum) return s.enum.map((v) => JSON.stringify(v)).join(" | ");
   if (s.type === "array") return `Array<${type(s.items)}>`;

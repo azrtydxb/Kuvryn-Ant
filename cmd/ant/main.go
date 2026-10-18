@@ -153,7 +153,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		logger.Error("replication startup rejected")
 		return 1
 	}
-	workers.StartReplication(replicationRT)
+	workers.StartReplication(replicationRT, logger)
 	serveCtx, stopServing := context.WithCancel(ctx)
 	defer stopServing()
 	if artifacts != nil {

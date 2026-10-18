@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"net/http"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
@@ -17,6 +19,19 @@ type replicationRuntime struct {
 	pool     *pgxpool.Pool
 	service  *replication.Service
 	exporter replication.Exporter
+	instance string
+	history  config.ReplicationHistory
+}
+
+// replicationFingerprintKey derives the MAC key for idempotent peer-token
+// requests from the root key, separated from every other use of it.
+func replicationFingerprintKey(root []byte) []byte {
+	if len(root) != 32 {
+		return nil
+	}
+	mac := hmac.New(sha256.New, root)
+	_, _ = mac.Write([]byte("kuvryn-ant/replication/idempotency/v1"))
+	return mac.Sum(nil)
 }
 
 // openReplication returns nil when artifact serving is inactive or secret keys
@@ -27,12 +42,14 @@ func openReplication(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) 
 	}
 	service, err := replication.New(replication.Config{
 		DB: pool, Keys: cfg.SecretKeys, InstanceID: r.instanceID, Lease: r.manager.Lease,
-		Storage: r.stores.Resolve, CAs: cfg.UpstreamCAs,
+		Storage: r.stores.Resolve, CAs: cfg.UpstreamCAs, FingerprintKey: replicationFingerprintKey(cfg.RootKey),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &replicationRuntime{pool: pool, service: service, exporter: replication.Exporter{DB: pool, Storage: r.stores.Resolve}}, nil
+	service.RegisterMetrics()
+	return &replicationRuntime{pool: pool, service: service, exporter: replication.Exporter{DB: pool, Storage: r.stores.Resolve, Lease: r.manager.Lease},
+		instance: r.instanceID, history: cfg.Replication}, nil
 }
 
 // Register mounts the peer-facing export API and the management API.

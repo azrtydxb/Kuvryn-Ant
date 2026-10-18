@@ -494,7 +494,7 @@ func TestChangeSequenceIsDurableGaplessAndCommitOrdered(t *testing.T) {
 	var after int64
 	var seen []int64
 	for {
-		page, err := e.Changes(ctx, src.instance, src.feed, after, 5, true)
+		page, err := e.Changes(ctx, src.instance, src.feed, ChangeQuery{After: after, Limit: 5, IncludeCached: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -519,11 +519,13 @@ func TestChangeSequenceIsDurableGaplessAndCommitOrdered(t *testing.T) {
 	}
 	// Tombstones keep their identity after the row is gone.
 	src.exec("DELETE FROM assets WHERE asset_key='f.bin' AND version_id IN (SELECT v.id FROM versions v JOIN components c ON c.id=v.component_id WHERE c.coordinate='n/p0')")
-	page, err := e.Changes(ctx, src.instance, src.feed, after, 10, true)
+	page, err := e.Changes(ctx, src.instance, src.feed, ChangeQuery{After: after, Limit: 10, IncludeCached: true})
 	if err != nil || len(page.Changes) != 1 || page.Changes[0].Op != "delete" || page.Changes[0].Coordinate != "n/p0" || page.Changes[0].Key != "f.bin" || page.Changes[0].Version != "1" {
 		t.Fatalf("tombstone wrong: %+v %v", page, err)
 	}
 }
+
+var callSeq int
 
 func call(t *testing.T, c *http.Client, method, url, token string, body any, headers ...string) (int, []byte) {
 	t.Helper()
@@ -541,6 +543,10 @@ func call(t *testing.T, c *http.Client, method, url, token string, body any, hea
 	}
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	if method != "GET" && method != "HEAD" {
+		callSeq++
+		req.Header.Set("Idempotency-Key", fmt.Sprintf("test-%d-%d", time.Now().UnixNano(), callSeq))
 	}
 	for i := 0; i+1 < len(headers); i += 2 {
 		req.Header.Set(headers[i], headers[i+1])
