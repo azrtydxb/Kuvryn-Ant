@@ -37,3 +37,12 @@ httpRoute:
 extraEnv:
   ANT_OCI_DEFAULT_FEED: dockerhub
   ANT_OCI_MIRROR_MAP: docker.io=dockerhub,ghcr.io=ghcr,quay.io=quay,registry.k8s.io=k8s,gcr.io=gcr,public.ecr.aws=ecr
+
+# Phase 2 federation (docs/operations/federation.md). Uncomment on the
+# intended authority; members use the same block plus federation.join.
+# federation:
+#   enabled: true
+#   publicURL: https://fed.ant.example:8444
+#   service:
+#     type: LoadBalancer
+#     loadBalancerSourceRanges: [] # restrict to the other members

@@ -7,6 +7,7 @@ import { PackagesPage, PackageDrawer, type PackageRef } from "./Packages";
 import { FeedsPage } from "./Feeds";
 import { SourcesPage } from "./Sources";
 import { ReplicationPage } from "./Replication";
+import { FederationPage } from "./Federation";
 import { Identity } from "./Identity";
 import { Webhooks } from "./Webhooks";
 import { AuditPage } from "./Audit";
@@ -32,6 +33,7 @@ export type Page =
   | "feeds"
   | "sources"
   | "replication"
+  | "federation"
   | "identity"
   | "webhooks"
   | "audit"
@@ -46,6 +48,7 @@ const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "feeds", label: "Feeds", icon: "rss" },
   { id: "sources", label: "Sources", icon: "database" },
   { id: "replication", label: "Replication", icon: "copy" },
+  { id: "federation", label: "Federation", icon: "network" },
   { id: "identity", label: "Access", icon: "shield" },
   { id: "webhooks", label: "Webhooks", icon: "webhook" },
   { id: "audit", label: "Audit log", icon: "scroll-text" },
@@ -217,6 +220,7 @@ function Shell({
   else if (page === "sources")
     body = <SourcesPage client={client} openId={openSource} />;
   else if (page === "replication") body = <ReplicationPage client={client} />;
+  else if (page === "federation") body = <FederationPage client={client} />;
   else if (page === "identity") body = <Identity client={client} />;
   else if (page === "webhooks") body = <Webhooks client={client} />;
   else if (page === "audit") body = <AuditPage client={client} />;

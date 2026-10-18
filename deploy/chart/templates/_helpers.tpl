@@ -31,6 +31,12 @@ app.kubernetes.io/instance: {{ .Release.Name | quote }}
 {{- if not .Values.httpRoute.parentRefs }}{{ fail "httpRoute.parentRefs is required" }}{{ end -}}
 {{- if not (has (trimPrefix "https://" .Values.publicURL) .Values.httpRoute.hostnames) }}{{ fail "httpRoute.hostnames must include the publicURL host" }}{{ end -}}
 {{- end -}}
+{{- if .Values.federation.enabled -}}
+{{- if not (regexMatch "^https://[^/?#@]+$" .Values.federation.publicURL) }}{{ fail "federation.publicURL must be an https origin without a path" }}{{ end -}}
+{{- if not (has .Values.federation.service.type (list "LoadBalancer" "NodePort" "ClusterIP")) }}{{ fail "federation.service.type must be LoadBalancer, NodePort or ClusterIP" }}{{ end -}}
+{{- if and .Values.federation.ingressPassthrough.enabled (not .Values.federation.ingressPassthrough.host) }}{{ fail "federation.ingressPassthrough.host is required" }}{{ end -}}
+{{- if eq (int .Values.federation.port) (int .Values.service.port) }}{{ fail "federation.port must differ from the HTTP port" }}{{ end -}}
+{{- end -}}
 {{- if eq .Values.storage.backend "s3" -}}
 {{- if or (not .Values.storage.s3.region) (not .Values.storage.s3.bucket) (not .Values.storage.s3.credentialsExistingSecret) }}{{ fail "S3 requires region, bucket and credentialsExistingSecret" }}{{ end -}}
 {{- if and .Values.storage.s3.endpoint (not (hasPrefix "https://" .Values.storage.s3.endpoint)) (not (and .Values.storage.s3.allowInsecureHTTP (hasPrefix "http://" .Values.storage.s3.endpoint))) }}{{ fail "S3 endpoint must use HTTPS unless storage.s3.allowInsecureHTTP is true for an http:// endpoint" }}{{ end -}}

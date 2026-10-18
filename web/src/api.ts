@@ -182,7 +182,7 @@ export class Client {
       const explains =
         (response.status === 400 || response.status === 409) &&
         typeof error.message === "string" &&
-        /^\/api\/v1\/(limits|policy-templates|feeds\/[^/]+\/(policy-templates|sources\/[^/]+)|sources\/[^/]+\/remote-config)/.test(
+        /^\/api\/v1\/(federation|limits|policy-templates|feeds\/[^/]+\/(policy-templates|sources\/[^/]+)|sources\/[^/]+\/remote-config)/.test(
           path,
         );
       throw new APIError(

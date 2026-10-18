@@ -8,13 +8,23 @@ spec:
     matchLabels:
       {{- include "ant.selector" . | nindent 6 }}
   policyTypes: [Ingress, Egress]
-  {{- if .Values.networkPolicy.ingressFrom }}
+  {{- $fed := and .Values.federation.enabled .Values.federation.networkPolicyFrom }}
+  {{- if or .Values.networkPolicy.ingressFrom $fed }}
   ingress:
+    {{- if .Values.networkPolicy.ingressFrom }}
     - from:
         {{- toYaml .Values.networkPolicy.ingressFrom | nindent 8 }}
       ports:
         - protocol: TCP
           port: 8080
+    {{- end }}
+    {{- if $fed }}
+    - from:
+        {{- toYaml .Values.federation.networkPolicyFrom | nindent 8 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.federation.port }}
+    {{- end }}
   {{- else }}
   ingress: []
   {{- end }}

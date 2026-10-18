@@ -94,6 +94,7 @@ func newFixture(t *testing.T) *fixture {
 	management.RegisterWebhooks(mux, pool, nil)
 	management.RegisterOperations(mux, management.OpsDeps{Pool: pool, Codec: codec, Background: context.Background()})
 	management.RegisterConsole(mux, pool, codec)
+	management.RegisterFederation(mux, pool, nil)
 	mux.HandleFunc("GET /health/live", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
 	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) })
 	Register(mux, pool, nil)
@@ -194,6 +195,12 @@ func TestMCPAdminLifecycleAuditAndDestructiveConfirmation(t *testing.T) {
 	}
 	if !strings.Contains(text(f.tool(f.admin, "list_feeds", nil)), "alpha") || !strings.Contains(text(f.tool(f.admin, "get_source", map[string]any{"source_id": source.ID})), "local-a") {
 		t.Fatal("discovery")
+	}
+	if out := text(f.tool(f.admin, "get_federation_status", nil)); !strings.Contains(out, `"state":"none"`) || !strings.Contains(out, `"health":"disabled"`) {
+		t.Fatalf("federation status: %s", out)
+	}
+	if out := text(f.tool(f.admin, "list_federation_members", nil)); !strings.Contains(out, `"items":[]`) {
+		t.Fatalf("federation members: %s", out)
 	}
 	if !strings.Contains(text(f.tool(f.admin, "search_packages", map[string]any{"feed_id": feed.ID})), `"items"`) {
 		t.Fatal("package search")

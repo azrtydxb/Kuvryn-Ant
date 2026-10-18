@@ -561,15 +561,21 @@ func (e EffectiveResourceKind) Valid() bool {
 
 // Defines values for ErrorCode.
 const (
-	ErrorCodeConflict           ErrorCode = "conflict"
-	ErrorCodeForbidden          ErrorCode = "forbidden"
-	ErrorCodeInternalError      ErrorCode = "internal_error"
-	ErrorCodeInvalidRequest     ErrorCode = "invalid_request"
-	ErrorCodeNotFound           ErrorCode = "not_found"
-	ErrorCodePreconditionFailed ErrorCode = "precondition_failed"
-	ErrorCodeRateLimited        ErrorCode = "rate_limited"
-	ErrorCodeUnauthenticated    ErrorCode = "unauthenticated"
-	ErrorCodeUnavailable        ErrorCode = "unavailable"
+	ErrorCodeConflict                ErrorCode = "conflict"
+	ErrorCodeDocumentRejected        ErrorCode = "document_rejected"
+	ErrorCodeFederationNotConfigured ErrorCode = "federation_not_configured"
+	ErrorCodeForbidden               ErrorCode = "forbidden"
+	ErrorCodeInternalError           ErrorCode = "internal_error"
+	ErrorCodeInvalidRequest          ErrorCode = "invalid_request"
+	ErrorCodeInvitationInvalid       ErrorCode = "invitation_invalid"
+	ErrorCodeMemberUnreachable       ErrorCode = "member_unreachable"
+	ErrorCodeNotAuthority            ErrorCode = "not_authority"
+	ErrorCodeNotFound                ErrorCode = "not_found"
+	ErrorCodePreconditionFailed      ErrorCode = "precondition_failed"
+	ErrorCodeRateLimited             ErrorCode = "rate_limited"
+	ErrorCodeStaleGeneration         ErrorCode = "stale_generation"
+	ErrorCodeUnauthenticated         ErrorCode = "unauthenticated"
+	ErrorCodeUnavailable             ErrorCode = "unavailable"
 )
 
 // Valid indicates whether the value is a known member of the ErrorCode enum.
@@ -577,11 +583,21 @@ func (e ErrorCode) Valid() bool {
 	switch e {
 	case ErrorCodeConflict:
 		return true
+	case ErrorCodeDocumentRejected:
+		return true
+	case ErrorCodeFederationNotConfigured:
+		return true
 	case ErrorCodeForbidden:
 		return true
 	case ErrorCodeInternalError:
 		return true
 	case ErrorCodeInvalidRequest:
+		return true
+	case ErrorCodeInvitationInvalid:
+		return true
+	case ErrorCodeMemberUnreachable:
+		return true
+	case ErrorCodeNotAuthority:
 		return true
 	case ErrorCodeNotFound:
 		return true
@@ -589,9 +605,215 @@ func (e ErrorCode) Valid() bool {
 		return true
 	case ErrorCodeRateLimited:
 		return true
+	case ErrorCodeStaleGeneration:
+		return true
 	case ErrorCodeUnauthenticated:
 		return true
 	case ErrorCodeUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationAuthorityCertificateCertifiedBy.
+const (
+	PreviousEpoch FederationAuthorityCertificateCertifiedBy = "previous_epoch"
+	Recovery      FederationAuthorityCertificateCertifiedBy = "recovery"
+)
+
+// Valid indicates whether the value is a known member of the FederationAuthorityCertificateCertifiedBy enum.
+func (e FederationAuthorityCertificateCertifiedBy) Valid() bool {
+	switch e {
+	case PreviousEpoch:
+		return true
+	case Recovery:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationDocumentMemberStatus.
+const (
+	FederationDocumentMemberStatusActive    FederationDocumentMemberStatus = "active"
+	FederationDocumentMemberStatusRemoved   FederationDocumentMemberStatus = "removed"
+	FederationDocumentMemberStatusSuspended FederationDocumentMemberStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the FederationDocumentMemberStatus enum.
+func (e FederationDocumentMemberStatus) Valid() bool {
+	switch e {
+	case FederationDocumentMemberStatusActive:
+		return true
+	case FederationDocumentMemberStatusRemoved:
+		return true
+	case FederationDocumentMemberStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationInvitationState.
+const (
+	FederationInvitationStateConsumed FederationInvitationState = "consumed"
+	FederationInvitationStateExpired  FederationInvitationState = "expired"
+	FederationInvitationStatePending  FederationInvitationState = "pending"
+	FederationInvitationStateRevoked  FederationInvitationState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the FederationInvitationState enum.
+func (e FederationInvitationState) Valid() bool {
+	switch e {
+	case FederationInvitationStateConsumed:
+		return true
+	case FederationInvitationStateExpired:
+		return true
+	case FederationInvitationStatePending:
+		return true
+	case FederationInvitationStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationIssuedInvitationState.
+const (
+	FederationIssuedInvitationStateConsumed FederationIssuedInvitationState = "consumed"
+	FederationIssuedInvitationStateExpired  FederationIssuedInvitationState = "expired"
+	FederationIssuedInvitationStatePending  FederationIssuedInvitationState = "pending"
+	FederationIssuedInvitationStateRevoked  FederationIssuedInvitationState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the FederationIssuedInvitationState enum.
+func (e FederationIssuedInvitationState) Valid() bool {
+	switch e {
+	case FederationIssuedInvitationStateConsumed:
+		return true
+	case FederationIssuedInvitationStateExpired:
+		return true
+	case FederationIssuedInvitationStatePending:
+		return true
+	case FederationIssuedInvitationStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationMemberStatus.
+const (
+	FederationMemberStatusActive    FederationMemberStatus = "active"
+	FederationMemberStatusRemoved   FederationMemberStatus = "removed"
+	FederationMemberStatusSuspended FederationMemberStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the FederationMemberStatus enum.
+func (e FederationMemberStatus) Valid() bool {
+	switch e {
+	case FederationMemberStatusActive:
+		return true
+	case FederationMemberStatusRemoved:
+		return true
+	case FederationMemberStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationMembershipDocumentKind.
+const (
+	FederationMembershipDocumentKindMembership FederationMembershipDocumentKind = "membership"
+)
+
+// Valid indicates whether the value is a known member of the FederationMembershipDocumentKind enum.
+func (e FederationMembershipDocumentKind) Valid() bool {
+	switch e {
+	case FederationMembershipDocumentKindMembership:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationStatusHealth.
+const (
+	FederationStatusHealthDegraded FederationStatusHealth = "degraded"
+	FederationStatusHealthDisabled FederationStatusHealth = "disabled"
+	FederationStatusHealthOk       FederationStatusHealth = "ok"
+)
+
+// Valid indicates whether the value is a known member of the FederationStatusHealth enum.
+func (e FederationStatusHealth) Valid() bool {
+	switch e {
+	case FederationStatusHealthDegraded:
+		return true
+	case FederationStatusHealthDisabled:
+		return true
+	case FederationStatusHealthOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationStatusRole.
+const (
+	Authority FederationStatusRole = "authority"
+	Member    FederationStatusRole = "member"
+)
+
+// Valid indicates whether the value is a known member of the FederationStatusRole enum.
+func (e FederationStatusRole) Valid() bool {
+	switch e {
+	case Authority:
+		return true
+	case Member:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationStatusState.
+const (
+	FederationStatusStateActive  FederationStatusState = "active"
+	FederationStatusStateJoining FederationStatusState = "joining"
+	FederationStatusStateLeft    FederationStatusState = "left"
+	FederationStatusStateNone    FederationStatusState = "none"
+	FederationStatusStateRemoved FederationStatusState = "removed"
+)
+
+// Valid indicates whether the value is a known member of the FederationStatusState enum.
+func (e FederationStatusState) Valid() bool {
+	switch e {
+	case FederationStatusStateActive:
+		return true
+	case FederationStatusStateJoining:
+		return true
+	case FederationStatusStateLeft:
+		return true
+	case FederationStatusStateNone:
+		return true
+	case FederationStatusStateRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationStoredDocumentKind.
+const (
+	FederationStoredDocumentKindMembership FederationStoredDocumentKind = "membership"
+)
+
+// Valid indicates whether the value is a known member of the FederationStoredDocumentKind enum.
+func (e FederationStoredDocumentKind) Valid() bool {
+	switch e {
+	case FederationStoredDocumentKindMembership:
 		return true
 	default:
 		return false
@@ -1617,13 +1839,13 @@ func (e RetentionRunTrigger) Valid() bool {
 
 // Defines values for RevokedServiceTokenRevoked.
 const (
-	True RevokedServiceTokenRevoked = true
+	RevokedServiceTokenRevokedTrue RevokedServiceTokenRevoked = true
 )
 
 // Valid indicates whether the value is a known member of the RevokedServiceTokenRevoked enum.
 func (e RevokedServiceTokenRevoked) Valid() bool {
 	switch e {
-	case True:
+	case RevokedServiceTokenRevokedTrue:
 		return true
 	default:
 		return false
@@ -2326,6 +2548,51 @@ func (e GetApiV1AuditExportParamsFormat) Valid() bool {
 	}
 }
 
+// Defines values for GetFederationDocumentParamsKind.
+const (
+	GetFederationDocumentParamsKindMembership GetFederationDocumentParamsKind = "membership"
+)
+
+// Valid indicates whether the value is a known member of the GetFederationDocumentParamsKind enum.
+func (e GetFederationDocumentParamsKind) Valid() bool {
+	switch e {
+	case GetFederationDocumentParamsKindMembership:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetFederationDocumentGenerationParamsKind.
+const (
+	GetFederationDocumentGenerationParamsKindMembership GetFederationDocumentGenerationParamsKind = "membership"
+)
+
+// Valid indicates whether the value is a known member of the GetFederationDocumentGenerationParamsKind enum.
+func (e GetFederationDocumentGenerationParamsKind) Valid() bool {
+	switch e {
+	case GetFederationDocumentGenerationParamsKindMembership:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoveFederationMemberParamsConfirm.
+const (
+	RemoveFederationMemberParamsConfirmTrue RemoveFederationMemberParamsConfirm = "true"
+)
+
+// Valid indicates whether the value is a known member of the RemoveFederationMemberParamsConfirm enum.
+func (e RemoveFederationMemberParamsConfirm) Valid() bool {
+	switch e {
+	case RemoveFederationMemberParamsConfirmTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DeletePackageVersionParamsAction.
 const (
 	DeletePackageVersionParamsActionDelete DeletePackageVersionParamsAction = "delete"
@@ -2704,6 +2971,18 @@ type ComponentStatus struct {
 // ComponentStatusStatus defines model for ComponentStatus.Status.
 type ComponentStatusStatus string
 
+// CreateFederationInvitation defines model for CreateFederationInvitation.
+type CreateFederationInvitation struct {
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels *map[string]string `json:"labels,omitempty"`
+
+	// Name Member name the invitation is bound to.
+	Name string `json:"name"`
+
+	// TtlSeconds Default 3600; minimum 60.
+	TtlSeconds *int64 `json:"ttl_seconds,omitempty"`
+}
+
 // CreateFeed defines model for CreateFeed.
 type CreateFeed struct {
 	AnonymousRead *bool            `json:"anonymous_read,omitempty"`
@@ -2965,6 +3244,248 @@ type Error struct {
 // ErrorCode defines model for Error.Code.
 type ErrorCode string
 
+// FederationAuthorityCertificate defines model for FederationAuthorityCertificate.
+type FederationAuthorityCertificate struct {
+	CertifiedBy FederationAuthorityCertificateCertifiedBy `json:"certified_by"`
+	Epoch       int64                                     `json:"epoch"`
+	InstanceId  openapi_types.UUID                        `json:"instance_id"`
+	PublicKey   string                                    `json:"public_key"`
+	Signature   string                                    `json:"signature"`
+}
+
+// FederationAuthorityCertificateCertifiedBy defines model for FederationAuthorityCertificate.CertifiedBy.
+type FederationAuthorityCertificateCertifiedBy string
+
+// FederationCertificateStatus defines model for FederationCertificateStatus.
+type FederationCertificateStatus struct {
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	Serial    string     `json:"serial"`
+}
+
+// FederationDocumentHead defines model for FederationDocumentHead.
+type FederationDocumentHead struct {
+	AgeSeconds int64     `json:"age_seconds"`
+	AppliedAt  time.Time `json:"applied_at"`
+	Generation int64     `json:"generation"`
+	Hash       string    `json:"hash"`
+	IssuedAt   string    `json:"issued_at"`
+}
+
+// FederationDocumentMember defines model for FederationDocumentMember.
+type FederationDocumentMember struct {
+	ApiUrl        string             `json:"api_url"`
+	CertSerial    string             `json:"cert_serial"`
+	CertSha256    string             `json:"cert_sha256"`
+	FederationUrl string             `json:"federation_url"`
+	InstanceId    openapi_types.UUID `json:"instance_id"`
+	JoinedAt      string             `json:"joined_at"`
+
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels          *map[string]string             `json:"labels"`
+	Name            string                         `json:"name"`
+	Protocol        FederationProtocolRange        `json:"protocol"`
+	SigningKey      string                         `json:"signing_key"`
+	SoftwareVersion string                         `json:"software_version"`
+	Status          FederationDocumentMemberStatus `json:"status"`
+}
+
+// FederationDocumentMemberStatus defines model for FederationDocumentMember.Status.
+type FederationDocumentMemberStatus string
+
+// FederationFoundResult defines model for FederationFoundResult.
+type FederationFoundResult struct {
+	CaSha256 string `json:"ca_sha256"`
+
+	// RecoveryKey Offline recovery private key. Returned once; store it offline. The instance keeps only the public half.
+	RecoveryKey       string           `json:"recovery_key"`
+	RecoveryPublicKey string           `json:"recovery_public_key"`
+	Status            FederationStatus `json:"status"`
+}
+
+// FederationInvitation defines model for FederationInvitation.
+type FederationInvitation struct {
+	ConsumedAt *time.Time         `json:"consumed_at,omitempty"`
+	ConsumedBy *string            `json:"consumed_by,omitempty"`
+	CreatedAt  time.Time          `json:"created_at"`
+	ExpiresAt  time.Time          `json:"expires_at"`
+	Id         openapi_types.UUID `json:"id"`
+
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels    map[string]string         `json:"labels"`
+	Name      string                    `json:"name"`
+	RevokedAt *time.Time                `json:"revoked_at,omitempty"`
+	State     FederationInvitationState `json:"state"`
+}
+
+// FederationInvitationState defines model for FederationInvitation.State.
+type FederationInvitationState string
+
+// FederationInvitationList defines model for FederationInvitationList.
+type FederationInvitationList struct {
+	Items []FederationInvitation `json:"items"`
+}
+
+// FederationIssuedInvitation defines model for FederationIssuedInvitation.
+type FederationIssuedInvitation struct {
+	AuthorityUrl string             `json:"authority_url"`
+	CaSha256     string             `json:"ca_sha256"`
+	ConsumedAt   *time.Time         `json:"consumed_at,omitempty"`
+	ConsumedBy   *string            `json:"consumed_by,omitempty"`
+	CreatedAt    time.Time          `json:"created_at"`
+	ExpiresAt    time.Time          `json:"expires_at"`
+	Id           openapi_types.UUID `json:"id"`
+
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels    map[string]string `json:"labels"`
+	Name      string            `json:"name"`
+	RevokedAt *time.Time        `json:"revoked_at,omitempty"`
+
+	// Secret One-time invitation secret, returned once.
+	Secret string                          `json:"secret"`
+	State  FederationIssuedInvitationState `json:"state"`
+}
+
+// FederationIssuedInvitationState defines model for FederationIssuedInvitation.State.
+type FederationIssuedInvitationState string
+
+// FederationMember defines model for FederationMember.
+type FederationMember struct {
+	ApiUrl        *string            `json:"api_url,omitempty"`
+	Authority     bool               `json:"authority"`
+	CertSerial    *string            `json:"cert_serial,omitempty"`
+	CertSha256    *string            `json:"cert_sha256,omitempty"`
+	FederationUrl string             `json:"federation_url"`
+	InstanceId    openapi_types.UUID `json:"instance_id"`
+	JoinedAt      *time.Time         `json:"joined_at,omitempty"`
+
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels               map[string]string       `json:"labels"`
+	LastSeenAt           *time.Time              `json:"last_seen_at,omitempty"`
+	MembershipGeneration int64                   `json:"membership_generation"`
+	Name                 string                  `json:"name"`
+	Protocol             FederationProtocolRange `json:"protocol"`
+	RttMs                *int32                  `json:"rtt_ms,omitempty"`
+	Self                 bool                    `json:"self"`
+	SkewMs               *int32                  `json:"skew_ms,omitempty"`
+	SoftwareVersion      *string                 `json:"software_version,omitempty"`
+	Status               FederationMemberStatus  `json:"status"`
+}
+
+// FederationMemberStatus defines model for FederationMember.Status.
+type FederationMemberStatus string
+
+// FederationMemberCounts defines model for FederationMemberCounts.
+type FederationMemberCounts struct {
+	Active    int `json:"active"`
+	Removed   int `json:"removed"`
+	Suspended int `json:"suspended"`
+}
+
+// FederationMemberList defines model for FederationMemberList.
+type FederationMemberList struct {
+	Items []FederationMember `json:"items"`
+}
+
+// FederationMembershipDocument defines model for FederationMembershipDocument.
+type FederationMembershipDocument struct {
+	Authority          FederationAuthorityCertificate   `json:"authority"`
+	AuthorityEpoch     int64                            `json:"authority_epoch"`
+	CaCertificates     []string                         `json:"ca_certificates"`
+	FederationId       openapi_types.UUID               `json:"federation_id"`
+	FederationName     string                           `json:"federation_name"`
+	Generation         int64                            `json:"generation"`
+	IssuedAt           string                           `json:"issued_at"`
+	IssuedBy           string                           `json:"issued_by"`
+	Kind               FederationMembershipDocumentKind `json:"kind"`
+	Members            []FederationDocumentMember       `json:"members"`
+	PrevHash           string                           `json:"prev_hash"`
+	Protocol           FederationProtocolRange          `json:"protocol"`
+	RecoveryPublicKey  string                           `json:"recovery_public_key"`
+	RecoveryRotation   *FederationRecoveryRotation      `json:"recovery_rotation,omitempty"`
+	RevokedCertSerials *[]string                        `json:"revoked_cert_serials"`
+	Signature          *FederationSignature             `json:"signature,omitempty"`
+}
+
+// FederationMembershipDocumentKind defines model for FederationMembershipDocument.Kind.
+type FederationMembershipDocumentKind string
+
+// FederationProtocolRange defines model for FederationProtocolRange.
+type FederationProtocolRange struct {
+	Max int32 `json:"max"`
+	Min int32 `json:"min"`
+}
+
+// FederationRecoveryRotation defines model for FederationRecoveryRotation.
+type FederationRecoveryRotation struct {
+	Generation  int64  `json:"generation"`
+	NewKey      string `json:"new_key"`
+	PreviousKey string `json:"previous_key"`
+	Signature   string `json:"signature"`
+}
+
+// FederationSignature defines model for FederationSignature.
+type FederationSignature struct {
+	Alg   string `json:"alg"`
+	KeyId string `json:"key_id"`
+	Value string `json:"value"`
+}
+
+// FederationStatus defines model for FederationStatus.
+type FederationStatus struct {
+	AuthorityEpoch      *int64                       `json:"authority_epoch,omitempty"`
+	AuthorityInstanceId *openapi_types.UUID          `json:"authority_instance_id,omitempty"`
+	AuthorityUrl        *string                      `json:"authority_url,omitempty"`
+	CaSha256            *string                      `json:"ca_sha256,omitempty"`
+	Certificate         *FederationCertificateStatus `json:"certificate,omitempty"`
+	FederationId        *openapi_types.UUID          `json:"federation_id,omitempty"`
+	FederationName      *string                      `json:"federation_name,omitempty"`
+	FederationUrl       *string                      `json:"federation_url,omitempty"`
+
+	// Health Federation problems are reported as degraded and never make the instance unready.
+	Health                 FederationStatusHealth  `json:"health"`
+	InstanceId             openapi_types.UUID      `json:"instance_id"`
+	ListenAddress          *string                 `json:"listen_address,omitempty"`
+	ListenerConfigured     bool                    `json:"listener_configured"`
+	Members                FederationMemberCounts  `json:"members"`
+	Membership             *FederationDocumentHead `json:"membership,omitempty"`
+	Protocol               FederationProtocolRange `json:"protocol"`
+	RecoveryKeyFingerprint *string                 `json:"recovery_key_fingerprint,omitempty"`
+	Role                   *FederationStatusRole   `json:"role,omitempty"`
+	SoftwareVersion        string                  `json:"software_version"`
+	State                  FederationStatusState   `json:"state"`
+	Sync                   FederationSyncStatus    `json:"sync"`
+}
+
+// FederationStatusHealth Federation problems are reported as degraded and never make the instance unready.
+type FederationStatusHealth string
+
+// FederationStatusRole defines model for FederationStatus.Role.
+type FederationStatusRole string
+
+// FederationStatusState defines model for FederationStatus.State.
+type FederationStatusState string
+
+// FederationStoredDocument defines model for FederationStoredDocument.
+type FederationStoredDocument struct {
+	Applied    bool                         `json:"applied"`
+	Document   FederationMembershipDocument `json:"document"`
+	Generation int64                        `json:"generation"`
+	Hash       string                       `json:"hash"`
+	Kind       FederationStoredDocumentKind `json:"kind"`
+	ReceivedAt time.Time                    `json:"received_at"`
+}
+
+// FederationStoredDocumentKind defines model for FederationStoredDocument.Kind.
+type FederationStoredDocumentKind string
+
+// FederationSyncStatus defines model for FederationSyncStatus.
+type FederationSyncStatus struct {
+	LastAttemptAt *time.Time `json:"last_attempt_at,omitempty"`
+	LastError     *string    `json:"last_error,omitempty"`
+	LastSuccessAt *time.Time `json:"last_success_at,omitempty"`
+	Source        *string    `json:"source,omitempty"`
+}
+
 // Feed defines model for Feed.
 type Feed struct {
 	AnonymousRead bool               `json:"anonymous_read"`
@@ -3040,6 +3561,16 @@ type FileIdentityProvider struct {
 
 // FileIdentityProviderKind defines model for FileIdentityProvider.Kind.
 type FileIdentityProviderKind string
+
+// FoundFederation defines model for FoundFederation.
+type FoundFederation struct {
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels *map[string]string `json:"labels,omitempty"`
+
+	// MemberName This instance's member name; defaults to the federation name.
+	MemberName *string `json:"member_name,omitempty"`
+	Name       string  `json:"name"`
+}
 
 // GitHubExchangeRequest defines model for GitHubExchangeRequest.
 type GitHubExchangeRequest struct {
@@ -3363,6 +3894,28 @@ type IssuedServiceToken struct {
 	ExpiresAt time.Time          `json:"expires_at"`
 	Id        openapi_types.UUID `json:"id"`
 	Secret    string             `json:"secret"`
+}
+
+// JoinFederation defines model for JoinFederation.
+type JoinFederation struct {
+	// AuthorityUrl https URL of the authority's federation listener.
+	AuthorityUrl string `json:"authority_url"`
+
+	// CaSha256 Federation CA fingerprint received out of band; the join connection is pinned to it.
+	CaSha256   string `json:"ca_sha256"`
+	Invitation string `json:"invitation"`
+
+	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
+	Labels *map[string]string `json:"labels,omitempty"`
+}
+
+// LeaveFederation defines model for LeaveFederation.
+type LeaveFederation struct {
+	// Confirm Must be true.
+	Confirm bool `json:"confirm"`
+
+	// Force Leave locally when the authority is unreachable.
+	Force *bool `json:"force,omitempty"`
 }
 
 // LimitsConfig defines model for LimitsConfig.
@@ -4313,6 +4866,12 @@ type RevokedServiceToken struct {
 // RevokedServiceTokenRevoked defines model for RevokedServiceToken.Revoked.
 type RevokedServiceTokenRevoked bool
 
+// RotateFederationRecoveryKey defines model for RotateFederationRecoveryKey.
+type RotateFederationRecoveryKey struct {
+	// RecoveryKey Current recovery private key export (proof of possession).
+	RecoveryKey string `json:"recovery_key"`
+}
+
 // RotateWebhookSecret defines model for RotateWebhookSecret.
 type RotateWebhookSecret struct {
 	// Secret UTF-8 HMAC signing secret, 32 through 4096 bytes. Never returned or persisted in plaintext.
@@ -4915,6 +5474,36 @@ type CreatePersonalAccessTokenParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
+// GetFederationDocumentParamsKind defines parameters for GetFederationDocument.
+type GetFederationDocumentParamsKind string
+
+// GetFederationDocumentGenerationParamsKind defines parameters for GetFederationDocumentGeneration.
+type GetFederationDocumentGenerationParamsKind string
+
+// RevokeFederationInvitationParams defines parameters for RevokeFederationInvitation.
+type RevokeFederationInvitationParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// RemoveFederationMemberParams defines parameters for RemoveFederationMember.
+type RemoveFederationMemberParams struct {
+	Confirm        RemoveFederationMemberParamsConfirm `form:"confirm" json:"confirm"`
+	IdempotencyKey string                              `json:"Idempotency-Key"`
+}
+
+// RemoveFederationMemberParamsConfirm defines parameters for RemoveFederationMember.
+type RemoveFederationMemberParamsConfirm string
+
+// ResumeFederationMemberParams defines parameters for ResumeFederationMember.
+type ResumeFederationMemberParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// SuspendFederationMemberParams defines parameters for SuspendFederationMember.
+type SuspendFederationMemberParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
 // ListFeedsParams defines parameters for ListFeeds.
 type ListFeedsParams struct {
 	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
@@ -5462,6 +6051,21 @@ type CreatePersonalAccessTokenJSONRequestBody = CreatePersonalAccessToken
 // PutClientAuthPolicyJSONRequestBody defines body for PutClientAuthPolicy for application/json ContentType.
 type PutClientAuthPolicyJSONRequestBody = PutClientAuthPolicy
 
+// FoundFederationJSONRequestBody defines body for FoundFederation for application/json ContentType.
+type FoundFederationJSONRequestBody = FoundFederation
+
+// CreateFederationInvitationJSONRequestBody defines body for CreateFederationInvitation for application/json ContentType.
+type CreateFederationInvitationJSONRequestBody = CreateFederationInvitation
+
+// JoinFederationJSONRequestBody defines body for JoinFederation for application/json ContentType.
+type JoinFederationJSONRequestBody = JoinFederation
+
+// LeaveFederationJSONRequestBody defines body for LeaveFederation for application/json ContentType.
+type LeaveFederationJSONRequestBody = LeaveFederation
+
+// RotateFederationRecoveryKeyJSONRequestBody defines body for RotateFederationRecoveryKey for application/json ContentType.
+type RotateFederationRecoveryKeyJSONRequestBody = RotateFederationRecoveryKey
+
 // CreateFeedJSONRequestBody defines body for CreateFeed for application/json ContentType.
 type CreateFeedJSONRequestBody = CreateFeed
 
@@ -5857,6 +6461,116 @@ type ClientInterface interface {
 	//
 	// Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.
 	GetDiagnostics(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// FoundFederationWithBody performs a POST /api/v1/federation (the `FoundFederation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+	FoundFederationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// FoundFederation performs a POST /api/v1/federation (the `FoundFederation` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+	FoundFederation(ctx context.Context, body FoundFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationDocument performs a GET /api/v1/federation/documents/{kind} (the `GetFederationDocument` operationId) request.
+	//
+	// The applied signed document of a kind from the local document log. Requires read on the instance.
+	GetFederationDocument(ctx context.Context, kind GetFederationDocumentParamsKind, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationDocumentGeneration performs a GET /api/v1/federation/documents/{kind}/{generation} (the `GetFederationDocumentGeneration` operationId) request.
+	//
+	// One generation from the local append-only document log. Requires read on the instance.
+	GetFederationDocumentGeneration(ctx context.Context, kind GetFederationDocumentGenerationParamsKind, generation int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListFederationInvitations performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
+	//
+	// Join invitations issued by this authority (secrets are never returned). Requires instance admin.
+	ListFederationInvitations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFederationInvitationWithBody performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	CreateFederationInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFederationInvitation performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	CreateFederationInvitation(ctx context.Context, body CreateFederationInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeFederationInvitation performs a DELETE /api/v1/federation/invitations/{id} (the `RevokeFederationInvitation` operationId) request.
+	//
+	// Revokes a pending invitation (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+	RevokeFederationInvitation(ctx context.Context, id openapi_types.UUID, params *RevokeFederationInvitationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// JoinFederationWithBody performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+	JoinFederationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// JoinFederation performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+	JoinFederation(ctx context.Context, body JoinFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LeaveFederationWithBody performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+	LeaveFederationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LeaveFederation performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+	LeaveFederation(ctx context.Context, body LeaveFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListFederationMembers performs a GET /api/v1/federation/members (the `ListFederationMembers` operationId) request.
+	//
+	// Members of the applied membership document with locally observed RTT, clock skew and last-seen time. Requires read on the instance.
+	ListFederationMembers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RemoveFederationMember performs a DELETE /api/v1/federation/members/{id} (the `RemoveFederationMember` operationId) request.
+	//
+	// Removes a member and revokes its certificate serial (authority only, destructive). Requires instance admin and confirm=true. Replay-safe with Idempotency-Key.
+	RemoveFederationMember(ctx context.Context, id openapi_types.UUID, params *RemoveFederationMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationMember performs a GET /api/v1/federation/members/{id} (the `GetFederationMember` operationId) request.
+	//
+	// One federation member. Requires read on the instance.
+	GetFederationMember(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResumeFederationMember performs a POST /api/v1/federation/members/{id}/resume (the `ResumeFederationMember` operationId) request.
+	//
+	// Resumes a suspended member (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+	ResumeFederationMember(ctx context.Context, id openapi_types.UUID, params *ResumeFederationMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SuspendFederationMember performs a POST /api/v1/federation/members/{id}/suspend (the `SuspendFederationMember` operationId) request.
+	//
+	// Suspends a member: peers refuse its federation calls (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+	SuspendFederationMember(ctx context.Context, id openapi_types.UUID, params *SuspendFederationMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateFederationRecoveryKeyWithBody performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	RotateFederationRecoveryKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateFederationRecoveryKey performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	RotateFederationRecoveryKey(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationStatus performs a GET /api/v1/federation/status (the `GetFederationStatus` operationId) request.
+	//
+	// Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.
+	GetFederationStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListFeeds performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 	ListFeeds(ctx context.Context, params *ListFeedsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7308,6 +8022,316 @@ func (c *Client) PutClientAuthPolicy(ctx context.Context, body PutClientAuthPoli
 // Downloads a redacted support bundle (tar.gz): build info, effective configuration with secrets redacted, readiness detail, schema migration state, recent warning/error log lines, runtime statistics, goroutine dump and database/storage connectivity checks. Requires instance admin. The download is audited.
 func (c *Client) GetDiagnostics(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDiagnosticsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// FoundFederationWithBody performs a POST /api/v1/federation (the `FoundFederation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+func (c *Client) FoundFederationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFoundFederationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// FoundFederation performs a POST /api/v1/federation (the `FoundFederation` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+func (c *Client) FoundFederation(ctx context.Context, body FoundFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFoundFederationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationDocument performs a GET /api/v1/federation/documents/{kind} (the `GetFederationDocument` operationId) request.
+//
+// The applied signed document of a kind from the local document log. Requires read on the instance.
+func (c *Client) GetFederationDocument(ctx context.Context, kind GetFederationDocumentParamsKind, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationDocumentRequest(c.Server, kind)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationDocumentGeneration performs a GET /api/v1/federation/documents/{kind}/{generation} (the `GetFederationDocumentGeneration` operationId) request.
+//
+// One generation from the local append-only document log. Requires read on the instance.
+func (c *Client) GetFederationDocumentGeneration(ctx context.Context, kind GetFederationDocumentGenerationParamsKind, generation int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationDocumentGenerationRequest(c.Server, kind, generation)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListFederationInvitations performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
+//
+// Join invitations issued by this authority (secrets are never returned). Requires instance admin.
+func (c *Client) ListFederationInvitations(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFederationInvitationsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFederationInvitationWithBody performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+func (c *Client) CreateFederationInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFederationInvitationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFederationInvitation performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+func (c *Client) CreateFederationInvitation(ctx context.Context, body CreateFederationInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFederationInvitationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RevokeFederationInvitation performs a DELETE /api/v1/federation/invitations/{id} (the `RevokeFederationInvitation` operationId) request.
+//
+// Revokes a pending invitation (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) RevokeFederationInvitation(ctx context.Context, id openapi_types.UUID, params *RevokeFederationInvitationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeFederationInvitationRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// JoinFederationWithBody performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+func (c *Client) JoinFederationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewJoinFederationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// JoinFederation performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+func (c *Client) JoinFederation(ctx context.Context, body JoinFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewJoinFederationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// LeaveFederationWithBody performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+func (c *Client) LeaveFederationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLeaveFederationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// LeaveFederation performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+func (c *Client) LeaveFederation(ctx context.Context, body LeaveFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLeaveFederationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListFederationMembers performs a GET /api/v1/federation/members (the `ListFederationMembers` operationId) request.
+//
+// Members of the applied membership document with locally observed RTT, clock skew and last-seen time. Requires read on the instance.
+func (c *Client) ListFederationMembers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFederationMembersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RemoveFederationMember performs a DELETE /api/v1/federation/members/{id} (the `RemoveFederationMember` operationId) request.
+//
+// Removes a member and revokes its certificate serial (authority only, destructive). Requires instance admin and confirm=true. Replay-safe with Idempotency-Key.
+func (c *Client) RemoveFederationMember(ctx context.Context, id openapi_types.UUID, params *RemoveFederationMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRemoveFederationMemberRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationMember performs a GET /api/v1/federation/members/{id} (the `GetFederationMember` operationId) request.
+//
+// One federation member. Requires read on the instance.
+func (c *Client) GetFederationMember(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationMemberRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ResumeFederationMember performs a POST /api/v1/federation/members/{id}/resume (the `ResumeFederationMember` operationId) request.
+//
+// Resumes a suspended member (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) ResumeFederationMember(ctx context.Context, id openapi_types.UUID, params *ResumeFederationMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResumeFederationMemberRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SuspendFederationMember performs a POST /api/v1/federation/members/{id}/suspend (the `SuspendFederationMember` operationId) request.
+//
+// Suspends a member: peers refuse its federation calls (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) SuspendFederationMember(ctx context.Context, id openapi_types.UUID, params *SuspendFederationMemberParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSuspendFederationMemberRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateFederationRecoveryKeyWithBody performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+func (c *Client) RotateFederationRecoveryKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateFederationRecoveryKeyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateFederationRecoveryKey performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+func (c *Client) RotateFederationRecoveryKey(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateFederationRecoveryKeyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationStatus performs a GET /api/v1/federation/status (the `GetFederationStatus` operationId) request.
+//
+// Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.
+func (c *Client) GetFederationStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationStatusRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -11043,6 +12067,607 @@ func NewGetDiagnosticsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/diagnostics")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewFoundFederationRequest calls the generic FoundFederation builder with application/json body
+func NewFoundFederationRequest(server string, body FoundFederationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewFoundFederationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewFoundFederationRequestWithBody constructs an http.Request for the FoundFederation method, with any body, and a specified content type
+func NewFoundFederationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetFederationDocumentRequest constructs an http.Request for the GetFederationDocument method
+func NewGetFederationDocumentRequest(server string, kind GetFederationDocumentParamsKind) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "kind", kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/documents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetFederationDocumentGenerationRequest constructs an http.Request for the GetFederationDocumentGeneration method
+func NewGetFederationDocumentGenerationRequest(server string, kind GetFederationDocumentGenerationParamsKind, generation int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "kind", kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "generation", generation, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/documents/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListFederationInvitationsRequest constructs an http.Request for the ListFederationInvitations method
+func NewListFederationInvitationsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/invitations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateFederationInvitationRequest calls the generic CreateFederationInvitation builder with application/json body
+func NewCreateFederationInvitationRequest(server string, body CreateFederationInvitationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFederationInvitationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateFederationInvitationRequestWithBody constructs an http.Request for the CreateFederationInvitation method, with any body, and a specified content type
+func NewCreateFederationInvitationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/invitations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeFederationInvitationRequest constructs an http.Request for the RevokeFederationInvitation method
+func NewRevokeFederationInvitationRequest(server string, id openapi_types.UUID, params *RevokeFederationInvitationParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/invitations/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewJoinFederationRequest calls the generic JoinFederation builder with application/json body
+func NewJoinFederationRequest(server string, body JoinFederationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewJoinFederationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewJoinFederationRequestWithBody constructs an http.Request for the JoinFederation method, with any body, and a specified content type
+func NewJoinFederationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/join")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewLeaveFederationRequest calls the generic LeaveFederation builder with application/json body
+func NewLeaveFederationRequest(server string, body LeaveFederationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewLeaveFederationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewLeaveFederationRequestWithBody constructs an http.Request for the LeaveFederation method, with any body, and a specified content type
+func NewLeaveFederationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/leave")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListFederationMembersRequest constructs an http.Request for the ListFederationMembers method
+func NewListFederationMembersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/members")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRemoveFederationMemberRequest constructs an http.Request for the RemoveFederationMember method
+func NewRemoveFederationMemberRequest(server string, id openapi_types.UUID, params *RemoveFederationMemberParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/members/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "confirm", params.Confirm, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetFederationMemberRequest constructs an http.Request for the GetFederationMember method
+func NewGetFederationMemberRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/members/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResumeFederationMemberRequest constructs an http.Request for the ResumeFederationMember method
+func NewResumeFederationMemberRequest(server string, id openapi_types.UUID, params *ResumeFederationMemberParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/members/%s/resume", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewSuspendFederationMemberRequest constructs an http.Request for the SuspendFederationMember method
+func NewSuspendFederationMemberRequest(server string, id openapi_types.UUID, params *SuspendFederationMemberParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/members/%s/suspend", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewRotateFederationRecoveryKeyRequest calls the generic RotateFederationRecoveryKey builder with application/json body
+func NewRotateFederationRecoveryKeyRequest(server string, body RotateFederationRecoveryKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRotateFederationRecoveryKeyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewRotateFederationRecoveryKeyRequestWithBody constructs an http.Request for the RotateFederationRecoveryKey method, with any body, and a specified content type
+func NewRotateFederationRecoveryKeyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/recovery-key/rotate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetFederationStatusRequest constructs an http.Request for the GetFederationStatus method
+func NewGetFederationStatusRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/status")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -18404,6 +20029,146 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetDiagnosticsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDiagnosticsResponse, error)
 
+	// FoundFederationWithBodyWithResponse performs a POST /api/v1/federation (the `FoundFederation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	FoundFederationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FoundFederationResponse, error)
+
+	// FoundFederationWithResponse performs a POST /api/v1/federation (the `FoundFederation` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+	FoundFederationWithResponse(ctx context.Context, body FoundFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*FoundFederationResponse, error)
+
+	// GetFederationDocumentWithResponse performs a GET /api/v1/federation/documents/{kind} (the `GetFederationDocument` operationId) request.
+	//
+	// The applied signed document of a kind from the local document log. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationDocumentWithResponse(ctx context.Context, kind GetFederationDocumentParamsKind, reqEditors ...RequestEditorFn) (*GetFederationDocumentResponse, error)
+
+	// GetFederationDocumentGenerationWithResponse performs a GET /api/v1/federation/documents/{kind}/{generation} (the `GetFederationDocumentGeneration` operationId) request.
+	//
+	// One generation from the local append-only document log. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationDocumentGenerationWithResponse(ctx context.Context, kind GetFederationDocumentGenerationParamsKind, generation int64, reqEditors ...RequestEditorFn) (*GetFederationDocumentGenerationResponse, error)
+
+	// ListFederationInvitationsWithResponse performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
+	//
+	// Join invitations issued by this authority (secrets are never returned). Requires instance admin.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListFederationInvitationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationInvitationsResponse, error)
+
+	// CreateFederationInvitationWithBodyWithResponse performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateFederationInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFederationInvitationResponse, error)
+
+	// CreateFederationInvitationWithResponse performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	CreateFederationInvitationWithResponse(ctx context.Context, body CreateFederationInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationInvitationResponse, error)
+
+	// RevokeFederationInvitationWithResponse performs a DELETE /api/v1/federation/invitations/{id} (the `RevokeFederationInvitation` operationId) request.
+	//
+	// Revokes a pending invitation (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RevokeFederationInvitationWithResponse(ctx context.Context, id openapi_types.UUID, params *RevokeFederationInvitationParams, reqEditors ...RequestEditorFn) (*RevokeFederationInvitationResponse, error)
+
+	// JoinFederationWithBodyWithResponse performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	JoinFederationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*JoinFederationResponse, error)
+
+	// JoinFederationWithResponse performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+	JoinFederationWithResponse(ctx context.Context, body JoinFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*JoinFederationResponse, error)
+
+	// LeaveFederationWithBodyWithResponse performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	LeaveFederationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LeaveFederationResponse, error)
+
+	// LeaveFederationWithResponse performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+	LeaveFederationWithResponse(ctx context.Context, body LeaveFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*LeaveFederationResponse, error)
+
+	// ListFederationMembersWithResponse performs a GET /api/v1/federation/members (the `ListFederationMembers` operationId) request.
+	//
+	// Members of the applied membership document with locally observed RTT, clock skew and last-seen time. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListFederationMembersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationMembersResponse, error)
+
+	// RemoveFederationMemberWithResponse performs a DELETE /api/v1/federation/members/{id} (the `RemoveFederationMember` operationId) request.
+	//
+	// Removes a member and revokes its certificate serial (authority only, destructive). Requires instance admin and confirm=true. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RemoveFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, params *RemoveFederationMemberParams, reqEditors ...RequestEditorFn) (*RemoveFederationMemberResponse, error)
+
+	// GetFederationMemberWithResponse performs a GET /api/v1/federation/members/{id} (the `GetFederationMember` operationId) request.
+	//
+	// One federation member. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFederationMemberResponse, error)
+
+	// ResumeFederationMemberWithResponse performs a POST /api/v1/federation/members/{id}/resume (the `ResumeFederationMember` operationId) request.
+	//
+	// Resumes a suspended member (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ResumeFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, params *ResumeFederationMemberParams, reqEditors ...RequestEditorFn) (*ResumeFederationMemberResponse, error)
+
+	// SuspendFederationMemberWithResponse performs a POST /api/v1/federation/members/{id}/suspend (the `SuspendFederationMember` operationId) request.
+	//
+	// Suspends a member: peers refuse its federation calls (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	SuspendFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, params *SuspendFederationMemberParams, reqEditors ...RequestEditorFn) (*SuspendFederationMemberResponse, error)
+
+	// RotateFederationRecoveryKeyWithBodyWithResponse performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	RotateFederationRecoveryKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateFederationRecoveryKeyResponse, error)
+
+	// RotateFederationRecoveryKeyWithResponse performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+	RotateFederationRecoveryKeyWithResponse(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateFederationRecoveryKeyResponse, error)
+
+	// GetFederationStatusWithResponse performs a GET /api/v1/federation/status (the `GetFederationStatus` operationId) request.
+	//
+	// Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationStatusResponse, error)
+
 	// ListFeedsWithResponse performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -23591,6 +25356,2399 @@ func (r GetDiagnosticsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetDiagnosticsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// FoundFederationResponse201Headers the declared response headers of an HTTP 201 response for FoundFederation
+type FoundFederationResponse201Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse400Headers the declared response headers of an HTTP 400 response for FoundFederation
+type FoundFederationResponse400Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse401Headers the declared response headers of an HTTP 401 response for FoundFederation
+type FoundFederationResponse401Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse403Headers the declared response headers of an HTTP 403 response for FoundFederation
+type FoundFederationResponse403Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse404Headers the declared response headers of an HTTP 404 response for FoundFederation
+type FoundFederationResponse404Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse409Headers the declared response headers of an HTTP 409 response for FoundFederation
+type FoundFederationResponse409Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse429Headers the declared response headers of an HTTP 429 response for FoundFederation
+type FoundFederationResponse429Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse500Headers the declared response headers of an HTTP 500 response for FoundFederation
+type FoundFederationResponse500Headers struct {
+	XRequestID *string
+}
+
+// FoundFederationResponse503Headers the declared response headers of an HTTP 503 response for FoundFederation
+type FoundFederationResponse503Headers struct {
+	XRequestID *string
+}
+
+type FoundFederationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *FederationFoundResult
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *FoundFederationResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *FoundFederationResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *FoundFederationResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *FoundFederationResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *FoundFederationResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *FoundFederationResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *FoundFederationResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *FoundFederationResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *FoundFederationResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r FoundFederationResponse) GetJSON201() *FederationFoundResult {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r FoundFederationResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r FoundFederationResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r FoundFederationResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r FoundFederationResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r FoundFederationResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r FoundFederationResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r FoundFederationResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r FoundFederationResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r FoundFederationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r FoundFederationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r FoundFederationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r FoundFederationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationDocumentResponse200Headers the declared response headers of an HTTP 200 response for GetFederationDocument
+type GetFederationDocumentResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse400Headers the declared response headers of an HTTP 400 response for GetFederationDocument
+type GetFederationDocumentResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse401Headers the declared response headers of an HTTP 401 response for GetFederationDocument
+type GetFederationDocumentResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse403Headers the declared response headers of an HTTP 403 response for GetFederationDocument
+type GetFederationDocumentResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse404Headers the declared response headers of an HTTP 404 response for GetFederationDocument
+type GetFederationDocumentResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse409Headers the declared response headers of an HTTP 409 response for GetFederationDocument
+type GetFederationDocumentResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse429Headers the declared response headers of an HTTP 429 response for GetFederationDocument
+type GetFederationDocumentResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse500Headers the declared response headers of an HTTP 500 response for GetFederationDocument
+type GetFederationDocumentResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentResponse503Headers the declared response headers of an HTTP 503 response for GetFederationDocument
+type GetFederationDocumentResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationDocumentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationStoredDocument
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationDocumentResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationDocumentResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationDocumentResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationDocumentResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationDocumentResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationDocumentResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationDocumentResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationDocumentResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationDocumentResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON200() *FederationStoredDocument {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationDocumentResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationDocumentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationDocumentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationDocumentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationDocumentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationDocumentGenerationResponse200Headers the declared response headers of an HTTP 200 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse400Headers the declared response headers of an HTTP 400 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse401Headers the declared response headers of an HTTP 401 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse403Headers the declared response headers of an HTTP 403 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse404Headers the declared response headers of an HTTP 404 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse409Headers the declared response headers of an HTTP 409 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse429Headers the declared response headers of an HTTP 429 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse500Headers the declared response headers of an HTTP 500 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationDocumentGenerationResponse503Headers the declared response headers of an HTTP 503 response for GetFederationDocumentGeneration
+type GetFederationDocumentGenerationResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationDocumentGenerationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationStoredDocument
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationDocumentGenerationResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationDocumentGenerationResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationDocumentGenerationResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationDocumentGenerationResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationDocumentGenerationResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationDocumentGenerationResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationDocumentGenerationResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationDocumentGenerationResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationDocumentGenerationResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON200() *FederationStoredDocument {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationDocumentGenerationResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationDocumentGenerationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationDocumentGenerationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationDocumentGenerationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationDocumentGenerationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListFederationInvitationsResponse200Headers the declared response headers of an HTTP 200 response for ListFederationInvitations
+type ListFederationInvitationsResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse400Headers the declared response headers of an HTTP 400 response for ListFederationInvitations
+type ListFederationInvitationsResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse401Headers the declared response headers of an HTTP 401 response for ListFederationInvitations
+type ListFederationInvitationsResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse403Headers the declared response headers of an HTTP 403 response for ListFederationInvitations
+type ListFederationInvitationsResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse404Headers the declared response headers of an HTTP 404 response for ListFederationInvitations
+type ListFederationInvitationsResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse409Headers the declared response headers of an HTTP 409 response for ListFederationInvitations
+type ListFederationInvitationsResponse409Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse429Headers the declared response headers of an HTTP 429 response for ListFederationInvitations
+type ListFederationInvitationsResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse500Headers the declared response headers of an HTTP 500 response for ListFederationInvitations
+type ListFederationInvitationsResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListFederationInvitationsResponse503Headers the declared response headers of an HTTP 503 response for ListFederationInvitations
+type ListFederationInvitationsResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListFederationInvitationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationInvitationList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListFederationInvitationsResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListFederationInvitationsResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListFederationInvitationsResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListFederationInvitationsResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListFederationInvitationsResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ListFederationInvitationsResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListFederationInvitationsResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListFederationInvitationsResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListFederationInvitationsResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON200() *FederationInvitationList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListFederationInvitationsResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListFederationInvitationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListFederationInvitationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListFederationInvitationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListFederationInvitationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateFederationInvitationResponse201Headers the declared response headers of an HTTP 201 response for CreateFederationInvitation
+type CreateFederationInvitationResponse201Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse400Headers the declared response headers of an HTTP 400 response for CreateFederationInvitation
+type CreateFederationInvitationResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse401Headers the declared response headers of an HTTP 401 response for CreateFederationInvitation
+type CreateFederationInvitationResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse403Headers the declared response headers of an HTTP 403 response for CreateFederationInvitation
+type CreateFederationInvitationResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse404Headers the declared response headers of an HTTP 404 response for CreateFederationInvitation
+type CreateFederationInvitationResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse409Headers the declared response headers of an HTTP 409 response for CreateFederationInvitation
+type CreateFederationInvitationResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse429Headers the declared response headers of an HTTP 429 response for CreateFederationInvitation
+type CreateFederationInvitationResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse500Headers the declared response headers of an HTTP 500 response for CreateFederationInvitation
+type CreateFederationInvitationResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationInvitationResponse503Headers the declared response headers of an HTTP 503 response for CreateFederationInvitation
+type CreateFederationInvitationResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateFederationInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *FederationIssuedInvitation
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateFederationInvitationResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateFederationInvitationResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateFederationInvitationResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateFederationInvitationResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreateFederationInvitationResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateFederationInvitationResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateFederationInvitationResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateFederationInvitationResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateFederationInvitationResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON201() *FederationIssuedInvitation {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateFederationInvitationResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFederationInvitationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFederationInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFederationInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFederationInvitationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RevokeFederationInvitationResponse204Headers the declared response headers of an HTTP 204 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse204Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse400Headers the declared response headers of an HTTP 400 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse400Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse401Headers the declared response headers of an HTTP 401 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse401Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse403Headers the declared response headers of an HTTP 403 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse403Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse404Headers the declared response headers of an HTTP 404 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse404Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse409Headers the declared response headers of an HTTP 409 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse409Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse429Headers the declared response headers of an HTTP 429 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse429Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse500Headers the declared response headers of an HTTP 500 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse500Headers struct {
+	XRequestID *string
+}
+
+// RevokeFederationInvitationResponse503Headers the declared response headers of an HTTP 503 response for RevokeFederationInvitation
+type RevokeFederationInvitationResponse503Headers struct {
+	XRequestID *string
+}
+
+type RevokeFederationInvitationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *RevokeFederationInvitationResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *RevokeFederationInvitationResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *RevokeFederationInvitationResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *RevokeFederationInvitationResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *RevokeFederationInvitationResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *RevokeFederationInvitationResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RevokeFederationInvitationResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *RevokeFederationInvitationResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *RevokeFederationInvitationResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r RevokeFederationInvitationResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r RevokeFederationInvitationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeFederationInvitationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeFederationInvitationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeFederationInvitationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// JoinFederationResponse200Headers the declared response headers of an HTTP 200 response for JoinFederation
+type JoinFederationResponse200Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse400Headers the declared response headers of an HTTP 400 response for JoinFederation
+type JoinFederationResponse400Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse401Headers the declared response headers of an HTTP 401 response for JoinFederation
+type JoinFederationResponse401Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse403Headers the declared response headers of an HTTP 403 response for JoinFederation
+type JoinFederationResponse403Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse404Headers the declared response headers of an HTTP 404 response for JoinFederation
+type JoinFederationResponse404Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse409Headers the declared response headers of an HTTP 409 response for JoinFederation
+type JoinFederationResponse409Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse429Headers the declared response headers of an HTTP 429 response for JoinFederation
+type JoinFederationResponse429Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse500Headers the declared response headers of an HTTP 500 response for JoinFederation
+type JoinFederationResponse500Headers struct {
+	XRequestID *string
+}
+
+// JoinFederationResponse503Headers the declared response headers of an HTTP 503 response for JoinFederation
+type JoinFederationResponse503Headers struct {
+	XRequestID *string
+}
+
+type JoinFederationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationStatus
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *JoinFederationResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *JoinFederationResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *JoinFederationResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *JoinFederationResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *JoinFederationResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *JoinFederationResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *JoinFederationResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *JoinFederationResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *JoinFederationResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r JoinFederationResponse) GetJSON200() *FederationStatus {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r JoinFederationResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r JoinFederationResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r JoinFederationResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r JoinFederationResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r JoinFederationResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r JoinFederationResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r JoinFederationResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r JoinFederationResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r JoinFederationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r JoinFederationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r JoinFederationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r JoinFederationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// LeaveFederationResponse200Headers the declared response headers of an HTTP 200 response for LeaveFederation
+type LeaveFederationResponse200Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse400Headers the declared response headers of an HTTP 400 response for LeaveFederation
+type LeaveFederationResponse400Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse401Headers the declared response headers of an HTTP 401 response for LeaveFederation
+type LeaveFederationResponse401Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse403Headers the declared response headers of an HTTP 403 response for LeaveFederation
+type LeaveFederationResponse403Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse404Headers the declared response headers of an HTTP 404 response for LeaveFederation
+type LeaveFederationResponse404Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse409Headers the declared response headers of an HTTP 409 response for LeaveFederation
+type LeaveFederationResponse409Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse429Headers the declared response headers of an HTTP 429 response for LeaveFederation
+type LeaveFederationResponse429Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse500Headers the declared response headers of an HTTP 500 response for LeaveFederation
+type LeaveFederationResponse500Headers struct {
+	XRequestID *string
+}
+
+// LeaveFederationResponse503Headers the declared response headers of an HTTP 503 response for LeaveFederation
+type LeaveFederationResponse503Headers struct {
+	XRequestID *string
+}
+
+type LeaveFederationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationStatus
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *LeaveFederationResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *LeaveFederationResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *LeaveFederationResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *LeaveFederationResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *LeaveFederationResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *LeaveFederationResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *LeaveFederationResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *LeaveFederationResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *LeaveFederationResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r LeaveFederationResponse) GetJSON200() *FederationStatus {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r LeaveFederationResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r LeaveFederationResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r LeaveFederationResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r LeaveFederationResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r LeaveFederationResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r LeaveFederationResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r LeaveFederationResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r LeaveFederationResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r LeaveFederationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r LeaveFederationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LeaveFederationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r LeaveFederationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListFederationMembersResponse200Headers the declared response headers of an HTTP 200 response for ListFederationMembers
+type ListFederationMembersResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse400Headers the declared response headers of an HTTP 400 response for ListFederationMembers
+type ListFederationMembersResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse401Headers the declared response headers of an HTTP 401 response for ListFederationMembers
+type ListFederationMembersResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse403Headers the declared response headers of an HTTP 403 response for ListFederationMembers
+type ListFederationMembersResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse404Headers the declared response headers of an HTTP 404 response for ListFederationMembers
+type ListFederationMembersResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse409Headers the declared response headers of an HTTP 409 response for ListFederationMembers
+type ListFederationMembersResponse409Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse429Headers the declared response headers of an HTTP 429 response for ListFederationMembers
+type ListFederationMembersResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse500Headers the declared response headers of an HTTP 500 response for ListFederationMembers
+type ListFederationMembersResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListFederationMembersResponse503Headers the declared response headers of an HTTP 503 response for ListFederationMembers
+type ListFederationMembersResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListFederationMembersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationMemberList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListFederationMembersResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListFederationMembersResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListFederationMembersResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListFederationMembersResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListFederationMembersResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ListFederationMembersResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListFederationMembersResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListFederationMembersResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListFederationMembersResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListFederationMembersResponse) GetJSON200() *FederationMemberList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListFederationMembersResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListFederationMembersResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListFederationMembersResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListFederationMembersResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ListFederationMembersResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListFederationMembersResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListFederationMembersResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListFederationMembersResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListFederationMembersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListFederationMembersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListFederationMembersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListFederationMembersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RemoveFederationMemberResponse200Headers the declared response headers of an HTTP 200 response for RemoveFederationMember
+type RemoveFederationMemberResponse200Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse400Headers the declared response headers of an HTTP 400 response for RemoveFederationMember
+type RemoveFederationMemberResponse400Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse401Headers the declared response headers of an HTTP 401 response for RemoveFederationMember
+type RemoveFederationMemberResponse401Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse403Headers the declared response headers of an HTTP 403 response for RemoveFederationMember
+type RemoveFederationMemberResponse403Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse404Headers the declared response headers of an HTTP 404 response for RemoveFederationMember
+type RemoveFederationMemberResponse404Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse409Headers the declared response headers of an HTTP 409 response for RemoveFederationMember
+type RemoveFederationMemberResponse409Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse429Headers the declared response headers of an HTTP 429 response for RemoveFederationMember
+type RemoveFederationMemberResponse429Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse500Headers the declared response headers of an HTTP 500 response for RemoveFederationMember
+type RemoveFederationMemberResponse500Headers struct {
+	XRequestID *string
+}
+
+// RemoveFederationMemberResponse503Headers the declared response headers of an HTTP 503 response for RemoveFederationMember
+type RemoveFederationMemberResponse503Headers struct {
+	XRequestID *string
+}
+
+type RemoveFederationMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationMember
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *RemoveFederationMemberResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *RemoveFederationMemberResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *RemoveFederationMemberResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *RemoveFederationMemberResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *RemoveFederationMemberResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *RemoveFederationMemberResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RemoveFederationMemberResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *RemoveFederationMemberResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *RemoveFederationMemberResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON200() *FederationMember {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r RemoveFederationMemberResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r RemoveFederationMemberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RemoveFederationMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RemoveFederationMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RemoveFederationMemberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationMemberResponse200Headers the declared response headers of an HTTP 200 response for GetFederationMember
+type GetFederationMemberResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse400Headers the declared response headers of an HTTP 400 response for GetFederationMember
+type GetFederationMemberResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse401Headers the declared response headers of an HTTP 401 response for GetFederationMember
+type GetFederationMemberResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse403Headers the declared response headers of an HTTP 403 response for GetFederationMember
+type GetFederationMemberResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse404Headers the declared response headers of an HTTP 404 response for GetFederationMember
+type GetFederationMemberResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse409Headers the declared response headers of an HTTP 409 response for GetFederationMember
+type GetFederationMemberResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse429Headers the declared response headers of an HTTP 429 response for GetFederationMember
+type GetFederationMemberResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse500Headers the declared response headers of an HTTP 500 response for GetFederationMember
+type GetFederationMemberResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationMemberResponse503Headers the declared response headers of an HTTP 503 response for GetFederationMember
+type GetFederationMemberResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationMember
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationMemberResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationMemberResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationMemberResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationMemberResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationMemberResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationMemberResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationMemberResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationMemberResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationMemberResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationMemberResponse) GetJSON200() *FederationMember {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationMemberResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationMemberResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationMemberResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationMemberResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationMemberResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationMemberResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationMemberResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationMemberResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationMemberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationMemberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ResumeFederationMemberResponse200Headers the declared response headers of an HTTP 200 response for ResumeFederationMember
+type ResumeFederationMemberResponse200Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse400Headers the declared response headers of an HTTP 400 response for ResumeFederationMember
+type ResumeFederationMemberResponse400Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse401Headers the declared response headers of an HTTP 401 response for ResumeFederationMember
+type ResumeFederationMemberResponse401Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse403Headers the declared response headers of an HTTP 403 response for ResumeFederationMember
+type ResumeFederationMemberResponse403Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse404Headers the declared response headers of an HTTP 404 response for ResumeFederationMember
+type ResumeFederationMemberResponse404Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse409Headers the declared response headers of an HTTP 409 response for ResumeFederationMember
+type ResumeFederationMemberResponse409Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse429Headers the declared response headers of an HTTP 429 response for ResumeFederationMember
+type ResumeFederationMemberResponse429Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse500Headers the declared response headers of an HTTP 500 response for ResumeFederationMember
+type ResumeFederationMemberResponse500Headers struct {
+	XRequestID *string
+}
+
+// ResumeFederationMemberResponse503Headers the declared response headers of an HTTP 503 response for ResumeFederationMember
+type ResumeFederationMemberResponse503Headers struct {
+	XRequestID *string
+}
+
+type ResumeFederationMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationMember
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ResumeFederationMemberResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ResumeFederationMemberResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ResumeFederationMemberResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ResumeFederationMemberResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ResumeFederationMemberResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ResumeFederationMemberResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ResumeFederationMemberResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ResumeFederationMemberResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ResumeFederationMemberResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON200() *FederationMember {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ResumeFederationMemberResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ResumeFederationMemberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ResumeFederationMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResumeFederationMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResumeFederationMemberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SuspendFederationMemberResponse200Headers the declared response headers of an HTTP 200 response for SuspendFederationMember
+type SuspendFederationMemberResponse200Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse400Headers the declared response headers of an HTTP 400 response for SuspendFederationMember
+type SuspendFederationMemberResponse400Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse401Headers the declared response headers of an HTTP 401 response for SuspendFederationMember
+type SuspendFederationMemberResponse401Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse403Headers the declared response headers of an HTTP 403 response for SuspendFederationMember
+type SuspendFederationMemberResponse403Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse404Headers the declared response headers of an HTTP 404 response for SuspendFederationMember
+type SuspendFederationMemberResponse404Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse409Headers the declared response headers of an HTTP 409 response for SuspendFederationMember
+type SuspendFederationMemberResponse409Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse429Headers the declared response headers of an HTTP 429 response for SuspendFederationMember
+type SuspendFederationMemberResponse429Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse500Headers the declared response headers of an HTTP 500 response for SuspendFederationMember
+type SuspendFederationMemberResponse500Headers struct {
+	XRequestID *string
+}
+
+// SuspendFederationMemberResponse503Headers the declared response headers of an HTTP 503 response for SuspendFederationMember
+type SuspendFederationMemberResponse503Headers struct {
+	XRequestID *string
+}
+
+type SuspendFederationMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationMember
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *SuspendFederationMemberResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *SuspendFederationMemberResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *SuspendFederationMemberResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *SuspendFederationMemberResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *SuspendFederationMemberResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *SuspendFederationMemberResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *SuspendFederationMemberResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *SuspendFederationMemberResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *SuspendFederationMemberResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON200() *FederationMember {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r SuspendFederationMemberResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r SuspendFederationMemberResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SuspendFederationMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SuspendFederationMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SuspendFederationMemberResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RotateFederationRecoveryKeyResponse200Headers the declared response headers of an HTTP 200 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse200Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse400Headers the declared response headers of an HTTP 400 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse400Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse401Headers the declared response headers of an HTTP 401 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse401Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse403Headers the declared response headers of an HTTP 403 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse403Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse404Headers the declared response headers of an HTTP 404 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse404Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse409Headers the declared response headers of an HTTP 409 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse409Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse429Headers the declared response headers of an HTTP 429 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse429Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse500Headers the declared response headers of an HTTP 500 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse500Headers struct {
+	XRequestID *string
+}
+
+// RotateFederationRecoveryKeyResponse503Headers the declared response headers of an HTTP 503 response for RotateFederationRecoveryKey
+type RotateFederationRecoveryKeyResponse503Headers struct {
+	XRequestID *string
+}
+
+type RotateFederationRecoveryKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationFoundResult
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *RotateFederationRecoveryKeyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *RotateFederationRecoveryKeyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *RotateFederationRecoveryKeyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *RotateFederationRecoveryKeyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *RotateFederationRecoveryKeyResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *RotateFederationRecoveryKeyResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RotateFederationRecoveryKeyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *RotateFederationRecoveryKeyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *RotateFederationRecoveryKeyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON200() *FederationFoundResult {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r RotateFederationRecoveryKeyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r RotateFederationRecoveryKeyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateFederationRecoveryKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateFederationRecoveryKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RotateFederationRecoveryKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationStatusResponse200Headers the declared response headers of an HTTP 200 response for GetFederationStatus
+type GetFederationStatusResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse400Headers the declared response headers of an HTTP 400 response for GetFederationStatus
+type GetFederationStatusResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse401Headers the declared response headers of an HTTP 401 response for GetFederationStatus
+type GetFederationStatusResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse403Headers the declared response headers of an HTTP 403 response for GetFederationStatus
+type GetFederationStatusResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse404Headers the declared response headers of an HTTP 404 response for GetFederationStatus
+type GetFederationStatusResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse409Headers the declared response headers of an HTTP 409 response for GetFederationStatus
+type GetFederationStatusResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse429Headers the declared response headers of an HTTP 429 response for GetFederationStatus
+type GetFederationStatusResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse500Headers the declared response headers of an HTTP 500 response for GetFederationStatus
+type GetFederationStatusResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationStatusResponse503Headers the declared response headers of an HTTP 503 response for GetFederationStatus
+type GetFederationStatusResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationStatus
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationStatusResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationStatusResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationStatusResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationStatusResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationStatusResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationStatusResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationStatusResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationStatusResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationStatusResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationStatusResponse) GetJSON200() *FederationStatus {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationStatusResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationStatusResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationStatusResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationStatusResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationStatusResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationStatusResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationStatusResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationStatusResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationStatusResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -46343,6 +50501,266 @@ func (c *ClientWithResponses) GetDiagnosticsWithResponse(ctx context.Context, re
 	return ParseGetDiagnosticsResponse(rsp)
 }
 
+// FoundFederationWithBodyWithResponse performs a POST /api/v1/federation (the `FoundFederation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) FoundFederationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FoundFederationResponse, error) {
+	rsp, err := c.FoundFederationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFoundFederationResponse(rsp)
+}
+
+// FoundFederationWithResponse performs a POST /api/v1/federation (the `FoundFederation` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.
+func (c *ClientWithResponses) FoundFederationWithResponse(ctx context.Context, body FoundFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*FoundFederationResponse, error) {
+	rsp, err := c.FoundFederation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFoundFederationResponse(rsp)
+}
+
+// GetFederationDocumentWithResponse performs a GET /api/v1/federation/documents/{kind} (the `GetFederationDocument` operationId) request.
+//
+// The applied signed document of a kind from the local document log. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationDocumentWithResponse(ctx context.Context, kind GetFederationDocumentParamsKind, reqEditors ...RequestEditorFn) (*GetFederationDocumentResponse, error) {
+	rsp, err := c.GetFederationDocument(ctx, kind, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationDocumentResponse(rsp)
+}
+
+// GetFederationDocumentGenerationWithResponse performs a GET /api/v1/federation/documents/{kind}/{generation} (the `GetFederationDocumentGeneration` operationId) request.
+//
+// One generation from the local append-only document log. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationDocumentGenerationWithResponse(ctx context.Context, kind GetFederationDocumentGenerationParamsKind, generation int64, reqEditors ...RequestEditorFn) (*GetFederationDocumentGenerationResponse, error) {
+	rsp, err := c.GetFederationDocumentGeneration(ctx, kind, generation, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationDocumentGenerationResponse(rsp)
+}
+
+// ListFederationInvitationsWithResponse performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
+//
+// Join invitations issued by this authority (secrets are never returned). Requires instance admin.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListFederationInvitationsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationInvitationsResponse, error) {
+	rsp, err := c.ListFederationInvitations(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListFederationInvitationsResponse(rsp)
+}
+
+// CreateFederationInvitationWithBodyWithResponse performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateFederationInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFederationInvitationResponse, error) {
+	rsp, err := c.CreateFederationInvitationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFederationInvitationResponse(rsp)
+}
+
+// CreateFederationInvitationWithResponse performs a POST /api/v1/federation/invitations (the `CreateFederationInvitation` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+func (c *ClientWithResponses) CreateFederationInvitationWithResponse(ctx context.Context, body CreateFederationInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationInvitationResponse, error) {
+	rsp, err := c.CreateFederationInvitation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFederationInvitationResponse(rsp)
+}
+
+// RevokeFederationInvitationWithResponse performs a DELETE /api/v1/federation/invitations/{id} (the `RevokeFederationInvitation` operationId) request.
+//
+// Revokes a pending invitation (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RevokeFederationInvitationWithResponse(ctx context.Context, id openapi_types.UUID, params *RevokeFederationInvitationParams, reqEditors ...RequestEditorFn) (*RevokeFederationInvitationResponse, error) {
+	rsp, err := c.RevokeFederationInvitation(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeFederationInvitationResponse(rsp)
+}
+
+// JoinFederationWithBodyWithResponse performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) JoinFederationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*JoinFederationResponse, error) {
+	rsp, err := c.JoinFederationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseJoinFederationResponse(rsp)
+}
+
+// JoinFederationWithResponse performs a POST /api/v1/federation/join (the `JoinFederation` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.
+func (c *ClientWithResponses) JoinFederationWithResponse(ctx context.Context, body JoinFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*JoinFederationResponse, error) {
+	rsp, err := c.JoinFederation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseJoinFederationResponse(rsp)
+}
+
+// LeaveFederationWithBodyWithResponse performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request,
+// with any type of body and a specified content type.
+//
+// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) LeaveFederationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LeaveFederationResponse, error) {
+	rsp, err := c.LeaveFederationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLeaveFederationResponse(rsp)
+}
+
+// LeaveFederationWithResponse performs a POST /api/v1/federation/leave (the `LeaveFederation` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.
+func (c *ClientWithResponses) LeaveFederationWithResponse(ctx context.Context, body LeaveFederationJSONRequestBody, reqEditors ...RequestEditorFn) (*LeaveFederationResponse, error) {
+	rsp, err := c.LeaveFederation(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLeaveFederationResponse(rsp)
+}
+
+// ListFederationMembersWithResponse performs a GET /api/v1/federation/members (the `ListFederationMembers` operationId) request.
+//
+// Members of the applied membership document with locally observed RTT, clock skew and last-seen time. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListFederationMembersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationMembersResponse, error) {
+	rsp, err := c.ListFederationMembers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListFederationMembersResponse(rsp)
+}
+
+// RemoveFederationMemberWithResponse performs a DELETE /api/v1/federation/members/{id} (the `RemoveFederationMember` operationId) request.
+//
+// Removes a member and revokes its certificate serial (authority only, destructive). Requires instance admin and confirm=true. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RemoveFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, params *RemoveFederationMemberParams, reqEditors ...RequestEditorFn) (*RemoveFederationMemberResponse, error) {
+	rsp, err := c.RemoveFederationMember(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRemoveFederationMemberResponse(rsp)
+}
+
+// GetFederationMemberWithResponse performs a GET /api/v1/federation/members/{id} (the `GetFederationMember` operationId) request.
+//
+// One federation member. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFederationMemberResponse, error) {
+	rsp, err := c.GetFederationMember(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationMemberResponse(rsp)
+}
+
+// ResumeFederationMemberWithResponse performs a POST /api/v1/federation/members/{id}/resume (the `ResumeFederationMember` operationId) request.
+//
+// Resumes a suspended member (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ResumeFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, params *ResumeFederationMemberParams, reqEditors ...RequestEditorFn) (*ResumeFederationMemberResponse, error) {
+	rsp, err := c.ResumeFederationMember(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResumeFederationMemberResponse(rsp)
+}
+
+// SuspendFederationMemberWithResponse performs a POST /api/v1/federation/members/{id}/suspend (the `SuspendFederationMember` operationId) request.
+//
+// Suspends a member: peers refuse its federation calls (authority only). Requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) SuspendFederationMemberWithResponse(ctx context.Context, id openapi_types.UUID, params *SuspendFederationMemberParams, reqEditors ...RequestEditorFn) (*SuspendFederationMemberResponse, error) {
+	rsp, err := c.SuspendFederationMember(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSuspendFederationMemberResponse(rsp)
+}
+
+// RotateFederationRecoveryKeyWithBodyWithResponse performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
+// with any type of body and a specified content type.
+//
+// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) RotateFederationRecoveryKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateFederationRecoveryKeyResponse, error) {
+	rsp, err := c.RotateFederationRecoveryKeyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateFederationRecoveryKeyResponse(rsp)
+}
+
+// RotateFederationRecoveryKeyWithResponse performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
+func (c *ClientWithResponses) RotateFederationRecoveryKeyWithResponse(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateFederationRecoveryKeyResponse, error) {
+	rsp, err := c.RotateFederationRecoveryKey(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateFederationRecoveryKeyResponse(rsp)
+}
+
+// GetFederationStatusWithResponse performs a GET /api/v1/federation/status (the `GetFederationStatus` operationId) request.
+//
+// Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationStatusResponse, error) {
+	rsp, err := c.GetFederationStatus(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationStatusResponse(rsp)
+}
+
 // ListFeedsWithResponse performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -52995,6 +57413,2627 @@ func ParseGetDiagnosticsResponse(rsp *http.Response) (*GetDiagnosticsResponse, e
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetDiagnosticsResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseFoundFederationResponse parses an HTTP response from a FoundFederationWithResponse call
+func ParseFoundFederationResponse(rsp *http.Response) (*FoundFederationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &FoundFederationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FederationFoundResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers FoundFederationResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers FoundFederationResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers FoundFederationResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers FoundFederationResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers FoundFederationResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers FoundFederationResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers FoundFederationResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers FoundFederationResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers FoundFederationResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationDocumentResponse parses an HTTP response from a GetFederationDocumentWithResponse call
+func ParseGetFederationDocumentResponse(rsp *http.Response) (*GetFederationDocumentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationDocumentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationStoredDocument
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationDocumentResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationDocumentResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationDocumentResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationDocumentResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationDocumentResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationDocumentResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationDocumentResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationDocumentResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationDocumentResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationDocumentGenerationResponse parses an HTTP response from a GetFederationDocumentGenerationWithResponse call
+func ParseGetFederationDocumentGenerationResponse(rsp *http.Response) (*GetFederationDocumentGenerationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationDocumentGenerationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationStoredDocument
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationDocumentGenerationResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationDocumentGenerationResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationDocumentGenerationResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationDocumentGenerationResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationDocumentGenerationResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationDocumentGenerationResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationDocumentGenerationResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationDocumentGenerationResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationDocumentGenerationResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListFederationInvitationsResponse parses an HTTP response from a ListFederationInvitationsWithResponse call
+func ParseListFederationInvitationsResponse(rsp *http.Response) (*ListFederationInvitationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListFederationInvitationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationInvitationList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListFederationInvitationsResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListFederationInvitationsResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListFederationInvitationsResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListFederationInvitationsResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListFederationInvitationsResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ListFederationInvitationsResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListFederationInvitationsResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListFederationInvitationsResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListFederationInvitationsResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateFederationInvitationResponse parses an HTTP response from a CreateFederationInvitationWithResponse call
+func ParseCreateFederationInvitationResponse(rsp *http.Response) (*CreateFederationInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFederationInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FederationIssuedInvitation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateFederationInvitationResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateFederationInvitationResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateFederationInvitationResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateFederationInvitationResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreateFederationInvitationResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateFederationInvitationResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateFederationInvitationResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateFederationInvitationResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateFederationInvitationResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseRevokeFederationInvitationResponse parses an HTTP response from a RevokeFederationInvitationWithResponse call
+func ParseRevokeFederationInvitationResponse(rsp *http.Response) (*RevokeFederationInvitationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeFederationInvitationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers RevokeFederationInvitationResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers RevokeFederationInvitationResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers RevokeFederationInvitationResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers RevokeFederationInvitationResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers RevokeFederationInvitationResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers RevokeFederationInvitationResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers RevokeFederationInvitationResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers RevokeFederationInvitationResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers RevokeFederationInvitationResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseJoinFederationResponse parses an HTTP response from a JoinFederationWithResponse call
+func ParseJoinFederationResponse(rsp *http.Response) (*JoinFederationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &JoinFederationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers JoinFederationResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers JoinFederationResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers JoinFederationResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers JoinFederationResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers JoinFederationResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers JoinFederationResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers JoinFederationResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers JoinFederationResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers JoinFederationResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseLeaveFederationResponse parses an HTTP response from a LeaveFederationWithResponse call
+func ParseLeaveFederationResponse(rsp *http.Response) (*LeaveFederationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LeaveFederationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers LeaveFederationResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers LeaveFederationResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers LeaveFederationResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers LeaveFederationResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers LeaveFederationResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers LeaveFederationResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers LeaveFederationResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers LeaveFederationResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers LeaveFederationResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListFederationMembersResponse parses an HTTP response from a ListFederationMembersWithResponse call
+func ParseListFederationMembersResponse(rsp *http.Response) (*ListFederationMembersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListFederationMembersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationMemberList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListFederationMembersResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListFederationMembersResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListFederationMembersResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListFederationMembersResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListFederationMembersResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ListFederationMembersResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListFederationMembersResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListFederationMembersResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListFederationMembersResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseRemoveFederationMemberResponse parses an HTTP response from a RemoveFederationMemberWithResponse call
+func ParseRemoveFederationMemberResponse(rsp *http.Response) (*RemoveFederationMemberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RemoveFederationMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers RemoveFederationMemberResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers RemoveFederationMemberResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers RemoveFederationMemberResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers RemoveFederationMemberResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers RemoveFederationMemberResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers RemoveFederationMemberResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers RemoveFederationMemberResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers RemoveFederationMemberResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers RemoveFederationMemberResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationMemberResponse parses an HTTP response from a GetFederationMemberWithResponse call
+func ParseGetFederationMemberResponse(rsp *http.Response) (*GetFederationMemberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationMemberResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationMemberResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationMemberResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationMemberResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationMemberResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationMemberResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationMemberResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationMemberResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationMemberResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseResumeFederationMemberResponse parses an HTTP response from a ResumeFederationMemberWithResponse call
+func ParseResumeFederationMemberResponse(rsp *http.Response) (*ResumeFederationMemberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResumeFederationMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ResumeFederationMemberResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ResumeFederationMemberResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ResumeFederationMemberResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ResumeFederationMemberResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ResumeFederationMemberResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ResumeFederationMemberResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers ResumeFederationMemberResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ResumeFederationMemberResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ResumeFederationMemberResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSuspendFederationMemberResponse parses an HTTP response from a SuspendFederationMemberWithResponse call
+func ParseSuspendFederationMemberResponse(rsp *http.Response) (*SuspendFederationMemberResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SuspendFederationMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers SuspendFederationMemberResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers SuspendFederationMemberResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers SuspendFederationMemberResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers SuspendFederationMemberResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers SuspendFederationMemberResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers SuspendFederationMemberResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers SuspendFederationMemberResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers SuspendFederationMemberResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers SuspendFederationMemberResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseRotateFederationRecoveryKeyResponse parses an HTTP response from a RotateFederationRecoveryKeyWithResponse call
+func ParseRotateFederationRecoveryKeyResponse(rsp *http.Response) (*RotateFederationRecoveryKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateFederationRecoveryKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationFoundResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers RotateFederationRecoveryKeyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers RotateFederationRecoveryKeyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers RotateFederationRecoveryKeyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers RotateFederationRecoveryKeyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers RotateFederationRecoveryKeyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers RotateFederationRecoveryKeyResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers RotateFederationRecoveryKeyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers RotateFederationRecoveryKeyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers RotateFederationRecoveryKeyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationStatusResponse parses an HTTP response from a GetFederationStatusWithResponse call
+func ParseGetFederationStatusResponse(rsp *http.Response) (*GetFederationStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationStatusResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationStatusResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationStatusResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationStatusResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationStatusResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationStatusResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationStatusResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationStatusResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationStatusResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -77915,460 +84954,513 @@ func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretR
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"AA==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

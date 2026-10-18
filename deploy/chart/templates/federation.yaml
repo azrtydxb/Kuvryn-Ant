@@ -1,0 +1,62 @@
+{{- if .Values.federation.enabled }}
+# Dedicated federation Service (D1): mTLS terminates in the pod, never at a
+# proxy. Members reach it at federation.publicURL.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ant.name" . | trunc 52 | trimSuffix "-" }}-federation
+  labels:
+    {{- include "ant.labels" . | nindent 4 }}
+  {{- with .Values.federation.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.federation.service.type }}
+  {{- if and (eq .Values.federation.service.type "LoadBalancer") .Values.federation.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml .Values.federation.service.loadBalancerSourceRanges | nindent 4 }}
+  {{- end }}
+  selector:
+    {{- include "ant.selector" . | nindent 4 }}
+  ports:
+    - name: federation
+      protocol: TCP
+      port: {{ .Values.federation.service.port }}
+      targetPort: federation
+      {{- if and (eq .Values.federation.service.type "NodePort") .Values.federation.service.nodePort }}
+      nodePort: {{ .Values.federation.service.nodePort }}
+      {{- end }}
+{{- if .Values.federation.ingressPassthrough.enabled }}
+---
+# ingress-nginx ssl-passthrough routes by SNI and forwards TLS unterminated, so
+# member client certificates reach the pod.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "ant.name" . | trunc 52 | trimSuffix "-" }}-federation
+  labels:
+    {{- include "ant.labels" . | nindent 4 }}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    {{- with .Values.federation.ingressPassthrough.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.federation.ingressPassthrough.className }}
+  ingressClassName: {{ .Values.federation.ingressPassthrough.className | quote }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.federation.ingressPassthrough.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "ant.name" . | trunc 52 | trimSuffix "-" }}-federation
+                port:
+                  name: federation
+{{- end }}
+{{- end }}

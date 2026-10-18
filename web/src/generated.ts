@@ -1,6 +1,6 @@
 // Generated from api/openapi.yaml by npm run generate. Do not edit.
 export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1"; "readiness"?: ReadinessDetail };
-export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited"; "message": string; "request_id": string };
+export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited" | "federation_not_configured" | "not_authority" | "member_unreachable" | "invitation_invalid" | "stale_generation" | "document_rejected"; "message": string; "request_id": string };
 export type PageInfo = { "has_more": boolean; "next_cursor"?: string };
 export type Feed = { "id": string; "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number; "anonymous_read": boolean };
 export type CreateFeed = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean };
@@ -212,6 +212,29 @@ export type PersonalAccessToken = { "id": string; "name": string; "scopes": Arra
 export type PersonalAccessTokenList = { "items": Array<PersonalAccessToken> };
 export type CreatePersonalAccessToken = { "name": string; "scopes": Array<TokenScope>; "expires_in_days": number };
 export type CreatedPersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string; "token": string };
+export type FederationProtocolRange = { "min": number; "max": number };
+export type FederationDocumentHead = { "generation": number; "hash": string; "applied_at": string; "age_seconds": number; "issued_at": string };
+export type FederationSyncStatus = { "last_attempt_at"?: string; "last_success_at"?: string; "last_error"?: string; "source"?: string };
+export type FederationCertificateStatus = { "serial": string; "expires_at"?: string };
+export type FederationMemberCounts = { "active": number; "suspended": number; "removed": number };
+export type FederationStatus = { "instance_id": string; "state": "none" | "joining" | "active" | "left" | "removed"; "role"?: "member" | "authority"; "health": "disabled" | "ok" | "degraded"; "federation_id"?: string; "federation_name"?: string; "authority_epoch"?: number; "authority_instance_id"?: string; "authority_url"?: string; "listener_configured": boolean; "listen_address"?: string; "federation_url"?: string; "ca_sha256"?: string; "recovery_key_fingerprint"?: string; "membership"?: FederationDocumentHead; "certificate"?: FederationCertificateStatus; "sync": FederationSyncStatus; "members": FederationMemberCounts; "software_version": string; "protocol": FederationProtocolRange };
+export type FederationMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url"?: string; "federation_url": string; "cert_sha256"?: string; "cert_serial"?: string; "labels": {  }; "software_version"?: string; "protocol": FederationProtocolRange; "joined_at"?: string; "authority": boolean; "self": boolean; "last_seen_at"?: string; "rtt_ms"?: number; "skew_ms"?: number; "membership_generation": number };
+export type FederationMemberList = { "items": Array<FederationMember> };
+export type FoundFederation = { "name": string; "member_name"?: string; "labels"?: {  } };
+export type FederationFoundResult = { "status": FederationStatus; "recovery_key": string; "recovery_public_key": string; "ca_sha256": string };
+export type JoinFederation = { "authority_url": string; "ca_sha256": string; "invitation": string; "labels"?: {  } };
+export type LeaveFederation = { "confirm": boolean; "force"?: boolean };
+export type FederationInvitation = { "id": string; "name": string; "labels": {  }; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked" };
+export type FederationInvitationList = { "items": Array<FederationInvitation> };
+export type CreateFederationInvitation = { "name": string; "labels"?: {  }; "ttl_seconds"?: number };
+export type FederationIssuedInvitation = { "id": string; "name": string; "labels": {  }; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked"; "secret": string; "ca_sha256": string; "authority_url": string };
+export type RotateFederationRecoveryKey = { "recovery_key": string };
+export type FederationDocumentMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url": string; "federation_url": string; "cert_sha256": string; "cert_serial": string; "signing_key": string; "labels": {  }; "software_version": string; "protocol": FederationProtocolRange; "joined_at": string };
+export type FederationAuthorityCertificate = { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery" | "previous_epoch"; "signature": string };
+export type FederationRecoveryRotation = { "previous_key": string; "new_key": string; "generation": number; "signature": string };
+export type FederationSignature = { "key_id": string; "alg": string; "value": string };
+export type FederationMembershipDocument = { "kind": "membership"; "federation_id": string; "federation_name": string; "generation": number; "authority_epoch": number; "prev_hash": string; "protocol": FederationProtocolRange; "authority": FederationAuthorityCertificate; "recovery_public_key": string; "recovery_rotation"?: FederationRecoveryRotation; "ca_certificates": Array<string>; "members": Array<FederationDocumentMember>; "revoked_cert_serials": Array<string>; "issued_at": string; "issued_by": string; "signature"?: FederationSignature };
+export type FederationStoredDocument = { "kind": "membership"; "generation": number; "hash": string; "received_at": string; "applied": boolean; "document": FederationMembershipDocument };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -366,6 +389,21 @@ exchangeGitHubOIDCToken: { body: GitHubExchangeRequest; response: GitHubExchange
 listPersonalAccessTokens: { body: undefined; response: PersonalAccessTokenList };
 createPersonalAccessToken: { body: CreatePersonalAccessToken; response: CreatedPersonalAccessToken };
 revokePersonalAccessToken: { body: undefined; response: undefined };
+foundFederation: { body: FoundFederation; response: FederationFoundResult };
+getFederationStatus: { body: undefined; response: FederationStatus };
+joinFederation: { body: JoinFederation; response: FederationStatus };
+leaveFederation: { body: LeaveFederation; response: FederationStatus };
+listFederationMembers: { body: undefined; response: FederationMemberList };
+getFederationMember: { body: undefined; response: FederationMember };
+removeFederationMember: { body: undefined; response: FederationMember };
+suspendFederationMember: { body: undefined; response: FederationMember };
+resumeFederationMember: { body: undefined; response: FederationMember };
+listFederationInvitations: { body: undefined; response: FederationInvitationList };
+createFederationInvitation: { body: CreateFederationInvitation; response: FederationIssuedInvitation };
+revokeFederationInvitation: { body: undefined; response: undefined };
+getFederationDocument: { body: undefined; response: FederationStoredDocument };
+getFederationDocumentGeneration: { body: undefined; response: FederationStoredDocument };
+rotateFederationRecoveryKey: { body: RotateFederationRecoveryKey; response: FederationFoundResult };
 }
 export const routes = {
   "getStatus": {
@@ -1126,6 +1164,81 @@ export const routes = {
   "revokePersonalAccessToken": {
     "path": "/api/v1/auth/personal-access-tokens/{id}",
     "method": "DELETE",
+    "idempotent": false
+  },
+  "foundFederation": {
+    "path": "/api/v1/federation",
+    "method": "POST",
+    "idempotent": false
+  },
+  "getFederationStatus": {
+    "path": "/api/v1/federation/status",
+    "method": "GET",
+    "idempotent": false
+  },
+  "joinFederation": {
+    "path": "/api/v1/federation/join",
+    "method": "POST",
+    "idempotent": false
+  },
+  "leaveFederation": {
+    "path": "/api/v1/federation/leave",
+    "method": "POST",
+    "idempotent": false
+  },
+  "listFederationMembers": {
+    "path": "/api/v1/federation/members",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getFederationMember": {
+    "path": "/api/v1/federation/members/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "removeFederationMember": {
+    "path": "/api/v1/federation/members/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "suspendFederationMember": {
+    "path": "/api/v1/federation/members/{id}/suspend",
+    "method": "POST",
+    "idempotent": true
+  },
+  "resumeFederationMember": {
+    "path": "/api/v1/federation/members/{id}/resume",
+    "method": "POST",
+    "idempotent": true
+  },
+  "listFederationInvitations": {
+    "path": "/api/v1/federation/invitations",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createFederationInvitation": {
+    "path": "/api/v1/federation/invitations",
+    "method": "POST",
+    "idempotent": false
+  },
+  "revokeFederationInvitation": {
+    "path": "/api/v1/federation/invitations/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "getFederationDocument": {
+    "path": "/api/v1/federation/documents/{kind}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getFederationDocumentGeneration": {
+    "path": "/api/v1/federation/documents/{kind}/{generation}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "rotateFederationRecoveryKey": {
+    "path": "/api/v1/federation/recovery-key/rotate",
+    "method": "POST",
     "idempotent": false
   }
 } as const;

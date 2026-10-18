@@ -243,6 +243,10 @@ func catalog() []*tool {
 				c.resourceID = c.str("source_id")
 				return c.get("/api/v1/sources/"+c.str("source_id")+"/remote-config", nil)
 			}},
+		{name: "get_federation_status", title: "Federation status", desc: "Local federation view: state, role (member or authority), authority epoch, applied membership generation and age, member certificate, last sync outcome and member counts. Federation problems show as degraded and never affect serving. Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/status", nil) }},
+		{name: "list_federation_members", title: "List federation members", desc: "Members of the applied, signed membership document (status, endpoints, labels, certificate fingerprint, authority flag) with locally observed RTT, clock skew and last-seen time. Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/members", nil) }},
 		{name: "list_webhooks", title: "List webhooks", desc: "List webhook subscriptions (secrets are never returned).", readOnly: true,
 			params: []param{{name: "after", typ: "uuid", desc: "Return items after this webhook ID."}, pageParams[0]},
 			run: func(c *call) *toolResult {

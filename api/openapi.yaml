@@ -11784,6 +11784,952 @@
           }
         }
       }
+    },
+    "/api/v1/federation": {
+      "post": {
+        "operationId": "foundFederation",
+        "description": "Founds a federation with this instance as the authority: creates the federation CA, the epoch-1 authority signing key and the offline recovery key, and publishes membership generation 1. The recovery private key is returned once and never stored. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Returns a secret once: Idempotency-Key is rejected.",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationFoundResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoundFederation"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/status": {
+      "get": {
+        "operationId": "getFederationStatus",
+        "description": "Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/join": {
+      "post": {
+        "operationId": "joinFederation",
+        "description": "Joins a federation: connects to the authority with TLS pinned to ca_sha256, presents the invitation with a fresh CSR, verifies the returned signed membership chain and applies it. Requires instance admin and ANT_FEDERATION_PUBLIC_URL. Calls another member, so it is not replay-cached; a repeat answers 409.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinFederation"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/leave": {
+      "post": {
+        "operationId": "leaveFederation",
+        "description": "Leaves the federation: a signed request asks the authority to remove this member and revoke its certificate. Content and local configuration are kept. Requires instance admin and confirm: true; force leaves locally when the authority is unreachable. Calls another member, so it is not replay-cached; a repeat answers 409.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeaveFederation"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/members": {
+      "get": {
+        "operationId": "listFederationMembers",
+        "description": "Members of the applied membership document with locally observed RTT, clock skew and last-seen time. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationMemberList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/members/{id}": {
+      "get": {
+        "operationId": "getFederationMember",
+        "description": "One federation member. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "removeFederationMember",
+        "description": "Removes a member and revokes its certificate serial (authority only, destructive). Requires instance admin and confirm=true. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/members/{id}/suspend": {
+      "post": {
+        "operationId": "suspendFederationMember",
+        "description": "Suspends a member: peers refuse its federation calls (authority only). Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/members/{id}/resume": {
+      "post": {
+        "operationId": "resumeFederationMember",
+        "description": "Resumes a suspended member (authority only). Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/invitations": {
+      "get": {
+        "operationId": "listFederationInvitations",
+        "description": "Join invitations issued by this authority (secrets are never returned). Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationInvitationList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createFederationInvitation",
+        "description": "Creates a one-time join invitation bound to a member name (authority only). The secret and the CA fingerprint for out-of-band pinning are returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationIssuedInvitation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFederationInvitation"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/invitations/{id}": {
+      "delete": {
+        "operationId": "revokeFederationInvitation",
+        "description": "Revokes a pending invitation (authority only). Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "204": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/documents/{kind}": {
+      "get": {
+        "operationId": "getFederationDocument",
+        "description": "The applied signed document of a kind from the local document log. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationStoredDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "membership"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/documents/{kind}/{generation}": {
+      "get": {
+        "operationId": "getFederationDocumentGeneration",
+        "description": "One generation from the local append-only document log. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationStoredDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "membership"
+              ]
+            }
+          },
+          {
+            "name": "generation",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/recovery-key/rotate": {
+      "post": {
+        "operationId": "rotateFederationRecoveryKey",
+        "description": "Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationFoundResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RotateFederationRecoveryKey"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11861,7 +12807,13 @@
               "precondition_failed",
               "unavailable",
               "internal_error",
-              "rate_limited"
+              "rate_limited",
+              "federation_not_configured",
+              "not_authority",
+              "member_unreachable",
+              "invitation_invalid",
+              "stale_generation",
+              "document_rejected"
             ],
             "x-enum-varnames": [
               "ErrorCodeInvalidRequest",
@@ -11872,7 +12824,13 @@
               "ErrorCodePreconditionFailed",
               "ErrorCodeUnavailable",
               "ErrorCodeInternalError",
-              "ErrorCodeRateLimited"
+              "ErrorCodeRateLimited",
+              "ErrorCodeFederationNotConfigured",
+              "ErrorCodeNotAuthority",
+              "ErrorCodeMemberUnreachable",
+              "ErrorCodeInvitationInvalid",
+              "ErrorCodeStaleGeneration",
+              "ErrorCodeDocumentRejected"
             ]
           },
           "message": {
@@ -18996,6 +19954,883 @@
           }
         },
         "additionalProperties": false
+      },
+      "FederationProtocolRange": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "min": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "max": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ]
+      },
+      "FederationDocumentHead": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "hash": {
+            "type": "string"
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "issued_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "generation",
+          "hash",
+          "applied_at",
+          "age_seconds",
+          "issued_at"
+        ]
+      },
+      "FederationSyncStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "last_attempt_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_success_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
+      "FederationCertificateStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "serial": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "serial"
+        ]
+      },
+      "FederationMemberCounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "type": "integer"
+          },
+          "suspended": {
+            "type": "integer"
+          },
+          "removed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active",
+          "suspended",
+          "removed"
+        ]
+      },
+      "FederationStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "none",
+              "joining",
+              "active",
+              "left",
+              "removed"
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "member",
+              "authority"
+            ]
+          },
+          "health": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "ok",
+              "degraded"
+            ],
+            "description": "Federation problems are reported as degraded and never make the instance unready."
+          },
+          "federation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "federation_name": {
+            "type": "string"
+          },
+          "authority_epoch": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "authority_instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authority_url": {
+            "type": "string"
+          },
+          "listener_configured": {
+            "type": "boolean"
+          },
+          "listen_address": {
+            "type": "string"
+          },
+          "federation_url": {
+            "type": "string"
+          },
+          "ca_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "recovery_key_fingerprint": {
+            "type": "string"
+          },
+          "membership": {
+            "$ref": "#/components/schemas/FederationDocumentHead"
+          },
+          "certificate": {
+            "$ref": "#/components/schemas/FederationCertificateStatus"
+          },
+          "sync": {
+            "$ref": "#/components/schemas/FederationSyncStatus"
+          },
+          "members": {
+            "$ref": "#/components/schemas/FederationMemberCounts"
+          },
+          "software_version": {
+            "type": "string"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/FederationProtocolRange"
+          }
+        },
+        "required": [
+          "instance_id",
+          "state",
+          "health",
+          "listener_configured",
+          "sync",
+          "members",
+          "software_version",
+          "protocol"
+        ]
+      },
+      "FederationMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "removed"
+            ]
+          },
+          "api_url": {
+            "type": "string"
+          },
+          "federation_url": {
+            "type": "string"
+          },
+          "cert_sha256": {
+            "type": "string"
+          },
+          "cert_serial": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$)."
+          },
+          "software_version": {
+            "type": "string"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/FederationProtocolRange"
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "authority": {
+            "type": "boolean"
+          },
+          "self": {
+            "type": "boolean"
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rtt_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "skew_ms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "membership_generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "instance_id",
+          "name",
+          "status",
+          "federation_url",
+          "labels",
+          "protocol",
+          "authority",
+          "self",
+          "membership_generation"
+        ]
+      },
+      "FederationMemberList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationMember"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FoundFederation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$"
+          },
+          "member_name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "description": "This instance's member name; defaults to the federation name."
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$)."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "FederationFoundResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FederationStatus"
+          },
+          "recovery_key": {
+            "type": "string",
+            "description": "Offline recovery private key. Returned once; store it offline. The instance keeps only the public half."
+          },
+          "recovery_public_key": {
+            "type": "string"
+          },
+          "ca_sha256": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "recovery_key",
+          "recovery_public_key",
+          "ca_sha256"
+        ]
+      },
+      "JoinFederation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "authority_url": {
+            "type": "string",
+            "description": "https URL of the authority's federation listener."
+          },
+          "ca_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "description": "Federation CA fingerprint received out of band; the join connection is pinned to it."
+          },
+          "invitation": {
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 256
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$)."
+          }
+        },
+        "required": [
+          "authority_url",
+          "ca_sha256",
+          "invitation"
+        ]
+      },
+      "LeaveFederation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "description": "Must be true."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Leave locally when the authority is unreachable."
+          }
+        },
+        "required": [
+          "confirm"
+        ]
+      },
+      "FederationInvitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$)."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumed_by": {
+            "type": "string"
+          },
+          "revoked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "consumed",
+              "expired",
+              "revoked"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "labels",
+          "expires_at",
+          "created_at",
+          "state"
+        ]
+      },
+      "FederationInvitationList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationInvitation"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateFederationInvitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
+            "description": "Member name the invitation is bound to."
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$)."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 604800,
+            "description": "Default 3600; minimum 60."
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "FederationIssuedInvitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$)."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consumed_by": {
+            "type": "string"
+          },
+          "revoked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "consumed",
+              "expired",
+              "revoked"
+            ]
+          },
+          "secret": {
+            "type": "string",
+            "description": "One-time invitation secret, returned once."
+          },
+          "ca_sha256": {
+            "type": "string"
+          },
+          "authority_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "labels",
+          "expires_at",
+          "created_at",
+          "state",
+          "secret",
+          "ca_sha256",
+          "authority_url"
+        ]
+      },
+      "RotateFederationRecoveryKey": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "recovery_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "Current recovery private key export (proof of possession)."
+          }
+        },
+        "required": [
+          "recovery_key"
+        ]
+      },
+      "FederationDocumentMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended",
+              "removed"
+            ]
+          },
+          "api_url": {
+            "type": "string"
+          },
+          "federation_url": {
+            "type": "string"
+          },
+          "cert_sha256": {
+            "type": "string"
+          },
+          "cert_serial": {
+            "type": "string"
+          },
+          "signing_key": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "object",
+            "maxProperties": 16,
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).",
+            "nullable": true
+          },
+          "software_version": {
+            "type": "string"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/FederationProtocolRange"
+          },
+          "joined_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance_id",
+          "name",
+          "status",
+          "api_url",
+          "federation_url",
+          "cert_sha256",
+          "cert_serial",
+          "signing_key",
+          "labels",
+          "software_version",
+          "protocol",
+          "joined_at"
+        ]
+      },
+      "FederationAuthorityCertificate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public_key": {
+            "type": "string"
+          },
+          "certified_by": {
+            "type": "string",
+            "enum": [
+              "recovery",
+              "previous_epoch"
+            ]
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "epoch",
+          "instance_id",
+          "public_key",
+          "certified_by",
+          "signature"
+        ]
+      },
+      "FederationRecoveryRotation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "previous_key": {
+            "type": "string"
+          },
+          "new_key": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "previous_key",
+          "new_key",
+          "generation",
+          "signature"
+        ]
+      },
+      "FederationSignature": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key_id": {
+            "type": "string"
+          },
+          "alg": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key_id",
+          "alg",
+          "value"
+        ]
+      },
+      "FederationMembershipDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "membership"
+            ]
+          },
+          "federation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "federation_name": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "authority_epoch": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "prev_hash": {
+            "type": "string"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/FederationProtocolRange"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/FederationAuthorityCertificate"
+          },
+          "recovery_public_key": {
+            "type": "string"
+          },
+          "recovery_rotation": {
+            "$ref": "#/components/schemas/FederationRecoveryRotation"
+          },
+          "ca_certificates": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationDocumentMember"
+            }
+          },
+          "revoked_cert_serials": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "issued_at": {
+            "type": "string"
+          },
+          "issued_by": {
+            "type": "string"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/FederationSignature"
+          }
+        },
+        "required": [
+          "kind",
+          "federation_id",
+          "federation_name",
+          "generation",
+          "authority_epoch",
+          "prev_hash",
+          "protocol",
+          "authority",
+          "recovery_public_key",
+          "ca_certificates",
+          "members",
+          "revoked_cert_serials",
+          "issued_at",
+          "issued_by"
+        ]
+      },
+      "FederationStoredDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "membership"
+            ]
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "hash": {
+            "type": "string"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "applied": {
+            "type": "boolean"
+          },
+          "document": {
+            "$ref": "#/components/schemas/FederationMembershipDocument"
+          }
+        },
+        "required": [
+          "kind",
+          "generation",
+          "hash",
+          "received_at",
+          "applied",
+          "document"
+        ]
       }
     }
   }
