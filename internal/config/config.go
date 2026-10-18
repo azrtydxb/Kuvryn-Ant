@@ -16,6 +16,7 @@ import (
 )
 
 type Config struct {
+	UpstreamCAs     map[string]string
 	Storage         storage.Config
 	InstanceID      string
 	PublicURL       string
@@ -62,6 +63,10 @@ func Load(getenv func(string) string) (Config, error) {
 		if err != nil || c.MaxRequests < 1 || c.MaxRequests > 4096 {
 			return Config{}, errors.New("ANT_MAX_REQUESTS must be between 1 and 4096")
 		}
+	}
+	c.UpstreamCAs, err = upstreamCAs(getenv("ANT_UPSTREAM_CA_MAP_FILE"))
+	if err != nil {
+		return Config{}, err
 	}
 	c.InstanceID = getenv("ANT_INSTANCE_ID")
 	c.PublicURL = getenv("ANT_PUBLIC_URL")
