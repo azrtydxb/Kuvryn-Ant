@@ -300,21 +300,18 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 	})
 }
 
+// remove is `pod trunk delete`: the shared core unlists the version (it
+// disappears from the index and every read, bytes stay immutable until
+// retention/GC dereferences them). A tombstoned version is never resurrected.
 func (s *Repository) remove(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, pod, version string) {
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	if _, _, e := s.owner(ctx, p, feed, pod, version, identity.Delete); e != nil {
-		failure(w, e)
-		return
-	}
-	// Unlist: the version disappears from the index and every read; bytes stay
-	// immutable until retention/GC dereferences them.
-	tag, e := s.db.Exec(ctx, `UPDATE components c SET metadata=jsonb_set(c.metadata,'{unlisted}',COALESCE(c.metadata->'unlisted','[]'::jsonb)||to_jsonb($4::text)) WHERE c.id=(SELECT c2.id FROM feed_sources fs JOIN components c2 ON c2.source_id=fs.source_id AND c2.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c2.coordinate=$3 ORDER BY fs.priority LIMIT 1) AND EXISTS(SELECT 1 FROM versions v WHERE v.component_id=c.id AND v.version=$4) AND NOT COALESCE(c.metadata->'unlisted' @> to_jsonb($4::text),false)`, p.InstanceID, feed, pod, version)
+	out, e := s.service.Unlist(ctx, p, artifact.Target{FeedID: feed, Coordinate: pod, Version: version})
 	if e != nil {
 		failure(w, e)
 		return
 	}
-	if tag.RowsAffected() == 0 {
+	if out.Unchanged {
 		failure(w, artifact.ErrNotFound)
 		return
 	}

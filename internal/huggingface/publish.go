@@ -309,6 +309,13 @@ func (s *Repository) deleteRef(w http.ResponseWriter, r *http.Request, p identit
 		failure(w, artifact.ErrDenied)
 		return
 	}
+	if dp, pe := s.service.DeletePolicy(ctx, p.InstanceID, t.feed, namespace); pe != nil {
+		failure(w, pe)
+		return
+	} else if dp.Mode == artifact.DeleteDenied {
+		failure(w, artifact.ErrPolicy)
+		return
+	}
 	if _, e = s.resolveRef(ctx, p, t, name); e != nil {
 		failure(w, e)
 		return
