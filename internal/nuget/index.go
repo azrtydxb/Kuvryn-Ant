@@ -3,6 +3,7 @@ package nuget
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"sort"
@@ -74,17 +75,20 @@ func (s *Repository) readMetadata(ctx context.Context, p identity.Principal, fee
 	}
 	return m, nil
 }
-func (s *Repository) leaf(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, v, base string) {
+func (s *Repository) leaf(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, v, base string, degraded error) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	_, e := s.readMetadata(ctx, p, feed, id, v, "")
+	if degraded != nil && errors.Is(e, artifact.ErrNotFound) {
+		e = degraded
+	}
 	if e != nil {
 		failure(w, e)
 		return
 	}
 	writeJSON(w, r, map[string]any{"@id": base + "v3/registration/" + id + "/" + v + ".json", "listed": true, "packageContent": contentURL(base, id, v), "registration": base + "v3/registration/" + id + "/index.json"})
 }
-func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, base string, registration bool) {
+func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, id, base string, registration bool, degraded error) {
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 	rows, e := s.db.Query(ctx, `WITH owner AS (SELECT c.id,c.source_id FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id WHERE a.asset_key='metadata' ORDER BY v.version LIMIT 4097`, p.InstanceID, feed, id)
@@ -110,6 +114,10 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		return
 	}
 	if len(entries) == 0 {
+		if degraded != nil {
+			failure(w, degraded) // upstream outage with nothing cached locally
+			return
+		}
 		failure(w, artifact.ErrNotFound)
 		return
 	}
