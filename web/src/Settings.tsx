@@ -1,39 +1,33 @@
 import { useState } from "react";
-import type { Client } from "./api";
+import { requireETag, type Client } from "./api";
+import { useOptionalCall } from "./gaps";
+import { formats, type InstanceSettings } from "./generated";
 import {
-  paths,
-  useOptional,
-  type InstanceSettings,
-  type Retention,
-  type Storage,
-} from "./gaps";
-import { formats } from "./generated";
-import {
-  Alert,
   Badge,
   Button,
   Input,
   PropertyList,
-  SegmentedControl,
-  Select,
   SettingsLayout,
   SettingsRow,
   SettingsSection,
   Switch,
+  Table,
 } from "./ds/bundle";
+import { RetentionPane } from "./Retention";
 import {
   Failure,
   Loading,
   Mono,
-  Needs,
   PageHeading,
   Unavailable,
   bytes,
   chk,
+  count,
   useAction,
   useResource,
   useToast,
   val,
+  when,
 } from "./ui";
 
 const nav = [
@@ -67,12 +61,10 @@ export function SettingsPage({
       />
       <SettingsLayout items={nav} className="settings-wide">
         {(tab: string) =>
-          tab === "general" ? (
-            <General client={client} />
+          tab === "general" || tab === "security" ? (
+            <InstanceSettingsPane client={client} section={tab} />
           ) : tab === "storage" ? (
             <StoragePane client={client} />
-          ) : tab === "security" ? (
-            <Security client={client} />
           ) : tab === "retention" ? (
             <RetentionPane client={client} />
           ) : (
@@ -84,364 +76,228 @@ export function SettingsPage({
   );
 }
 
-function useSettings(client: Client) {
-  return useOptional<InstanceSettings>(client, paths.settings);
-}
-function SettingsStatus({
-  r,
-  what,
+function InstanceSettingsPane({
+  client,
+  section,
 }: {
-  r:
-    | ReturnType<typeof useSettings>
-    | ReturnType<typeof useOptional<Retention>>
-    | ReturnType<typeof useOptional<Storage>>;
-  what: string;
+  client: Client;
+  section: "general" | "security";
 }) {
-  if (r.state === "loading") return <Loading what={what} />;
-  if (r.state === "unavailable") return <Unavailable what={what} />;
+  const r = useOptionalCall(client, "getSettings");
+  if (r.state === "loading") return <Loading what="instance settings" />;
+  if (r.state === "unavailable")
+    return <Unavailable what="Instance settings" />;
   if (r.state === "error") return <Failure error={r.error} />;
-  return null;
+  return (
+    <SettingsForm
+      key={r.data.revision}
+      client={client}
+      value={r.data}
+      section={section}
+      reload={r.reload}
+    />
+  );
 }
 
-function General({ client }: { client: Client }) {
-  const r = useSettings(client);
-  if (r.state !== "ready")
-    return (
-      <>
-        <SettingsStatus r={r} what="Instance settings" />
-        <Needs block>instance settings endpoint</Needs>
-      </>
-    );
-  return <GeneralForm client={client} value={r.data} reload={r.reload} />;
-}
-function GeneralForm({
+function SettingsForm({
   client,
   value,
+  section,
   reload,
 }: {
   client: Client;
   value: InstanceSettings;
+  section: "general" | "security";
   reload: () => void;
 }) {
-  const ro = (k: string) => value.read_only?.includes(k);
-  const [name, setName] = useState(value.display_name ?? "");
-  const [anon, setAnon] = useState(!!value.default_anonymous_read);
+  const item = (key: string) => value.items.find((i) => i.key === key);
+  const locked = (key: string) => !!item(key)?.read_only;
+  const [age, setAge] = useState(
+    String(
+      Math.round(Number(item("session_max_age_seconds")?.value ?? 0) / 60),
+    ),
+  );
+  const [idle, setIdle] = useState(
+    String(
+      Math.round(Number(item("session_idle_timeout_seconds")?.value ?? 0) / 60),
+    ),
+  );
+  const [anon, setAnon] = useState(
+    item("default_anonymous_read")?.value === "true",
+  );
   const action = useAction();
   const toast = useToast();
+  const ageOK = Number(age) >= 1 && Number(age) <= 480;
+  const idleOK = Number(idle) >= 1 && Number(idle) <= 30;
+  async function save() {
+    const ok = await action.run(() =>
+      client.call("putSettings", {
+        etag: requireETag(`"${value.revision}"`),
+        body: {
+          session_max_age_seconds: Math.round(Number(age) * 60),
+          session_idle_timeout_seconds: Math.round(Number(idle) * 60),
+          default_anonymous_read: anon,
+        },
+      }),
+    );
+    if (ok) {
+      toast("Settings saved");
+      reload();
+    }
+  }
+  const footer = (
+    <Button
+      type="submit"
+      disabled={action.busy || (section === "security" && !(ageOK && idleOK))}
+    >
+      {action.busy ? "Saving…" : "Save"}
+    </Button>
+  );
   return (
-    <>
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const ok = await action.run(() =>
-            client.extra("PUT", paths.settings, {
-              body: {
-                ...value,
-                display_name: name,
-                default_anonymous_read: anon,
-              },
-            }),
-          );
-          if (ok) {
-            toast("Settings saved");
-            reload();
-          }
-        }}
-      >
-        <SettingsSection
-          title="Instance"
-          form
-          footer={
-            <Button type="submit" disabled={action.busy}>
-              {action.busy ? "Saving…" : "Save"}
-            </Button>
-          }
-        >
-          <Input
-            label="Display name"
-            value={name}
-            disabled={ro("display_name")}
-            onChange={val(setName)}
-          />
-          <Input
-            label="Public URL"
-            mono
-            value={value.public_url ?? ""}
-            disabled
-            readOnly
-            hint="Set by the server environment. Read-only here."
-          />
-          <SettingsRow
-            label="Anonymous reads for new feeds"
-            description="New feeds start authenticated unless enabled."
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save();
+      }}
+    >
+      {section === "general" ? (
+        <>
+          <SettingsSection
+            title="Defaults for new feeds"
+            form
+            footer={footer}
+            footerNote={
+              value.updated_at ? `Updated ${when(value.updated_at)}` : undefined
+            }
           >
-            <Switch
-              aria-label="Anonymous reads for new feeds"
-              checked={anon}
-              disabled={ro("default_anonymous_read")}
-              onChange={chk(setAnon)}
+            <SettingsRow
+              label="Anonymous reads"
+              description={
+                item("default_anonymous_read")?.description ??
+                "Suggested default for new feeds."
+              }
+            >
+              <Switch
+                aria-label="Anonymous reads for new feeds"
+                checked={anon}
+                disabled={locked("default_anonymous_read")}
+                onChange={chk(setAnon)}
+              />
+            </SettingsRow>
+            <Failure error={action.error} />
+          </SettingsSection>
+          <SettingsSection
+            title="All settings"
+            description="Where each value comes from. Environment-backed values cannot be changed here."
+          >
+            <PropertyList
+              items={value.items.map((i) => ({
+                label: i.key,
+                mono: true,
+                value: (
+                  <span className="row tight">
+                    {i.value}
+                    <Badge tone={i.source === "env" ? "warn" : "neutral"}>
+                      {i.source}
+                    </Badge>
+                    {i.read_only && <Badge tone="outline">read-only</Badge>}
+                  </span>
+                ),
+              }))}
             />
-          </SettingsRow>
+          </SettingsSection>
+        </>
+      ) : (
+        <SettingsSection title="Sessions" form footer={footer}>
+          <Input
+            label="Session length (minutes)"
+            type="number"
+            mono
+            min={1}
+            max={480}
+            value={age}
+            disabled={locked("session_max_age_seconds")}
+            onChange={val(setAge)}
+            error={ageOK ? undefined : "Between 1 and 480 minutes."}
+            hint="Maximum browser session age. Enforced server-side."
+          />
+          <Input
+            label="Idle timeout (minutes)"
+            type="number"
+            mono
+            min={1}
+            max={30}
+            value={idle}
+            disabled={locked("session_idle_timeout_seconds")}
+            onChange={val(setIdle)}
+            error={idleOK ? undefined : "Between 1 and 30 minutes."}
+            hint="Sign out browser sessions after inactivity."
+          />
           <Failure error={action.error} />
+          <SettingsRow
+            label="Encryption key rotation"
+            description="Run on the host. Not available from the console."
+          >
+            <Mono muted>ant rotate-secrets</Mono>
+          </SettingsRow>
         </SettingsSection>
-      </form>
-      <SettingsSection title="Immutable versions">
-        <SettingsRow
-          label="Immutable versions"
-          description="Republishing an existing version is rejected."
-        >
-          <Badge tone="good" icon="lock">
-            Always on
-          </Badge>
-        </SettingsRow>
-      </SettingsSection>
-    </>
+      )}
+    </form>
   );
 }
 
 function StoragePane({ client }: { client: Client }) {
-  const r = useOptional<Storage>(client, paths.storage);
-  if (r.state !== "ready")
-    return (
-      <>
-        <SettingsStatus r={r} what="Storage configuration" />
-        <Needs block>storage config read</Needs>
-      </>
-    );
+  const r = useOptionalCall(client, "getStorageUsage");
+  if (r.state === "loading") return <Loading what="storage usage" />;
+  if (r.state === "unavailable") return <Unavailable what="Storage usage" />;
+  if (r.state === "error") return <Failure error={r.error} />;
   const s = r.data;
   return (
-    <SettingsSection
-      title="Blob storage"
-      description="Configured by environment. Changes need a restart."
-    >
-      <PropertyList
-        items={[
-          { label: "Backend", value: s.backend ?? "—", mono: true },
-          { label: "Endpoint", value: s.endpoint ?? "—", mono: true },
-          {
-            label: "Bucket / prefix",
-            value: `${s.bucket ?? "—"} / ${s.prefix ?? ""}`,
-            mono: true,
-          },
-          {
-            label: "Path style",
-            value:
-              s.path_style == null
-                ? "—"
-                : s.path_style
-                  ? "Enabled"
-                  : "Disabled",
-          },
-          {
-            label: "Upload staging",
-            value: `${s.staging_path ?? "—"} · ${bytes(s.staging_used_bytes)} / ${bytes(s.staging_capacity_bytes)}`,
-            mono: true,
-          },
-        ]}
-      />
-    </SettingsSection>
-  );
-}
-
-function Security({ client }: { client: Client }) {
-  const r = useSettings(client);
-  return (
     <>
-      {r.state === "ready" ? (
-        <SecurityForm client={client} value={r.data} reload={r.reload} />
-      ) : (
-        <SettingsSection title="Sessions">
-          <SettingsStatus r={r} what="Session settings" />
-          <Needs block>instance settings endpoint</Needs>
-        </SettingsSection>
-      )}
-      <SettingsSection title="Encryption keys">
-        <SettingsRow
-          label="Rotation"
-          description="Run on the host. Not available from the console."
-        >
-          <Mono muted>ant rotate-secrets</Mono>
-        </SettingsRow>
-      </SettingsSection>
-    </>
-  );
-}
-function SecurityForm({
-  client,
-  value,
-  reload,
-}: {
-  client: Client;
-  value: InstanceSettings;
-  reload: () => void;
-}) {
-  const hours = String(value.session_max_age_hours ?? 12);
-  const idle = String(value.idle_timeout_minutes ?? 30);
-  const [age, setAge] = useState(hours);
-  const [timeout, setTimeoutValue] = useState(idle);
-  const locked = value.read_only?.includes("session_max_age_hours");
-  const action = useAction();
-  const toast = useToast();
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const ok = await action.run(() =>
-          client.extra("PUT", paths.settings, {
-            body: {
-              ...value,
-              session_max_age_hours: Number(age),
-              idle_timeout_minutes: Number(timeout),
-            },
-          }),
-        );
-        if (ok) {
-          toast("Settings saved");
-          reload();
-        }
-      }}
-    >
       <SettingsSection
-        title="Sessions"
-        form
-        footer={
-          <Button type="submit" disabled={action.busy || locked}>
-            {action.busy ? "Saving…" : "Save"}
-          </Button>
-        }
-        footerNote={locked ? "Set by environment; read-only." : undefined}
+        title="Blob storage"
+        description="Configured by environment. Changes need a restart."
       >
-        <SettingsRow
-          label="Session length"
-          description="Maximum browser session age."
-        >
-          <SegmentedControl
-            aria-label="Session length"
-            options={[
-              { value: "8", label: "8 h" },
-              { value: "12", label: "12 h" },
-              { value: "24", label: "24 h" },
-            ]}
-            value={age}
-            onChange={setAge}
-          />
-        </SettingsRow>
-        <SettingsRow
-          label="Idle timeout"
-          description="Sign out browser sessions after inactivity."
-        >
-          <SegmentedControl
-            mono
-            aria-label="Idle timeout"
-            options={[
-              { value: "15", label: "15m" },
-              { value: "30", label: "30m" },
-              { value: "60", label: "1h" },
-            ]}
-            value={timeout}
-            onChange={setTimeoutValue}
-          />
-        </SettingsRow>
-        <Failure error={action.error} />
+        <PropertyList
+          items={[
+            { label: "Backend", value: s.backend, mono: true },
+            { label: "Blobs", value: count(s.blob_count) },
+            { label: "Stored", value: bytes(s.blob_bytes) },
+            { label: "Logical size", value: bytes(s.logical_bytes) },
+            { label: "Deduplication saved", value: bytes(s.dedup_saved_bytes) },
+            {
+              label: "Unreferenced",
+              value: `${bytes(s.unreferenced_bytes)} · ${count(s.gc_candidates)} collectable`,
+            },
+            ...(s.staging_bytes != null
+              ? [{ label: "Upload staging", value: bytes(s.staging_bytes) }]
+              : []),
+            { label: "Measured", value: when(s.measured_at) },
+          ]}
+        />
       </SettingsSection>
-    </form>
-  );
-}
-
-function RetentionPane({ client }: { client: Client }) {
-  const r = useOptional<Retention>(client, paths.retention);
-  return (
-    <>
-      <Alert tone="info" title="Proposed design">
-        Retention and garbage collection are not yet supported by the management
-        API. Publication is immutable; unreferenced blobs are collected on the
-        host with <Mono>ant gc</Mono>.
-      </Alert>
-      {r.state === "ready" ? (
-        <RetentionForm client={client} value={r.data} reload={r.reload} />
-      ) : (
-        <>
-          <SettingsStatus r={r} what="Retention policies" />
-          <Needs block>retention policies + GC jobs</Needs>
-        </>
+      {s.domains.length > 0 && (
+        <Table
+          rowKey="domain_id"
+          columns={[
+            { key: "name", label: "Storage domain", mono: true },
+            {
+              key: "blob_count",
+              label: "Blobs",
+              align: "right",
+              render: (d: { blob_count: number }) => count(d.blob_count),
+            },
+            {
+              key: "blob_bytes",
+              label: "Stored",
+              align: "right",
+              render: (d: { blob_bytes: number }) => bytes(d.blob_bytes),
+            },
+          ]}
+          rows={s.domains}
+        />
       )}
     </>
-  );
-}
-function RetentionForm({
-  client,
-  value,
-  reload,
-}: {
-  client: Client;
-  value: Retention;
-  reload: () => void;
-}) {
-  const [days, setDays] = useState(
-    value.evict_cached_after_days == null
-      ? "never"
-      : String(value.evict_cached_after_days),
-  );
-  const [gc, setGc] = useState(!!value.gc_unreferenced_blobs);
-  const action = useAction();
-  const toast = useToast();
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const ok = await action.run(() =>
-          client.extra("PUT", paths.retention, {
-            body: {
-              ...value,
-              evict_cached_after_days: days === "never" ? null : Number(days),
-              gc_unreferenced_blobs: gc,
-            },
-          }),
-        );
-        if (ok) {
-          toast("Retention saved");
-          reload();
-        }
-      }}
-    >
-      <SettingsSection
-        title="Cached content"
-        form
-        footer={
-          <Button type="submit" disabled={action.busy}>
-            {action.busy ? "Saving…" : "Save"}
-          </Button>
-        }
-      >
-        <SettingsRow
-          label="Evict cached versions not pulled in"
-          description="Remote sources only"
-        >
-          <Select
-            size="sm"
-            aria-label="Evict cached versions after"
-            options={[
-              { value: "30", label: "30 days" },
-              { value: "90", label: "90 days" },
-              { value: "never", label: "Never" },
-            ]}
-            value={days}
-            onChange={val(setDays)}
-          />
-        </SettingsRow>
-        <SettingsRow
-          label="Garbage-collect unreferenced blobs"
-          description={value.gc_schedule}
-        >
-          <Switch
-            aria-label="Garbage-collect unreferenced blobs"
-            checked={gc}
-            onChange={chk(setGc)}
-          />
-        </SettingsRow>
-        <Failure error={action.error} />
-      </SettingsSection>
-    </form>
   );
 }
 
@@ -491,7 +347,7 @@ function About({
       <SettingsSection title="Console">
         <SettingsRow
           label="Show backend notes"
-          description="Marks console features that depend on management API endpoints not available yet."
+          description="Marks console features that depend on optional management API endpoints."
         >
           <Switch
             aria-label="Show backend notes"

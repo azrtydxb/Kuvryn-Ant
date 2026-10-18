@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { requireETag, type Client } from "./api";
 import type { Go } from "./App";
-import { useAllSources, sourcesForFormat } from "./data";
-import { isUnavailable, type FeedStats } from "./gaps";
+import { useAllSources, sourcesForFormat, useOpsMaps } from "./data";
+import { isUnavailable } from "./gaps";
 import { formats, type Feed } from "./generated";
 import {
   Alert,
@@ -32,7 +32,6 @@ import {
   Copyable,
   Failure,
   Loading,
-  Needs,
   PageHeading,
   Pager,
   Toolbar,
@@ -127,6 +126,7 @@ function FeedList({
       }),
     [client, cursor, prefix, epoch],
   );
+  const ops = useOpsMaps(client);
   const rows = r.value?.data.items ?? [];
   return (
     <>
@@ -217,13 +217,13 @@ function FeedList({
                   key: "packages",
                   label: "Packages",
                   align: "right",
-                  render: (f: Feed) => count((f as FeedStats).package_count),
+                  render: (f: Feed) => count(ops.feeds.get(f.id)?.packages),
                 },
                 {
                   key: "size",
                   label: "Stored",
                   align: "right",
-                  render: (f: Feed) => bytes((f as FeedStats).size_bytes),
+                  render: (f: Feed) => bytes(ops.feeds.get(f.id)?.bytes),
                 },
                 { key: "revision", label: "Revision", align: "right" },
               ]}
@@ -247,7 +247,6 @@ function FeedList({
             }
           />
         ))}
-      <Needs block>per-feed package/size counts</Needs>
     </>
   );
 }
@@ -816,7 +815,6 @@ function FeedSettings({
           </Button>
         </SettingsRow>
       </SettingsSection>
-      <Needs block>feed delete</Needs>
     </div>
   );
 }

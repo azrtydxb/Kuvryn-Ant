@@ -28,7 +28,6 @@ import {
   Failure,
   Loading,
   Mono,
-  Needs,
   PageHeading,
   Pager,
   Toolbar,
@@ -687,14 +686,6 @@ function PackageDetail({
                 </pre>
               ),
             },
-            {
-              label: "Downloads (30 d)",
-              value: (
-                <span className="row">
-                  — <Needs>download counts</Needs>
-                </span>
-              ),
-            },
           ]}
         />
       )}
@@ -819,11 +810,23 @@ function Provenance({
       {!list.loading && !items.length && (
         <p className="muted">No visible assets for this version.</p>
       )}
-      {record.value?.data && <AssetRecord item={record.value.data} />}
+      {record.value?.data && (
+        <AssetRecord client={client} item={record.value.data} />
+      )}
     </>
   );
 }
-export function AssetRecord({ item }: { item: DiscoveredAsset }) {
+export function AssetRecord({
+  item,
+  client,
+}: {
+  item: DiscoveredAsset;
+  client: Client;
+}) {
+  const prov = useOptionalCall(client, "getAssetProvenance", {
+    params: { id: item.id },
+  });
+  const p = prov.state === "ready" ? prov.data : undefined;
   return (
     <>
       <PropertyList
@@ -836,18 +839,54 @@ export function AssetRecord({ item }: { item: DiscoveredAsset }) {
           { label: "Created", value: when(item.created_at) },
           {
             label: "Uploader",
-            value: item.uploader_id || "Not recorded",
+            value: p?.uploader_subject ?? (item.uploader_id || "Not recorded"),
             mono: true,
           },
+          ...(p
+            ? [
+                { label: "Origin", value: p.origin },
+                {
+                  label: "Token",
+                  value: p.token_id ?? "—",
+                  mono: true,
+                },
+                {
+                  label: "Policy rule",
+                  value: p.matched_rule ?? "—",
+                  mono: true,
+                },
+                {
+                  label: "Verified",
+                  value: (
+                    <Badge
+                      tone={p.verification === "verified" ? "good" : "bad"}
+                      icon={
+                        p.verification === "verified"
+                          ? "shield-check"
+                          : "shield-alert"
+                      }
+                    >
+                      {p.verification === "verified"
+                        ? "sha256 match"
+                        : "integrity failure"}
+                    </Badge>
+                  ),
+                },
+                {
+                  label: "Downloads",
+                  value: `${count(p.downloads)}${p.last_downloaded_at ? ` · last ${when(p.last_downloaded_at)}` : ""}`,
+                },
+              ]
+            : []),
         ]}
       />
+      {prov.state === "loading" && <Loading what="provenance" />}
+      {prov.state === "error" && <Failure error={prov.error} />}
+      {p && <p className="muted small">{p.verification_detail}</p>}
       <details>
         <summary>Recorded provenance metadata</summary>
         <pre className="json">{JSON.stringify(item.provenance, null, 2)}</pre>
       </details>
-      <Needs block>
-        provenance read: token, matched policy rule, verification result
-      </Needs>
     </>
   );
 }

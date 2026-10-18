@@ -1,16 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Client } from "./api";
 import type { Go } from "./App";
-import { useAllFeeds, useAllSources } from "./data";
-import {
-  paths,
-  useOptional,
-  useOptionalCall,
-  type Readiness,
-  type SourceStats,
-  type Storage,
-  type Traffic,
-} from "./gaps";
+import { useAllFeeds, useAllSources, useOpsMaps } from "./data";
+import { useOptionalCall } from "./gaps";
 import {
   Alert,
   Badge,
@@ -22,14 +14,17 @@ import {
   StatCard,
   Table,
 } from "./ds/bundle";
-import type { AuditEvent } from "./generated";
+import type {
+  AuditEvent,
+  ComponentStatus,
+  WriterLeaseStatus,
+} from "./generated";
 import type { PackageRef } from "./Packages";
 import {
   Card,
   Failure,
   Loading,
   Mono,
-  Needs,
   PageHeading,
   SectionHead,
   Unavailable,
@@ -38,6 +33,31 @@ import {
   useResource,
   when,
 } from "./ui";
+
+const HOUR = 3600000;
+const ranges = {
+  "1h": { span: HOUR, step: "5m" },
+  "24h": { span: 24 * HOUR, step: "1h" },
+  "7d": { span: 7 * 24 * HOUR, step: "1d" },
+} as const;
+
+function ComponentBadge({ c }: { c: ComponentStatus }) {
+  const tone =
+    c.status === "ok" ? "good" : c.status === "degraded" ? "warn" : "bad";
+  return (
+    <Badge tone={c.status === "unknown" ? "neutral" : tone} dot>
+      {c.status === "ok" ? "Ready" : c.status}
+      {c.latency_ms != null && ` · ${c.latency_ms} ms`}
+    </Badge>
+  );
+}
+function LeaseBadge({ l }: { l: WriterLeaseStatus }) {
+  return (
+    <Badge tone={l.state === "held" ? "good" : "warn"} dot>
+      {l.state.replace("_", " ")}
+    </Badge>
+  );
+}
 
 export function Overview({
   client,
@@ -55,23 +75,39 @@ export function Overview({
   }, [status.value]);
   const feeds = useAllFeeds(client);
   const sources = useAllSources(client);
-  const [range, setRange] = useState("24h");
-  const traffic = useOptional<Traffic>(client, paths.traffic, { range });
-  const storage = useOptional<Storage>(client, paths.storage);
+  const ops = useOpsMaps(client);
+  const [range, setRange] = useState<keyof typeof ranges>("24h");
+  const window = useMemo(() => {
+    const to = new Date();
+    return {
+      from: new Date(to.getTime() - ranges[range].span).toISOString(),
+      to: to.toISOString(),
+    };
+  }, [range]);
+  const traffic = useOptionalCall(client, "getTrafficMetrics", {
+    query: {
+      scope: "instance",
+      step: ranges[range].step,
+      from: window.from,
+      to: window.to,
+    },
+  });
+  const storage = useOptionalCall(client, "getStorageUsage");
   const recent = useOptionalCall(client, "searchPackages", {
     query: { limit: "4", origin: "local" },
   });
   const audit = useOptionalCall(client, "listAuditEvents", {
     query: { limit: "4" },
   });
-  const readiness = (status.value?.data as Readiness | undefined)?.readiness;
+  const readiness = status.value?.data.readiness;
   const failing = sources.items.filter(
-    (s) => (s as SourceStats).health?.state === "failing",
+    (s) => ops.health.get(s.id)?.status === "failing",
   );
   const reload = () => {
     status.reload();
     feeds.reload();
     sources.reload();
+    ops.reload();
     traffic.reload();
     storage.reload();
     recent.reload();
@@ -79,8 +115,8 @@ export function Overview({
   };
   const t = traffic.state === "ready" ? traffic.data : undefined;
   const st = storage.state === "ready" ? storage.data : undefined;
-  const pct = (used?: number, cap?: number) =>
-    used != null && cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+  const packages = [...ops.feeds.values()].reduce((n, f) => n + f.packages, 0);
+  const hit = t?.totals.cache_hit_ratio;
   return (
     <>
       <PageHeading
@@ -95,32 +131,49 @@ export function Overview({
           Create feed
         </Button>
       </PageHeading>
-      {failing.map((s) => (
-        <Alert
-          key={s.id}
-          tone="bad"
-          title={`${s.name} cannot reach its upstream`}
-          className="spaced"
-          action={
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => go("sources", { source: s.id })}
-            >
-              Open source
-            </Button>
-          }
-        >
-          {(s as SourceStats).health?.message ??
-            "The last upstream request failed."}
-        </Alert>
-      ))}
+      {failing.map((s) => {
+        const h = ops.health.get(s.id)!;
+        return (
+          <Alert
+            key={s.id}
+            tone="bad"
+            title={`${s.name} cannot reach its upstream`}
+            className="spaced"
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => go("sources", { source: s.id })}
+              >
+                Open source
+              </Button>
+            }
+          >
+            {h.last_status_code ? `HTTP ${h.last_status_code}. ` : ""}
+            {h.last_error_at && `Since ${when(h.last_error_at)}. `}
+            Cached content is still served.
+          </Alert>
+        );
+      })}
       <div className="grid-auto grid-auto--210">
         <Card
           title="Service"
           actions={
-            <Badge tone={status.error ? "bad" : "good"} dot>
-              {status.error ? "Unreachable" : "Reachable"}
+            <Badge
+              tone={
+                status.error
+                  ? "bad"
+                  : readiness?.ready === false
+                    ? "warn"
+                    : "good"
+              }
+              dot
+            >
+              {status.error
+                ? "Unreachable"
+                : readiness?.ready === false
+                  ? "Degraded"
+                  : "Reachable"}
             </Badge>
           }
         >
@@ -136,44 +189,19 @@ export function Overview({
                 <dd>{status.value.data.api_version}</dd>
                 <dt>Last successful check</dt>
                 <dd>{checked}</dd>
-                {readiness?.database && (
+                {readiness && (
                   <>
                     <dt>PostgreSQL</dt>
                     <dd>
-                      <Badge
-                        tone={readiness.database.ready ? "good" : "bad"}
-                        dot
-                      >
-                        {readiness.database.ready ? "Ready" : "Not ready"}
-                        {readiness.database.latency_ms != null &&
-                          ` · ${readiness.database.latency_ms} ms`}
-                      </Badge>
+                      <ComponentBadge c={readiness.database} />
                     </dd>
-                  </>
-                )}
-                {readiness?.storage && (
-                  <>
                     <dt>Blob storage</dt>
                     <dd>
-                      <Badge
-                        tone={readiness.storage.ready ? "good" : "bad"}
-                        dot
-                      >
-                        {readiness.storage.ready ? "Ready" : "Not ready"}
-                      </Badge>
+                      <ComponentBadge c={readiness.blob_storage} />
                     </dd>
-                  </>
-                )}
-                {readiness?.writer_lease && (
-                  <>
                     <dt>Writer lease</dt>
                     <dd>
-                      <Badge
-                        tone={readiness.writer_lease.held ? "good" : "warn"}
-                        dot
-                      >
-                        {readiness.writer_lease.held ? "Held" : "Not held"}
-                      </Badge>
+                      <LeaseBadge l={readiness.writer_lease} />
                     </dd>
                   </>
                 )}
@@ -182,43 +210,29 @@ export function Overview({
           )}
           {status.value && !readiness && (
             <p className="muted small">
-              Reachability does not establish database, storage or writer lease
-              readiness. Readiness detail: Not available on this server yet.
+              Reachability only. Readiness detail is shown to instance admins.
             </p>
           )}
-          <Needs>readiness detail</Needs>
         </Card>
         <StatCard
-          label="Feeds"
-          value={feeds.loading ? "…" : count(feeds.items.length)}
-          icon="rss"
-          sub="visible to you"
-        />
-        <StatCard
-          label="Sources"
-          value={sources.loading ? "…" : count(sources.items.length)}
-          icon="database"
-          sub={`${sources.items.filter((s) => s.kind === "remote").length} remote · ${sources.items.filter((s) => s.kind === "local").length} local`}
+          label="Packages"
+          value={ops.feeds.size ? count(packages) : "—"}
+          icon="package"
+          sub={`across ${feeds.items.length} feeds · ${sources.items.length} sources`}
         />
         <StatCard
           label="Requests"
-          value={
-            t?.totals
-              ? count((t.totals.pulls ?? 0) + (t.totals.publishes ?? 0))
-              : "—"
-          }
-          unit={t?.totals ? `/ ${range}` : undefined}
+          value={t ? count(t.totals.pulls + t.totals.publishes) : "—"}
+          unit={t ? `/ ${range}` : undefined}
           icon="arrow-down-up"
-          sub={t ? "pulls + publishes" : "Metrics not available yet"}
+          sub={t ? "pulls + publishes" : "Metrics not available"}
         />
         <StatCard
           label="Cache hit ratio"
-          value={
-            t?.cache_hit_ratio != null ? t.cache_hit_ratio.toFixed(1) : "—"
-          }
-          unit={t?.cache_hit_ratio != null ? "%" : undefined}
+          value={hit != null ? (hit * 100).toFixed(1) : "—"}
+          unit={hit != null ? "%" : undefined}
           icon="zap"
-          sub={t ? `remote sources, ${range}` : "Metrics not available yet"}
+          sub={t ? `remote sources, ${range}` : "Metrics not available"}
         />
       </div>
       <Failure error={feeds.error ?? sources.error} />
@@ -229,37 +243,51 @@ export function Overview({
             <SegmentedControl
               mono
               aria-label="Traffic range"
-              options={["1h", "24h", "7d"]}
+              options={Object.keys(ranges)}
               value={range}
-              onChange={setRange}
+              onChange={(v: string) => setRange(v as keyof typeof ranges)}
             />
           }
         >
           {traffic.state === "loading" && <Loading what="traffic" />}
           {traffic.state === "unavailable" && (
-            <Unavailable what="Traffic metrics (currently Prometheus only)" />
+            <Unavailable what="Traffic metrics" />
           )}
           {traffic.state === "error" && <Failure error={traffic.error} />}
           {t && (
             <>
               <LineChart
                 height={170}
-                series={[{ data: t.pulls ?? [] }, { data: t.publishes ?? [] }]}
-                labels={t.labels ?? []}
+                series={[
+                  { data: t.points.map((p) => p.pulls) },
+                  { data: t.points.map((p) => p.publishes) },
+                ]}
+                labels={t.points
+                  .filter(
+                    (_, i) => i % Math.ceil(t.points.length / 5 || 1) === 0,
+                  )
+                  .map((p) =>
+                    new Date(p.bucket).toLocaleString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      month: range === "7d" ? "short" : undefined,
+                      day: range === "7d" ? "numeric" : undefined,
+                    }),
+                  )}
               />
               <ChartLegend
                 items={[
-                  { label: "Pulls", value: count(t.totals?.pulls) },
-                  { label: "Publishes", value: count(t.totals?.publishes) },
+                  { label: "Pulls", value: count(t.totals.pulls) },
+                  { label: "Publishes", value: count(t.totals.publishes) },
+                  { label: "Errors", value: count(t.totals.errors) },
                 ]}
               />
             </>
           )}
-          <Needs>metrics query (currently Prometheus only)</Needs>
         </Card>
         <Card
           title="Storage"
-          actions={st?.endpoint ? <Mono muted>{st.endpoint}</Mono> : undefined}
+          actions={st ? <Mono muted>{st.backend}</Mono> : undefined}
         >
           {storage.state === "loading" && <Loading what="storage usage" />}
           {storage.state === "unavailable" && (
@@ -269,25 +297,27 @@ export function Overview({
           {st && (
             <>
               <Meter
-                label="Bucket usage"
-                valueLabel={`${bytes(st.bucket_used_bytes)} / ${bytes(st.bucket_capacity_bytes)}`}
-                value={pct(st.bucket_used_bytes, st.bucket_capacity_bytes)}
-                tone="auto"
+                label="Stored vs logical size"
+                valueLabel={`${bytes(st.blob_bytes)} / ${bytes(st.logical_bytes)}`}
+                value={
+                  st.logical_bytes
+                    ? Math.round((st.blob_bytes / st.logical_bytes) * 100)
+                    : 0
+                }
               />
-              <Meter
-                label="Upload staging (local disk)"
-                valueLabel={`${bytes(st.staging_used_bytes)} / ${bytes(st.staging_capacity_bytes)}`}
-                value={pct(st.staging_used_bytes, st.staging_capacity_bytes)}
-                tone="auto"
-              />
+              {st.staging_bytes != null && (
+                <p className="muted small">
+                  Upload staging: {bytes(st.staging_bytes)}
+                </p>
+              )}
               <p className="muted small">
-                {bytes(st.local_bytes)} local · {bytes(st.cached_bytes)} cached
-                {st.dedup_saved_bytes != null &&
-                  ` · deduplication saved ${bytes(st.dedup_saved_bytes)}`}
+                {count(st.blob_count)} blobs · deduplication saved{" "}
+                {bytes(st.dedup_saved_bytes)} · {bytes(st.unreferenced_bytes)}{" "}
+                unreferenced ({count(st.gc_candidates)} collectable) · measured{" "}
+                {when(st.measured_at)}
               </p>
             </>
           )}
-          <Needs>storage usage</Needs>
         </Card>
       </div>
       <div className="grid-auto grid-auto--380">
@@ -316,13 +346,7 @@ export function Overview({
                     </>
                   ),
                 },
-                { key: "latest_version", label: "Version", mono: true },
-                {
-                  key: "updated_at",
-                  label: "Published",
-                  align: "right",
-                  render: (r: PackageRef) => when(r.updated_at),
-                },
+                { key: "format", label: "Format" },
               ]}
               rows={recent.data.items.slice(0, 4)}
             />
@@ -377,7 +401,7 @@ export function Overview({
                   ),
                 },
                 {
-                  key: "at",
+                  key: "created_at",
                   label: "Time",
                   align: "right",
                   render: (r: AuditEvent) => when(r.created_at),

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { requireETag, type Client } from "./api";
 import type { Go } from "./App";
-import { useAllSources, sourcesForFormat } from "./data";
-import { isUnavailable, type SourceStats } from "./gaps";
+import { useAllSources, sourcesForFormat, useOpsMaps } from "./data";
+import { isUnavailable } from "./gaps";
+import { HealthBadge } from "./Health";
 import type {
   Feed,
   ResolveExplanation,
@@ -24,7 +25,6 @@ import {
   Failure,
   Loading,
   Mono,
-  Needs,
   Pager,
   Unavailable,
   useAction,
@@ -55,6 +55,7 @@ export function FeedSources({
       }),
     [client, feed.id, cursor],
   );
+  const ops = useOpsMaps(client);
   const [order, setOrder] = useState<string[]>();
   const [attaching, setAttaching] = useState(false);
   const [priorityFor, setPriorityFor] = useState<Attachment>();
@@ -104,8 +105,6 @@ export function FeedSources({
         )}
         <ol className="srclist">
           {shown.map((a, i) => {
-            const stats = a.source as SourceStats & typeof a.source;
-            const h = stats.health;
             return (
               <li key={a.source.id} className="srcrow">
                 <Icon name="grip-vertical" size={16} className="muted" />
@@ -118,23 +117,9 @@ export function FeedSources({
                   </div>
                   <div className="muted small">
                     Priority <Mono>{a.priority}</Mono>
-                    {stats.origin ? ` · ${stats.origin}` : ""}
                   </div>
                 </div>
-                {h?.state && (
-                  <Badge
-                    tone={
-                      h.state === "healthy"
-                        ? "good"
-                        : h.state === "degraded"
-                          ? "warn"
-                          : "bad"
-                    }
-                    dot
-                  >
-                    {h.state}
-                  </Badge>
-                )}
+                <HealthBadge h={ops.health.get(a.source.id)} />
                 <IconButton
                   icon="arrow-up"
                   label={`Move ${a.source.name} up`}
@@ -181,9 +166,7 @@ export function FeedSources({
         </ol>
         {dirty && (
           <div className="savebar">
-            <span>
-              Unsaved order <Needs>atomic reorder</Needs>
-            </span>
+            <span>Unsaved order</span>
             <div className="row">
               <Button
                 size="sm"
