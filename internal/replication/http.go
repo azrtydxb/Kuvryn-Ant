@@ -13,6 +13,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/jackc/pgx/v5"
@@ -68,7 +69,10 @@ type handlers struct {
 }
 
 func fail(w http.ResponseWriter, r *http.Request, err error) {
+	var loop *feedgraph.LoopError
 	switch {
+	case errors.As(err, &loop):
+		management.Error(w, r, http.StatusBadRequest, api.ErrorCodeInvalidRequest, loop.Error())
 	case errors.Is(err, ErrInput):
 		management.Error(w, r, http.StatusBadRequest, api.ErrorCodeInvalidRequest, "invalid replication configuration")
 	case errors.Is(err, ErrNotFound):

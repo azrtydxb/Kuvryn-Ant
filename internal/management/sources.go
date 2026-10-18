@@ -16,8 +16,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/routing"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -494,6 +497,7 @@ func (s sourceHandlers) changeAttachment(w http.ResponseWriter, r *http.Request)
 		Revision int64
 		Priority *int32
 	}{revision, body.Priority})
+	var applyErr error
 	result, err := database.ExecuteMutation(r.Context(), s.db, database.MutationRequest{InstanceID: p.InstanceID, PrincipalID: p.PrincipalID, Operation: operation, Resource: feed + "/" + source, Key: key, Fingerprint: sha256.Sum256(canonical), NonSecretResult: true}, func(ctx context.Context, tx pgx.Tx) (json.RawMessage, error) {
 		var feedFormat string
 		var current int64
@@ -537,6 +541,21 @@ func (s sourceHandlers) changeAttachment(w http.ResponseWriter, r *http.Request)
 		if err != nil {
 			return nil, feedConflict(err)
 		}
+		if r.Method == http.MethodPut {
+			// An attached remote source may point back at this instance.
+			if loop := feedgraph.Check(ctx, tx, p.InstanceID); loop != nil {
+				applyErr = loop
+				return nil, loop
+			}
+		} else if invalid := (artifact.Policies{DB: s.db, InstanceID: p.InstanceID}).ValidateTx(ctx, tx, feed); invalid != nil {
+			var config *routing.ConfigError
+			if !errors.As(invalid, &config) && !errors.Is(invalid, artifact.ErrInput) {
+				return nil, invalid
+			}
+			// Bound templates may still target the source being detached.
+			applyErr = conflictConfig("source is referenced by a policy template bound to this feed; unbind or edit the template first")
+			return nil, applyErr
+		}
 		item := AttachmentMutation{FeedID: feed, SourceID: source, Priority: body.Priority}
 		if err = tx.QueryRow(ctx, `UPDATE feeds SET revision=revision+1 WHERE instance_id=$1 AND id=$2 RETURNING revision`, p.InstanceID, feed).Scan(&item.FeedRevision); err != nil {
 			return nil, err
@@ -555,6 +574,9 @@ func (s sourceHandlers) changeAttachment(w http.ResponseWriter, r *http.Request)
 		return payload, nil
 	})
 	if err != nil {
+		if applyErr != nil && rejection(w, r, applyErr) {
+			return
+		}
 		sourceMutationError(w, r, err)
 		return
 	}

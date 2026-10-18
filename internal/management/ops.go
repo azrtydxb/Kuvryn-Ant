@@ -9,6 +9,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteruntime"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
@@ -73,6 +74,8 @@ type OpsDeps struct {
 	StorageMigrator func(instance string) *storage.Migrator
 	// Diagnostics writes the redacted support bundle (tar.gz) to w.
 	Diagnostics func(ctx context.Context, w io.Writer) error
+	// Limits is reloaded after limits are changed so they apply immediately.
+	Limits *limits.Limiter
 }
 
 type opsHandlers struct {
@@ -140,6 +143,17 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"GET /api/v1/audit-sink":                        h.getAuditSink,
 		"PUT /api/v1/audit-sink":                        h.putAuditSink,
 		"DELETE /api/v1/audit-sink":                     h.deleteAuditSink,
+		"GET /api/v1/limits":                            h.getLimits,
+		"PUT /api/v1/limits":                            h.putLimits,
+		"GET /api/v1/limits/usage":                      h.getLimitsUsage,
+		"GET /api/v1/policy-templates":                  h.listTemplates,
+		"POST /api/v1/policy-templates":                 h.createTemplate,
+		"GET /api/v1/policy-templates/{id}":             h.getTemplate,
+		"PUT /api/v1/policy-templates/{id}":             h.putTemplate,
+		"DELETE /api/v1/policy-templates/{id}":          h.deleteTemplate,
+		"GET /api/v1/feeds/{id}/policy-templates":       h.getBinding,
+		"PUT /api/v1/feeds/{id}/policy-templates":       h.putBinding,
+		"GET /api/v1/feeds/{id}/effective-policy":       h.effectivePolicy,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}

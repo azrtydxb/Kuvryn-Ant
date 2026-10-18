@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -15,6 +16,8 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
@@ -25,6 +28,9 @@ import (
 const (
 	trafficFlushInterval = 30 * time.Second
 	healthFlushInterval  = 30 * time.Second
+	// limitsRefreshInterval bounds how long a limit change made through another
+	// instance takes to apply here.
+	limitsRefreshInterval = 10 * time.Second
 )
 
 // operations binds the operational-visibility runtime (traffic counters,
@@ -34,7 +40,9 @@ type operations struct {
 	artifacts *artifactRuntime
 	cfg       config.Config
 	traffic   *observability.Traffic
-	staging   stagingCache
+	// limiter applies rate limits and carries quota rejections; nil when not serving.
+	limiter *limits.Limiter
+	staging stagingCache
 	// background is cancelled on shutdown and writer-lease loss.
 	background context.Context
 }
@@ -42,6 +50,7 @@ type operations struct {
 func newOperations(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) *operations {
 	ops := &operations{pool: pool, artifacts: r, cfg: cfg, traffic: observability.NewTraffic(), background: context.Background()}
 	if r != nil {
+		ops.limiter = &limits.Limiter{DB: pool, InstanceID: r.instanceID, Resolve: limits.TokenResolver(identity.Tokens{DB: pool}), APIError: management.Error, Logger: slog.Default()}
 		r.service.Downloads = ops.traffic
 		if r.remote != nil {
 			r.remote.SetCacheObserver(ops.traffic.Cache)
@@ -63,6 +72,13 @@ func (o *operations) start(w *backgroundWorkers) {
 		go func() { defer w.done.Done(); f() }()
 	}
 	run(func() { o.traffic.Run(w.workCtx, o.pool, instance, trafficFlushInterval) })
+	if o.limiter != nil {
+		// Apply stored limits before serving; then follow changes made on other instances.
+		ictx, cancel := context.WithTimeout(w.workCtx, 5*time.Second)
+		_ = o.limiter.Refresh(ictx)
+		cancel()
+		run(func() { o.limiter.Run(w.workCtx, limitsRefreshInterval) })
+	}
 	if o.artifacts.remote != nil {
 		run(func() { o.artifacts.remote.Health().Run(w.workCtx, o.pool, instance, healthFlushInterval) })
 	}
@@ -83,7 +99,7 @@ func hostname() string {
 // deps assembles the management operations dependencies.
 func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 	d := management.OpsDeps{
-		Pool: o.pool, Codec: codec, Keys: o.cfg.SecretKeys, Background: o.background,
+		Limits: o.limiter, Pool: o.pool, Codec: codec, Keys: o.cfg.SecretKeys, Background: o.background,
 		StorageBackend: o.cfg.Storage.Backend, Readiness: o.readiness, StagingBytes: o.stagingBytes,
 		Env: []management.EnvSetting{
 			{Key: "storage_backend", Value: backendName(o.cfg.Storage.Backend), Description: "Blob storage backend (ANT_STORAGE_BACKEND)."},

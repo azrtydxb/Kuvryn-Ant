@@ -4,23 +4,26 @@ export class APIError extends Error {
     public status: number,
     public code: string,
     public requestId: string,
+    public detail = "",
   ) {
     super(
-      status === 401
-        ? "Authentication rejected or expired. Sign out and sign in again."
-        : status === 403
-          ? "Permission denied. This operation requires an appropriate resource grant."
-          : status === 412
-            ? "Configuration changed. Reload this view before saving again."
-            : status === 409
-              ? "Configuration conflicts with existing data. Check names, source priorities, and policy targets."
-              : status === 400
-                ? "The server rejected this configuration. Check field values and policy rules."
-                : status === 429
-                  ? "Too many requests. Wait before retrying."
-                  : status >= 500
-                    ? "Service unavailable. Check the service and try again."
-                    : `Request failed (HTTP ${status}).`,
+      detail
+        ? detail
+        : status === 401
+          ? "Authentication rejected or expired. Sign out and sign in again."
+          : status === 403
+            ? "Permission denied. This operation requires an appropriate resource grant."
+            : status === 412
+              ? "Configuration changed. Reload this view before saving again."
+              : status === 409
+                ? "Configuration conflicts with existing data. Check names, source priorities, and policy targets."
+                : status === 400
+                  ? "The server rejected this configuration. Check field values and policy rules."
+                  : status === 429
+                    ? "Too many requests. Wait before retrying."
+                    : status >= 500
+                      ? "Service unavailable. Check the service and try again."
+                      : `Request failed (HTTP ${status}).`,
     );
   }
 }
@@ -171,11 +174,21 @@ export class Client {
     if (!response.ok && response.status < 500) this.pending.delete(fingerprint);
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      // Do not display arbitrary server messages: they can contain submitted secrets.
+      // Do not display arbitrary server messages: they can contain submitted
+      // secrets. The exception is configuration validation, whose messages
+      // name only identifiers and rules (a cycle, a quota, an unknown feed)
+      // and are what the operator needs to fix the configuration.
+      const explains =
+        (response.status === 400 || response.status === 409) &&
+        typeof error.message === "string" &&
+        /^\/api\/v1\/(limits|policy-templates|feeds\/[^/]+\/(policy-templates|sources\/[^/]+)|sources\/[^/]+\/remote-config)/.test(
+          path,
+        );
       throw new APIError(
         response.status,
         typeof error.code === "string" ? error.code : "",
         response.headers.get("X-Request-ID") ?? "",
+        explains ? String(error.message).slice(0, 300) : "",
       );
     }
     let data: unknown;

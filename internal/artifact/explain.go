@@ -64,5 +64,9 @@ func (p Policies) Compile(ctx context.Context, feed, defaultSource string, rules
 	if err != nil {
 		return nil, err
 	}
-	return routing.Compile(routing.Config{Sources: sources, DefaultTarget: defaultSource, Rules: rules})
+	eff, _, err := effectivePublish(ctx, p.DB, p.InstanceID, feed, defaultSource, rules)
+	if err != nil {
+		return nil, err
+	}
+	return routing.Compile(eff.Config(sources))
 }

@@ -14,6 +14,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteconfig"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
@@ -163,6 +164,11 @@ func (s remoteSourceHandlers) putRemoteConfig(w http.ResponseWriter, r *http.Req
 			applyErr = e
 			return nil, e
 		}
+		// The new origin may name a feed of this instance that resolves back here.
+		if loop := feedgraph.Check(ctx, tx, p.InstanceID); loop != nil {
+			applyErr = loop
+			return nil, loop
+		}
 		return json.Marshal(dto)
 	})
 	s.remoteResult(w, r, result, err, applyErr)
@@ -279,6 +285,9 @@ func (s remoteSourceHandlers) remoteResult(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		if applyErr != nil {
 			err = applyErr
+		}
+		if rejection(w, r, err) {
+			return
 		}
 		remoteError(w, r, err)
 		return

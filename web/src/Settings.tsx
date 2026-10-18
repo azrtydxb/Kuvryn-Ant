@@ -13,8 +13,10 @@ import {
   Switch,
   Table,
 } from "./ds/bundle";
+import { LimitsPane } from "./Limits";
 import { RetentionPane } from "./Retention";
 import { StorageMigrationSection } from "./StorageMigration";
+import { TemplatesPane } from "./Templates";
 import {
   Failure,
   Loading,
@@ -35,6 +37,13 @@ const nav = [
   { id: "general", label: "General", icon: "settings", group: "Instance" },
   { id: "storage", label: "Storage", icon: "hard-drive", group: "Instance" },
   { id: "security", label: "Security", icon: "lock", group: "Instance" },
+  { id: "limits", label: "Limits & quotas", icon: "gauge", group: "Instance" },
+  {
+    id: "templates",
+    label: "Policy templates",
+    icon: "layers",
+    group: "Content",
+  },
   {
     id: "retention",
     label: "Retention & cleanup",
@@ -66,6 +75,10 @@ export function SettingsPage({
             <InstanceSettingsPane client={client} section={tab} />
           ) : tab === "storage" ? (
             <StoragePane client={client} />
+          ) : tab === "limits" ? (
+            <LimitsPane client={client} />
+          ) : tab === "templates" ? (
+            <TemplatesPane client={client} />
           ) : tab === "retention" ? (
             <RetentionPane client={client} />
           ) : (

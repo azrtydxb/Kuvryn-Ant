@@ -18,9 +18,12 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/console"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 )
@@ -196,6 +199,10 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		}
 	}
 
+	// Remote sources and replication peers that point back at this instance are
+	// rejected at configuration time (feed resolution loops).
+	feedgraph.SetSelfOrigins(publicURL, "http://"+listener.Addr().String())
+	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
 	logger.Info("service listening", "address", listener.Addr().String())
 	svc := server.New(pool, cfg.MaxRequests, cfg.ShutdownTimeout, logger, func(mux *http.ServeMux) {
 		management.RegisterFeeds(mux, pool, management.NewCursorCodec(cfg.RootKey))
@@ -218,6 +225,9 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		mux.Handle("/console", console.Handler())
 		mux.Handle("/console/", console.Handler())
 	})
+	// Installed inside the browser-session middleware so session principals
+	// are visible to per-principal limits.
+	svc.WrapHTTP(ops.limiter.Middleware)
 	svc.WrapHTTP(browser.Middleware)
 	svc.WrapHTTP(ops.traffic.Middleware)
 	if err := svc.Serve(serveCtx, listener); err != nil {
