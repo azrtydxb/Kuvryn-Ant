@@ -18,19 +18,23 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 )
 
 func run(ctx context.Context, logger *slog.Logger) int { return execute(ctx, logger, nil, os.Stdout) }
 
 func execute(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
+	if len(args) > 0 && (args[0] == "backup" || args[0] == "restore") {
+		return backupCommand(ctx, logger, args, output)
+	}
 	mode := "serve"
 	name := "local"
 	if len(args) > 0 {
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | backup | restore]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -143,7 +147,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 			logger.Error("invalid ANT_PUBLIC_URL")
 			return 1
 		}
-		origins := []interface{ SetPublicURL(string) error }{artifacts.nuget, artifacts.npm, artifacts.cargo, artifacts.gitlfs, artifacts.composer, artifacts.pubrepo, artifacts.conan, artifacts.conda, artifacts.ansible, artifacts.cran}
+		origins := []interface{ SetPublicURL(string) error }{artifacts.nuget, artifacts.npm, artifacts.cargo, artifacts.gitlfs, artifacts.composer, artifacts.pubrepo, artifacts.conan, artifacts.conda, artifacts.ansible, artifacts.cran, artifacts.apk, artifacts.apt, artifacts.rpm, artifacts.terraform, artifacts.swift, artifacts.cocoapods, artifacts.huggingface, artifacts.p2}
 		for _, adapter := range origins {
 			if err = adapter.SetPublicURL(publicURL); err != nil {
 				logger.Error("invalid artifact public origin")
@@ -167,6 +171,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys)
 		artifacts.Register(mux)
 		browser.Register(mux)
+		mcp.Register(mux, pool, logger)
 		mux.Handle("/console", console.Handler())
 		mux.Handle("/console/", console.Handler())
 	})
