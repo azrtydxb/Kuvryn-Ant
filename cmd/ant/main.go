@@ -25,6 +25,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/oidclogin"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/transfer"
@@ -45,6 +46,9 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	if len(args) > 0 && args[0] == "storage" {
 		return storageCommand(ctx, logger, args, output)
 	}
+	if len(args) > 0 && args[0] == "federation" {
+		return federationCommand(ctx, logger, args[1:], output)
+	}
 	if len(args) > 0 && args[0] == "admin" {
 		return adminCommand(ctx, logger, args[1:], os.Stdin, output)
 	}
@@ -57,7 +61,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" && mode != "gc" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" && mode != "gc" || mode == "gc" && len(args) == 2 && args[1] != "--dry-run" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore | admin break-glass | export | import | migrate | compare]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore | admin break-glass | export | import | migrate | compare | federation status|re-identify|purge]")
 		return 1
 	}
 	if len(args) == 2 {
@@ -218,6 +222,10 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	clientAuth, githubOIDC := newClientAuth(pool, artifacts, browser)
 	// Federation is optional and never on the serving path (Phase 2, D1/D4).
 	fed := openFederation(ctx, pool, artifacts, cfg, publicURL, logger)
+	if svc := fed.service(); svc != nil {
+		// Federated principals and group bindings are evaluated at sign-in.
+		oidclogin.SetLoginHook(svc)
+	}
 	workers.StartFederation(fed)
 	fed.serve(serveCtx)
 	logger.Info("service listening", "address", listener.Addr().String())

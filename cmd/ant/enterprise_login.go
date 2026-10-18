@@ -312,8 +312,8 @@ func (e *enterpriseLogin) consumeState(ctx context.Context, kind, issuer, state,
 	err := e.client.Sessions.DB.QueryRow(ctx, `DELETE FROM enterprise_login_states WHERE state_hash=$1 AND browser_hash=$2 AND instance_id=$3 AND provider=$4 AND kind=$5 AND expires_at>clock_timestamp() RETURNING request_id,expires_at`, browserHash(state), browserHash(browser), e.client.Sessions.InstanceID, issuer, kind).Scan(&pending.ID, &pending.Expires)
 	return pending, err
 }
-func (e *enterpriseLogin) issue(w http.ResponseWriter, r *http.Request, kind, issuer, subject string) {
-	session, raw, csrf, err := e.client.Sessions.IssueExternal(r.Context(), issuer, subject)
+func (e *enterpriseLogin) issue(w http.ResponseWriter, r *http.Request, kind, issuer, subject string, groups []string) {
+	session, raw, csrf, err := e.client.Sessions.IssueExternalGroups(r.Context(), issuer, subject, groups)
 	if err != nil {
 		e.fail(w, r, kind)
 		return
@@ -411,7 +411,7 @@ func (e *enterpriseLogin) samlCallback(w http.ResponseWriter, r *http.Request) {
 		e.fail(w, r, "saml")
 		return
 	}
-	e.issue(w, r, "saml", identity.Issuer, identity.Subject)
+	e.issue(w, r, "saml", identity.Issuer, identity.Subject, identity.Groups)
 }
 func (e *enterpriseLogin) ldapLogin(w http.ResponseWriter, r *http.Request) {
 	browserNoStore(w)
@@ -481,9 +481,10 @@ func (e *enterpriseLogin) ldapLogin(w http.ResponseWriter, r *http.Request) {
 		e.fail(w, r, "ldap")
 		return
 	}
-	// RoleIDs/GroupIDs are deliberately not grants. Only existing explicit local
-	// identity bindings and memberships determine this user's authorization.
-	e.issue(w, r, "ldap", identity.ProviderID, identity.Subject)
+	// RoleIDs/GroupIDs are deliberately not local grants. Only explicit local
+	// identity bindings and memberships, and federated group bindings applied
+	// from the signed federation policy (P2-M2), determine authorization.
+	e.issue(w, r, "ldap", identity.ProviderID, identity.Subject, identity.GroupIDs)
 }
 
 type loginAttempt struct {

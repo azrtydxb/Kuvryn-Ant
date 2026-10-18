@@ -283,7 +283,7 @@ func TestSAMLBrowserRedirectIsTrustedAndKeepsCookies(t *testing.T) {
 	e, _, _, _ := enterpriseFixture(t)
 	e.client.SuccessRedirect = "/console/"
 	w := httptest.NewRecorder()
-	e.issue(w, httptest.NewRequest("POST", "https://ant.example/auth/saml/callback?redirect=https://evil.example", nil), "saml", e.samlIssuer, "immutable-subject")
+	e.issue(w, httptest.NewRequest("POST", "https://ant.example/auth/saml/callback?redirect=https://evil.example", nil), "saml", e.samlIssuer, "immutable-subject", nil)
 	if w.Code != 303 || w.Header().Get("Location") != "/console/" {
 		t.Fatal(w.Code, w.Header())
 	}

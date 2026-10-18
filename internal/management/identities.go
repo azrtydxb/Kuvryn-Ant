@@ -27,6 +27,8 @@ type PrincipalRecord struct {
 	Disabled bool     `json:"disabled"`
 	Revision int64    `json:"revision"`
 	RoleIDs  []string `json:"role_ids"`
+	// Origin is local or federation (federation-managed, read-only here).
+	Origin string `json:"origin"`
 }
 type RoleGrant struct {
 	Kind      string            `json:"kind"`
@@ -35,12 +37,17 @@ type RoleGrant struct {
 	SourceID  string            `json:"source_id,omitempty"`
 	Namespace string            `json:"namespace,omitempty"`
 	Actions   []identity.Action `json:"actions"`
+	// FeedKey and Inert are read-only: federated grants reference a feed key,
+	// and an inert grant (unresolved_feed, admin_not_accepted) never matches.
+	FeedKey string `json:"feed_key,omitempty"`
+	Inert   string `json:"inert,omitempty"`
 }
 type RoleRecord struct {
 	ID       string      `json:"id"`
 	Name     string      `json:"name"`
 	Revision int64       `json:"revision"`
 	Grants   []RoleGrant `json:"grants"`
+	Origin   string      `json:"origin"`
 }
 type identityHandlers struct{ feedHandlers }
 
@@ -96,6 +103,9 @@ func identityDBError(err error) error {
 		if e.Code == "23503" {
 			return database.ErrNotFound
 		}
+		if e.Code == "AFM01" {
+			return database.ErrFederationManaged
+		}
 	}
 	return err
 }
@@ -105,6 +115,8 @@ func identityError(w http.ResponseWriter, r *http.Request, err error) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "identity resource not found")
 	case errors.Is(err, database.ErrRevisionConflict):
 		Error(w, r, 412, api.ErrorCodePreconditionFailed, "identity revision changed")
+	case errors.Is(err, database.ErrFederationManaged):
+		Error(w, r, 409, api.ErrorCodeFederationManaged, "federation-managed roles, grants, memberships and principals change only through the federation policy")
 	case errors.Is(err, database.ErrConflict), errors.Is(err, database.ErrFingerprintConflict):
 		Error(w, r, 409, api.ErrorCodeConflict, "identity or idempotency conflict")
 	default:
@@ -176,7 +188,7 @@ func (h identityHandlers) listPrincipals(w http.ResponseWriter, r *http.Request)
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-	rows, err := h.db.Query(ctx, `SELECT p.id::text,p.subject,p.kind,p.disabled,p.revision,ARRAY(SELECT pr.role_id::text FROM principal_roles pr WHERE pr.instance_id=p.instance_id AND pr.principal_id=p.id ORDER BY pr.role_id) FROM principals p WHERE p.instance_id=$1 AND ($2='' OR p.id>NULLIF($2,'')::uuid) ORDER BY p.id LIMIT $3`, p.InstanceID, after, limit+1)
+	rows, err := h.db.Query(ctx, `SELECT p.id::text,p.subject,p.kind,p.disabled,p.revision,p.origin,ARRAY(SELECT pr.role_id::text FROM principal_roles pr WHERE pr.instance_id=p.instance_id AND pr.principal_id=p.id ORDER BY pr.role_id) FROM principals p WHERE p.instance_id=$1 AND ($2='' OR p.id>NULLIF($2,'')::uuid) ORDER BY p.id LIMIT $3`, p.InstanceID, after, limit+1)
 	if err != nil {
 		identityError(w, r, err)
 		return
@@ -185,7 +197,7 @@ func (h identityHandlers) listPrincipals(w http.ResponseWriter, r *http.Request)
 	items := []PrincipalRecord{}
 	for rows.Next() {
 		var item PrincipalRecord
-		if err = rows.Scan(&item.ID, &item.Subject, &item.Kind, &item.Disabled, &item.Revision, &item.RoleIDs); err != nil {
+		if err = rows.Scan(&item.ID, &item.Subject, &item.Kind, &item.Disabled, &item.Revision, &item.Origin, &item.RoleIDs); err != nil {
 			identityError(w, r, err)
 			return
 		}
@@ -216,7 +228,7 @@ func (h identityHandlers) listRoles(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-	rows, err := h.db.Query(ctx, `SELECT r.id::text,r.name,r.revision,COALESCE((SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object('kind',g.kind,'effect',g.effect,'feed_id',g.feed_id,'source_id',g.source_id,'namespace',NULLIF(g.namespace,''),'actions',g.actions)) ORDER BY g.id) FROM role_grants g WHERE g.instance_id=r.instance_id AND g.role_id=r.id),'[]'::jsonb) FROM roles r WHERE r.instance_id=$1 AND ($2='' OR r.id>NULLIF($2,'')::uuid) ORDER BY r.id LIMIT $3`, p.InstanceID, after, limit+1)
+	rows, err := h.db.Query(ctx, `SELECT r.id::text,r.name,r.revision,r.origin,COALESCE((SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object('kind',g.kind,'effect',g.effect,'feed_id',g.feed_id,'source_id',g.source_id,'namespace',NULLIF(g.namespace,''),'actions',g.actions,'feed_key',g.feed_key,'inert',g.inert)) ORDER BY g.id) FROM role_grants g WHERE g.instance_id=r.instance_id AND g.role_id=r.id),'[]'::jsonb) FROM roles r WHERE r.instance_id=$1 AND ($2='' OR r.id>NULLIF($2,'')::uuid) ORDER BY r.id LIMIT $3`, p.InstanceID, after, limit+1)
 	if err != nil {
 		identityError(w, r, err)
 		return
@@ -226,7 +238,7 @@ func (h identityHandlers) listRoles(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var item RoleRecord
 		var raw []byte
-		if err = rows.Scan(&item.ID, &item.Name, &item.Revision, &raw); err != nil {
+		if err = rows.Scan(&item.ID, &item.Name, &item.Revision, &item.Origin, &raw); err != nil {
 			identityError(w, r, err)
 			return
 		}
@@ -267,7 +279,7 @@ func (h identityHandlers) createPrincipal(w http.ResponseWriter, r *http.Request
 		return
 	}
 	h.mutate(w, r, p, "principal.create", "principals", input, 201, func(ctx context.Context, tx pgx.Tx) (any, error) {
-		item := PrincipalRecord{Subject: input.Subject, Kind: input.Kind, RoleIDs: []string{}}
+		item := PrincipalRecord{Subject: input.Subject, Kind: input.Kind, RoleIDs: []string{}, Origin: "local"}
 		err := tx.QueryRow(ctx, `INSERT INTO principals(instance_id,subject,kind) VALUES($1,$2,$3) RETURNING id::text,revision`, p.InstanceID, item.Subject, item.Kind).Scan(&item.ID, &item.Revision)
 		if err != nil {
 			return nil, err
@@ -290,8 +302,12 @@ func (h identityHandlers) createRole(w http.ResponseWriter, r *http.Request) {
 		identityInput(w, r)
 		return
 	}
+	if strings.HasPrefix(input.Name, "fed:") {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "role names starting with fed: are reserved for federation-managed roles")
+		return
+	}
 	h.mutate(w, r, p, "role.create", "roles", input, 201, func(ctx context.Context, tx pgx.Tx) (any, error) {
-		item := RoleRecord{Name: input.Name, Grants: []RoleGrant{}}
+		item := RoleRecord{Name: input.Name, Grants: []RoleGrant{}, Origin: "local"}
 		err := tx.QueryRow(ctx, `INSERT INTO roles(instance_id,name) VALUES($1,$2) RETURNING id::text,revision`, p.InstanceID, item.Name).Scan(&item.ID, &item.Revision)
 		if err != nil {
 			return nil, err
@@ -375,7 +391,7 @@ func (h identityHandlers) setGrants(w http.ResponseWriter, r *http.Request) {
 		Grants   []RoleGrant
 		Revision int64
 	}{grants, revision}, 200, func(ctx context.Context, tx pgx.Tx) (any, error) {
-		item := RoleRecord{ID: id, Grants: grants}
+		item := RoleRecord{ID: id, Grants: grants, Origin: "local"}
 		var current int64
 		if err := tx.QueryRow(ctx, `SELECT name,revision FROM roles WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, id).Scan(&item.Name, &current); err != nil {
 			return nil, err
@@ -433,13 +449,13 @@ func (h identityHandlers) setMemberships(w http.ResponseWriter, r *http.Request)
 	}{input.RoleIDs, revision}, 200, func(ctx context.Context, tx pgx.Tx) (any, error) {
 		item := PrincipalRecord{ID: id, RoleIDs: input.RoleIDs}
 		var current int64
-		if err := tx.QueryRow(ctx, `SELECT subject,kind,disabled,revision FROM principals WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, id).Scan(&item.Subject, &item.Kind, &item.Disabled, &current); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT subject,kind,disabled,revision,origin FROM principals WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, id).Scan(&item.Subject, &item.Kind, &item.Disabled, &current, &item.Origin); err != nil {
 			return nil, err
 		}
 		if current != revision {
 			return nil, database.ErrRevisionConflict
 		}
-		if _, err := tx.Exec(ctx, `DELETE FROM principal_roles WHERE instance_id=$1 AND principal_id=$2`, p.InstanceID, id); err != nil {
+		if _, err := tx.Exec(ctx, `DELETE FROM principal_roles WHERE instance_id=$1 AND principal_id=$2 AND origin='local'`, p.InstanceID, id); err != nil {
 			return nil, err
 		}
 		for _, role := range input.RoleIDs {

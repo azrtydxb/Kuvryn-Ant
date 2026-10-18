@@ -44,6 +44,8 @@ func parityCases() []parityCase {
 		{"get_diagnostics", nil, "GET", "/api/v1/diagnostics", ""},
 		{"list_identity_bindings", nil, "GET", "/api/v1/identity-bindings", ""},
 		{"list_feed_stats", nil, "GET", "/api/v1/stats/feeds", ""},
+		{"publish_federation_policy", map[string]any{"base_generation": 0, "confirm": true}, "POST", "/api/v1/federation/policy/publish", `{"base_generation":0,"confirm":true}`},
+		{"list_federated_principals", nil, "GET", "/api/v1/federation/principals", ""},
 	}
 }
 

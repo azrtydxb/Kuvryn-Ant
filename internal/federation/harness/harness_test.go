@@ -68,6 +68,8 @@ type instance struct {
 	api      *httptest.Server
 	stopPeer context.CancelFunc
 	router   routers.Router
+	clock    *fakeClock
+	proxy    *faultProxy
 }
 
 func newInstance(t *testing.T, name string) *instance {
@@ -126,9 +128,12 @@ func newInstance(t *testing.T, name string) *instance {
 		t.Fatal(err)
 	}
 	in.addr = ln.Addr().String()
-	in.fedURL = "https://" + in.addr
+	// Peers reach this instance only through its fault proxy.
+	in.proxy = newFaultProxy(t, in.addr)
+	in.clock = &fakeClock{}
+	in.fedURL = "https://" + in.proxy.addr()
 	in.svc, err = federation.New(federation.Config{DB: pool, Keys: in.keys, InstanceID: in.id, PublicURL: in.fedURL, ListenAddress: in.addr,
-		APIURL: "http://" + name + ".example.test", SoftwareVersion: "harness", PeerTimeout: 5 * time.Second, Logger: quiet})
+		APIURL: "http://" + name + ".example.test", SoftwareVersion: "harness", PeerTimeout: 5 * time.Second, Logger: quiet, Now: in.clock.Now})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,6 +145,7 @@ func newInstance(t *testing.T, name string) *instance {
 	management.Register(mux)
 	management.RegisterFeeds(mux, pool, management.NewCursorCodec(key))
 	management.RegisterFederation(mux, pool, in.svc)
+	management.RegisterIdentities(mux, pool)
 	in.api = httptest.NewServer(management.WithRequestID(mux))
 	doc, err := api.GetSwagger()
 	if err != nil {
@@ -187,6 +193,12 @@ func (in *instance) restart() {
 // against the OpenAPI contract, and decodes the JSON response into out.
 func (in *instance) call(method, path string, body any, out any) int {
 	in.t.Helper()
+	return in.callAs(in.token, method, path, body, out)
+}
+
+// callAs is call with another bearer token.
+func (in *instance) callAs(token, method, path string, body any, out any) int {
+	in.t.Helper()
 	var reader io.Reader
 	var raw []byte
 	if body != nil {
@@ -197,7 +209,7 @@ func (in *instance) call(method, path string, body any, out any) int {
 	if err != nil {
 		in.t.Fatal(err)
 	}
-	req.Header.Set("Authorization", "Bearer "+in.token)
+	req.Header.Set("Authorization", "Bearer "+token)
 	if replaySafe(method, path) {
 		req.Header.Set("Idempotency-Key", fmt.Sprintf("harness-%d", dbCounter.Add(1)))
 	}
@@ -235,7 +247,16 @@ func (in *instance) call(method, path string, body any, out any) int {
 
 // replaySafe reports the federation mutations that require Idempotency-Key.
 func replaySafe(method, path string) bool {
-	return method == "DELETE" || strings.HasSuffix(path, "/suspend") || strings.HasSuffix(path, "/resume")
+	if method == "GET" {
+		return false
+	}
+	for _, once := range []string{"/api/v1/federation", "/api/v1/federation/invitations", "/api/v1/federation/join", "/api/v1/federation/leave",
+		"/api/v1/federation/recovery-key/rotate", "/api/v1/federation/access-check"} {
+		if path == once {
+			return false
+		}
+	}
+	return true
 }
 
 func (in *instance) status() federation.Status {

@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -121,9 +122,46 @@ func (s Sessions) bind(ctx context.Context, actor, issuer, subject, principal st
 // verification using immutable issuer+subject (never an email or browser input).
 // It cannot provision accounts, memberships or roles.
 func (s Sessions) IssueExternal(ctx context.Context, issuer, subject string) (Session, string, string, error) {
-	return s.issue(ctx, issuer, subject)
+	return s.issueGroups(ctx, issuer, subject, nil)
 }
+
+// IssueExternalGroups is IssueExternal with the verified group IDs of the
+// identity (SAML Groups, LDAP immutable group IDs). Groups only feed the
+// federation sign-in hook (federated group bindings); they never grant local
+// memberships.
+func (s Sessions) IssueExternalGroups(ctx context.Context, issuer, subject string, groups []string) (Session, string, string, error) {
+	return s.issueGroups(ctx, issuer, subject, groups)
+}
+
+// LoginHook runs before a session is issued for a verified external identity.
+// The federation service uses it to materialize federated principals and
+// evaluate group bindings (P2-M2). Its errors never block local sign-in.
+type LoginHook interface {
+	ExternalLogin(ctx context.Context, issuer, subject string, groups []string) error
+}
+
+type hookBox struct{ h LoginHook }
+
+var loginHook atomic.Pointer[hookBox]
+
+// SetLoginHook installs (or, with nil, removes) the process-wide sign-in hook.
+func SetLoginHook(h LoginHook) {
+	if h == nil {
+		loginHook.Store(nil)
+		return
+	}
+	loginHook.Store(&hookBox{h})
+}
+
 func (s Sessions) issue(ctx context.Context, issuer, subject string) (Session, string, string, error) {
+	return s.issueGroups(ctx, issuer, subject, nil)
+}
+func (s Sessions) issueGroups(ctx context.Context, issuer, subject string, groups []string) (Session, string, string, error) {
+	if b := loginHook.Load(); b != nil {
+		hookCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		_ = b.h.ExternalLogin(hookCtx, issuer, subject, groups)
+		cancel()
+	}
 	max, idle, e := s.limits()
 	if e != nil {
 		return Session{}, "", "", e

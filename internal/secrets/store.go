@@ -294,3 +294,55 @@ func (s Store) RotateBatch(ctx context.Context, instance, actor string, limit in
 // Diagnostic formatting must not expose the database connection or keys.
 func (Store) String() string   { return "secrets.Store{redacted}" }
 func (Store) GoString() string { return "secrets.Store{redacted}" }
+
+// RebindInstanceTx re-encrypts every record that was moved from oldInstance
+// to newInstance (its rows already carry newInstance): record AAD binds the
+// instance ID, so a re-identified instance must re-seal its secrets. It runs
+// in the caller's transaction (ant federation re-identify) and returns the
+// number of records re-sealed. Any failure aborts the caller's transaction.
+func (s Store) RebindInstanceTx(ctx context.Context, tx pgx.Tx, oldInstance, newInstance string) (int, error) {
+	if s.Keys == nil || tx == nil {
+		return 0, ErrStoreInput
+	}
+	type row struct {
+		id, purpose, version string
+		envelope             []byte
+	}
+	rows, err := tx.Query(ctx, "SELECT id::text,purpose,key_version,envelope FROM encrypted_secrets WHERE instance_id=$1 ORDER BY id", newInstance)
+	if err != nil {
+		return 0, ErrStorage
+	}
+	var all []row
+	for rows.Next() {
+		var r row
+		if err := rows.Scan(&r.id, &r.purpose, &r.version, &r.envelope); err != nil {
+			rows.Close()
+			return 0, ErrStorage
+		}
+		all = append(all, r)
+	}
+	rows.Close()
+	if rows.Err() != nil {
+		return 0, ErrStorage
+	}
+	for _, r := range all {
+		envelope, err := decodeStoredEnvelope(r.envelope, r.version)
+		if err != nil {
+			return 0, err
+		}
+		plain, err := s.Keys.Open(secretContext(oldInstance, r.id, r.purpose), envelope)
+		if err != nil {
+			return 0, err
+		}
+		next, err := s.Keys.Seal(secretContext(newInstance, r.id, r.purpose), plain)
+		clear(plain)
+		if err != nil {
+			return 0, err
+		}
+		encoded, _ := json.Marshal(next)
+		if _, err := tx.Exec(ctx, "UPDATE encrypted_secrets SET envelope=$3,key_version=$4,revision=revision+1,updated_at=clock_timestamp() WHERE instance_id=$1 AND id=$2", newInstance, r.id, encoded, next.KeyVersion); err != nil {
+			return 0, ErrStorage
+		}
+	}
+	return len(all), nil
+}

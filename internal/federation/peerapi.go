@@ -80,6 +80,7 @@ func (s *Service) PeerHandler() http.Handler {
 	mux.HandleFunc("POST /federation/v1/leave", s.peerLeave)
 	mux.HandleFunc("POST /federation/v1/csr/renew", s.peerRenew)
 	mux.HandleFunc("GET /federation/v1/status", s.peerStatus)
+	mux.HandleFunc("POST /federation/v1/access-check", s.peerAccessCheck)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { peerFail(w, http.StatusNotFound, "not_found") })
 	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true}, Logger: s.cfg.Logger, Reject: s.peerRejected}
 }
@@ -139,11 +140,17 @@ func (s *Service) peerHeads(w http.ResponseWriter, r *http.Request) {
 	var h heads
 	h.FederationID = t.doc.FederationID
 	h.Membership.Generation, h.Membership.Hash, h.Membership.AuthorityEpoch = t.doc.Generation, Hash(t.doc), t.doc.AuthorityEpoch
+	var err error
+	if h.Policy, err = s.localPolicyHead(r.Context(), t.state.Role); err != nil {
+		peerFail(w, http.StatusServiceUnavailable, "unavailable")
+		return
+	}
 	peerJSON(w, http.StatusOK, h)
 }
 
 func (s *Service) peerDocuments(w http.ResponseWriter, r *http.Request) {
-	if r.PathValue("kind") != "membership" {
+	kind := r.PathValue("kind")
+	if kind != "membership" && kind != "policy" {
 		peerFail(w, http.StatusNotFound, "not_found")
 		return
 	}
@@ -160,7 +167,12 @@ func (s *Service) peerDocuments(w http.ResponseWriter, r *http.Request) {
 	if err != nil || limit < 1 || limit > 100 {
 		limit = 100
 	}
-	docs, err := documentsAfter(r.Context(), s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, after, limit)
+	var docs any
+	if kind == "policy" {
+		docs, err = policyDocumentsAfter(r.Context(), s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, after, min(limit, 50))
+	} else {
+		docs, err = documentsAfter(r.Context(), s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, after, limit)
+	}
 	if err != nil {
 		peerFail(w, http.StatusServiceUnavailable, "unavailable")
 		return
@@ -178,7 +190,8 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Documents []Membership `json:"documents"`
+		Documents       []Membership     `json:"documents"`
+		PolicyDocuments []PolicyDocument `json:"policy_documents"`
 	}
 	if !decodeBody(w, r, &body) {
 		return
@@ -198,6 +211,30 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if len(pending) > 0 {
 		s.Nudge()
+	}
+	if len(body.PolicyDocuments) > 0 {
+		ps, err := loadPolicyState(r.Context(), s.cfg.DB, s.cfg.InstanceID)
+		if err != nil {
+			peerErr(w, err)
+			return
+		}
+		next := []PolicyDocument{}
+		for _, d := range body.PolicyDocuments {
+			if d.Generation > ps.Generation {
+				next = append(next, d)
+			}
+		}
+		if len(next) > 0 && next[0].Generation == ps.Generation+1 {
+			ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+			defer cancel()
+			// Pushed by the authority itself: current as of now.
+			if _, err := s.applyPolicyDocuments(ctx, next, caller.Name, s.now()); err != nil {
+				peerErr(w, err)
+				return
+			}
+		} else if len(next) > 0 {
+			s.Nudge()
+		}
 	}
 	peerJSON(w, http.StatusAccepted, map[string]any{"accepted": true})
 }

@@ -46,6 +46,12 @@ type Principal struct {
 	// anonymous_read enabled, never derived from a request or token, and
 	// Roles.Resolve grants it Read on those feeds only.
 	Anonymous bool
+	// Delegated marks a federated principal asserted by another member over
+	// the mTLS federation listener (P2-M2). Its Scopes are the asserted token
+	// scopes (nil for a browser session) and always narrow the local policy;
+	// TokenID then names the assertion, not a local token. Only the
+	// federation peer authenticator sets it.
+	Delegated bool
 	// ticket marks a principal minted by the client-authentication middleware
 	// after it verified a credential against the feed policy. Only that
 	// middleware can set it (via a single-use in-process ticket).

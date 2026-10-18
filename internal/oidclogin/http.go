@@ -86,12 +86,12 @@ func (c *Client) Callback(w http.ResponseWriter, r *http.Request) {
 		c.loginFailure(w, r)
 		return
 	}
-	subject, e := c.Provider.exchange(r.Context(), q.Get("code"), browser, nonce)
+	subject, groups, e := c.Provider.exchangeIdentity(r.Context(), q.Get("code"), browser, nonce)
 	if e != nil {
 		c.loginFailure(w, r)
 		return
 	}
-	session, raw, csrf, e := c.Sessions.issue(r.Context(), c.Provider.issuer, subject)
+	session, raw, csrf, e := c.Sessions.issueGroups(r.Context(), c.Provider.issuer, subject, groups)
 	if e != nil {
 		c.loginFailure(w, r)
 		return

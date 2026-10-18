@@ -12783,7 +12783,7 @@
     "/api/v1/federation/documents/{kind}": {
       "get": {
         "operationId": "getFederationDocument",
-        "description": "The applied signed document of a kind from the local document log. Requires read on the instance.",
+        "description": "A signed document of a kind (membership or policy) from the local document log; document is a FederationMembershipDocument or FederationPolicyDocument. Requires read on the instance.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12837,7 +12837,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "membership"
+                "membership",
+                "policy"
               ]
             }
           }
@@ -12847,7 +12848,7 @@
     "/api/v1/federation/documents/{kind}/{generation}": {
       "get": {
         "operationId": "getFederationDocumentGeneration",
-        "description": "One generation from the local append-only document log. Requires read on the instance.",
+        "description": "A signed document of a kind (membership or policy) from the local document log; document is a FederationMembershipDocument or FederationPolicyDocument. Requires read on the instance.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12901,7 +12902,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "membership"
+                "membership",
+                "policy"
               ]
             }
           },
@@ -13303,6 +13305,844 @@
           }
         }
       }
+    },
+    "/api/v1/federation/policy": {
+      "get": {
+        "operationId": "getFederationPolicy",
+        "description": "The applied federation policy: signed document, status (generation, age, staleness, last rejection, materialization report), local settings and generation history. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationPolicyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/policy/draft": {
+      "get": {
+        "operationId": "getFederationPolicyDraft",
+        "description": "The authority's policy draft with its diff against the applied generation. Requires instance admin on the authority.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationPolicyDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "saveFederationPolicyDraft",
+        "description": "Validates and stores the policy draft (authority only). If-Match carries the draft revision when replacing an existing draft. Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationPolicyDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFederationPolicyDraft"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/policy/publish": {
+      "post": {
+        "operationId": "publishFederationPolicy",
+        "description": "Signs and publishes the next policy generation from the draft (or the inline policy), applies it on the authority and pushes it to members. base_generation must equal the applied generation (409 stale_generation otherwise). Requires instance admin on the authority and confirm: true. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationPolicyPublishResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishFederationPolicy"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/policy/diff": {
+      "get": {
+        "operationId": "diffFederationPolicy",
+        "description": "Structured diff between two policy generations (from defaults to the generation before to; to defaults to the applied generation, or draft). Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationPolicyDiff"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/feed-bindings": {
+      "get": {
+        "operationId": "listFederationFeedBindings",
+        "description": "Local bindings of federation feed keys to local feeds. Policy grants on an unbound key are inert. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationFeedBindingList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "bindFederationFeed",
+        "description": "Binds a federation feed key to a local feed on this member and activates the policy grants on that key. Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationFeedBinding"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BindFederationFeed"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/feed-bindings/{fed}/{slug}": {
+      "delete": {
+        "operationId": "unbindFederationFeed",
+        "description": "Removes a feed-key binding; grants on the key become inert. Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "204": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/principals": {
+      "get": {
+        "operationId": "listFederatedPrincipals",
+        "description": "Federated principals on this member with their federation and local roles, plus local principals that conflict with a federated binding (conflict_local_principal). Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederatedPrincipalList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/principals/{id}/adopt": {
+      "post": {
+        "operationId": "adoptFederatedPrincipal",
+        "description": "Resolves conflict_local_principal: the local principal owning a federated identity becomes federation-managed (ID, tokens and local memberships are kept). Requires instance admin and confirm: true. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationPolicyReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdoptFederatedPrincipal"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/settings": {
+      "get": {
+        "operationId": "getFederationSettings",
+        "description": "Local federation settings (never set by the federation). Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "setFederationSettings",
+        "description": "Sets accept_admin_grants and the optional hard policy staleness limit, and re-applies the policy locally. Requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederationSettings"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/access-check": {
+      "post": {
+        "operationId": "checkFederationAccess",
+        "description": "Asserts the calling federated principal to another member over mTLS (signed, 60-second, request-bound, replay-protected assertion) and returns that member's own decision under its policy, including local overrides. Local-only principals get 403 not_federated.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationAccessCheckResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederationAccessCheck"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13386,7 +14226,9 @@
               "member_unreachable",
               "invitation_invalid",
               "stale_generation",
-              "document_rejected"
+              "document_rejected",
+              "federation_managed",
+              "not_federated"
             ],
             "x-enum-varnames": [
               "ErrorCodeInvalidRequest",
@@ -13403,7 +14245,9 @@
               "ErrorCodeMemberUnreachable",
               "ErrorCodeInvitationInvalid",
               "ErrorCodeStaleGeneration",
-              "ErrorCodeDocumentRejected"
+              "ErrorCodeDocumentRejected",
+              "ErrorCodeFederationManaged",
+              "ErrorCodeNotFederated"
             ]
           },
           "message": {
@@ -13941,7 +14785,8 @@
           "kind",
           "disabled",
           "revision",
-          "role_ids"
+          "role_ids",
+          "origin"
         ],
         "properties": {
           "id": {
@@ -13976,6 +14821,13 @@
               "format": "uuid"
             },
             "maxItems": 256
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "federation"
+            ]
           }
         }
       },
@@ -14055,6 +14907,20 @@
             "maxItems": 6,
             "minItems": 1,
             "uniqueItems": true
+          },
+          "feed_key": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Federated grants only: the portable feed key."
+          },
+          "inert": {
+            "type": "string",
+            "enum": [
+              "unresolved_feed",
+              "admin_not_accepted"
+            ],
+            "readOnly": true,
+            "description": "Federated grants only: an inert grant never matches."
           }
         }
       },
@@ -14065,7 +14931,8 @@
           "id",
           "name",
           "revision",
-          "grants"
+          "grants",
+          "origin"
         ],
         "properties": {
           "id": {
@@ -14088,6 +14955,13 @@
               "$ref": "#/components/schemas/IdentityRoleGrant"
             },
             "maxItems": 256
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "federation"
+            ]
           }
         }
       },
@@ -17021,7 +17895,10 @@
           "principal_id",
           "disabled",
           "resource",
-          "actions"
+          "actions",
+          "origin",
+          "roles",
+          "federation_policy_generation"
         ],
         "properties": {
           "principal_id": {
@@ -17039,6 +17916,24 @@
             "items": {
               "$ref": "#/components/schemas/EffectiveAction"
             }
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "federation"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EffectiveRole"
+            }
+          },
+          "federation_policy_generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
@@ -20734,6 +21629,15 @@
           },
           "protocol": {
             "$ref": "#/components/schemas/FederationProtocolRange"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/FederationPolicyStatus"
+          },
+          "alerts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationAlert"
+            }
           }
         },
         "required": [
@@ -20744,7 +21648,8 @@
           "sync",
           "members",
           "software_version",
-          "protocol"
+          "protocol",
+          "alerts"
         ]
       },
       "FederationMember": {
@@ -21385,7 +22290,8 @@
           "kind": {
             "type": "string",
             "enum": [
-              "membership"
+              "membership",
+              "policy"
             ]
           },
           "generation": {
@@ -21403,9 +22309,7 @@
           "applied": {
             "type": "boolean"
           },
-          "document": {
-            "$ref": "#/components/schemas/FederationMembershipDocument"
-          }
+          "document": {}
         },
         "required": [
           "kind",
@@ -21935,6 +22839,1010 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "FederationIdentityDomain": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "oidc",
+              "saml",
+              "ldap"
+            ]
+          },
+          "issuer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "issuer"
+        ]
+      },
+      "FederationPolicyGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "artifact",
+              "feed",
+              "instance"
+            ]
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "allow",
+              "deny"
+            ]
+          },
+          "feed_key": {
+            "type": "string",
+            "description": "<federation>/<feed-slug>; empty selects every feed of the member. A key not bound locally is inert, never a wildcard."
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "read",
+                "publish",
+                "delete",
+                "configure",
+                "replicate",
+                "admin"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 6,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "kind",
+          "effect",
+          "actions"
+        ]
+      },
+      "FederationPolicyRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^fed:[a-z0-9][a-z0-9._-]{0,62}$"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPolicyGrant"
+            },
+            "maxItems": 256
+          }
+        },
+        "required": [
+          "key",
+          "revision",
+          "grants"
+        ]
+      },
+      "FederationPrincipalBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "domain",
+          "subject",
+          "roles"
+        ]
+      },
+      "FederationGroupBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "group_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "domain",
+          "group_id",
+          "roles"
+        ]
+      },
+      "FederationServiceAccount": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_.-]{0,62}$"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "roles"
+        ]
+      },
+      "FederationRevocation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "service_account": {
+            "type": "string"
+          },
+          "effective_at": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 512
+          }
+        }
+      },
+      "FederationMemberOverride": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accept_admin_grants": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accept_admin_grants"
+        ]
+      },
+      "FederationPolicyBody": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "identity_domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationIdentityDomain"
+            },
+            "maxItems": 32
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPolicyRole"
+            },
+            "maxItems": 512
+          },
+          "principal_bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPrincipalBinding"
+            },
+            "maxItems": 10000
+          },
+          "group_bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationGroupBinding"
+            },
+            "maxItems": 4096
+          },
+          "service_accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationServiceAccount"
+            },
+            "maxItems": 1024
+          },
+          "revocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationRevocation"
+            },
+            "maxItems": 10000
+          },
+          "member_overrides": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FederationMemberOverride"
+            },
+            "description": "Informational: what members reported about their local settings. The authority cannot change local settings."
+          }
+        },
+        "description": "Federated roles, principal, group and service-account bindings and revocations (docs/planning/phase-2-federation.md §6.2)."
+      },
+      "FederationPolicyDocument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "policy"
+            ]
+          },
+          "federation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "federation_name": {
+            "type": "string"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "authority_epoch": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "prev_hash": {
+            "type": "string"
+          },
+          "identity_domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationIdentityDomain"
+            },
+            "maxItems": 32
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPolicyRole"
+            },
+            "maxItems": 512
+          },
+          "principal_bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPrincipalBinding"
+            },
+            "maxItems": 10000
+          },
+          "group_bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationGroupBinding"
+            },
+            "maxItems": 4096
+          },
+          "service_accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationServiceAccount"
+            },
+            "maxItems": 1024
+          },
+          "revocations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationRevocation"
+            },
+            "maxItems": 10000
+          },
+          "member_overrides": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FederationMemberOverride"
+            },
+            "description": "Informational: what members reported about their local settings. The authority cannot change local settings."
+          },
+          "issued_at": {
+            "type": "string"
+          },
+          "issued_by": {
+            "type": "string"
+          },
+          "signature": {
+            "$ref": "#/components/schemas/FederationSignature"
+          }
+        },
+        "required": [
+          "kind",
+          "federation_id",
+          "federation_name",
+          "generation",
+          "authority_epoch",
+          "prev_hash",
+          "identity_domains",
+          "roles",
+          "principal_bindings",
+          "group_bindings",
+          "service_accounts",
+          "revocations",
+          "member_overrides",
+          "issued_at",
+          "issued_by"
+        ]
+      },
+      "FederationPrincipalConflict": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "conflict_local_principal"
+            ]
+          }
+        },
+        "required": [
+          "domain",
+          "subject",
+          "principal_id",
+          "reason"
+        ]
+      },
+      "FederationPolicyReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "roles": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "grants": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "principals": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "revoked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unresolved_feed_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inert_admin_grants": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPrincipalConflict"
+            }
+          }
+        },
+        "required": [
+          "roles",
+          "grants",
+          "principals",
+          "revoked",
+          "unresolved_feed_keys",
+          "inert_admin_grants",
+          "conflicts"
+        ]
+      },
+      "FederationPolicyStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "hash": {
+            "type": "string"
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "staleness": {
+            "type": "string",
+            "enum": [
+              "fresh",
+              "warning",
+              "critical"
+            ]
+          },
+          "error": {
+            "type": "string"
+          },
+          "error_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "report": {
+            "$ref": "#/components/schemas/FederationPolicyReport"
+          }
+        },
+        "required": [
+          "generation",
+          "age_seconds",
+          "staleness",
+          "report"
+        ]
+      },
+      "FederationAlert": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "policy_stale",
+              "policy_rejected",
+              "membership_stale",
+              "policy_conflicts"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warning",
+              "critical"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ]
+      },
+      "FederationSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "accept_admin_grants": {
+            "type": "boolean",
+            "description": "Honour federated instance-admin grants on this member (default false, local only)."
+          },
+          "policy_max_age_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true,
+            "minimum": 300,
+            "maximum": 31536000,
+            "description": "Optional hard staleness limit (D4): beyond it federated principals are denied. Null is off."
+          }
+        },
+        "required": [
+          "accept_admin_grants"
+        ]
+      },
+      "FederationPolicyHistory": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "issued_at": {
+            "type": "string"
+          },
+          "issued_by": {
+            "type": "string"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "generation",
+          "hash",
+          "issued_at",
+          "issued_by",
+          "received_at"
+        ]
+      },
+      "FederationPolicyView": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FederationPolicyStatus"
+          },
+          "document": {
+            "$ref": "#/components/schemas/FederationPolicyDocument"
+          },
+          "has_draft": {
+            "type": "boolean"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/FederationSettings"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationPolicyHistory"
+            }
+          }
+        },
+        "required": [
+          "status",
+          "has_draft",
+          "settings",
+          "history"
+        ]
+      },
+      "FederationSectionDiff": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "added",
+          "removed",
+          "changed"
+        ]
+      },
+      "FederationPolicyDiff": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "from_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "to_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "identity_domains": {
+            "$ref": "#/components/schemas/FederationSectionDiff"
+          },
+          "roles": {
+            "$ref": "#/components/schemas/FederationSectionDiff"
+          },
+          "principal_bindings": {
+            "$ref": "#/components/schemas/FederationSectionDiff"
+          },
+          "group_bindings": {
+            "$ref": "#/components/schemas/FederationSectionDiff"
+          },
+          "service_accounts": {
+            "$ref": "#/components/schemas/FederationSectionDiff"
+          },
+          "revocations": {
+            "$ref": "#/components/schemas/FederationSectionDiff"
+          },
+          "changes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "from_generation",
+          "to_generation",
+          "identity_domains",
+          "roles",
+          "principal_bindings",
+          "group_bindings",
+          "service_accounts",
+          "revocations",
+          "changes"
+        ]
+      },
+      "FederationPolicyDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/FederationPolicyBody"
+          },
+          "base_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "diff": {
+            "$ref": "#/components/schemas/FederationPolicyDiff"
+          }
+        },
+        "required": [
+          "policy",
+          "base_generation",
+          "revision",
+          "updated_at",
+          "diff"
+        ]
+      },
+      "SaveFederationPolicyDraft": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "policy": {
+            "$ref": "#/components/schemas/FederationPolicyBody"
+          }
+        },
+        "required": [
+          "policy"
+        ]
+      },
+      "PublishFederationPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "base_generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "The applied policy generation you reviewed (compare-and-swap; 409 stale_generation otherwise)."
+          },
+          "confirm": {
+            "type": "boolean"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/FederationPolicyBody"
+          }
+        },
+        "required": [
+          "base_generation",
+          "confirm"
+        ]
+      },
+      "FederationPolicyPublishResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "hash": {
+            "type": "string"
+          },
+          "report": {
+            "$ref": "#/components/schemas/FederationPolicyReport"
+          }
+        },
+        "required": [
+          "generation",
+          "hash",
+          "report"
+        ]
+      },
+      "FederationFeedBinding": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feed_key": {
+            "type": "string"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_slug": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "feed_key",
+          "feed_id",
+          "feed_slug",
+          "created_at"
+        ]
+      },
+      "FederationFeedBindingList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationFeedBinding"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "BindFederationFeed": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feed_key": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,62}/[a-z0-9][a-z0-9_-]{0,62}$"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "feed_key",
+          "feed_id"
+        ]
+      },
+      "FederatedPrincipal": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "federation"
+            ]
+          },
+          "federated_id": {
+            "type": "string"
+          },
+          "disabled": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "local_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "conflict": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "issuer",
+          "subject",
+          "origin",
+          "disabled",
+          "roles",
+          "local_roles"
+        ]
+      },
+      "FederatedPrincipalList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederatedPrincipal"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdoptFederatedPrincipal": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirm"
+        ]
+      },
+      "FederationAccessCheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "artifact",
+              "feed",
+              "instance"
+            ]
+          },
+          "feed_key": {
+            "type": "string"
+          },
+          "namespace": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "read",
+              "publish",
+              "delete",
+              "configure",
+              "replicate",
+              "admin"
+            ]
+          }
+        },
+        "required": [
+          "member_id",
+          "kind",
+          "action"
+        ]
+      },
+      "FederationAccessCheckResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "allowed": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "policy_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "federated_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "member_id",
+          "allowed",
+          "policy_generation"
+        ]
+      },
+      "EffectiveRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "federation"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "origin"
         ]
       }
     }
