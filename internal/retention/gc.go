@@ -61,7 +61,7 @@ func (s *Service) CollectGarbage(ctx context.Context, dryRun bool) (GCReport, er
 		}
 		report.Unmarked = int(tag.RowsAffected())
 	}
-	errs = append(errs, s.sweep(ctx, runStart, dryRun, &report))
+	errs = append(errs, s.sweep(ctx, runStart, dryRun, false, &report))
 	errs = append(errs, s.markRows(ctx, dryRun, &report))
 	errs = append(errs, s.markObjects(ctx, runStart, dryRun, &report))
 	errs = append(errs, s.abortStaleUploads(ctx, dryRun, &report))
@@ -72,8 +72,12 @@ func (s *Service) graceInterval() string {
 	return fmt.Sprintf("%d microseconds", s.opts().Grace.Microseconds())
 }
 
-func (s *Service) sweep(ctx context.Context, runStart time.Time, dryRun bool, report *GCReport) error {
-	rows, err := s.DB.Query(ctx, `SELECT dedup_domain_id::text,digest,kind FROM gc_candidates WHERE instance_id=$1 AND first_seen_at<$2 AND first_seen_at<=clock_timestamp()-$3::interval ORDER BY first_seen_at,digest LIMIT $4`, s.InstanceID, runStart, s.graceInterval(), s.opts().BatchSize)
+// sweep deletes candidates that were marked before this run and whose wait is
+// over: sweep_after when set (pressure eviction), otherwise first_seen_at plus
+// the grace period. expeditedOnly restricts it to candidates with sweep_after.
+// The per-candidate row-lock re-check in sweepOne does not depend on either.
+func (s *Service) sweep(ctx context.Context, runStart time.Time, dryRun, expeditedOnly bool, report *GCReport) error {
+	rows, err := s.DB.Query(ctx, `SELECT dedup_domain_id::text,digest,kind FROM gc_candidates WHERE instance_id=$1 AND first_seen_at<$2 AND COALESCE(sweep_after,first_seen_at+$3::interval)<=clock_timestamp() AND (NOT $5 OR sweep_after IS NOT NULL) ORDER BY first_seen_at,digest LIMIT $4`, s.InstanceID, runStart, s.graceInterval(), s.opts().BatchSize, expeditedOnly)
 	if err != nil {
 		return err
 	}

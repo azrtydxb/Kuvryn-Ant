@@ -30,6 +30,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/oidclogin"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/prewarm"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/transfer"
@@ -203,7 +204,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		return 1
 	}
 	defer workers.Close()
-	workers.startRetention(pool, artifacts, cfg.Retention, logger)
+	workers.startRetention(pool, artifacts, cfg, logger)
 	workers.startAuditPurge(pool, artifacts, cfg.AuditRetention, logger)
 	ops := newOperations(pool, artifacts, cfg)
 	ops.start(workers)
@@ -265,6 +266,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 	feedgraph.SetSelfOrigins(publicURL, "http://"+listener.Addr().String())
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
 	observability.RegisterCollector("prewarm", prewarm.WriteMetrics)
+	observability.RegisterCollector("storage_pressure", retention.WriteMetrics)
 	// Free space of the data directory's filesystem, for disk-full alerts.
 	observability.RegisterCollector("datadir", diskusage.Collector(cfg.Storage.Directory))
 	// Loopback development: let the login runtime learn its own origin.

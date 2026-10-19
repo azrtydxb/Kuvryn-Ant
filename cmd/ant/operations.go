@@ -155,7 +155,7 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 			if instance != r.instanceID {
 				return nil
 			}
-			return retentionService(o.pool, r.instanceID, r.stores.Resolve, r.manager.Lease, o.cfg.Retention)
+			return retentionService(o.pool, r.instanceID, r.stores.Resolve, r.manager.Lease, o.cfg, r.migrator)
 		}
 	}
 	return d
