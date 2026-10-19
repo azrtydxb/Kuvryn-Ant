@@ -203,13 +203,24 @@ func (s *Service) authenticateAssertion(r *http.Request, body []byte) (identity.
 	if err != nil || policy == nil || a.Federation != fid {
 		return identity.Principal{}, a, "assertion_federation_mismatch"
 	}
-	tag, err := s.cfg.DB.Exec(ctx, `INSERT INTO federation_assertion_nonces(instance_id,jti,issuer,expires_at) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,
-		s.cfg.InstanceID, a.Issuer+"/"+a.ID, a.Issuer, time.Unix(a.Expires, 0).Add(peer.MaxSkew+time.Minute))
+	// The replay record is refused once the issuer holds MaxAssertionNonces
+	// unexpired records, so one member cannot grow the table without bound.
+	jti := a.Issuer + "/" + a.ID
+	tag, err := s.cfg.DB.Exec(ctx, `INSERT INTO federation_assertion_nonces(instance_id,jti,issuer,expires_at)
+SELECT $1,$2,$3,$4 WHERE (SELECT count(*) FROM (SELECT 1 FROM federation_assertion_nonces WHERE instance_id=$1 AND issuer=$3 AND expires_at>$5 LIMIT $6) n) < $6
+ON CONFLICT DO NOTHING`, s.cfg.InstanceID, jti, a.Issuer, time.Unix(a.Expires, 0).Add(peer.MaxSkew+time.Minute), s.cfg.Now(), MaxAssertionNonces)
 	if err != nil {
 		return identity.Principal{}, a, "unavailable"
 	}
 	if tag.RowsAffected() != 1 {
-		return identity.Principal{}, a, "assertion_replayed"
+		var seen bool
+		if err := s.cfg.DB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM federation_assertion_nonces WHERE instance_id=$1 AND jti=$2)`, s.cfg.InstanceID, jti).Scan(&seen); err != nil {
+			return identity.Principal{}, a, "unavailable"
+		}
+		if seen {
+			return identity.Principal{}, a, "assertion_replayed"
+		}
+		return identity.Principal{}, a, "rate_limited"
 	}
 	issuer := ""
 	if a.Domain == ServiceAccountDomain {
@@ -219,6 +230,8 @@ func (s *Service) authenticateAssertion(r *http.Request, body []byte) (identity.
 	} else {
 		return identity.Principal{}, a, "assertion_unknown_domain"
 	}
+	// The federated ID is derived here, never taken from the issuer's claim.
+	a.FederatedID = FederatedID(fid, issuer, a.Subject)
 	var id string
 	err = s.cfg.DB.QueryRow(ctx, `SELECT id::text FROM principals WHERE instance_id=$1 AND issuer=$2 AND subject=$3 AND origin='federation' AND NOT disabled`, s.cfg.InstanceID, issuer, a.Subject).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -311,6 +324,8 @@ func (s *Service) peerAccessCheck(w http.ResponseWriter, r *http.Request) {
 		switch reason {
 		case "principal_unknown", "assertion_unknown_domain":
 			status = http.StatusForbidden
+		case "rate_limited":
+			status = http.StatusTooManyRequests
 		case "unavailable":
 			status = http.StatusServiceUnavailable
 		}
@@ -367,7 +382,17 @@ func readPeerBody(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
 	return b, true
 }
 
-// purgeNonces drops expired assertion nonces (bounded per run).
+// MaxAssertionNonces caps the unexpired assertion replay records per issuing
+// member (about 110 assertions per second sustained over their lifetime).
+const MaxAssertionNonces = 20000
+
+// purgeNonces drops expired assertion nonces in batches until none are left
+// (at most 50 batches per run, so one run stays bounded).
 func (s *Service) purgeNonces(ctx context.Context) {
-	_, _ = s.cfg.DB.Exec(ctx, `DELETE FROM federation_assertion_nonces WHERE ctid IN (SELECT ctid FROM federation_assertion_nonces WHERE instance_id=$1 AND expires_at<$2 LIMIT 5000)`, s.cfg.InstanceID, s.cfg.Now())
+	for range 50 {
+		tag, err := s.cfg.DB.Exec(ctx, `DELETE FROM federation_assertion_nonces WHERE ctid IN (SELECT ctid FROM federation_assertion_nonces WHERE instance_id=$1 AND expires_at<$2 LIMIT 5000)`, s.cfg.InstanceID, s.cfg.Now())
+		if err != nil || tag.RowsAffected() < 5000 {
+			return
+		}
+	}
 }

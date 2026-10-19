@@ -478,14 +478,8 @@ func TestFederationMembershipScenarios(t *testing.T) {
 
 	// --- recovery-key rotation, relay through a non-authority member ---
 	gamma.stop()
-	var rotated federation.FoundResult
-	if code := alpha.call("POST", "/api/v1/federation/recovery-key/rotate", map[string]any{"recovery_key": "ant-recovery-v1:wrong"}, nil); code != 400 {
-		t.Fatalf("rotation with wrong key: %d", code)
-	}
-	if code := alpha.call("POST", "/api/v1/federation/recovery-key/rotate", map[string]any{"recovery_key": founded.RecoveryKey}, &rotated); code != 200 {
-		t.Fatalf("rotate recovery key: %d", code)
-	}
-	if rotated.RecoveryKey == founded.RecoveryKey || rotated.Status.Membership.Generation != 4 {
+	rotated := rotateRecovery(t, alpha, founded.RecoveryKey)
+	if rotated.Status.Membership.Generation != 4 || rotated.Status.RecoveryKeyFingerprint != federation.KeyFingerprint(rotated.RecoveryPublicKey) {
 		t.Fatalf("rotation result: %+v", rotated.Status)
 	}
 	if err := beta.svc.SyncOnce(ctx); err != nil || beta.generation() != 4 {
@@ -520,6 +514,9 @@ func TestFederationMembershipScenarios(t *testing.T) {
 		t.Fatalf("authority renewal: %v", err)
 	}
 	g5 := alpha.document(5)
+	// The authority nudges asynchronously: keep gamma unreachable inbound so a
+	// late nudge cannot deliver generation 5 before the rejection checks.
+	gamma.proxy.set(faultDrop)
 	gamma.restart()
 	tampered := g5
 	tampered.Members = append([]federation.Member(nil), g5.Members...)
@@ -571,6 +568,7 @@ func TestFederationMembershipScenarios(t *testing.T) {
 	if err := gamma.svc.SyncOnce(ctx); err != nil || gamma.generation() != 5 {
 		t.Fatalf("gamma sync after rejections: %v (gen %d)", err, gamma.generation())
 	}
+	gamma.proxy.set(faultPass)
 
 	// --- remove: the revoked member is refused everywhere ---
 	if code := alpha.call("DELETE", "/api/v1/federation/members/"+beta.id+"?confirm=true", nil, nil); code != 200 {

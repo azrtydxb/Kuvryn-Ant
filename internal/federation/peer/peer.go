@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,6 +47,9 @@ type Member struct {
 	Name       string
 	Status     string
 	SigningKey ed25519.PublicKey
+	// CertSHA256 lists the certificate fingerprints accepted from the member
+	// (current, and previous during a renewal grace period).
+	CertSHA256 []string
 }
 
 // Trust is the current federation trust state, refreshed by the caller after
@@ -103,8 +107,34 @@ type Handler struct {
 	Logger *slog.Logger
 	// Reject is called for every refused request (for audit and metrics).
 	Reject func(r *http.Request, member, reason string)
-	nonces nonceCache
+	// PublicRate and PublicBurst limit unauthenticated requests (public
+	// routes) per remote IP; zero selects DefaultPublicRate/DefaultPublicBurst.
+	// DeferPin lists routes ("METHOD /path") served even when the client
+	// certificate is not the member's accepted one (see PinPending).
+	DeferPin    map[string]bool
+	PublicRate  float64
+	PublicBurst int
+	// MemberRate and MemberBurst limit signed requests per member; zero
+	// selects DefaultMemberRate/DefaultMemberBurst.
+	MemberRate  float64
+	MemberBurst int
+	nonces      nonceCache
+	perMember   keyedLimiter
+	public      keyedLimiter
 }
+
+// Default per-IP limit of unauthenticated peer requests (the join endpoint):
+// a burst of 10, then one request every 6 seconds.
+const (
+	DefaultPublicRate  = 1.0 / 6
+	DefaultPublicBurst = 10
+)
+
+// Default per-member limit of signed peer requests (all routes).
+const (
+	DefaultMemberRate  = 200.0
+	DefaultMemberBurst = 400
+)
 
 func (h *Handler) refuse(w http.ResponseWriter, r *http.Request, status int, member, reason string) {
 	if h.Reject != nil {
@@ -122,6 +152,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if h.Public[r.Method+" "+r.URL.Path] {
+		rate, burst := h.PublicRate, h.PublicBurst
+		if rate <= 0 || burst <= 0 {
+			rate, burst = DefaultPublicRate, DefaultPublicBurst
+		}
+		if !h.public.allow(remoteIP(r), h.Trust.Now(), rate, burst) {
+			w.Header().Set("Retry-After", "6")
+			h.refuse(w, r, http.StatusTooManyRequests, "", "rate_limited")
+			return
+		}
 		r.Body = http.MaxBytesReader(w, r.Body, MaxBody)
 		h.Mux.ServeHTTP(w, r)
 		return
@@ -145,17 +184,69 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.refuse(w, r, http.StatusForbidden, id, "member_"+m.Status)
 		return
 	}
+	rate, burst := h.MemberRate, h.MemberBurst
+	if rate <= 0 || burst <= 0 {
+		rate, burst = DefaultMemberRate, DefaultMemberBurst
+	}
+	if !h.perMember.allow(id, h.Trust.Now(), rate, burst) {
+		w.Header().Set("Retry-After", "1")
+		h.refuse(w, r, http.StatusTooManyRequests, id, "rate_limited")
+		return
+	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
 	if err != nil || len(body) > MaxBody {
 		h.refuse(w, r, http.StatusRequestEntityTooLarge, id, "body_too_large")
 		return
 	}
 	if reason := h.verifySignature(r, m, body); reason != "" {
-		h.refuse(w, r, http.StatusUnauthorized, id, reason)
+		status := http.StatusUnauthorized
+		if reason == "rate_limited" {
+			status = http.StatusTooManyRequests
+		}
+		h.refuse(w, r, status, id, reason)
 		return
 	}
+	// Only the member's current certificate (or its previous one during a
+	// renewal grace period) is accepted: any other certificate the CA ever
+	// issued for this instance ID is refused. Routes in DeferPin carry
+	// self-authenticating documents that may announce the new fingerprint;
+	// they run with PinPending set and must re-check with Pinned.
+	ctx := context.WithValue(r.Context(), ctxKey{}, m)
+	if !slices.Contains(m.CertSHA256, LeafSHA256(r)) {
+		if !h.DeferPin[r.Method+" "+r.URL.Path] {
+			h.refuse(w, r, http.StatusForbidden, id, "certificate_not_current")
+			return
+		}
+		ctx = context.WithValue(ctx, pinKey{}, true)
+	}
 	r.Body = io.NopCloser(bytes.NewReader(body))
-	h.Mux.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKey{}, m)))
+	h.Mux.ServeHTTP(w, r.WithContext(ctx))
+}
+
+type pinKey struct{}
+
+// PinPending reports a request served under DeferPin whose client
+// certificate is not (yet) the member's accepted certificate.
+func PinPending(r *http.Request) bool {
+	v, _ := r.Context().Value(pinKey{}).(bool)
+	return v
+}
+
+// LeafSHA256 is the hex SHA-256 of the client's leaf certificate.
+func LeafSHA256(r *http.Request) string {
+	if r.TLS == nil || len(r.TLS.PeerCertificates) == 0 {
+		return ""
+	}
+	sum := sha256.Sum256(r.TLS.PeerCertificates[0].Raw)
+	return hex.EncodeToString(sum[:])
+}
+
+// Pinned reports whether the request's client certificate is accepted for
+// the member under the current trust state (after a DeferPin route applied
+// new documents).
+func Pinned(t Trust, r *http.Request, instanceID string) bool {
+	m, ok := t.Lookup(instanceID)
+	return ok && m.Status == "active" && slices.Contains(m.CertSHA256, LeafSHA256(r))
 }
 
 // signingString binds method, path and query, body digest, member, time and nonce.
@@ -179,40 +270,16 @@ func (h *Handler) verifySignature(r *http.Request, m Member, body []byte) string
 	if len(nonce) < 16 || len(nonce) > 64 {
 		return "signature_invalid"
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(sig)
+	raw, err := DecodeCanonical(sig)
 	if err != nil || len(raw) != ed25519.SignatureSize || !ed25519.Verify(m.SigningKey, signingString(r.Method, r.URL.RequestURI(), member, ts, nonce, body), raw) {
 		return "signature_invalid"
 	}
-	if !h.nonces.add(member+"/"+nonce, h.Trust.Now()) {
+	if ok, full := h.nonces.add(member, nonce, h.Trust.Now()); full {
+		return "rate_limited"
+	} else if !ok {
 		return "replayed_request"
 	}
 	return ""
-}
-
-// nonceCache remembers request nonces for NonceTTL.
-type nonceCache struct {
-	mu   sync.Mutex
-	seen map[string]time.Time
-}
-
-func (c *nonceCache) add(key string, now time.Time) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.seen == nil {
-		c.seen = map[string]time.Time{}
-	}
-	if len(c.seen) > 4096 {
-		for k, t := range c.seen {
-			if now.Sub(t) > NonceTTL {
-				delete(c.seen, k)
-			}
-		}
-	}
-	if t, ok := c.seen[key]; ok && now.Sub(t) <= NonceTTL {
-		return false
-	}
-	c.seen[key] = now
-	return true
 }
 
 // --- client ---
@@ -360,33 +427,58 @@ func (c Client) DoHeader(ctx context.Context, id Identity, baseURL, method, path
 // by SHA-256 (the join bootstrap). The server chain must contain the pinned CA
 // certificate and the leaf must verify against it for the URL host.
 func (c Client) DoPinned(ctx context.Context, baseURL, caSHA256, method, path string, body []byte) ([]byte, error) {
+	b, _, err := c.DoPinnedLeaf(ctx, baseURL, caSHA256, "", method, path, body)
+	return b, err
+}
+
+// DoPinnedLeaf is DoPinned that also pins the server leaf certificate to
+// leafSHA256 when set (checked before any request byte is sent), and returns
+// the SHA-256 of the leaf the server presented, so the caller can match it
+// against the authority's published certificate.
+func (c Client) DoPinnedLeaf(ctx context.Context, baseURL, caSHA256, leafSHA256, method, path string, body []byte) ([]byte, string, error) {
 	full, err := target(baseURL, path)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	u, _ := url.Parse(full)
 	host := u.Hostname()
+	var mu sync.Mutex
+	seen := ""
 	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS13,
 		// Trust comes only from the pinned CA fingerprint, verified below;
 		// the system trust store is deliberately not consulted.
 		InsecureSkipVerify: true, //nolint:gosec // pinned verification in VerifyConnection
 		VerifyConnection: func(cs tls.ConnectionState) error {
-			return verifyPinned(cs.PeerCertificates, caSHA256, host)
+			if err := verifyPinned(cs.PeerCertificates, caSHA256, host); err != nil {
+				return err
+			}
+			sum := sha256.Sum256(cs.PeerCertificates[0].Raw)
+			got := hex.EncodeToString(sum[:])
+			if leafSHA256 != "" && got != leafSHA256 {
+				return errors.New("federation: server certificate does not match the pinned authority certificate")
+			}
+			mu.Lock()
+			seen = got
+			mu.Unlock()
+			return nil
 		},
 	}
 	req, err := http.NewRequestWithContext(ctx, method, full, bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	hc := c.httpClient(cfg)
 	defer hc.CloseIdleConnections()
 	resp, err := hc.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return readResponse(resp)
+	b, err := readResponse(resp)
+	mu.Lock()
+	defer mu.Unlock()
+	return b, seen, err
 }
 
 func verifyPinned(chain []*x509.Certificate, caSHA256, host string) error {

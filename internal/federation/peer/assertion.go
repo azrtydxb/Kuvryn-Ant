@@ -118,11 +118,11 @@ func ParseAssertion(header string) (Assertion, []byte, []byte, error) {
 	if !ok {
 		return a, nil, nil, ErrAssertionMalformed
 	}
-	payload, err := base64.RawURLEncoding.DecodeString(p)
+	payload, err := DecodeCanonical(p)
 	if err != nil {
 		return a, nil, nil, ErrAssertionMalformed
 	}
-	sig, err := base64.RawURLEncoding.DecodeString(s)
+	sig, err := DecodeCanonical(s)
 	if err != nil || len(sig) != ed25519.SignatureSize {
 		return a, nil, nil, ErrAssertionMalformed
 	}

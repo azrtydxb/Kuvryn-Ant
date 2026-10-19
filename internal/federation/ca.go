@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -14,7 +15,10 @@ import (
 	"math/big"
 	"net"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 )
 
 // Certificate lifetimes. Member certificates renew at two thirds of their life.
@@ -61,6 +65,14 @@ func newCA(name string, now time.Time) (caMaterial, *x509.Certificate, error) {
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 		MaxPathLenZero:        true,
+		// Constrain what the CA can vouch for if its certificate is ever
+		// trusted outside the federation: member certificates carry only a
+		// DNS or IP SAN for their listener, so e-mail and URI names are
+		// excluded entirely, and only TLS server/client use is permitted.
+		PermittedDNSDomainsCritical: true,
+		ExcludedEmailAddresses:      []string{""},
+		ExcludedURIDomains:          []string{""},
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
 	if err != nil {
@@ -191,4 +203,72 @@ func tlsCertificate(certPEM, caPEM string, key *ecdsa.PrivateKey) (*tls.Certific
 		return nil, err
 	}
 	return &tls.Certificate{Certificate: [][]byte{leaf.Raw, ca.Raw}, PrivateKey: key, Leaf: leaf}, nil
+}
+
+// CSRRotationMessage is what the current certificate key signs to move a
+// member to a new TLS key at renewal.
+func CSRRotationMessage(csrPEM string) []byte {
+	sum := sha256.Sum256([]byte("kuvryn-ant/federation/csr-rotation/v1\n" + csrPEM))
+	return sum[:]
+}
+
+// checkRenewalKey accepts a renewal CSR only for the key of the certificate
+// the member authenticated with, or for a new key when the current key signed
+// the CSR (ASN.1 ECDSA over CSRRotationMessage, base64url). A stolen
+// certificate without its key therefore cannot be renewed onto another key.
+func checkRenewalKey(current *x509.Certificate, csrPEM, signature string) error {
+	block, _ := pem.Decode([]byte(csrPEM))
+	if block == nil || block.Type != "CERTIFICATE REQUEST" || len(csrPEM) > 16384 {
+		return errCSR
+	}
+	csr, err := x509.ParseCertificateRequest(block.Bytes)
+	if err != nil || csr.CheckSignature() != nil {
+		return errCSR
+	}
+	next, ok := csr.PublicKey.(*ecdsa.PublicKey)
+	cur, ok2 := current.PublicKey.(*ecdsa.PublicKey)
+	if !ok || !ok2 {
+		return errCSR
+	}
+	if next.Equal(cur) {
+		return nil
+	}
+	sig, err := peer.DecodeCanonical(signature)
+	if err != nil || !ecdsa.VerifyASN1(cur, CSRRotationMessage(csrPEM), sig) {
+		return errCSR
+	}
+	return nil
+}
+
+// sameHost reports whether two federation URLs name the same certificate
+// host (SAN). Loopback hosts are compared with their port, since they only
+// occur in single-machine labs and tests, where members differ by port.
+func sameHost(a, b string) bool {
+	ua, err1 := url.Parse(a)
+	ub, err2 := url.Parse(b)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	ha, hb := strings.ToLower(strings.TrimSuffix(ua.Hostname(), ".")), strings.ToLower(strings.TrimSuffix(ub.Hostname(), "."))
+	if ip := net.ParseIP(ha); ip != nil {
+		ha = ip.String()
+	}
+	if ip := net.ParseIP(hb); ip != nil {
+		hb = ip.String()
+	}
+	if ha != hb {
+		return false
+	}
+	if loopback(ha) {
+		return ua.Port() == ub.Port()
+	}
+	return true
+}
+
+func loopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

@@ -12922,10 +12922,10 @@
         ]
       }
     },
-    "/api/v1/federation/recovery-key/rotate": {
-      "post": {
-        "operationId": "rotateFederationRecoveryKey",
-        "description": "Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.",
+    "/api/v1/federation/recovery-key/rotation": {
+      "get": {
+        "operationId": "getFederationRecoveryTemplate",
+        "description": "Public input of the offline recovery-key rotation signer (authority only): the federation ID, the membership generation the rotation will be published at, the current recovery public key and the authority certificate to re-certify. Sign it with `ant federation recovery sign-rotation` and `sign-authority-cert`, which run without database or network access. Requires instance admin.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -12941,7 +12941,58 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FederationFoundResult"
+                  "$ref": "#/components/schemas/FederationRecoveryTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/recovery-key/rotate": {
+      "post": {
+        "operationId": "rotateFederationRecoveryKey",
+        "description": "Replaces the offline recovery key (authority only) with statements signed offline: the rotation statement signed by the current recovery key and the authority certificate signed by the new one, both for the generation of the rotation template. No recovery private key is sent to the server. A rotation signed for another generation answers 409 stale_generation (fetch a new template and sign again); an invalid signature answers 400. Requires instance admin. Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationRecoveryRotationResult"
                 }
               }
             }
@@ -16082,7 +16133,8 @@
             "type": "string",
             "enum": [
               "unresolved_feed",
-              "admin_not_accepted"
+              "admin_not_accepted",
+              "wildcard_not_accepted"
             ],
             "readOnly": true,
             "description": "Federated grants only: an inert grant never matches."
@@ -23019,6 +23071,11 @@
             "pattern": "^[0-9a-fA-F]{64}$",
             "description": "Federation CA fingerprint received out of band; the join connection is pinned to it."
           },
+          "authority_cert_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "description": "Optional fingerprint of the authority listener certificate (from the invitation). When set, the join connection is pinned to it before the invitation is sent. In every case the joiner refuses an answer from a server whose certificate is not the one the verified membership publishes for the authority."
+          },
           "invitation": {
             "type": "string",
             "minLength": 40,
@@ -23217,6 +23274,10 @@
           },
           "authority_url": {
             "type": "string"
+          },
+          "authority_cert_sha256": {
+            "type": "string",
+            "description": "Fingerprint of the authority listener certificate; pass it to join as authority_cert_sha256 to pin the connection before the invitation is sent."
           }
         },
         "required": [
@@ -23228,22 +23289,102 @@
           "state",
           "secret",
           "ca_sha256",
-          "authority_url"
+          "authority_url",
+          "authority_cert_sha256"
         ]
       },
       "RotateFederationRecoveryKey": {
         "type": "object",
         "additionalProperties": false,
+        "description": "Recovery-key rotation signed offline (`ant federation recovery sign-rotation` and `sign-authority-cert`).",
         "properties": {
-          "recovery_key": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 256,
-            "description": "Current recovery private key export (proof of possession)."
+          "rotation": {
+            "$ref": "#/components/schemas/FederationRecoveryRotation"
+          },
+          "authority_certificate": {
+            "$ref": "#/components/schemas/FederationAuthorityCertificate"
           }
         },
         "required": [
-          "recovery_key"
+          "rotation",
+          "authority_certificate"
+        ]
+      },
+      "FederationRecoveryTemplate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "federation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "generation": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 2,
+            "description": "Membership generation the rotation will be published at."
+          },
+          "previous_key": {
+            "type": "string",
+            "description": "Current recovery public key (ed25519:<base64url>)."
+          },
+          "authority": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Authority certificate to re-certify with the new recovery key (unsigned).",
+            "properties": {
+              "epoch": {
+                "type": "integer",
+                "format": "int64",
+                "minimum": 1
+              },
+              "instance_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "public_key": {
+                "type": "string"
+              },
+              "certified_by": {
+                "type": "string",
+                "enum": [
+                  "recovery"
+                ]
+              },
+              "signature": {
+                "type": "string",
+                "maxLength": 0
+              }
+            },
+            "required": [
+              "epoch",
+              "instance_id",
+              "public_key",
+              "certified_by"
+            ]
+          }
+        },
+        "required": [
+          "federation_id",
+          "generation",
+          "previous_key",
+          "authority"
+        ]
+      },
+      "FederationRecoveryRotationResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FederationStatus"
+          },
+          "recovery_public_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "recovery_public_key"
         ]
       },
       "FederationDocumentMember": {
@@ -23276,6 +23417,17 @@
           },
           "cert_serial": {
             "type": "string"
+          },
+          "previous_cert_sha256": {
+            "type": "string",
+            "description": "Previous certificate fingerprint, accepted until previous_cert_until after a renewal."
+          },
+          "previous_cert_serial": {
+            "type": "string"
+          },
+          "previous_cert_until": {
+            "type": "string",
+            "format": "date-time"
           },
           "signing_key": {
             "type": "string"
@@ -24471,7 +24623,8 @@
           },
           "inert_admin_grants": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "Federated grants inert until the member sets accept_admin_grants: instance-admin allows and artifact or feed allows without a feed key (every feed)."
           },
           "conflicts": {
             "type": "array",

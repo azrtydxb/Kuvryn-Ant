@@ -102,6 +102,8 @@ type Service struct {
 	nudge  chan struct{}
 	logMu  sync.Mutex
 	logged map[string]time.Time
+	// suppressed counts throttled events per key (guarded by logMu).
+	suppressed map[string]int
 	// policyCache holds the applied policy document for sign-in and
 	// assertion lookups; nil means reload from the database.
 	policyCache atomic.Pointer[PolicyDocument]
@@ -243,7 +245,7 @@ func (s *Service) Lookup(id string) (peer.Member, bool) {
 	if err != nil {
 		return peer.Member{}, false
 	}
-	return peer.Member{InstanceID: m.InstanceID, Name: m.Name, Status: m.Status, SigningKey: key}, true
+	return peer.Member{InstanceID: m.InstanceID, Name: m.Name, Status: m.Status, SigningKey: key, CertSHA256: m.AcceptedCerts(s.cfg.Now())}, true
 }
 func (s *Service) Now() time.Time { return s.cfg.Now() }
 
@@ -586,4 +588,46 @@ func (s *Service) logOnce(key string, msg string, args ...any) {
 	s.logged[key] = s.cfg.Now()
 	s.logMu.Unlock()
 	s.cfg.Logger.Warn(msg, args...)
+}
+
+// authorityID is the authority instance of the applied membership.
+func (t *trust) authorityID() string {
+	if t == nil || t.doc == nil {
+		return ""
+	}
+	return t.doc.Authority.InstanceID
+}
+
+// throttle allows one event per key and window. It returns whether this
+// event may be recorded and how many were suppressed since the last one.
+// Keys must come from a bounded set (reasons, member IDs).
+func (s *Service) throttle(key string, window time.Duration) (bool, int) {
+	now := s.cfg.Now()
+	s.logMu.Lock()
+	defer s.logMu.Unlock()
+	if s.suppressed == nil {
+		s.suppressed = map[string]int{}
+	}
+	if last, ok := s.logged[key]; ok && now.Sub(last) < window {
+		s.suppressed[key]++
+		return false, 0
+	}
+	s.logged[key] = now
+	n := s.suppressed[key]
+	delete(s.suppressed, key)
+	return true, n
+}
+
+// pruneLogged drops throttle and log-once entries older than ten minutes
+// (sampled assertion keys grow with the number of asserted principals).
+func (s *Service) pruneLogged() {
+	now := s.cfg.Now()
+	s.logMu.Lock()
+	defer s.logMu.Unlock()
+	for k, t := range s.logged {
+		if now.Sub(t) > 10*time.Minute {
+			delete(s.logged, k)
+			delete(s.suppressed, k)
+		}
+	}
 }

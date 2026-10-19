@@ -27,9 +27,10 @@ type IdentityDomain struct {
 	Issuer string `json:"issuer"`
 }
 
-// PolicyGrant is a grant on a portable feed key. An empty feed key selects
-// every feed of the member (explicitly), exactly like a local grant without a
-// feed; a key that is not bound locally is inert, never a wildcard.
+// PolicyGrant is a grant on a portable feed key. An empty feed key on an
+// artifact or feed grant selects every feed of the member, like a local grant
+// without a feed: such an allow is inert unless the member accepts admin
+// grants (rule 4). A key that is not bound locally is inert, never a wildcard.
 type PolicyGrant struct {
 	Kind      string   `json:"kind"`   // artifact | feed | instance
 	Effect    string   `json:"effect"` // allow | deny

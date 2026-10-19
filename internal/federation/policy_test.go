@@ -207,6 +207,9 @@ func TestPlanGrantsProperty(t *testing.T) {
 			if g.Kind == "instance" && g.Effect == "allow" && slices.Contains(g.Actions, "admin") && !accept && g.Inert == "" {
 				t.Fatalf("admin grant active without acceptance: %+v", g)
 			}
+			if g.Kind != "instance" && g.FeedKey == "" && g.Effect == "allow" && !accept && g.Inert == "" {
+				t.Fatalf("all-feed grant active without acceptance: %+v", g)
+			}
 			if g.Inert != "" {
 				continue
 			}
@@ -299,5 +302,23 @@ func TestComputeAlerts(t *testing.T) {
 	ps.Error = ""
 	if a := computeAlerts(st, ps, s.policyStatus(st, ps), now); len(a) != 0 {
 		t.Fatalf("authority alerts: %+v", a)
+	}
+}
+
+// A federated artifact or feed allow without a feed key would match every
+// local feed (federated or not): it is gated like instance admin.
+func TestWildcardFeedGrantsNeedAcceptance(t *testing.T) {
+	body := PolicyBody{Roles: []PolicyRole{{Key: "fed:all", Revision: 1, Grants: []PolicyGrant{
+		{Kind: "feed", Effect: "allow", Actions: []string{"read", "publish"}},
+		{Kind: "artifact", Effect: "allow", Actions: []string{"delete"}},
+		{Kind: "artifact", Effect: "deny", Actions: []string{"read"}},
+	}}}}
+	rows, _, inert := planGrants(&body, nil, false)
+	if inert != 2 || rows[0].Inert != "wildcard_not_accepted" || rows[1].Inert != "wildcard_not_accepted" || rows[2].Inert != "" {
+		t.Fatalf("wildcard allows must be inert and denies active: %+v (inert %d)", rows, inert)
+	}
+	rows, _, inert = planGrants(&body, nil, true)
+	if inert != 0 || rows[0].Inert != "" || rows[1].Inert != "" {
+		t.Fatalf("accepted wildcard allows must be active: %+v", rows)
 	}
 }

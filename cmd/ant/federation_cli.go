@@ -16,14 +16,18 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 )
 
-const federationUsage = "usage: ant federation status | re-identify --confirm | purge --confirm"
+const federationUsage = "usage: ant federation status | re-identify --confirm | purge --confirm | recovery sign-rotation|sign-authority-cert ..."
 
 // federationCommand runs the offline federation operations: status (local
 // view from the database), re-identify (give a restored copy a new instance
 // ID before it joins; §13) and purge (delete federation rows after leaving,
-// so a downgrade is possible; §15). re-identify and purge refuse while a
+// so a downgrade is possible; §15), and the offline recovery signer
+// (federation_recovery.go, no database). re-identify and purge refuse while a
 // serving process holds the writer lease and require --confirm.
 func federationCommand(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
+	if len(args) > 0 && args[0] == "recovery" {
+		return federationRecoveryCommand(logger, args[1:], os.Stdin, output)
+	}
 	if len(args) == 0 || len(args) > 2 || (args[0] != "status" && args[0] != "re-identify" && args[0] != "purge") ||
 		(args[0] == "status" && len(args) != 1) || (args[0] != "status" && (len(args) != 2 || args[1] != "--confirm")) {
 		logger.Error(federationUsage)

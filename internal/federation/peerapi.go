@@ -92,7 +92,10 @@ func (s *Service) PeerHandler() http.Handler {
 	}
 	s.peerMu.Unlock()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { peerFail(w, http.StatusNotFound, "not_found") })
-	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true}, Logger: s.cfg.Logger, Reject: s.peerRejected}
+	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true},
+		// A nudge may carry the generation that announces the sender's renewed
+		// certificate; peerNudge re-checks the pin after applying it.
+		DeferPin: map[string]bool{"POST /federation/v1/nudge": true}, Logger: s.cfg.Logger, Reject: s.peerRejected}
 }
 
 // peerRejected audits refused peer requests (rate-limited per peer and reason).
@@ -230,6 +233,14 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 	} else if len(pending) > 0 {
 		s.Nudge()
 	}
+	// The sender presented a certificate this member did not accept yet.
+	// Membership documents are self-authenticating, so applying them was safe;
+	// everything else needs the sender to be pinned by the applied membership.
+	if peer.PinPending(r) && (!peer.Pinned(s, r, caller.InstanceID) || caller.InstanceID != s.trust.Load().authorityID()) {
+		s.peerRejected(r, caller.InstanceID, "certificate_not_current")
+		peerFail(w, http.StatusForbidden, "certificate_not_current")
+		return
+	}
 	if len(body.PolicyDocuments) > 0 {
 		ps, err := loadPolicyState(r.Context(), s.cfg.DB, s.cfg.InstanceID)
 		if err != nil {
@@ -332,10 +343,19 @@ func (s *Service) peerRenew(w http.ResponseWriter, r *http.Request) {
 	caller, _ := peer.Caller(r)
 	var body struct {
 		CSR string `json:"csr"`
+		// CSRSignature is required when the CSR carries a new key: the
+		// current certificate key's signature over CSRRotationMessage(csr).
+		CSRSignature string `json:"csr_signature,omitempty"`
 	}
 	if !decodeBody(w, r, &body) {
 		return
 	}
+	if err := checkRenewalKey(r.TLS.PeerCertificates[0], body.CSR, body.CSRSignature); err != nil {
+		s.peerRejected(r, caller.InstanceID, "csr_key_mismatch")
+		peerFail(w, http.StatusForbidden, "csr_key_mismatch")
+		return
+	}
+	presented := peer.LeafSHA256(r)
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	var resp JoinResponse
@@ -354,7 +374,7 @@ func (s *Service) peerRenew(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return invalid("invalid certificate signing request")
 		}
-		doc, err = s.publish(ctx, tx, st, applied, "renewal:"+caller.InstanceID, setCert(caller.InstanceID, serial, sha))
+		doc, err = s.publish(ctx, tx, st, applied, "renewal:"+caller.InstanceID, setCert(caller.InstanceID, serial, sha, presented, s.now()))
 		if err != nil {
 			return err
 		}

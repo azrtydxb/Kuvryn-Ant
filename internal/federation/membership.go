@@ -43,7 +43,7 @@ func parseRecovery(s string) (ed25519.PrivateKey, error) {
 	if !ok {
 		return nil, ErrRecoveryMismatch
 	}
-	seed, err := base64.RawURLEncoding.DecodeString(raw)
+	seed, err := peer.DecodeCanonical(raw)
 	if err != nil || len(seed) != ed25519.SeedSize {
 		return nil, ErrRecoveryMismatch
 	}
@@ -257,6 +257,9 @@ type IssuedInvitation struct {
 	Secret       string `json:"secret"`
 	CASHA256     string `json:"ca_sha256"`
 	AuthorityURL string `json:"authority_url"`
+	// AuthorityCertSHA256 pins the authority's listener certificate for the
+	// join (with the CA fingerprint); pass it to join as authority_cert_sha256.
+	AuthorityCertSHA256 string `json:"authority_cert_sha256"`
 }
 
 // InvitationInput creates an invitation bound to a member name.
@@ -311,6 +314,9 @@ func (s *Service) CreateInvitation(ctx context.Context, actor string, in Invitat
 		}
 		out.Invitation = Invitation{ID: id, Name: in.Name, Labels: nonNil(in.Labels), ExpiresAt: expires, CreatedAt: out.CreatedAt, State: "pending"}
 		out.Secret, out.CASHA256, out.AuthorityURL = secret, st.CASHA256, st.FederationURL
+		if cert, err := parseCertPEM(st.MemberCert); err == nil {
+			out.AuthorityCertSHA256 = CertSHA256(cert.Raw)
+		}
 		return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.invitation.created", id, "success", map[string]any{"name": in.Name, "expires_at": expires})
 	})
 	return out, err
@@ -417,39 +423,38 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 	if req.Protocol.Min > ProtocolMax || req.Protocol.Max < ProtocolMin || req.Protocol.Min < 1 || req.Protocol.Max < req.Protocol.Min {
 		return JoinResponse{}, ErrProtocol
 	}
+	// The invitation is checked before the federation state row is locked:
+	// the join endpoint is unauthenticated, and a stream of bogus invitations
+	// must not serialize every federation change on the authority.
+	pre, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil {
+		return JoinResponse{}, err
+	}
+	if pre.State != "active" || pre.FederationID == "" {
+		return JoinResponse{}, ErrNotConfigured
+	}
+	if pre.Role != "authority" {
+		return JoinResponse{}, ErrNotAuthority
+	}
+	if _, _, reason, err := s.checkInvitation(ctx, s.cfg.DB, pre.FederationID, invID, req.Invitation, false); err != nil {
+		if reason != "" {
+			s.rejectInvitation(ctx, invID, req.InstanceID, reason)
+		}
+		return JoinResponse{}, err
+	}
 	var resp JoinResponse
 	var published *Membership
 	var reason string
-	err := s.tx(ctx, func(tx pgx.Tx) error {
+	err = s.tx(ctx, func(tx pgx.Tx) error {
 		st, applied, err := s.authorityState(ctx, tx)
 		if err != nil {
 			return err
 		}
-		var name string
-		var labelsRaw []byte
-		var verifier []byte
-		var expires time.Time
-		var consumed, revoked *time.Time
-		err = tx.QueryRow(ctx, `SELECT name,labels,verifier,expires_at,consumed_at,revoked_at FROM federation_invitations WHERE instance_id=$1 AND federation_id=$2 AND id=$3 FOR UPDATE`,
-			s.cfg.InstanceID, st.FederationID, invID).Scan(&name, &labelsRaw, &verifier, &expires, &consumed, &revoked)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			reason = "unknown"
-			return ErrInvitationInvalid
-		case err != nil:
+		// Re-check under the lock: another join may have consumed it.
+		name, labelsRaw, why, err := s.checkInvitation(ctx, tx, st.FederationID, invID, req.Invitation, true)
+		if err != nil {
+			reason = why
 			return err
-		case subtle.ConstantTimeCompare(verifier, invitationVerifier(req.Invitation)) != 1:
-			reason = "secret_mismatch"
-			return ErrInvitationInvalid
-		case revoked != nil:
-			reason = "revoked"
-			return ErrInvitationInvalid
-		case consumed != nil:
-			reason = "consumed"
-			return ErrInvitationInvalid
-		case !expires.After(s.now()):
-			reason = "expired"
-			return ErrInvitationInvalid
 		}
 		if req.InstanceID == s.cfg.InstanceID {
 			reason = "duplicate_instance"
@@ -461,6 +466,14 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 			}
 			if m.InstanceID == req.InstanceID || m.Name == name {
 				reason = "duplicate_instance"
+				return ErrDuplicateInstance
+			}
+			// Member certificates carry the federation URL host as SAN: a
+			// second member on the same host would hold a CA-issued
+			// certificate valid for another member's (or the authority's)
+			// listener and could intercept joins.
+			if sameHost(m.FederationURL, req.FederationURL) {
+				reason = "duplicate_host"
 				return ErrDuplicateInstance
 			}
 		}
@@ -511,16 +524,58 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 	return resp, nil
 }
 
-// rejectInvitation records a failed join as a security event.
+// checkInvitation validates an invitation secret. It returns the bound name
+// and labels, or ErrInvitationInvalid with the audit reason. With lock the
+// invitation row is locked for the caller's transaction.
+func (s *Service) checkInvitation(ctx context.Context, q queryer, federationID, invID, secret string, lock bool) (string, []byte, string, error) {
+	var name string
+	var labelsRaw, verifier []byte
+	var expires time.Time
+	var consumed, revoked *time.Time
+	query := `SELECT name,labels,verifier,expires_at,consumed_at,revoked_at FROM federation_invitations WHERE instance_id=$1 AND federation_id=$2 AND id=$3`
+	if lock {
+		query += ` FOR UPDATE`
+	}
+	err := q.QueryRow(ctx, query, s.cfg.InstanceID, federationID, invID).Scan(&name, &labelsRaw, &verifier, &expires, &consumed, &revoked)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return "", nil, "unknown", ErrInvitationInvalid
+	case err != nil:
+		return "", nil, "", err
+	case subtle.ConstantTimeCompare(verifier, invitationVerifier(secret)) != 1:
+		return "", nil, "secret_mismatch", ErrInvitationInvalid
+	case revoked != nil:
+		return "", nil, "revoked", ErrInvitationInvalid
+	case consumed != nil:
+		return "", nil, "consumed", ErrInvitationInvalid
+	case !expires.After(s.now()):
+		return "", nil, "expired", ErrInvitationInvalid
+	}
+	return name, labelsRaw, "", nil
+}
+
+// rejectionAuditWindow throttles federation.invitation.rejected records: at
+// most one per reason per window, carrying the number suppressed since the
+// previous record. Every rejection still counts in metrics.
+const rejectionAuditWindow = 10 * time.Second
+
+// rejectInvitation records a failed join as a security event (throttled, so
+// an unauthenticated flood cannot fill the audit log).
 func (s *Service) rejectInvitation(ctx context.Context, invitation, instance, reason string) {
+	s.metrics.joinRejected.Add(1)
+	ok, suppressed := s.throttle("invitation-rejected:"+reason, rejectionAuditWindow)
+	if !ok {
+		return
+	}
 	if !uuidPattern.MatchString(invitation) {
 		invitation = ""
 	}
 	if !uuidPattern.MatchString(instance) {
 		instance = ""
 	}
-	_ = s.tx(context.WithoutCancel(ctx), func(tx pgx.Tx) error {
-		return audit(ctx, tx, s.cfg.InstanceID, "", "federation.invitation.rejected", invitation, "denied", map[string]any{"reason": reason, "instance_id": instance})
+	ctx = context.WithoutCancel(ctx)
+	_ = s.tx(ctx, func(tx pgx.Tx) error {
+		return audit(ctx, tx, s.cfg.InstanceID, "", "federation.invitation.rejected", invitation, "denied", map[string]any{"reason": reason, "instance_id": instance, "suppressed": suppressed})
 	})
 }
 
@@ -528,8 +583,11 @@ func (s *Service) rejectInvitation(ctx context.Context, invitation, instance, re
 type JoinInput struct {
 	AuthorityURL string
 	CASHA256     string
-	Invitation   string
-	Labels       map[string]string
+	// AuthorityCertSHA256, when set, pins the authority's listener
+	// certificate before the invitation is sent.
+	AuthorityCertSHA256 string
+	Invitation          string
+	Labels              map[string]string
 }
 
 // Join connects to the authority (TLS pinned to the CA fingerprint received
@@ -544,6 +602,10 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 		return Status{}, ErrListenerMissing
 	}
 	in.CASHA256 = strings.ToLower(strings.TrimSpace(in.CASHA256))
+	in.AuthorityCertSHA256 = strings.ToLower(strings.TrimSpace(in.AuthorityCertSHA256))
+	if in.AuthorityCertSHA256 != "" && !hexPattern.MatchString(in.AuthorityCertSHA256) {
+		return Status{}, invalid("authority_cert_sha256 must be 64 hex characters")
+	}
 	if !ValidFederationURL(in.AuthorityURL) || !hexPattern.MatchString(in.CASHA256) || len(in.Invitation) < 40 || len(in.Invitation) > 256 || !ValidLabels(in.Labels) {
 		return Status{}, invalid("authority_url (https), ca_sha256 (64 hex) and invitation are required")
 	}
@@ -565,7 +627,7 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 	req := JoinRequest{Invitation: in.Invitation, InstanceID: s.cfg.InstanceID, APIURL: s.cfg.APIURL, FederationURL: s.cfg.PublicURL, CSR: csr,
 		SigningKey: encodeKey(signer.Public().(ed25519.PublicKey)), SoftwareVersion: s.cfg.SoftwareVersion, Protocol: ProtocolRange{ProtocolMin, ProtocolMax}, Labels: in.Labels}
 	body, _ := json.Marshal(req)
-	raw, err := s.client.DoPinned(ctx, in.AuthorityURL, in.CASHA256, "POST", "/federation/v1/join", body)
+	raw, leaf, err := s.client.DoPinnedLeaf(ctx, in.AuthorityURL, in.CASHA256, in.AuthorityCertSHA256, "POST", "/federation/v1/join", body)
 	if err != nil {
 		return Status{}, peerError(in.AuthorityURL, err)
 	}
@@ -589,6 +651,13 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 		if cert, err := parseCertPEM(c); err == nil && CertSHA256(cert.Raw) == in.CASHA256 {
 			caOK, caPEM = true, c
 		}
+	}
+	// The server that answered must be the authority itself: its leaf
+	// certificate is the one the verified membership publishes for the
+	// authority (another member's certificate, also issued by the federation
+	// CA, would otherwise pass the CA pin and relay the join).
+	if authority, ok := head.Member(head.Authority.InstanceID); !ok || !slices.Contains(authority.AcceptedCerts(s.now()), leaf) {
+		return Status{}, &RejectedError{Reason: "authority_certificate_mismatch", Err: ErrMalformed}
 	}
 	self, found := head.Member(s.cfg.InstanceID)
 	if !caOK || !found || self.Status != "active" || self.SigningKey != req.SigningKey {
@@ -801,53 +870,4 @@ func viewFromDocument(doc *Membership, member, self string) MemberView {
 // AfterPublish refreshes trust and nudges members after a committed change.
 func (s *Service) AfterPublish(ctx context.Context, doc *Membership, extra ...string) {
 	s.afterPublish(ctx, doc, extra...)
-}
-
-// RotateRecoveryKey replaces the offline recovery key. The caller proves
-// possession of the current recovery key; the next membership generation
-// carries a rotation statement signed by it and re-certifies the current
-// authority key with the new recovery key. The new key is returned once.
-func (s *Service) RotateRecoveryKey(ctx context.Context, actor, current string) (FoundResult, error) {
-	old, err := parseRecovery(current)
-	if err != nil {
-		return FoundResult{}, err
-	}
-	defer clear(old)
-	newPub, newKey, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return FoundResult{}, err
-	}
-	defer clear(newKey)
-	var doc *Membership
-	err = s.tx(ctx, func(tx pgx.Tx) error {
-		st, applied, err := s.authorityState(ctx, tx)
-		if err != nil {
-			return err
-		}
-		if encodeKey(old.Public().(ed25519.PublicKey)) != applied.RecoveryPublicKey {
-			return ErrRecoveryMismatch
-		}
-		doc, err = s.publish(ctx, tx, st, applied, actor, func(next *Membership) error {
-			rot := RecoveryRotation{PreviousKey: applied.RecoveryPublicKey, NewKey: encodeKey(newPub), Generation: next.Generation}
-			rot.Signature = sign(old, rotationStatement(next.FederationID, rot))
-			next.RecoveryRotation = &rot
-			next.RecoveryPublicKey = rot.NewKey
-			next.Authority.CertifiedBy = "recovery"
-			next.Authority.Signature = sign(newKey, authorityStatement(next.FederationID, next.Authority))
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.recovery_key.rotated", st.FederationID, "success", map[string]any{
-			"previous_fingerprint": KeyFingerprint(applied.RecoveryPublicKey), "fingerprint": KeyFingerprint(doc.RecoveryPublicKey), "generation": doc.Generation})
-	})
-	if err != nil {
-		return FoundResult{}, err
-	}
-	s.afterPublish(ctx, doc)
-	out := FoundResult{RecoveryKey: exportRecovery(newKey), RecoveryPublicKey: encodeKey(newPub)}
-	out.Status, err = s.Status(ctx)
-	out.CASHA256 = out.Status.CASHA256
-	return out, err
 }

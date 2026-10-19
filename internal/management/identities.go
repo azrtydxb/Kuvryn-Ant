@@ -38,7 +38,7 @@ type RoleGrant struct {
 	Namespace string            `json:"namespace,omitempty"`
 	Actions   []identity.Action `json:"actions"`
 	// FeedKey and Inert are read-only: federated grants reference a feed key,
-	// and an inert grant (unresolved_feed, admin_not_accepted) never matches.
+	// and an inert grant (unresolved_feed, admin_not_accepted, wildcard_not_accepted) never matches.
 	FeedKey string `json:"feed_key,omitempty"`
 	Inert   string `json:"inert,omitempty"`
 }

@@ -171,6 +171,7 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 }
 
 func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) error {
+	resynced := false
 	for range 1000 {
 		st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
 		if err != nil {
@@ -187,12 +188,21 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 		if err := json.Unmarshal(raw, &h); err != nil || h.FederationID != st.FederationID {
 			return &RejectedError{Reason: "wrong_federation", Err: ErrWrongFed}
 		}
-		if h.Membership.Generation <= st.AppliedGeneration {
-			// Membership is current: bring policy and topology up to this source.
-			if err := s.syncPolicyFrom(ctx, id, src, h.Policy); err != nil {
+		authority := src.InstanceID == s.trust.Load().authorityID()
+		if authority && !resynced && h.Membership.Generation == st.AppliedGeneration && h.Membership.Hash != st.AppliedHash {
+			resynced = true
+			// Same generation, another document: the chains diverged.
+			if err := s.resyncMembership(ctx, id, src); err != nil && !errors.Is(err, errNoDivergence) {
 				return err
 			}
-			return s.syncTopologyFrom(ctx, id, src, h.Topology)
+			continue
+		}
+		if h.Membership.Generation <= st.AppliedGeneration {
+			// Membership is current: bring policy and topology up to this source.
+			if err := s.syncPolicyFrom(ctx, id, src, h.Policy, authority); err != nil {
+				return err
+			}
+			return s.syncTopologyFrom(ctx, id, src, h.Topology, authority)
 		}
 		raw, err = s.client.Do(ctx, id, src.FederationURL, "GET", "/federation/v1/documents/membership?after="+strconv.FormatInt(st.AppliedGeneration, 10)+"&limit=100", nil, src.InstanceID)
 		if err != nil {
@@ -208,6 +218,13 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 			return &RejectedError{Reason: "generation_gap", Err: ErrGap}
 		}
 		n, err := s.applyDocuments(ctx, docs.Documents, src.Name, false)
+		if err != nil && authority && !resynced && isChainMismatch(err) {
+			resynced = true
+			if rerr := s.resyncMembership(ctx, id, src); rerr != nil && !errors.Is(rerr, errNoDivergence) {
+				return rerr
+			}
+			continue
+		}
 		if err != nil {
 			return err
 		}
@@ -252,9 +269,13 @@ func (s *Service) Run(ctx context.Context) {
 			s.logOnce("alerts", "federation alert evaluation failed", "reason", err)
 		}
 		s.purgeNonces(step)
+		s.pruneLogged()
 		s.PingMembers(step)
 		if err := s.RenewIfDue(step); err != nil && ctx.Err() == nil {
 			s.logOnce("renew", "federation certificate renewal failed", "reason", err)
+		}
+		if err := s.RetireCertificates(step); err != nil && ctx.Err() == nil {
+			s.logOnce("retire", "federation certificate retirement failed", "reason", err)
 		}
 		cancel()
 		select {
@@ -409,7 +430,11 @@ func (s *Service) RenewCertificate(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			doc, err = s.publish(ctx, tx, st, applied, "renewal:"+s.cfg.InstanceID, setCert(s.cfg.InstanceID, serial, sha))
+			presented := ""
+			if cur, err := parseCertPEM(st.MemberCert); err == nil {
+				presented = CertSHA256(cur.Raw)
+			}
+			doc, err = s.publish(ctx, tx, st, applied, "renewal:"+s.cfg.InstanceID, setCert(s.cfg.InstanceID, serial, sha, presented, s.now()))
 			if err != nil {
 				return err
 			}
@@ -462,17 +487,6 @@ func (s *Service) RenewCertificate(ctx context.Context) error {
 	return s.Refresh(ctx)
 }
 
-func setCert(instance, serial, sha string) func(*Membership) error {
-	return func(next *Membership) error {
-		for i := range next.Members {
-			if next.Members[i].InstanceID == instance {
-				next.Members[i].CertSerial, next.Members[i].CertSHA256 = serial, sha
-			}
-		}
-		return nil
-	}
-}
-
 // issueFor signs a member certificate with the federation CA.
 func (s *Service) issueFor(ctx context.Context, st State, csr, instance, federationURL string) (string, string, string, time.Time, error) {
 	_, caPlain, err := s.store.Open(ctx, s.cfg.InstanceID, st.CASecretID, "federation-ca")
@@ -487,4 +501,87 @@ func (s *Service) issueFor(ctx context.Context, st State, csr, instance, federat
 	}
 	defer clear(ca.KeyDER)
 	return issueMemberCert(ca, csr, instance, federationURL, s.now())
+}
+
+// setCert publishes a renewed certificate. The certificate the member
+// presented for the renewal (presentedSHA, its current or still-accepted
+// previous one) stays accepted until the grace period ends; any other
+// certificate it held is revoked at once, so at most two are ever accepted.
+func setCert(instance, serial, sha, presentedSHA string, now time.Time) func(*Membership) error {
+	return func(next *Membership) error {
+		revoke := func(s string) {
+			if s != "" && !next.Revoked(s) {
+				next.RevokedCertSerials = append(next.RevokedCertSerials, s)
+			}
+		}
+		for i := range next.Members {
+			m := &next.Members[i]
+			if m.InstanceID != instance {
+				continue
+			}
+			keepSerial := m.CertSerial
+			switch {
+			case presentedSHA == m.CertSHA256:
+				revoke(m.PreviousCertSerial)
+			case presentedSHA != "" && presentedSHA == m.PreviousCertSHA256:
+				keepSerial = m.PreviousCertSerial
+				revoke(m.CertSerial) // issued but never used
+				presentedSHA = m.PreviousCertSHA256
+			default:
+				return errors.New("federation: renewal presented a certificate that is not accepted")
+			}
+			m.PreviousCertSHA256, m.PreviousCertSerial, m.PreviousCertUntil = presentedSHA, keepSerial, now.Add(certGrace).UTC().Format(time.RFC3339Nano)
+			m.CertSerial, m.CertSHA256 = serial, sha
+		}
+		return nil
+	}
+}
+
+// RetireCertificates runs on the authority: it publishes one generation that
+// revokes the previous certificate of every member whose grace period ended.
+func (s *Service) RetireCertificates(ctx context.Context) error {
+	st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil || st.State != "active" || st.Role != "authority" {
+		return err
+	}
+	now := s.now()
+	due := func(doc *Membership) bool {
+		for _, m := range doc.Members {
+			if until, err := time.Parse(time.RFC3339Nano, m.PreviousCertUntil); err == nil && !now.Before(until) {
+				return true
+			}
+		}
+		return false
+	}
+	if t := s.trust.Load(); t.doc == nil || !due(t.doc) {
+		return nil
+	}
+	var doc *Membership
+	err = s.tx(ctx, func(tx pgx.Tx) error {
+		st, applied, err := s.authorityState(ctx, tx)
+		if err != nil || !due(applied) {
+			return err
+		}
+		doc, err = s.publish(ctx, tx, st, applied, "certificate-retirement", func(next *Membership) error {
+			for i := range next.Members {
+				m := &next.Members[i]
+				if until, err := time.Parse(time.RFC3339Nano, m.PreviousCertUntil); err == nil && !now.Before(until) {
+					if !next.Revoked(m.PreviousCertSerial) {
+						next.RevokedCertSerials = append(next.RevokedCertSerials, m.PreviousCertSerial)
+					}
+					m.PreviousCertSHA256, m.PreviousCertSerial, m.PreviousCertUntil = "", "", ""
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		return audit(ctx, tx, s.cfg.InstanceID, "", "federation.certificate.retired", st.FederationID, "success", map[string]any{"generation": doc.Generation})
+	})
+	if err != nil || doc == nil {
+		return err
+	}
+	s.afterPublish(ctx, doc)
+	return nil
 }

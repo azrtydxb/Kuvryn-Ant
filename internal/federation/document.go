@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 )
 
 // Protocol versions this build speaks on the federation listener.
@@ -54,18 +56,24 @@ func RejectReason(err error) string {
 
 // Member is one entry of a membership document.
 type Member struct {
-	InstanceID      string            `json:"instance_id"`
-	Name            string            `json:"name"`
-	Status          string            `json:"status"` // active | suspended | removed
-	APIURL          string            `json:"api_url"`
-	FederationURL   string            `json:"federation_url"`
-	CertSHA256      string            `json:"cert_sha256"`
-	CertSerial      string            `json:"cert_serial"`
-	SigningKey      string            `json:"signing_key"` // ed25519:<base64url>
-	Labels          map[string]string `json:"labels"`
-	SoftwareVersion string            `json:"software_version"`
-	Protocol        ProtocolRange     `json:"protocol"`
-	JoinedAt        string            `json:"joined_at"`
+	InstanceID    string `json:"instance_id"`
+	Name          string `json:"name"`
+	Status        string `json:"status"` // active | suspended | removed
+	APIURL        string `json:"api_url"`
+	FederationURL string `json:"federation_url"`
+	CertSHA256    string `json:"cert_sha256"`
+	CertSerial    string `json:"cert_serial"`
+	// The previous certificate stays accepted until PreviousCertUntil after a
+	// renewal, then its serial is revoked. Omitted when there is none, so
+	// documents without a renewal keep their canonical form.
+	PreviousCertSHA256 string            `json:"previous_cert_sha256,omitempty"`
+	PreviousCertSerial string            `json:"previous_cert_serial,omitempty"`
+	PreviousCertUntil  string            `json:"previous_cert_until,omitempty"`
+	SigningKey         string            `json:"signing_key"` // ed25519:<base64url>
+	Labels             map[string]string `json:"labels"`
+	SoftwareVersion    string            `json:"software_version"`
+	Protocol           ProtocolRange     `json:"protocol"`
+	JoinedAt           string            `json:"joined_at"`
 }
 
 // ProtocolRange is an inclusive range of peer protocol versions.
@@ -164,7 +172,7 @@ func decodeKey(s string) (ed25519.PublicKey, error) {
 	if !ok {
 		return nil, ErrMalformed
 	}
-	b, err := base64.RawURLEncoding.DecodeString(raw)
+	b, err := peer.DecodeCanonical(raw)
 	if err != nil || len(b) != ed25519.PublicKeySize {
 		return nil, ErrMalformed
 	}
@@ -186,7 +194,7 @@ func verify(encodedKey, sig string, payload []byte) bool {
 	if err != nil {
 		return false
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(sig)
+	raw, err := peer.DecodeCanonical(sig)
 	if err != nil || len(raw) != ed25519.SignatureSize {
 		return false
 	}
@@ -308,6 +316,12 @@ func validate(m *Membership) error {
 			(x.CertSHA256 != "" && !hexPattern.MatchString(x.CertSHA256)) {
 			return ErrMalformed
 		}
+		if x.PreviousCertSHA256 != "" || x.PreviousCertSerial != "" || x.PreviousCertUntil != "" {
+			if _, err := time.Parse(time.RFC3339Nano, x.PreviousCertUntil); err != nil || !hexPattern.MatchString(x.PreviousCertSHA256) ||
+				x.PreviousCertSerial == "" || len(x.PreviousCertSerial) > 128 {
+				return ErrMalformed
+			}
+		}
 		switch x.Status {
 		case "active", "suspended":
 			if names[x.Name] {
@@ -420,4 +434,23 @@ func parseCertPEM(s string) (*x509.Certificate, error) {
 func CertSHA256(der []byte) string {
 	sum := sha256.Sum256(der)
 	return hex.EncodeToString(sum[:])
+}
+
+// certGrace is how long a member's previous certificate stays accepted after
+// a renewal (for a member that did not receive its new certificate yet).
+const certGrace = 24 * time.Hour
+
+// AcceptedCerts returns the certificate fingerprints peers accept from a
+// member at now: the current one and, during the grace period, the previous.
+func (x Member) AcceptedCerts(now time.Time) []string {
+	out := []string{}
+	if x.CertSHA256 != "" {
+		out = append(out, x.CertSHA256)
+	}
+	if x.PreviousCertSHA256 != "" {
+		if until, err := time.Parse(time.RFC3339Nano, x.PreviousCertUntil); err == nil && now.Before(until) {
+			out = append(out, x.PreviousCertSHA256)
+		}
+	}
+	return out
 }

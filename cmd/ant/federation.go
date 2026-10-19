@@ -99,7 +99,9 @@ func (f *federationRuntime) autoJoin(ctx context.Context) {
 		}
 		return strings.TrimSpace(string(b))
 	}
-	in := federation.JoinInput{AuthorityURL: read("authority_url"), CASHA256: read("ca_sha256"), Invitation: read("invitation")}
+	// authority_cert_sha256 is optional: it pins the authority certificate
+	// before the invitation is sent.
+	in := federation.JoinInput{AuthorityURL: read("authority_url"), CASHA256: read("ca_sha256"), AuthorityCertSHA256: read("authority_cert_sha256"), Invitation: read("invitation")}
 	if in.AuthorityURL == "" || in.CASHA256 == "" || in.Invitation == "" {
 		f.logger.Error("federation auto-join skipped: authority_url, ca_sha256 and invitation files are required")
 		return
