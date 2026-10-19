@@ -63,12 +63,20 @@ type GroupRoleMapping struct {
 	RoleIDs []string `json:"role_ids"`
 }
 
+type ClaimRoleMapping struct {
+	Value   string   `json:"value"`
+	RoleIDs []string `json:"role_ids"`
+}
+
 // ProviderConfig is the union of all protocol settings; unused members stay absent.
 type ProviderConfig struct {
 	Issuer           *string            `json:"issuer,omitempty"`
 	ClientID         *string            `json:"client_id,omitempty"`
 	AllowedEndpoints []string           `json:"allowed_endpoints,omitempty"`
 	GroupsClaim      *string            `json:"groups_claim,omitempty"`
+	RolesClaim       *string            `json:"roles_claim,omitempty"`
+	ClaimRoles       []ClaimRoleMapping `json:"claim_roles,omitempty"`
+	Scopes           []string           `json:"scopes,omitempty"`
 	EntityID         *string            `json:"entity_id,omitempty"`
 	IDPEntityID      *string            `json:"idp_entity_id,omitempty"`
 	IDPMetadataXML   *string            `json:"idp_metadata_xml,omitempty"`
@@ -108,7 +116,14 @@ func (c ProviderConfig) toRaw(kind idpadmin.Kind) (json.RawMessage, error) {
 	var v any
 	switch kind {
 	case idpadmin.OIDC:
-		v = idpadmin.OIDCConfig{Issuer: str(c.Issuer), ClientID: str(c.ClientID), AllowedEndpoints: c.AllowedEndpoints, GroupsClaim: str(c.GroupsClaim)}
+		claims := make([]idpadmin.ClaimRole, 0, len(c.ClaimRoles))
+		for _, m := range c.ClaimRoles {
+			claims = append(claims, idpadmin.ClaimRole{Value: m.Value, RoleIDs: m.RoleIDs})
+		}
+		if len(claims) == 0 {
+			claims = nil
+		}
+		v = idpadmin.OIDCConfig{Issuer: str(c.Issuer), ClientID: str(c.ClientID), AllowedEndpoints: c.AllowedEndpoints, GroupsClaim: str(c.GroupsClaim), RolesClaim: str(c.RolesClaim), ClaimRoles: claims, Scopes: c.Scopes}
 	case idpadmin.SAML:
 		v = idpadmin.SAMLConfig{EntityID: str(c.EntityID), IDPEntityID: str(c.IDPEntityID), IDPMetadataXML: str(c.IDPMetadataXML), SPCertificatePEM: str(c.SPCertificatePEM), GroupsAttribute: str(c.GroupsAttribute), EmailAttribute: str(c.EmailAttribute)}
 	case idpadmin.LDAP:
@@ -133,7 +148,10 @@ func fromRaw(kind idpadmin.Kind, raw json.RawMessage) ProviderConfig {
 	case idpadmin.OIDC:
 		var o idpadmin.OIDCConfig
 		_ = json.Unmarshal(raw, &o)
-		c = ProviderConfig{Issuer: ptr(o.Issuer), ClientID: ptr(o.ClientID), AllowedEndpoints: o.AllowedEndpoints, GroupsClaim: ptr(o.GroupsClaim)}
+		c = ProviderConfig{Issuer: ptr(o.Issuer), ClientID: ptr(o.ClientID), AllowedEndpoints: o.AllowedEndpoints, GroupsClaim: ptr(o.GroupsClaim), RolesClaim: ptr(o.RolesClaim), Scopes: o.Scopes}
+		for _, m := range o.ClaimRoles {
+			c.ClaimRoles = append(c.ClaimRoles, ClaimRoleMapping{Value: m.Value, RoleIDs: m.RoleIDs})
+		}
 	case idpadmin.SAML:
 		var o idpadmin.SAMLConfig
 		_ = json.Unmarshal(raw, &o)
@@ -501,6 +519,9 @@ func (h idpHandlers) create(w http.ResponseWriter, r *http.Request) {
 		h.idpError(w, r, err)
 		return
 	}
+	if !h.claimRolesExist(w, r, p, raw, kind) {
+		return
+	}
 	out, ok := h.idem(w, r, p, "identity_provider.create", "identity-providers", in, func(ctx context.Context) (any, error) {
 		pr, err := h.store(p).Create(ctx, p.PrincipalID, idpadmin.Input{Kind: kind, Name: in.Name, Enabled: in.Enabled, Config: raw, Secret: in.Secret}, h.builder(p).Check)
 		if err != nil {
@@ -512,6 +533,43 @@ func (h idpHandlers) create(w http.ResponseWriter, r *http.Request) {
 	if ok {
 		replayWrite(w, r, out, 201)
 	}
+}
+
+// claimRolesExist rejects claim mappings that reference unknown or
+// federation-managed roles, so a mapping can only ever assign existing local roles.
+func (h idpHandlers) claimRolesExist(w http.ResponseWriter, r *http.Request, p identity.Principal, raw json.RawMessage, kind idpadmin.Kind) bool {
+	if kind != idpadmin.OIDC {
+		return true
+	}
+	var c idpadmin.OIDCConfig
+	if json.Unmarshal(raw, &c) != nil {
+		return true // structural validation reports this
+	}
+	want := map[string]bool{}
+	for _, m := range c.ClaimRoles {
+		for _, id := range m.RoleIDs {
+			want[id] = true
+		}
+	}
+	if len(want) == 0 {
+		return true
+	}
+	ids := make([]string, 0, len(want))
+	for id := range want {
+		ids = append(ids, id)
+	}
+	ctx, cancel := h.ctx(r)
+	defer cancel()
+	var n int
+	if err := h.d.Pool.QueryRow(ctx, `SELECT count(*) FROM roles WHERE instance_id=$1 AND origin='local' AND id::text=ANY($2)`, p.InstanceID, ids).Scan(&n); err != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "role lookup unavailable")
+		return false
+	}
+	if n != len(ids) {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "claim_roles reference unknown or non-local roles")
+		return false
+	}
+	return true
 }
 
 func (h idpHandlers) update(w http.ResponseWriter, r *http.Request) {
@@ -545,6 +603,9 @@ func (h idpHandlers) update(w http.ResponseWriter, r *http.Request) {
 	raw, err := in.Config.toRaw(cur.Kind)
 	if err != nil {
 		h.idpError(w, r, err)
+		return
+	}
+	if !h.claimRolesExist(w, r, p, raw, cur.Kind) {
 		return
 	}
 	out, ok := h.idem(w, r, p, "identity_provider.update", cur.ID, struct {

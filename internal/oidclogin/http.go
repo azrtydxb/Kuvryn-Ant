@@ -86,12 +86,19 @@ func (c *Client) Callback(w http.ResponseWriter, r *http.Request) {
 		c.loginFailure(w, r)
 		return
 	}
-	subject, groups, e := c.Provider.exchangeIdentity(r.Context(), q.Get("code"), browser, nonce)
+	ident, e := c.Provider.exchangeIdentity(r.Context(), q.Get("code"), browser, nonce)
 	if e != nil {
 		c.loginFailure(w, r)
 		return
 	}
-	session, raw, csrf, e := c.Sessions.issueGroups(r.Context(), c.Provider.issuer, subject, groups)
+	// Claim-derived roles fail closed: if they cannot be applied, no session.
+	if ident.RolesMapped {
+		if e = c.Sessions.ApplyClaimRoles(r.Context(), c.Provider.issuer, ident.Subject, ident.Roles); e != nil {
+			c.loginFailure(w, r)
+			return
+		}
+	}
+	session, raw, csrf, e := c.Sessions.issueGroups(r.Context(), c.Provider.issuer, ident.Subject, ident.Groups)
 	if e != nil {
 		c.loginFailure(w, r)
 		return

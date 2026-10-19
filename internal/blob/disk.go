@@ -12,6 +12,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/safedir"
 	"time"
 )
 
@@ -44,7 +46,7 @@ func NewDisk(path string, bufferBudget int64) (*Disk, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !info.IsDir() || info.Mode().Perm()&0077 != 0 {
+	if !safedir.Private(info) {
 		return nil, ErrUnsafePath
 	}
 	root, err := os.OpenRoot(path)
@@ -58,7 +60,7 @@ func NewDisk(path string, bufferBudget int64) (*Disk, error) {
 			return nil, err
 		}
 		info, err := root.Lstat(name)
-		if err != nil || !info.IsDir() || info.Mode().Perm()&0077 != 0 {
+		if err != nil || !safedir.Private(info) {
 			root.Close()
 			return nil, ErrUnsafePath
 		}
@@ -86,7 +88,7 @@ func (d *Disk) safeDir(name string) error {
 	if err != nil {
 		return err
 	}
-	if !i.IsDir() || i.Mode().Perm()&0077 != 0 {
+	if !safedir.Private(i) {
 		return ErrUnsafePath
 	}
 	return nil

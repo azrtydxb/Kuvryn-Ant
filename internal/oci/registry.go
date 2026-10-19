@@ -23,6 +23,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/safedir"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -51,7 +52,7 @@ func New(db *pgxpool.Pool, service *artifact.Service, uploadRoot string) (*Regis
 		return nil, ErrConfiguration
 	}
 	info, err := os.Lstat(uploadRoot)
-	if err != nil || !info.IsDir() || info.Mode().Perm()&0077 != 0 {
+	if err != nil || !safedir.Private(info) {
 		return nil, ErrConfiguration
 	}
 	root, err := os.OpenRoot(uploadRoot)

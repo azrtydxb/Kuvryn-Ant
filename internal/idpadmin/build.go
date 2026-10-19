@@ -36,6 +36,7 @@ func (b Builder) OIDC(ctx context.Context, l Loaded) (*oidclogin.Provider, error
 	return oidclogin.NewProviderWithTransport(ctx, oidclogin.ProviderConfig{
 		Key: "idp-" + l.ID, Issuer: c.Issuer, ClientID: c.ClientID, ClientSecret: string(l.Secret),
 		RedirectURI: b.Origin + "/auth/oidc/callback", AllowedEndpoints: c.AllowedEndpoints,
+		RolesClaim: c.RolesClaim, ClaimRoles: claimRoleMap(c.ClaimRoles), Scopes: c.Scopes,
 	}, b.Transport)
 }
 
@@ -94,6 +95,14 @@ func (b Builder) LDAP(l Loaded) (*directory.Provider, error) {
 		UserClass: c.UserClass, GroupClass: c.GroupClass, MemberAttribute: c.MemberAttribute,
 		CAPEM: []byte(c.CAPEM), GroupRoles: c.GroupRoles,
 	}, secret, b.Dial)
+}
+
+func claimRoleMap(in []ClaimRole) map[string][]string {
+	out := make(map[string][]string, len(in))
+	for _, m := range in {
+		out[m.Value] = m.RoleIDs
+	}
+	return out
 }
 
 type denyReplay struct{}
