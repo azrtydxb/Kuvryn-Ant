@@ -23,6 +23,13 @@ import (
 type testSAMLBrowser struct {
 	subject string
 	calls   int
+	// Single logout scripting.
+	logout       bool
+	sessionIndex string
+	roles        []string
+	rolesMapped  bool
+	lastIdentity samllogin.Identity
+	lastRelay    string
 }
 
 func (p *testSAMLBrowser) Begin(state string) (*url.URL, samllogin.Pending, error) {
@@ -34,13 +41,38 @@ func (p *testSAMLBrowser) Consume(_ context.Context, raw []byte, pending samllog
 	if string(raw) != "verified-assertion" || pending.ID != "request-one" {
 		return samllogin.Identity{}, errors.New("invalid")
 	}
-	return samllogin.Identity{Issuer: "https://id.example/saml", Subject: p.subject}, nil
+	return samllogin.Identity{Issuer: "https://id.example/saml", Subject: p.subject, SessionIndex: p.sessionIndex, NameIDFormat: "urn:test:persistent", Roles: p.roles, RolesMapped: p.rolesMapped}, nil
 }
 func (*testSAMLBrowser) Metadata() ([]byte, error) { return []byte("metadata"), nil }
+func (p *testSAMLBrowser) SupportsLogout() bool    { return p.logout }
+func (p *testSAMLBrowser) BeginLogoutPost(id samllogin.Identity, relay string) (samllogin.LogoutPost, samllogin.Pending, error) {
+	p.lastIdentity, p.lastRelay = id, relay
+	return samllogin.LogoutPost{Destination: "https://id.example/slo", SAMLRequest: "signed-logout-request", RelayState: relay}, samllogin.Pending{ID: "logout-one", Expires: time.Now().Add(4 * time.Minute), Logout: true}, nil
+}
+func (p *testSAMLBrowser) ConsumeLogout(_ context.Context, raw []byte, pending samllogin.Pending) error {
+	if string(raw) != "idp-logout-response" || pending.ID != "logout-one" || !pending.Logout {
+		return errors.New("invalid")
+	}
+	return nil
+}
+
+// ConsumeLogoutRequest accepts "idp-logout-request|<name id>|<session index>" from the configured IdP.
+func (p *testSAMLBrowser) ConsumeLogoutRequest(_ context.Context, raw []byte) (samllogin.LogoutRequest, error) {
+	parts := strings.Split(string(raw), "|")
+	if len(parts) != 3 || parts[0] != "idp-logout-request" {
+		return samllogin.LogoutRequest{}, errors.New("invalid")
+	}
+	return samllogin.LogoutRequest{ID: "idp-request-one", Issuer: "https://id.example/saml", NameID: parts[1], SessionIndex: parts[2]}, nil
+}
+func (p *testSAMLBrowser) LogoutResponsePost(requestID, relay string) (samllogin.LogoutPost, error) {
+	return samllogin.LogoutPost{Destination: "https://id.example/slo", SAMLResponse: "signed-logout-response-for-" + requestID, RelayState: relay}, nil
+}
 
 type testLDAPBrowser struct {
 	subject string
 	calls   int
+	roles   []string
+	mapped  bool
 }
 
 func (p *testLDAPBrowser) Authenticate(_ context.Context, user string, password []byte) (directory.ExternalIdentity, error) {
@@ -48,7 +80,7 @@ func (p *testLDAPBrowser) Authenticate(_ context.Context, user string, password 
 	if user != "alice" || string(password) != "private-password" {
 		return directory.ExternalIdentity{}, errors.New("private-directory-response")
 	}
-	return directory.ExternalIdentity{ProviderID: "https://id.example/ldap", Subject: p.subject, RoleIDs: []string{"must-not-grant-admin"}}, nil
+	return directory.ExternalIdentity{ProviderID: "https://id.example/ldap", Subject: p.subject, RoleIDs: append([]string{"must-not-grant-admin"}, p.roles...), RolesMapped: p.mapped}, nil
 }
 func enterpriseFixture(t *testing.T) (*enterpriseLogin, *testSAMLBrowser, *testLDAPBrowser, string) {
 	t.Helper()
@@ -283,7 +315,7 @@ func TestSAMLBrowserRedirectIsTrustedAndKeepsCookies(t *testing.T) {
 	e, _, _, _ := enterpriseFixture(t)
 	e.client.SuccessRedirect = "/console/"
 	w := httptest.NewRecorder()
-	e.issue(w, httptest.NewRequest("POST", "https://ant.example/auth/saml/callback?redirect=https://evil.example", nil), "saml", e.samlIssuer, "immutable-subject", nil)
+	e.issue(w, httptest.NewRequest("POST", "https://ant.example/auth/saml/callback?redirect=https://evil.example", nil), "saml", e.samlIssuer, "immutable-subject", loginExtras{})
 	if w.Code != 303 || w.Header().Get("Location") != "/console/" {
 		t.Fatal(w.Code, w.Header())
 	}

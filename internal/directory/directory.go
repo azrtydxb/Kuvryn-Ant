@@ -48,6 +48,10 @@ type Config struct {
 	// GroupRoles maps base64url-encoded raw immutable group IDs to internal role IDs.
 	// No defaults, name-based mappings, or automatic administrator grants exist.
 	GroupRoles map[string][]string
+	// GroupNesting selects group resolution: "nested" (default) follows groups that
+	// are members of groups up to MaxDepth; "direct" uses only groups the user is
+	// a direct member of, so a role mapped to an outer group is never inherited.
+	GroupNesting string
 }
 
 type Provider struct {
@@ -64,7 +68,16 @@ type ExternalIdentity struct {
 	Subject    string // base64url raw entryUUID/objectGUID, scoped by ProviderID
 	GroupIDs   []string
 	RoleIDs    []string // trusted configuration proposals; caller persists/resolves grants
+	// RolesMapped reports whether any group-to-role mapping is configured, so the
+	// caller reconciles claim-managed roles (including down to none).
+	RolesMapped bool
 }
+
+// Group nesting policies for Config.GroupNesting.
+const (
+	NestingNested = "nested"
+	NestingDirect = "direct"
+)
 
 var attribute = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9-]{0,63}$`)
 
@@ -125,6 +138,13 @@ func New(c Config, secret SecretSource, dial Dialer) (*Provider, error) {
 			}
 		}
 		mappings[id] = append([]string(nil), roles...)
+	}
+	switch c.GroupNesting {
+	case "":
+		c.GroupNesting = NestingNested
+	case NestingNested, NestingDirect:
+	default:
+		return nil, ErrConfig
 	}
 	c.GroupRoles = mappings
 	c.CAPEM = nil
@@ -214,7 +234,7 @@ func (p *Provider) Authenticate(ctx context.Context, login string, password []by
 			roles[r] = true
 		}
 	}
-	result := ExternalIdentity{ProviderID: p.config.ProviderID, Subject: subject, GroupIDs: groups}
+	result := ExternalIdentity{ProviderID: p.config.ProviderID, Subject: subject, GroupIDs: groups, RolesMapped: len(p.config.GroupRoles) > 0}
 	for r := range roles {
 		result.RoleIDs = append(result.RoleIDs, r)
 	}
@@ -319,6 +339,9 @@ func (p *Provider) groups(ctx context.Context, c Connection, user string) ([]str
 			ids[id] = entry.DN
 			if len(ids) > p.config.MaxGroups {
 				return ErrGroups
+			}
+			if p.config.GroupNesting == NestingDirect {
+				continue
 			}
 			if e = walk(entry.DN, depth+1, append(append([]*ldap.DN(nil), path...), dn)); e != nil {
 				return e

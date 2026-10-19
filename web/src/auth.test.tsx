@@ -230,3 +230,40 @@ it("stops checking the session and offers sign-in when /auth/session hangs", asy
   ).toBeTruthy();
   vi.useRealTimers();
 });
+it("continues a SAML sign-out at the identity provider via the server-staged page", async () => {
+  const assign = vi.fn();
+  vi.stubGlobal("location", { ...window.location, assign });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url === "/auth/session") return json(session);
+      if (url === "/auth/providers") return json({ providers: [] });
+      if (url === "/auth/logout")
+        return json({ saml_logout: "/auth/saml/logout" });
+      return json({ name: "kuvryn-ant", api_version: "v1" });
+    }),
+  );
+  render(<App />);
+  await screen.findByText("Browser session");
+  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/saml/logout"));
+});
+it("never navigates to a logout target outside the auth routes", async () => {
+  const assign = vi.fn();
+  vi.stubGlobal("location", { ...window.location, assign });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url === "/auth/session") return json(session);
+      if (url === "/auth/providers") return json({ providers: [] });
+      if (url === "/auth/logout")
+        return json({ saml_logout: "https://evil.example/" });
+      return json({ name: "kuvryn-ant", api_version: "v1" });
+    }),
+  );
+  render(<App />);
+  await screen.findByText("Browser session");
+  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await screen.findByRole("heading", { name: "Sign in" });
+  expect(assign).not.toHaveBeenCalled();
+});

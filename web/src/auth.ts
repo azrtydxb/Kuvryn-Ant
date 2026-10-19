@@ -189,4 +189,12 @@ export async function logout(csrf: string) {
     throw Error(
       "Local credentials were cleared, but server sign-out could not be confirmed. Retry sign-out.",
     );
+  // A SAML session also signs out at the identity provider: the server answers
+  // 200 with a same-origin path whose page posts the signed logout request.
+  if (r.status === 200) {
+    const body = await r.json().catch(() => null);
+    const next = body?.saml_logout;
+    if (typeof next === "string" && /^\/auth\/[a-z/_-]+$/.test(next))
+      window.location.assign(next);
+  }
 }

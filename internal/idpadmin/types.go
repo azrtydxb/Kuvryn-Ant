@@ -72,30 +72,8 @@ type ClaimRole struct {
 }
 
 func validClaimMapping(c OIDCConfig) bool {
-	if len(c.RolesClaim) > 256 || len(c.ClaimRoles) > 200 || len(c.Scopes) > 16 {
+	if len(c.Scopes) > 16 || !validRoleMapping(c.RolesClaim, c.ClaimRoles) {
 		return false
-	}
-	if (len(c.ClaimRoles) > 0) != (c.RolesClaim != "") {
-		return false
-	}
-	for _, r := range c.RolesClaim {
-		if r < 0x21 || r > 0x7e {
-			return false
-		}
-	}
-	seen := map[string]bool{}
-	for _, m := range c.ClaimRoles {
-		if m.Value == "" || len(m.Value) > 256 || seen[m.Value] || len(m.RoleIDs) == 0 || len(m.RoleIDs) > 32 {
-			return false
-		}
-		seen[m.Value] = true
-		ids := map[string]bool{}
-		for _, id := range m.RoleIDs {
-			if !uuidRE.MatchString(id) || ids[id] {
-				return false
-			}
-			ids[id] = true
-		}
 	}
 	for _, s := range c.Scopes {
 		if s == "" || len(s) > 256 || s == "openid" {
@@ -110,6 +88,34 @@ func validClaimMapping(c OIDCConfig) bool {
 	return true
 }
 
+// validRoleMapping checks a claim or attribute name and its value-to-role map:
+// both or neither, bounded, unique values, local role UUIDs only.
+func validRoleMapping(name string, maps []ClaimRole) bool {
+	if len(name) > 256 || len(maps) > 200 || (len(maps) > 0) != (name != "") {
+		return false
+	}
+	for _, r := range name {
+		if r < 0x21 || r > 0x7e {
+			return false
+		}
+	}
+	seen := map[string]bool{}
+	for _, m := range maps {
+		if m.Value == "" || len(m.Value) > 256 || seen[m.Value] || len(m.RoleIDs) == 0 || len(m.RoleIDs) > 32 {
+			return false
+		}
+		seen[m.Value] = true
+		ids := map[string]bool{}
+		for _, id := range m.RoleIDs {
+			if !uuidRE.MatchString(id) || ids[id] {
+				return false
+			}
+			ids[id] = true
+		}
+	}
+	return true
+}
+
 var uuidRE = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 type SAMLConfig struct {
@@ -119,6 +125,10 @@ type SAMLConfig struct {
 	SPCertificatePEM string `json:"sp_certificate_pem,omitempty"`
 	GroupsAttribute  string `json:"groups_attribute,omitempty"`
 	EmailAttribute   string `json:"email_attribute,omitempty"`
+	// RolesAttribute names the assertion attribute whose values ClaimRoles map to
+	// local roles at login (same semantics as the OIDC roles claim).
+	RolesAttribute string      `json:"roles_attribute,omitempty"`
+	ClaimRoles     []ClaimRole `json:"claim_roles,omitempty"`
 }
 
 type LDAPConfig struct {
@@ -135,6 +145,9 @@ type LDAPConfig struct {
 	GroupClass       string              `json:"group_class"`
 	MemberAttribute  string              `json:"member_attribute"`
 	GroupRoles       map[string][]string `json:"group_roles,omitempty"`
+	// GroupNesting is "nested" (default; groups of groups up to the depth limit) or
+	// "direct" (only groups the user is a direct member of).
+	GroupNesting string `json:"group_nesting,omitempty"`
 }
 
 // strict decodes exactly one JSON object with no unknown or duplicate-case keys.
@@ -174,12 +187,12 @@ func Validate(kind Kind, config json.RawMessage) error {
 		}
 	case SAML:
 		var c SAMLConfig
-		if strict(config, &c) != nil || c.EntityID == "" || len(c.EntityID) > 2048 || c.IDPEntityID == "" || len(c.IDPEntityID) > 2048 || c.IDPMetadataXML == "" || len(c.IDPMetadataXML) > 256<<10 || len(c.GroupsAttribute) > 256 || len(c.EmailAttribute) > 256 {
+		if strict(config, &c) != nil || c.EntityID == "" || len(c.EntityID) > 2048 || c.IDPEntityID == "" || len(c.IDPEntityID) > 2048 || c.IDPMetadataXML == "" || len(c.IDPMetadataXML) > 256<<10 || len(c.GroupsAttribute) > 256 || len(c.EmailAttribute) > 256 || !validRoleMapping(c.RolesAttribute, c.ClaimRoles) {
 			return ErrInvalid
 		}
 	case LDAP:
 		var c LDAPConfig
-		if strict(config, &c) != nil || !httpsURL(c.ProviderID) || len(c.ProviderID) > 256 || c.URL == "" || c.BindDN == "" || len(c.CAPEM) > 64<<10 || len(c.GroupRoles) > 1000 {
+		if strict(config, &c) != nil || !httpsURL(c.ProviderID) || len(c.ProviderID) > 256 || c.URL == "" || c.BindDN == "" || len(c.CAPEM) > 64<<10 || len(c.GroupRoles) > 1000 || (c.GroupNesting != "" && c.GroupNesting != "nested" && c.GroupNesting != "direct") {
 			return ErrInvalid
 		}
 	default:

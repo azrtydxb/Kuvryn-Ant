@@ -157,6 +157,12 @@ func (s Sessions) issue(ctx context.Context, issuer, subject string) (Session, s
 	return s.issueGroups(ctx, issuer, subject, nil)
 }
 func (s Sessions) issueGroups(ctx context.Context, issuer, subject string, groups []string) (Session, string, string, error) {
+	return s.issueIdP(ctx, issuer, subject, groups, "", "")
+}
+
+// issueIdP issues a session, remembering the IdP session index and NameID format
+// of a SAML login (empty otherwise) for single logout.
+func (s Sessions) issueIdP(ctx context.Context, issuer, subject string, groups []string, sessionIndex, nameIDFormat string) (Session, string, string, error) {
 	if b := loginHook.Load(); b != nil {
 		hookCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		_ = b.h.ExternalLogin(hookCtx, issuer, subject, groups)
@@ -175,11 +181,11 @@ func (s Sessions) issueGroups(ctx context.Context, issuer, subject string, group
 	}
 	defer rollback(tx)
 	var result Session
-	e = tx.QueryRow(ctx, `INSERT INTO browser_sessions(verifier,csrf_hash,instance_id,issuer,subject,principal_id,created_at,last_seen_at,expires_at,idle_seconds)
- SELECT $1,$2,b.instance_id,b.issuer,b.subject,b.principal_id,statement_timestamp(),statement_timestamp(),statement_timestamp()+$6*interval '1 second',$7
+	e = tx.QueryRow(ctx, `INSERT INTO browser_sessions(verifier,csrf_hash,instance_id,issuer,subject,principal_id,created_at,last_seen_at,expires_at,idle_seconds,idp_session_index,idp_name_id_format)
+ SELECT $1,$2,b.instance_id,b.issuer,b.subject,b.principal_id,statement_timestamp(),statement_timestamp(),statement_timestamp()+$6*interval '1 second',$7,NULLIF($8,''),NULLIF($9,'')
  FROM oidc_identity_bindings b JOIN principals p ON (p.instance_id,p.id)=(b.instance_id,b.principal_id)
  WHERE b.instance_id=$3 AND b.issuer=$4 AND b.subject=$5 AND NOT p.disabled AND p.kind IN ('user','emergency')
- RETURNING instance_id,principal_id,expires_at`, hash(raw), hash(csrf), s.InstanceID, issuer, subject, int64(max/time.Second), int64(idle/time.Second)).Scan(&result.InstanceID, &result.PrincipalID, &result.ExpiresAt)
+ RETURNING instance_id,principal_id,expires_at`, hash(raw), hash(csrf), s.InstanceID, issuer, subject, int64(max/time.Second), int64(idle/time.Second), sessionIndex, nameIDFormat).Scan(&result.InstanceID, &result.PrincipalID, &result.ExpiresAt)
 	if errors.Is(e, pgx.ErrNoRows) {
 		return Session{}, "", "", ErrAuthentication
 	}

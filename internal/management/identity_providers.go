@@ -82,6 +82,7 @@ type ProviderConfig struct {
 	IDPMetadataXML   *string            `json:"idp_metadata_xml,omitempty"`
 	SPCertificatePEM *string            `json:"sp_certificate_pem,omitempty"`
 	GroupsAttribute  *string            `json:"groups_attribute,omitempty"`
+	RolesAttribute   *string            `json:"roles_attribute,omitempty"`
 	EmailAttribute   *string            `json:"email_attribute,omitempty"`
 	ProviderID       *string            `json:"provider_id,omitempty"`
 	URL              *string            `json:"url,omitempty"`
@@ -96,6 +97,7 @@ type ProviderConfig struct {
 	GroupClass       *string            `json:"group_class,omitempty"`
 	MemberAttribute  *string            `json:"member_attribute,omitempty"`
 	GroupRoles       []GroupRoleMapping `json:"group_roles,omitempty"`
+	GroupNesting     *string            `json:"group_nesting,omitempty"`
 }
 
 func str(p *string) string {
@@ -125,7 +127,14 @@ func (c ProviderConfig) toRaw(kind idpadmin.Kind) (json.RawMessage, error) {
 		}
 		v = idpadmin.OIDCConfig{Issuer: str(c.Issuer), ClientID: str(c.ClientID), AllowedEndpoints: c.AllowedEndpoints, GroupsClaim: str(c.GroupsClaim), RolesClaim: str(c.RolesClaim), ClaimRoles: claims, Scopes: c.Scopes}
 	case idpadmin.SAML:
-		v = idpadmin.SAMLConfig{EntityID: str(c.EntityID), IDPEntityID: str(c.IDPEntityID), IDPMetadataXML: str(c.IDPMetadataXML), SPCertificatePEM: str(c.SPCertificatePEM), GroupsAttribute: str(c.GroupsAttribute), EmailAttribute: str(c.EmailAttribute)}
+		claims := make([]idpadmin.ClaimRole, 0, len(c.ClaimRoles))
+		for _, m := range c.ClaimRoles {
+			claims = append(claims, idpadmin.ClaimRole{Value: m.Value, RoleIDs: m.RoleIDs})
+		}
+		if len(claims) == 0 {
+			claims = nil
+		}
+		v = idpadmin.SAMLConfig{EntityID: str(c.EntityID), IDPEntityID: str(c.IDPEntityID), IDPMetadataXML: str(c.IDPMetadataXML), SPCertificatePEM: str(c.SPCertificatePEM), GroupsAttribute: str(c.GroupsAttribute), EmailAttribute: str(c.EmailAttribute), RolesAttribute: str(c.RolesAttribute), ClaimRoles: claims}
 	case idpadmin.LDAP:
 		roles := map[string][]string{}
 		for _, m := range c.GroupRoles {
@@ -135,7 +144,7 @@ func (c ProviderConfig) toRaw(kind idpadmin.Kind) (json.RawMessage, error) {
 			roles[m.GroupID] = m.RoleIDs
 		}
 		v = idpadmin.LDAPConfig{ProviderID: str(c.ProviderID), URL: str(c.URL), BindDN: str(c.BindDN), CAPEM: str(c.CAPEM), UserBaseDN: str(c.UserBaseDN), GroupBaseDN: str(c.GroupBaseDN),
-			LoginAttribute: str(c.LoginAttribute), UserIDAttribute: str(c.UserIDAttribute), GroupIDAttribute: str(c.GroupIDAttribute), UserClass: str(c.UserClass), GroupClass: str(c.GroupClass), MemberAttribute: str(c.MemberAttribute), GroupRoles: roles}
+			LoginAttribute: str(c.LoginAttribute), UserIDAttribute: str(c.UserIDAttribute), GroupIDAttribute: str(c.GroupIDAttribute), UserClass: str(c.UserClass), GroupClass: str(c.GroupClass), MemberAttribute: str(c.MemberAttribute), GroupRoles: roles, GroupNesting: str(c.GroupNesting)}
 	default:
 		return nil, idpadmin.ErrInvalid
 	}
@@ -155,12 +164,15 @@ func fromRaw(kind idpadmin.Kind, raw json.RawMessage) ProviderConfig {
 	case idpadmin.SAML:
 		var o idpadmin.SAMLConfig
 		_ = json.Unmarshal(raw, &o)
-		c = ProviderConfig{EntityID: ptr(o.EntityID), IDPEntityID: ptr(o.IDPEntityID), IDPMetadataXML: ptr(o.IDPMetadataXML), SPCertificatePEM: ptr(o.SPCertificatePEM), GroupsAttribute: ptr(o.GroupsAttribute), EmailAttribute: ptr(o.EmailAttribute)}
+		c = ProviderConfig{EntityID: ptr(o.EntityID), IDPEntityID: ptr(o.IDPEntityID), IDPMetadataXML: ptr(o.IDPMetadataXML), SPCertificatePEM: ptr(o.SPCertificatePEM), GroupsAttribute: ptr(o.GroupsAttribute), EmailAttribute: ptr(o.EmailAttribute), RolesAttribute: ptr(o.RolesAttribute)}
+		for _, m := range o.ClaimRoles {
+			c.ClaimRoles = append(c.ClaimRoles, ClaimRoleMapping{Value: m.Value, RoleIDs: m.RoleIDs})
+		}
 	case idpadmin.LDAP:
 		var o idpadmin.LDAPConfig
 		_ = json.Unmarshal(raw, &o)
 		c = ProviderConfig{ProviderID: ptr(o.ProviderID), URL: ptr(o.URL), BindDN: ptr(o.BindDN), CAPEM: ptr(o.CAPEM), UserBaseDN: ptr(o.UserBaseDN), GroupBaseDN: ptr(o.GroupBaseDN),
-			LoginAttribute: ptr(o.LoginAttribute), UserIDAttribute: ptr(o.UserIDAttribute), GroupIDAttribute: ptr(o.GroupIDAttribute), UserClass: ptr(o.UserClass), GroupClass: ptr(o.GroupClass), MemberAttribute: ptr(o.MemberAttribute)}
+			LoginAttribute: ptr(o.LoginAttribute), UserIDAttribute: ptr(o.UserIDAttribute), GroupIDAttribute: ptr(o.GroupIDAttribute), UserClass: ptr(o.UserClass), GroupClass: ptr(o.GroupClass), MemberAttribute: ptr(o.MemberAttribute), GroupNesting: ptr(o.GroupNesting)}
 		keys := make([]string, 0, len(o.GroupRoles))
 		for k := range o.GroupRoles {
 			keys = append(keys, k)
@@ -535,21 +547,43 @@ func (h idpHandlers) create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// claimRolesExist rejects claim mappings that reference unknown or
-// federation-managed roles, so a mapping can only ever assign existing local roles.
+// claimRolesExist rejects role mappings (OIDC claims, SAML attributes, LDAP
+// groups) that reference unknown or federation-managed roles, so a mapping can
+// only ever assign existing local roles.
 func (h idpHandlers) claimRolesExist(w http.ResponseWriter, r *http.Request, p identity.Principal, raw json.RawMessage, kind idpadmin.Kind) bool {
-	if kind != idpadmin.OIDC {
-		return true
-	}
-	var c idpadmin.OIDCConfig
-	if json.Unmarshal(raw, &c) != nil {
-		return true // structural validation reports this
-	}
 	want := map[string]bool{}
-	for _, m := range c.ClaimRoles {
-		for _, id := range m.RoleIDs {
-			want[id] = true
+	add := func(maps []idpadmin.ClaimRole) {
+		for _, m := range maps {
+			for _, id := range m.RoleIDs {
+				want[id] = true
+			}
 		}
+	}
+	switch kind {
+	case idpadmin.OIDC:
+		var c idpadmin.OIDCConfig
+		if json.Unmarshal(raw, &c) != nil {
+			return true // structural validation reports this
+		}
+		add(c.ClaimRoles)
+	case idpadmin.SAML:
+		var c idpadmin.SAMLConfig
+		if json.Unmarshal(raw, &c) != nil {
+			return true
+		}
+		add(c.ClaimRoles)
+	case idpadmin.LDAP:
+		var c idpadmin.LDAPConfig
+		if json.Unmarshal(raw, &c) != nil {
+			return true
+		}
+		for _, ids := range c.GroupRoles {
+			for _, id := range ids {
+				want[id] = true
+			}
+		}
+	default:
+		return true
 	}
 	if len(want) == 0 {
 		return true
@@ -566,7 +600,7 @@ func (h idpHandlers) claimRolesExist(w http.ResponseWriter, r *http.Request, p i
 		return false
 	}
 	if n != len(ids) {
-		Error(w, r, 400, api.ErrorCodeInvalidRequest, "claim_roles reference unknown or non-local roles")
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "role mappings reference unknown or non-local roles")
 		return false
 	}
 	return true

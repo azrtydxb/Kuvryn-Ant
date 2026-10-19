@@ -205,7 +205,7 @@ func (o *origin) put(path, seed string, size int) string {
 }
 
 // pulls returns the number of successful non-management GETs the ORIGIN pod (OKE) has served, read from its
-// /metrics (ant_http_requests_total{route="unmatched",method="GET",status_class="2xx"}). The feed-level "pulls"
+// /metrics (ant_http_requests_total GET 2xx for route "unmatched" on older builds, raw.metadata and raw.download on current ones). The feed-level "pulls"
 // statistic and metrics/traffic cache counters proved unreliable for this (asynchronous, non-exact), so they are
 // not used. When the target is OKE itself the clients' own GETs are in the same counter; adj() subtracts them.
 func (o *origin) pulls() int64 {
@@ -213,14 +213,19 @@ func (o *origin) pulls() int64 {
 	if err != nil {
 		return -1
 	}
+	var total int64
 	for _, l := range strings.Split(m, "\n") {
-		if strings.HasPrefix(l, `ant_http_requests_total{route="unmatched",method="GET",status_class="2xx"}`) {
-			f := strings.Fields(l)
-			v, _ := strconv.ParseInt(f[len(f)-1], 10, 64)
-			return v
+		// Older builds label every data-plane request route="unmatched"; current builds name the
+		// route <format>.<class>. The scenarios pull from a raw feed, so both spellings are summed.
+		for _, route := range []string{"unmatched", "raw.metadata", "raw.download"} {
+			if strings.HasPrefix(l, `ant_http_requests_total{route="`+route+`",method="GET",status_class="2xx"}`) {
+				f := strings.Fields(l)
+				v, _ := strconv.ParseInt(f[len(f)-1], 10, 64)
+				total += v
+			}
 		}
 	}
-	return 0
+	return total
 }
 
 // noiseRate measures the origin pod's background rate of successful GETs (other tenants' replication polling and

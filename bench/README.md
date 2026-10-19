@@ -39,7 +39,7 @@ Needs `kubectl` contexts `azrty-oke` and `kw`, Go, and the automation tokens in 
   1-5 GiB pull-through.
 - Upstream-fetch counting: the Ant `pulls` statistics and `metrics/traffic` cache counters turned out not to be
   usable for this (asynchronous and not exact for raw pull-through), and request logs only label non-management routes
-  `unmatched`. The runner therefore reads the origin pod's `ant_http_requests_total{route="unmatched",method="GET"}`
+  `unmatched` (current builds name them `<format>.<class>`, for example `raw.download`). The runner therefore reads the origin pod's `ant_http_requests_total{route="unmatched"|"raw.metadata"|"raw.download",method="GET"}`
   before and after a window, subtracts a measured background rate (other tenants poll the origin) and, for target
   oke, the clients' own GETs. The result is an estimate; the completion time of the slowest client compared with the
   single-transfer floor (object size / 1.25 MB/s) is the independent cross-check.

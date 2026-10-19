@@ -259,7 +259,7 @@ func (b *browserRuntime) Register(mux *http.ServeMux) {
 		}
 		b.enterprise.Register(mux)
 		mux.HandleFunc("/auth/session", b.client.SessionInfo)
-		mux.HandleFunc("/auth/logout", b.client.Logout)
+		mux.HandleFunc("/auth/logout", b.logout)
 		return
 	}
 	// Dynamic runtime: every route is registered once and dispatches to the
@@ -294,10 +294,22 @@ func (b *browserRuntime) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/auth/saml/login", ent(hasSAML, func(e *enterpriseLogin) http.HandlerFunc { return e.samlLogin }))
 	mux.HandleFunc("/auth/saml/callback", ent(hasSAML, func(e *enterpriseLogin) http.HandlerFunc { return e.samlCallback }))
 	mux.HandleFunc("GET /auth/saml/metadata", ent(hasSAML, func(e *enterpriseLogin) http.HandlerFunc { return e.samlMetadata }))
+	mux.HandleFunc("/auth/saml/slo", ent(hasSAML, func(e *enterpriseLogin) http.HandlerFunc { return e.samlSLO }))
+	mux.HandleFunc("GET /auth/saml/logout", ent(hasSAML, func(e *enterpriseLogin) http.HandlerFunc { return e.samlLogoutPage }))
 	mux.HandleFunc("/auth/ldap/login", ent(hasLDAP, func(e *enterpriseLogin) http.HandlerFunc { return e.ldapLogin }))
 	mux.HandleFunc("/auth/local/login", b.localLogin)
 	mux.HandleFunc("/auth/session", func(w http.ResponseWriter, r *http.Request) { c, _ := b.cur(); c.SessionInfo(w, r) })
-	mux.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) { c, _ := b.cur(); c.Logout(w, r) })
+	mux.HandleFunc("/auth/logout", b.logout)
+}
+
+// logout ends the local session; for a session issued by a SAML provider with
+// single logout it also starts the IdP leg (see saml_logout.go).
+func (b *browserRuntime) logout(w http.ResponseWriter, r *http.Request) {
+	client, enterprise := b.cur()
+	if enterprise.beginSAMLLogout(w, r) {
+		return
+	}
+	client.Logout(w, r)
 }
 func (b *browserRuntime) Middleware(next http.Handler) http.Handler {
 	if b == nil {

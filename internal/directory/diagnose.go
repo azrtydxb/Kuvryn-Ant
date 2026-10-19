@@ -123,7 +123,7 @@ func (p *Provider) Lookup(ctx context.Context, login string) (ExternalIdentity, 
 			roles[r] = true
 		}
 	}
-	out := ExternalIdentity{ProviderID: p.config.ProviderID, Subject: subject, GroupIDs: groups}
+	out := ExternalIdentity{ProviderID: p.config.ProviderID, Subject: subject, GroupIDs: groups, RolesMapped: len(p.config.GroupRoles) > 0}
 	for r := range roles {
 		out.RoleIDs = append(out.RoleIDs, r)
 	}
