@@ -617,3 +617,17 @@ func (s *Service) throttle(key string, window time.Duration) (bool, int) {
 	delete(s.suppressed, key)
 	return true, n
 }
+
+// pruneLogged drops throttle and log-once entries older than ten minutes
+// (sampled assertion keys grow with the number of asserted principals).
+func (s *Service) pruneLogged() {
+	now := s.cfg.Now()
+	s.logMu.Lock()
+	defer s.logMu.Unlock()
+	for k, t := range s.logged {
+		if now.Sub(t) > 10*time.Minute {
+			delete(s.logged, k)
+			delete(s.suppressed, k)
+		}
+	}
+}

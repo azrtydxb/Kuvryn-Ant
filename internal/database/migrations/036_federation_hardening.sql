@@ -19,3 +19,6 @@ END $$;
 -- sets accept_admin_grants.
 ALTER TABLE role_grants DROP CONSTRAINT role_grants_inert_check;
 ALTER TABLE role_grants ADD CONSTRAINT role_grants_inert_check CHECK(inert IS NULL OR inert IN ('unresolved_feed','admin_not_accepted','wildcard_not_accepted'));
+
+-- Per-issuer cap on assertion replay records (counted over unexpired rows).
+CREATE INDEX federation_assertion_nonces_issuer_idx ON federation_assertion_nonces(instance_id,issuer,expires_at);

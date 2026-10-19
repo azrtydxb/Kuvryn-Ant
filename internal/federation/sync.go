@@ -269,6 +269,7 @@ func (s *Service) Run(ctx context.Context) {
 			s.logOnce("alerts", "federation alert evaluation failed", "reason", err)
 		}
 		s.purgeNonces(step)
+		s.pruneLogged()
 		s.PingMembers(step)
 		if err := s.RenewIfDue(step); err != nil && ctx.Err() == nil {
 			s.logOnce("renew", "federation certificate renewal failed", "reason", err)

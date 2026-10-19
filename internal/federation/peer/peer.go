@@ -114,7 +114,12 @@ type Handler struct {
 	DeferPin    map[string]bool
 	PublicRate  float64
 	PublicBurst int
+	// MemberRate and MemberBurst limit signed requests per member; zero
+	// selects DefaultMemberRate/DefaultMemberBurst.
+	MemberRate  float64
+	MemberBurst int
 	nonces      nonceCache
+	perMember   keyedLimiter
 	public      keyedLimiter
 }
 
@@ -123,6 +128,12 @@ type Handler struct {
 const (
 	DefaultPublicRate  = 1.0 / 6
 	DefaultPublicBurst = 10
+)
+
+// Default per-member limit of signed peer requests (all routes).
+const (
+	DefaultMemberRate  = 100.0
+	DefaultMemberBurst = 200
 )
 
 func (h *Handler) refuse(w http.ResponseWriter, r *http.Request, status int, member, reason string) {
@@ -173,13 +184,26 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.refuse(w, r, http.StatusForbidden, id, "member_"+m.Status)
 		return
 	}
+	rate, burst := h.MemberRate, h.MemberBurst
+	if rate <= 0 || burst <= 0 {
+		rate, burst = DefaultMemberRate, DefaultMemberBurst
+	}
+	if !h.perMember.allow(id, h.Trust.Now(), rate, burst) {
+		w.Header().Set("Retry-After", "1")
+		h.refuse(w, r, http.StatusTooManyRequests, id, "rate_limited")
+		return
+	}
 	body, err := io.ReadAll(io.LimitReader(r.Body, MaxBody+1))
 	if err != nil || len(body) > MaxBody {
 		h.refuse(w, r, http.StatusRequestEntityTooLarge, id, "body_too_large")
 		return
 	}
 	if reason := h.verifySignature(r, m, body); reason != "" {
-		h.refuse(w, r, http.StatusUnauthorized, id, reason)
+		status := http.StatusUnauthorized
+		if reason == "rate_limited" {
+			status = http.StatusTooManyRequests
+		}
+		h.refuse(w, r, status, id, reason)
 		return
 	}
 	// Only the member's current certificate (or its previous one during a
@@ -250,36 +274,12 @@ func (h *Handler) verifySignature(r *http.Request, m Member, body []byte) string
 	if err != nil || len(raw) != ed25519.SignatureSize || !ed25519.Verify(m.SigningKey, signingString(r.Method, r.URL.RequestURI(), member, ts, nonce, body), raw) {
 		return "signature_invalid"
 	}
-	if !h.nonces.add(member+"/"+nonce, h.Trust.Now()) {
+	if ok, full := h.nonces.add(member, nonce, h.Trust.Now()); full {
+		return "rate_limited"
+	} else if !ok {
 		return "replayed_request"
 	}
 	return ""
-}
-
-// nonceCache remembers request nonces for NonceTTL.
-type nonceCache struct {
-	mu   sync.Mutex
-	seen map[string]time.Time
-}
-
-func (c *nonceCache) add(key string, now time.Time) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.seen == nil {
-		c.seen = map[string]time.Time{}
-	}
-	if len(c.seen) > 4096 {
-		for k, t := range c.seen {
-			if now.Sub(t) > NonceTTL {
-				delete(c.seen, k)
-			}
-		}
-	}
-	if t, ok := c.seen[key]; ok && now.Sub(t) <= NonceTTL {
-		return false
-	}
-	c.seen[key] = now
-	return true
 }
 
 // --- client ---

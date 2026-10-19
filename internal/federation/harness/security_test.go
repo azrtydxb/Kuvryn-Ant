@@ -518,3 +518,39 @@ func TestFederationJoinInterception(t *testing.T) {
 		t.Fatalf("duplicate host audits: %d", n)
 	}
 }
+
+// A member cannot grow the receiving member's assertion replay table without
+// bound: beyond MaxAssertionNonces unexpired records it is refused.
+func TestFederationAssertionNonceCap(t *testing.T) {
+	ctx := context.Background()
+	alpha, beta := newInstance(t, "alpha"), newInstance(t, "beta")
+	found(t, alpha, beta)
+	if code := alpha.call("POST", "/api/v1/federation/policy/publish", map[string]any{"base_generation": 0, "confirm": true, "policy": policyBody()}, nil); code != 200 {
+		t.Fatalf("publish: %d", code)
+	}
+	var fid string
+	_ = alpha.pool.QueryRow(ctx, `SELECT federation_id::text FROM federation_state WHERE instance_id=$1`, alpha.id).Scan(&fid)
+	id := beta.memberIdentity("")
+	send := func() string {
+		body := []byte(`{"kind":"instance","action":"read"}`)
+		now := time.Now()
+		a := peer.Assertion{Issuer: beta.id, Federation: fid, Domain: "idp", Subject: "nobody", Audience: alpha.id,
+			Request: peer.RequestHash("POST", "/federation/v1/access-check", body), IssuedAt: now.Unix(), Expires: now.Add(peer.AssertionLifetime).Unix()}
+		h, err := peer.SignAssertion(a, id.SigningKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = (peer.Client{}).DoHeader(ctx, id, alpha.fedURL, "POST", "/federation/v1/access-check", body, alpha.id, map[string]string{peer.HeaderAssertion: h})
+		return peerCode(err)
+	}
+	if code := send(); code != "principal_unknown" {
+		t.Fatalf("assertion below the cap: %q", code)
+	}
+	if _, err := alpha.pool.Exec(ctx, `INSERT INTO federation_assertion_nonces(instance_id,jti,issuer,expires_at)
+SELECT $1,$2||'/fill-'||g,$2::uuid,now()+interval '5 minutes' FROM generate_series(1,$3) g`, alpha.id, beta.id, federation.MaxAssertionNonces); err != nil {
+		t.Fatal(err)
+	}
+	if code := send(); code != "rate_limited" {
+		t.Fatalf("assertion beyond the per-issuer cap: %q", code)
+	}
+}
