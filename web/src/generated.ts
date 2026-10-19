@@ -331,6 +331,10 @@ export type VerifyFederationRecoveryKey = { "challenge": string; "signature": st
 export type FederationAuditEvent = { "member": string; "member_name": string; "id": number; "created_at": string; "principal_id"?: string; "action": string; "resource_id"?: string; "result": "success" | "denied" | "failure"; "details"?: {  } };
 export type FederationAuditMember = { "id": string; "name": string; "status": "ok" | "forbidden" | "timeout" | "error" | "skipped"; "code"?: string; "took_ms": number; "events": number };
 export type FederationAuditPage = { "items": Array<FederationAuditEvent>; "members": Array<FederationAuditMember>; "partial": boolean; "page": PageInfo };
+export type LocalUser = { "username": string; "principal_id": string; "break_glass": boolean; "totp_enabled": boolean; "locked_until"?: string; "last_login_at"?: string };
+export type LocalUserList = { "items": Array<LocalUser> };
+export type LocalUserInput = { "username": string; "password": string };
+export type LocalUserPassword = { "password": string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -546,6 +550,10 @@ recoverFederationAuthority: { body: RecoverFederationAuthority; response: Federa
 createFederationRecoveryChallenge: { body: undefined; response: FederationRecoveryChallenge };
 verifyFederationRecoveryKey: { body: VerifyFederationRecoveryKey; response: FederationAuthorityStatus };
 federatedAudit: { body: undefined; response: FederationAuditPage };
+listLocalUsers: { body: undefined; response: LocalUserList };
+createLocalUser: { body: LocalUserInput; response: LocalUser };
+setLocalUserPassword: { body: LocalUserPassword; response: undefined };
+deleteLocalUser: { body: undefined; response: undefined };
 }
 export const routes = {
   "getStatus": {
@@ -1612,5 +1620,25 @@ export const routes = {
     "path": "/api/v1/federation/audit",
     "method": "GET",
     "idempotent": false
+  },
+  "listLocalUsers": {
+    "path": "/api/v1/local-accounts",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createLocalUser": {
+    "path": "/api/v1/local-accounts",
+    "method": "POST",
+    "idempotent": true
+  },
+  "setLocalUserPassword": {
+    "path": "/api/v1/local-accounts/{username}/password",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "deleteLocalUser": {
+    "path": "/api/v1/local-accounts/{username}",
+    "method": "DELETE",
+    "idempotent": true
   }
 } as const;

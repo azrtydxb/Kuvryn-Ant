@@ -52,8 +52,8 @@ to be up, and it works with SSO completely broken.
 
 ## Signing in
 
-Open `/console/`, choose **Emergency access**, enter `break-glass`, the password
-and, if enrolled, the 6-digit code. The code field appears only after the password
+Open `/console/`, enter `break-glass` in the username and password form and,
+if enrolled, the 6-digit code. The code field appears only after the password
 is accepted. The session uses the same HttpOnly cookies and CSRF protection as any
 other browser session.
 
@@ -109,3 +109,32 @@ lost, reset the account on the host as above.
 | `auth.breakglass.created` / `.reset` | success | CLI create or reset                                             |
 | `identity_provider.*`                | success | provider create, update, enable, disable, delete, test, preview |
 | `auth.denied`                        | denied  | rate-limited 401/403 on management, MCP or package protocols    |
+
+## Local user accounts (username and password)
+
+Beyond break-glass, an administrator can create ordinary username/password
+accounts that sign in through the same console form (argon2id, the same lockout
+and rate limits, audit events `auth.local.*`). They are disabled while SSO is
+mandatory; only break-glass is exempt.
+
+- API (instance admin): `GET|POST /api/v1/local-accounts`,
+  `PUT /api/v1/local-accounts/{username}/password`,
+  `DELETE /api/v1/local-accounts/{username}`. A new account has no roles; assign
+  them with `PUT /api/v1/principals/{id}/roles`.
+- Host CLI (needs the root keyring, like break-glass):
+
+  ```
+  ant admin local-user USERNAME [--admin] [--password-stdin]
+  ```
+
+  Creates the account (with `--admin`, also the full-grant `local-administrator`
+  role) or, if it exists, resets its password and prints it once.
+- Deleting an account removes its password, sign-in binding and sessions and
+  disables the principal; the username cannot be reused.
+
+## Sign-in page
+
+The console shows one button per active provider (named after the provider, for
+example "Sign in with Zitadel"), then the username/password form. Bearer tokens
+are for applications and CI; they remain available behind the small
+"Use an API token" link.

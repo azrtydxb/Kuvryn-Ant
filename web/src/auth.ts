@@ -8,9 +8,11 @@ export type Providers = {
   oidc: boolean;
   saml: boolean;
   ldap: boolean;
-  // Emergency (break-glass) local sign-in is always offered when present.
+  // Username/password sign-in (local accounts, including break-glass).
   local?: boolean;
   ssoMandatory?: boolean;
+  // Administrator-chosen display names of the active providers, by protocol.
+  labels?: Partial<Record<"oidc" | "saml" | "ldap", string>>;
 };
 export async function authRequest(path: string, options: RequestInit = {}) {
   let response: Response;
@@ -55,6 +57,16 @@ export async function getSession(
     throw Error("The authentication service returned an invalid session.");
   }
 }
+// Display names are administrator-chosen text; keep only short plain strings.
+function parseLabels(value: unknown): Providers["labels"] {
+  const out: NonNullable<Providers["labels"]> = {};
+  if (!value || typeof value !== "object") return out;
+  for (const k of ["oidc", "saml", "ldap"] as const) {
+    const v = (value as Record<string, unknown>)[k];
+    if (typeof v === "string" && v.trim() && v.length <= 64) out[k] = v.trim();
+  }
+  return out;
+}
 export async function getProviders(
   signal?: AbortSignal,
 ): Promise<Providers | null> {
@@ -73,6 +85,7 @@ export async function getProviders(
     ldap: p.providers.includes("ldap"),
     local: p.local === true,
     ssoMandatory: p.sso_mandatory === true,
+    labels: parseLabels(p.labels),
   };
 }
 export class MfaRequired extends Error {

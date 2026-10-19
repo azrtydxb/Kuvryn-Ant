@@ -22,12 +22,30 @@ import (
 // who can run it already controls the deployment, which is the break-glass model.
 //
 //	ant admin break-glass [--password-stdin]
+//	ant admin local-user USERNAME [--admin] [--password-stdin]
 func adminCommand(ctx context.Context, logger *slog.Logger, args []string, in io.Reader, output io.Writer) int {
-	if len(args) == 0 || args[0] != "break-glass" || len(args) > 2 || len(args) == 2 && args[1] != "--password-stdin" {
-		logger.Error("usage: ant admin break-glass [--password-stdin]")
+	const usage = "usage: ant admin break-glass [--password-stdin] | ant admin local-user USERNAME [--admin] [--password-stdin]"
+	userMode := len(args) >= 2 && args[0] == "local-user"
+	fromStdin, admin := false, false
+	switch {
+	case userMode:
+		for _, a := range args[2:] {
+			switch a {
+			case "--password-stdin":
+				fromStdin = true
+			case "--admin":
+				admin = true
+			default:
+				logger.Error(usage)
+				return 1
+			}
+		}
+	case len(args) == 0 || args[0] != "break-glass" || len(args) > 2 || len(args) == 2 && args[1] != "--password-stdin":
+		logger.Error(usage)
 		return 1
+	default:
+		fromStdin = len(args) == 2
 	}
-	fromStdin := len(args) == 2
 	cfg, err := config.Load(os.Getenv)
 	if err != nil {
 		logger.Error("configuration rejected", "reason", err)
@@ -47,6 +65,13 @@ func adminCommand(ctx context.Context, logger *slog.Logger, args []string, in io
 	if err := database.Migrate(ctx, pool); err != nil {
 		logger.Error("schema initialization failed", "reason", err)
 		return 1
+	}
+	if userMode {
+		if err := runLocalUser(ctx, pool, cfg, args[1], admin, in, fromStdin, output); err != nil {
+			logger.Error("local user failed", "reason", err)
+			return 1
+		}
+		return 0
 	}
 	if err := runBreakGlass(ctx, pool, cfg, in, fromStdin, output); err != nil {
 		logger.Error("break-glass reset failed", "reason", err)
@@ -81,6 +106,49 @@ func runBreakGlass(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, i
 	if !fromStdin {
 		result["password"] = password
 		result["note"] = "shown once; sign in at /console/ under Emergency access"
+	}
+	return json.NewEncoder(output).Encode(result)
+}
+
+// runLocalUser creates a username/password account (optionally with the
+// local-administrator role) or, when it already exists, resets its password.
+// The generated password is printed once and never logged.
+func runLocalUser(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, username string, admin bool, in io.Reader, fromStdin bool, output io.Writer) error {
+	owner, err := identity.LoadBootstrapIdentity(ctx, pool)
+	if err != nil {
+		return errors.New("no bootstrapped instance found; run `ant bootstrap` first")
+	}
+	password := ""
+	if fromStdin {
+		line, err := bufio.NewReader(io.LimitReader(in, 1024)).ReadString('\n')
+		if err != nil && err != io.EOF {
+			return errors.New("cannot read password")
+		}
+		password = strings.TrimRight(line, "\r\n")
+	} else if password, err = localadmin.GeneratePassword(); err != nil {
+		return errors.New("cannot generate password")
+	}
+	svc := &localadmin.Service{DB: pool, Keys: cfg.SecretKeys, InstanceID: owner.InstanceID}
+	result := map[string]any{"username": username}
+	user, err := svc.CreateUser(ctx, "", username, password, admin)
+	switch {
+	case err == nil:
+		result["created"], result["principal_id"] = true, user.PrincipalID
+	case errors.Is(err, localadmin.ErrExists):
+		if admin {
+			return errors.New("account already exists; --admin applies only when creating (assign roles through the API)")
+		}
+		if err = svc.SetUserPassword(ctx, "", username, password); err != nil {
+			return err
+		}
+		result["created"] = false
+	default:
+		return err
+	}
+	result["administrator"] = admin
+	if !fromStdin {
+		result["password"] = password
+		result["note"] = "shown once; sign in at /console/ with username and password"
 	}
 	return json.NewEncoder(output).Encode(result)
 }

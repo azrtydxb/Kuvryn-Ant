@@ -243,6 +243,9 @@ func (b *browserRuntime) Register(mux *http.ServeMux) {
 			mandatory, _ := localadmin.SSOMandatory(r.Context(), b.dyn.pool, b.dyn.instance)
 			body["local"] = true
 			body["sso_mandatory"] = mandatory
+			if labels := b.dyn.labels(r.Context(), providers); len(labels) > 0 {
+				body["labels"] = labels
+			}
 		}
 		_ = json.NewEncoder(w).Encode(body)
 	})

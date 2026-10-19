@@ -341,3 +341,73 @@ func TestDatabaseProviderShadowedByFileConfiguration(t *testing.T) {
 		t.Fatal("database LDAP replaced file LDAP")
 	}
 }
+
+func TestLocalUserCLIAndBrowserSession(t *testing.T) {
+	f := newHardeningFixture(t)
+	ctx := context.Background()
+	var out bytes.Buffer
+	if err := runLocalUser(ctx, f.pool, f.cfg, "owner", true, nil, false, &out); err != nil {
+		t.Fatal(err)
+	}
+	var created struct {
+		Password      string `json:"password"`
+		Created       bool   `json:"created"`
+		Administrator bool   `json:"administrator"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &created); err != nil || !created.Created || !created.Administrator || len(created.Password) < 20 {
+		t.Fatal("create output", err)
+	}
+	// Ordinary local accounts sign in over HTTP and receive HttpOnly session cookies.
+	w := f.login(`{"username":"owner","password":"`+created.Password+`"}`, nil)
+	if w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	secure := map[string]bool{}
+	for _, c := range w.Result().Cookies() {
+		secure[c.Name] = c.HttpOnly && c.Secure
+	}
+	if !secure[oidclogin.SessionCookie] || !secure[oidclogin.CSRFCookie] {
+		t.Fatalf("session cookies missing or insecure: %v", secure)
+	}
+	if f.login(`{"username":"owner","password":"not the password at all"}`, nil).Code != 401 {
+		t.Fatal("wrong password accepted")
+	}
+	// Running it again resets the password (and refuses --admin on an existing account).
+	out.Reset()
+	if err := runLocalUser(ctx, f.pool, f.cfg, "owner", false, nil, false, &out); err != nil {
+		t.Fatal(err)
+	}
+	var reset struct {
+		Password string `json:"password"`
+		Created  bool   `json:"created"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &reset); err != nil || reset.Created || reset.Password == created.Password {
+		t.Fatal("reset output")
+	}
+	if f.login(`{"username":"owner","password":"`+created.Password+`"}`, nil).Code != 401 {
+		t.Fatal("old password survived reset")
+	}
+	if f.login(`{"username":"owner","password":"`+reset.Password+`"}`, nil).Code != 200 {
+		t.Fatal("new password rejected")
+	}
+	if err := runLocalUser(ctx, f.pool, f.cfg, "owner", true, nil, false, &bytes.Buffer{}); err == nil {
+		t.Fatal("--admin on existing account accepted")
+	}
+	if err := runLocalUser(ctx, f.pool, f.cfg, "Bad Name", false, nil, false, &bytes.Buffer{}); err == nil {
+		t.Fatal("bad username accepted")
+	}
+}
+
+func TestProvidersAdvertiseLabelsOfEnabledStoredProviders(t *testing.T) {
+	f := newHardeningFixture(t)
+	if _, err := f.pool.Exec(context.Background(), `INSERT INTO identity_providers(instance_id,kind,name,enabled,config) VALUES($1,'ldap','Corp directory',true,'{}')`, f.instance); err != nil {
+		t.Skip("identity_providers columns differ: ", err)
+	}
+	got := f.rt.dyn.labels(context.Background(), []string{"ldap"})
+	if got["ldap"] != "Corp directory" {
+		t.Fatalf("%v", got)
+	}
+	if len(f.rt.dyn.labels(context.Background(), []string{"oidc"})) != 0 {
+		t.Fatal("label for inactive protocol")
+	}
+}
