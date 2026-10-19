@@ -89,3 +89,14 @@ Nothing is deleted or repaired; transient backend errors are counted and retried
 * Multi-process runs (worker plus CLI) are safe via row locks but may duplicate
   listing work. Abandoned S3 multipart uploads are not aborted here.
 * S3 listing/deletion is covered by the in-process fixture, not a live provider.
+
+## Instance default and storage pressure
+
+See `docs/operations/storage-maintenance.md`. `settings.go` (stored settings with
+environment overrides, `SaveSettings`) and `pressure.go` (`RunPressure`, capacity,
+LRU selection, `PressureStatus`) add an instance default policy for remote-cached
+content and watermark-driven eviction. `RunOnce` runs retention, then pressure, then GC.
+`gc_candidates.sweep_after` shortens the sweep wait of blobs freed by eviction; the
+sweep transaction is unchanged (row lock, reference re-check). The earlier "no
+management API" and "Touch not wired" limitations are obsolete: policies have an API
+and console, and idle time uses `asset_downloads.last_downloaded_at`.

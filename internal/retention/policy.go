@@ -18,7 +18,7 @@ import (
 //
 //	KeepLast: more than KeepLast newer versions exist in its component.
 //	MaxAge:   created longer ago than MaxAge.
-//	MaxIdle:  not accessed (last_accessed_at, else created_at) within MaxIdle.
+//	MaxIdle:  not accessed (latest of created_at, last_accessed_at and last download) within MaxIdle.
 //
 // MinKeep newest versions per component are exempt from MaxAge and MaxIdle (not
 // from KeepLast). Tagged versions are exempt unless IncludeTagged. Content in

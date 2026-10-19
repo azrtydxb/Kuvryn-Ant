@@ -118,6 +118,34 @@
         }
       }
     },
+    "maintenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "gcInterval": { "type": "string", "pattern": "^(0|[0-9]+(m|h))$" },
+        "gcGrace": { "type": "string", "pattern": "^[0-9]+(m|h)$" },
+        "defaultPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxIdle": { "type": "string", "pattern": "^([0-9]+h)?$" },
+            "maxAge": { "type": "string", "pattern": "^([0-9]+h)?$" }
+          }
+        },
+        "pressure": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "highPercent": { "type": "integer", "minimum": 2, "maximum": 99 },
+            "lowPercent": { "type": "integer", "minimum": 1, "maximum": 98 },
+            "capacity": { "type": "string", "pattern": "^([0-9]+(\\.[0-9]+)?\\s?([KMGT]i?B|B)?)?$" },
+            "interval": { "type": "string", "pattern": "^(0|[0-9]+(m|h))$" },
+            "sweepGrace": { "type": "string", "pattern": "^[0-9]+(m|h)$" }
+          }
+        }
+      }
+    },
     "auditRetention": {
       "type": "object",
       "additionalProperties": false,
