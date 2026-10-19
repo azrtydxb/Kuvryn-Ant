@@ -1,6 +1,6 @@
 # Kuvryn Ant delivery plan
 
-Status: Engineering planning complete, revision 1, 2026-10-18. Implementation readiness follows the recorded coverage/dependency and GitHub publication audit; no additional owner approval gate.
+Status: Engineering planning complete, revision 1, 2026-10-18. Implementation in progress; milestone status below was reconciled with the GitHub backlog on 2026-10-19 (see `STATE-AND-HANDOVER.md`). Implementation readiness followed the recorded coverage/dependency and GitHub publication audit.
 Source of truth for product scope: [product specification](../../kuvryn-ant-product-spec.md), version 0.1.
 
 ## Confirmed direction
@@ -67,6 +67,8 @@ These boundaries organize the GitHub backlog. Milestone numbers identify workstr
 
 ### M00 — Planning and readiness
 
+**Status 2026-10-19: complete** (milestone closed).
+
 Outcome: an agreed, traceable, executable backlog.
 
 Scope: resolve decisions; document architecture boundaries and data model; establish format ledger; define client matrix and release criteria; create GitHub milestones, stories, task issues, labels, dependencies, and planning index.
@@ -74,6 +76,8 @@ Scope: resolve decisions; document architecture boundaries and data model; estab
 Entry: product spec exists. Exit: planning gate satisfied. Blocks all implementation milestones.
 
 ### M01 — Shared platform and secure administration
+
+**Status 2026-10-19: nearly complete.** C01 to C04 closed (#9, #12, #15, #18). Open: C05 #21 (data-plane route metrics labelled `unmatched`, no upstream/cache metrics, failure drills, worker tracing).
 
 Outcome: a runnable Go service with PostgreSQL metadata and authenticated, auditable management operations.
 
@@ -85,6 +89,8 @@ Dependencies: M00. External identity provider work may begin once identity bound
 
 ### M02 — Artifact integrity, storage, and local publishing
 
+**Status 2026-10-19: partial.** Closed: S03 #30, S01-T2 #26, S04-T1 #34; AC6 backend equivalence passes on disk, MinIO and OCI Object Storage. Open: ENOSPC/restart tests and staging sweep (#25), SSE and ambient S3 credentials (#28), throttling/visibility tests (#29), API-owned client setup (#35).
+
 Outcome: correct local artifact lifecycle through explicit feed routing.
 
 Scope: streaming disk/S3 blob interfaces; digest and size checks; multipart and cancellation; deduplication domain; transactional publication; protocol-neutral core fixtures; immutable/overwrite/delete policies; source precedence; explain resolution; reference-safe garbage-collection design; browsing/search/checksum lookup; provenance.
@@ -94,6 +100,8 @@ Exit: shared storage/lifecycle contract fixtures pass on both disk and selected 
 Dependencies: M01. S3 implementation is required for milestone completion, not a post-release optional feature.
 
 ### M03 — Remote caching and build acceleration
+
+**Status 2026-10-19: partial.** Closed: K01-T1 #37, K02-T1 #40; AC8 fan-out showed one upstream fetch per key. Open: upstream timeout/stall tests (#38), restart and large pull-through memory (#41), prewarm not started (#43), cache effectiveness reporting (#44).
 
 Outcome: runners reuse dependencies through predictable, observable pull-through feeds.
 
@@ -105,6 +113,8 @@ Dependencies: M02 and format-specific composition contracts. Cache savings calcu
 
 ### M04 — First ecosystem delivery wave
 
+**Status 2026-10-19: partial.** OCI, Go, Helm, Cargo, Raw and OCI artifacts pass real-client conformance (local and remote) on disk, MinIO and OCI Object Storage; their T2/T3 tasks are closed and Raw (#107) is complete. Open: T4 certification (per-format replica integrity, failure cases; Docker CLI and interrupted uploads for OCI).
+
 Outcome: supported client workflows for the owner-selected first format wave.
 
 Scope: per-format protocol, publish and delete semantics, metadata/indexing, source composition, auth, cache behavior, search fields, cleanup, client configuration, fixtures, conformance, and limitations. Confirmed wave order: Docker/OCI, Go modules, Helm, Rust/Cargo, then Raw. OCI artifact behavior shares the OCI platform but keeps its own conformance record. Remaining ecosystems follow this wave.
@@ -114,6 +124,8 @@ Exit: every enabled capability in each wave member has versioned real-client evi
 Dependencies: M01–M03; specific work can proceed as the shared APIs stabilize. Completion is a development milestone, not Phase 1 completion.
 
 ### M05 — Remaining ecosystem breadth
+
+**Status 2026-10-19: partial.** All 20 adapters are implemented. Local and remote tasks are closed for composer, conan, conda, cran, pub, rubygems, plus local for cocoapods, git-lfs, p2, rpm and remote for apt, huggingface, maven, npm, nuget, pypi. Open: fixes from #280 awaiting a fresh conformance run (#288: ansible, apk, apt, huggingface, maven native deploy, nuget, pypi, terraform, rpm and cocoapods remote), swift native client (#204), npm mutable dist-tags (#169), no remote for apk, git-lfs, p2, swift, and all T4 certifications.
 
 Outcome: all remaining formats have accepted, evidence-backed capability records.
 
@@ -125,6 +137,8 @@ Dependencies: M01–M03 plus reusable work from M04. Sub-waves should group shar
 
 ### M06 — Enterprise identity and complete operator interfaces
 
+**Status 2026-10-19: partial.** Closed: I03 #51 (break-glass, secret rotation). OIDC claim-to-role mapping and local accounts merged (#286, #287). Open: real-provider evidence for Zitadel, a second OIDC provider, SAML and LDAP; SAML single logout route; LDAP group mapping (#45, #48); console accessibility, overview capacity, groups, audit retention control, replication deletion dry run UI (#54, #57, #60, #84); MCP identity-admin tools and UI parity (#63).
+
 Outcome: operators and automation can securely use the product through React, API, and MCP.
 
 Scope: OIDC with Zitadel and a second provider; PKCE and session security; SAML and LDAP required for GA; group/role mappings; emergency admin; secret rotation; identity diagnostics and recovery; React overview/feed/package/identity/audit/cache/storage/replication screens; MCP discovery/lookups/health/admin tools; webhooks/event delivery.
@@ -134,6 +148,8 @@ Exit: provider and package-client authentication coexist; permission-denial and 
 Dependencies: M01 onward, with screens/tools delivered alongside their domain capabilities. Final exit also depends on M07–M08 for replication and lifecycle interfaces. SCIM remains explicitly deferred unless scope changes.
 
 ### M07 — Independent-instance replication
+
+**Status 2026-10-19: nearly complete.** Closed: R02 #69, R01-T1 #67; AC5 passed on OKE and kw. Open: R01-T2 #68 (disk-to-S3 pair, S3 partial-blob resume, AC5 re-run with large blobs after #271/#279).
 
 Outcome: another site can seed a feed, keep it synchronized, and serve locally during source outage.
 
@@ -145,6 +161,8 @@ Dependencies: M02–M03 and stabilized format records. Representative tests do n
 
 ### M08 — Adoption and operational lifecycle
 
+**Status 2026-10-19: partial.** Closed: D01-T1 #82 (import/export). Open: GC and repair gaps (#72), restore/upgrade re-runs and restore throughput (#75), production Compose and sizing guidance (#78), real Nexus migration and decommissioning (#83, #290), kw ingress traffic policy decision (#292).
+
 Outcome: users can deploy, migrate, operate, recover, and upgrade installations.
 
 Scope: container/Compose and Helm; TLS/reverse proxy trust; import/export inventories and dry runs; selected repository-manager migration mappings; prewarm from lockfiles/package lists/images; storage migration; retention/eviction/GC; metadata repair/integrity checks; backup/restore; schema upgrades and rollback limitations; diagnostics; tracing; capacity planning and quotas.
@@ -154,6 +172,8 @@ Exit: documented fresh install, representative import, backup/restore, disk↔S3
 Dependencies: M01–M03; final coverage requires M05 and M07. Required source migration products and versions need an explicit acceptance matrix.
 
 ### M09 — Phase 1 release qualification
+
+**Status 2026-10-19: partial.** Evidence sessions `evidence/2026-10-18` (AC5, AC6, AC8, AC9) and `conformance/results/*/2026-10-19`. Open: fresh 26-format run (#288), AC8 targets (#289), identity and parity qualification, release evidence and known limitations (#217).
 
 Outcome: broad availability supported by reproducible evidence.
 
@@ -165,13 +185,15 @@ Dependencies: M01–M08. Licensing/distribution remains an explicit unresolved c
 
 ### M10 — Federation discovery (Phase 2, not a Phase 1 dependency)
 
+**Status 2026-10-19: design delivered (#236) and Phase 2 P2-M1 to P2-M6 implemented** (#259, #265, #268, #266, #272, #274; hardening #270, #277) and qualified live on OKE and kw (#276, `docs/implementation/federation-evidence.md`). Federation was implemented before M09 closed; owner decisions are recorded in `.procoder/ask/answers.md`. Open: client conformance federation profile (#293), kw-authoritative feeds / push replication (#291).
+
 Outcome: separately approved design and backlog for federation.
 
 Scope: shared identity/policy, discovery, cross-site search, placement/routing, coordinated replication, and conflict semantics. Define requirements and design only after independently operable instances are proven.
 
 Exit: a new approved scope, threat model, consistency model, migration strategy, and acceptance criteria. No Phase 1 task depends on federation services.
 
-Design: [phase-2-federation.md](phase-2-federation.md) (draft; owner decisions D1–D6 pending).
+Design: [phase-2-federation.md](phase-2-federation.md) (owner decisions answered; see `.procoder/ask/answers.md`).
 
 ## Architecture scope (resolved in architecture-baseline.md)
 
