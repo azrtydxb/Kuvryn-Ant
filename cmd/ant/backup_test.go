@@ -9,9 +9,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/backup"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/backup/backuptest"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -59,7 +63,7 @@ func TestBackupRestoreVerifyCommands(t *testing.T) {
 	}
 	dir := filepath.Join(t.TempDir(), "bk")
 	out.Reset()
-	if code := execute(ctx, quiet, []string{"backup", dir}, &out); code != 0 {
+	if code := execute(ctx, quiet, []string{"backup", "--max-disk-percent", "0", dir}, &out); code != 0 {
 		t.Fatalf("backup exit %d", code)
 	}
 	var created struct {
@@ -101,5 +105,94 @@ func TestBackupRestoreVerifyCommands(t *testing.T) {
 	// The restored deployment still recognizes its recovery identity.
 	if code := execute(ctx, quiet, []string{"bootstrap-token"}, io.Discard); code != 0 {
 		t.Fatal("restored database has no usable bootstrap identity")
+	}
+}
+
+func TestBackupToObjectStorageWithRetention(t *testing.T) {
+	dsn := os.Getenv("ANT_TEST_DATABASE_URL")
+	if dsn == "" {
+		if os.Getenv("ANT_REQUIRE_INTEGRATION") == "1" {
+			t.Fatal("ANT_TEST_DATABASE_URL required")
+		}
+		t.Skip("PostgreSQL fixture required")
+	}
+	ctx := context.Background()
+	admin, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer admin.Close(ctx)
+	keyPath := filepath.Join(t.TempDir(), "root.key")
+	if err = os.WriteFile(keyPath, bytes.Repeat([]byte{7}, 32), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("ANT_ROOT_KEY_FILE", keyPath)
+	fake := backuptest.NewMemObjects()
+	old := objectClient
+	objectClient = func(*storage.Registry) (backup.ObjectAPI, bool) { return fake, true }
+	t.Cleanup(func() { objectClient = old })
+	quiet := slog.New(slog.NewTextHandler(io.Discard, nil))
+	source, target := cliDatabase(t, admin), cliDatabase(t, admin)
+	dataDir := t.TempDir()
+	use := func(database string) {
+		t.Setenv("ANT_DATABASE_URL", database)
+		t.Setenv("ANT_DATA_DIR", dataDir)
+	}
+	use(source)
+	if code := execute(ctx, quiet, []string{"bootstrap", "cli-backup"}, io.Discard); code != 0 {
+		t.Fatalf("bootstrap exit %d", code)
+	}
+	var last string
+	for i := range 3 {
+		last = fmt.Sprintf("s3://kuvryn-ant/backups/pre-%d", i)
+		var out bytes.Buffer
+		if code := execute(ctx, quiet, []string{"backup", "--keep", "2", last}, &out); code != 0 {
+			t.Fatalf("backup %d exit %d", i, code)
+		}
+		var created struct {
+			Created bool     `json:"created"`
+			Removed []string `json:"removed_old_backups"`
+			Mode    string   `json:"blob_mode"`
+		}
+		if err = json.Unmarshal(out.Bytes(), &created); err != nil || !created.Created || created.Mode != "copy" {
+			t.Fatalf("summary %s", out.String())
+		}
+		if removedOld := len(created.Removed) == 1 && created.Removed[0] == "pre-0"; removedOld != (i == 2) {
+			t.Fatalf("backup %d removed %v", i, created.Removed)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	for k := range fake.Objects {
+		if strings.Contains(k, "/backups/pre-0/") {
+			t.Fatalf("pre-0 not removed: %s", k)
+		}
+	}
+	if code := execute(ctx, quiet, []string{"backup", "verify", last}, io.Discard); code != 0 {
+		t.Fatal("verify of object-storage backup failed")
+	}
+	if code := execute(ctx, quiet, []string{"backup", "--keep", "-1", "s3://kuvryn-ant/backups/x"}, io.Discard); code != 1 {
+		t.Fatal("accepted negative --keep")
+	}
+	if code := execute(ctx, quiet, []string{"backup", "--blobs", "bogus", "s3://kuvryn-ant/backups/x"}, io.Discard); code != 1 {
+		t.Fatal("accepted unknown blob mode")
+	}
+	use(target)
+	var out bytes.Buffer
+	if code := execute(ctx, quiet, []string{"restore", last}, &out); code != 0 {
+		t.Fatalf("restore from object storage exit %d", code)
+	}
+}
+
+func TestResolveBlobMode(t *testing.T) {
+	for _, c := range []struct{ flag, backend, want string }{
+		{"auto", "s3", "reference"}, {"", "disk", "copy"}, {"auto", "disk", "copy"},
+		{"copy", "s3", "copy"}, {"reference", "disk", "reference"},
+	} {
+		if got, err := resolveBlobMode(c.flag, c.backend); err != nil || got != c.want {
+			t.Errorf("%+v -> %q %v", c, got, err)
+		}
+	}
+	if _, err := resolveBlobMode("x", "s3"); err == nil {
+		t.Fatal("bogus mode accepted")
 	}
 }

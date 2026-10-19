@@ -91,6 +91,12 @@ turn it into a Helm hook or log it to deployment automation. For an existing
 instance, preserve PostgreSQL, the root key, blobs and staging PVC; skip bootstrap.
 Upgrade migrations are forward-only. Snapshot/back up a consistent PostgreSQL/blob
 reference set before upgrades; an image rollback does not undo migrations.
+Write pre-upgrade backups to object storage, for example
+`kubectl exec deploy/<release> -- ant backup --keep 3 s3://<bucket>/<prefix>/backups/pre-upgrade-<date>`,
+or rely on CloudNativePG backups plus a metadata backup. **Never write them onto the
+data PVC (`/var/lib/ant`)**: backups can be tens of GB each and a full data volume
+stops the service. `ant backup` refuses local targets above 80% filesystem usage, and
+the metric `ant_data_dir_bytes_free` is available for a disk-space alert.
 
 Operations guides: [upgrade and rollback](../docs/operations/upgrade.md),
 [observability (metrics, tracing, logs, diagnostics, audit retention, metadata

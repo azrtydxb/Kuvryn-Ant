@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 )
 
@@ -355,6 +356,34 @@ func (r *Registry) Close() {
 func (r *Registry) s3(domain string) (*blob.S3, error) {
 	return blob.NewS3(blob.S3Config{Endpoint: r.config.Endpoint, Region: r.config.Region, Bucket: r.config.Bucket, Prefix: strings.Trim(r.config.Prefix, "/") + "/" + domain, PathStyle: r.config.PathStyle, AllowHTTP: r.config.AllowInsecureHTTP, HTTPClient: r.client, StateStore: &blob.FileStateStore{Dir: filepath.Join(r.config.Directory, "resume-state")}, Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) { return credentials(r.config.CredentialsFile) })})
 }
+
+// ObjectClient returns an S3 client built from the same endpoint, region, CA and
+// mounted credentials as the blob store, for operator tooling that writes
+// outside the content-addressed namespace (backups). ok is false when S3 is not
+// configured.
+func (r *Registry) ObjectClient() (client *s3.Client, ok bool) {
+	if !r.s3ok {
+		return nil, false
+	}
+	o := s3.Options{
+		Region:                     r.config.Region,
+		HTTPClient:                 r.client,
+		UsePathStyle:               r.config.PathStyle,
+		RetryMaxAttempts:           3,
+		RequestChecksumCalculation: aws.RequestChecksumCalculationWhenRequired,
+		ResponseChecksumValidation: aws.ResponseChecksumValidationWhenRequired,
+		Credentials:                aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) { return credentials(r.config.CredentialsFile) }),
+	}
+	if r.config.Endpoint != "" {
+		o.BaseEndpoint = aws.String(r.config.Endpoint)
+	}
+	return s3.New(o), true
+}
+
+// S3Bucket and S3Prefix are the configured blob bucket and key prefix.
+func (r *Registry) S3Bucket() string { return r.config.Bucket }
+func (r *Registry) S3Prefix() string { return strings.Trim(r.config.Prefix, "/") }
+
 func readBoundedFile(path string, limit int64) ([]byte, error) {
 	f, err := os.Open(path)
 	if err != nil {

@@ -53,14 +53,22 @@ in scope.
 2. Take a consistent backup and verify it:
 
    ```sh
-   ant backup /backups/ant-pre-upgrade-$(date +%Y%m%d)
-   ant backup verify /backups/ant-pre-upgrade-<date>
+   ant backup --keep 3 s3://<bucket>/<prefix>/backups/pre-upgrade-$(date +%Y%m%d-%H%M)
+   ant backup verify s3://<bucket>/<prefix>/backups/pre-upgrade-<date>
    ```
 
-   For Kubernetes run these with `kubectl exec deployment/ant-ant -- ant backup ...`
-   against a volume that outlives the pod, and also snapshot PostgreSQL and the
-   data PVC if your platform supports it. Store the manifest SHA-256 outside the
-   backup.
+   **Never write the pre-upgrade backup onto the data PVC (`/var/lib/ant`).**
+   With S3 blobs, `ant backup` copies metadata only (`--blobs auto` resolves to
+   `reference`), but even so write it to object storage: an `s3://` location needs
+   no local disk, and `ant backup` refuses a local target that would exceed 80%
+   filesystem usage (`--max-disk-percent`). For Kubernetes run these with
+   `kubectl exec deployment/ant-ant -- ant backup ...`. On disk deployments use a
+   separate volume, not the data PVC. Do not run `ant gc` or retention sweeps
+   between the backup and the end of the upgrade (a reference backup depends on
+   the blobs staying in the bucket). CloudNativePG backups of PostgreSQL plus a
+   metadata backup are an equivalent pre-upgrade safety net. Store the manifest
+   SHA-256 outside the backup. Watch `ant_data_dir_bytes_free` (see
+   [observability](observability.md)).
 3. Run `ant diagnostics` and confirm database and storage checks pass and the
    applied schema version equals the running binary's version (no half-applied
    state).
