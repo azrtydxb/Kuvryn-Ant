@@ -21,14 +21,17 @@ var ErrCanonical = errors.New("federation: JSON cannot be canonicalized")
 // sorted by their UTF-16 code units, no insignificant whitespace, ECMAScript
 // number serialization and minimal string escaping. Duplicate keys are
 // rejected because their meaning differs between parsers.
-func Canonicalize(input []byte) ([]byte, error) {
+func Canonicalize(input []byte) ([]byte, error) { return canonicalize(input, false) }
+
+// canonicalize is Canonicalize; with safe, numbers beyond 2^53 - 1 are refused.
+func canonicalize(input []byte, safe bool) ([]byte, error) {
 	if !utf8.Valid(input) {
 		return nil, ErrCanonical
 	}
 	dec := json.NewDecoder(bytes.NewReader(input))
 	dec.UseNumber()
 	var out bytes.Buffer
-	if err := canonicalValue(dec, &out); err != nil {
+	if err := canonicalValue(dec, safe, &out); err != nil {
 		return nil, err
 	}
 	var extra json.RawMessage
@@ -38,16 +41,19 @@ func Canonicalize(input []byte) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// CanonicalJSON marshals v and canonicalizes the result.
+// CanonicalJSON marshals v and canonicalizes the result. It is the form every
+// signed document and statement uses, so it refuses numbers beyond 2^53 - 1:
+// distinct integers there share one double, and two documents with different
+// generations or timestamps would canonicalize (and verify) identically.
 func CanonicalJSON(v any) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return nil, ErrCanonical
 	}
-	return Canonicalize(raw)
+	return canonicalize(raw, true)
 }
 
-func canonicalValue(dec *json.Decoder, out *bytes.Buffer) error {
+func canonicalValue(dec *json.Decoder, safe bool, out *bytes.Buffer) error {
 	tok, err := dec.Token()
 	if err != nil {
 		return ErrCanonical
@@ -73,7 +79,7 @@ func canonicalValue(dec *json.Decoder, out *bytes.Buffer) error {
 				}
 				seen[key] = true
 				var value bytes.Buffer
-				if err := canonicalValue(dec, &value); err != nil {
+				if err := canonicalValue(dec, safe, &value); err != nil {
 					return err
 				}
 				members = append(members, member{key, value.Bytes()})
@@ -100,7 +106,7 @@ func canonicalValue(dec *json.Decoder, out *bytes.Buffer) error {
 					out.WriteByte(',')
 				}
 				first = false
-				if err := canonicalValue(dec, out); err != nil {
+				if err := canonicalValue(dec, safe, out); err != nil {
 					return err
 				}
 			}
@@ -114,7 +120,7 @@ func canonicalValue(dec *json.Decoder, out *bytes.Buffer) error {
 	case string:
 		writeString(out, t)
 	case json.Number:
-		s, err := formatNumber(t)
+		s, err := formatNumber(t, safe)
 		if err != nil {
 			return err
 		}
@@ -178,9 +184,9 @@ func writeString(out *bytes.Buffer, s string) {
 
 // formatNumber implements the ECMAScript Number::toString algorithm for
 // IEEE 754 doubles, as RFC 8785 §3.2.2.3 requires.
-func formatNumber(n json.Number) (string, error) {
+func formatNumber(n json.Number, safe bool) (string, error) {
 	f, err := strconv.ParseFloat(string(n), 64)
-	if err != nil || math.IsInf(f, 0) || math.IsNaN(f) {
+	if err != nil || math.IsInf(f, 0) || math.IsNaN(f) || (safe && math.Abs(f) > maxSafeInteger) {
 		return "", ErrCanonical
 	}
 	if f == 0 {

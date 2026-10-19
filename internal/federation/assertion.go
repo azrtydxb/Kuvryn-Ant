@@ -230,6 +230,8 @@ ON CONFLICT DO NOTHING`, s.cfg.InstanceID, jti, a.Issuer, time.Unix(a.Expires, 0
 	} else {
 		return identity.Principal{}, a, "assertion_unknown_domain"
 	}
+	// The federated ID is derived here, never taken from the issuer's claim.
+	a.FederatedID = FederatedID(fid, issuer, a.Subject)
 	var id string
 	err = s.cfg.DB.QueryRow(ctx, `SELECT id::text FROM principals WHERE instance_id=$1 AND issuer=$2 AND subject=$3 AND origin='federation' AND NOT disabled`, s.cfg.InstanceID, issuer, a.Subject).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {

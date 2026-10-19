@@ -531,17 +531,26 @@ func TestFederationAssertionNonceCap(t *testing.T) {
 	var fid string
 	_ = alpha.pool.QueryRow(ctx, `SELECT federation_id::text FROM federation_state WHERE instance_id=$1`, alpha.id).Scan(&fid)
 	id := beta.memberIdentity("")
-	send := func() string {
+	sendAs := func(subject, fedID string) ([]byte, string) {
 		body := []byte(`{"kind":"instance","action":"read"}`)
 		now := time.Now()
-		a := peer.Assertion{Issuer: beta.id, Federation: fid, Domain: "idp", Subject: "nobody", Audience: alpha.id,
+		a := peer.Assertion{Issuer: beta.id, Federation: fid, FederatedID: fedID, Domain: "idp", Subject: subject, Audience: alpha.id,
 			Request: peer.RequestHash("POST", "/federation/v1/access-check", body), IssuedAt: now.Unix(), Expires: now.Add(peer.AssertionLifetime).Unix()}
 		h, err := peer.SignAssertion(a, id.SigningKey)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = (peer.Client{}).DoHeader(ctx, id, alpha.fedURL, "POST", "/federation/v1/access-check", body, alpha.id, map[string]string{peer.HeaderAssertion: h})
-		return peerCode(err)
+		raw, err := (peer.Client{}).DoHeader(ctx, id, alpha.fedURL, "POST", "/federation/v1/access-check", body, alpha.id, map[string]string{peer.HeaderAssertion: h})
+		return raw, peerCode(err)
+	}
+	send := func() string { _, c := sendAs("nobody", ""); return c }
+	// The answer carries the federated ID derived by the receiving member,
+	// not the one the issuer claimed.
+	raw, code := sendAs("alice", "00000000-0000-4000-8000-000000000bad")
+	var res federation.AccessCheckResult
+	_ = json.Unmarshal(raw, &res)
+	if code != "" || res.FederatedID != federation.FederatedID(fid, idpIssuer, "alice") {
+		t.Fatalf("federated id from the issuer was trusted: %q %+v", code, res)
 	}
 	if code := send(); code != "principal_unknown" {
 		t.Fatalf("assertion below the cap: %q", code)

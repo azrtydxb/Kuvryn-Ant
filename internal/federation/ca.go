@@ -65,6 +65,14 @@ func newCA(name string, now time.Time) (caMaterial, *x509.Certificate, error) {
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 		MaxPathLenZero:        true,
+		// Constrain what the CA can vouch for if its certificate is ever
+		// trusted outside the federation: member certificates carry only a
+		// DNS or IP SAN for their listener, so e-mail and URI names are
+		// excluded entirely, and only TLS server/client use is permitted.
+		PermittedDNSDomainsCritical: true,
+		ExcludedEmailAddresses:      []string{""},
+		ExcludedURIDomains:          []string{""},
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
 	if err != nil {
