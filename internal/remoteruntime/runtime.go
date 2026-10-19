@@ -653,6 +653,59 @@ func (m *Manager) Fetch(ctx context.Context, r Request) (*Response, error) {
 	return &Response{StatusCode: response.StatusCode, Header: headers, Body: body}, nil
 }
 
+// Query sends one read-only JSON query to the source (a bounded POST whose
+// answer is a document, such as the Git LFS batch API with operation "download")
+// and returns the status and body. Nothing is cached, because such answers carry
+// expiring links. The request must name a path on the source origin; the body is
+// limited to upstream.MaxPostBody and the answer to the metadata limit.
+func (m *Manager) Query(ctx context.Context, r Request, contentType string, body []byte) (cache.Value, error) {
+	if r.URL != "" || validate(r) != nil || len(body) == 0 || len(body) > upstream.MaxPostBody || len(contentType) > 128 || strings.ContainsAny(contentType, "\r\n") {
+		return cache.Value{}, ErrInput
+	}
+	release, err := m.admission(ctx)
+	if err != nil {
+		return cache.Value{}, err
+	}
+	defer release()
+	e, err := m.acquire(ctx, r.SourceID)
+	if err != nil {
+		return cache.Value{}, err
+	}
+	defer m.release(e)
+	ctx, cancel := operationContext(ctx, e)
+	defer cancel()
+	if err = m.networkSlot(ctx); err != nil {
+		return cache.Value{}, safeError(err)
+	}
+	defer func() { <-m.network }()
+	headers := http.Header{}
+	if r.Representation != "" {
+		headers.Set("Accept", r.Representation)
+	}
+	headers.Set("Content-Type", contentType)
+	started := time.Now()
+	response, err := e.fetcher.Post(ctx, target(e, r), headers, body)
+	if err != nil {
+		m.health.Record(r.SourceID, 0, time.Since(started), err)
+		return cache.Value{}, safeError(err)
+	}
+	m.health.Record(r.SourceID, response.StatusCode, time.Since(started), nil)
+	defer response.Body.Close()
+	out := cache.Value{Status: response.StatusCode, MediaType: response.Header.Get("Content-Type")}
+	if response.StatusCode != 200 {
+		return out, nil
+	}
+	data, err := io.ReadAll(io.LimitReader(response.Body, m.options.MaxMetadataBytes+1))
+	if err != nil {
+		return cache.Value{}, safeError(err)
+	}
+	if int64(len(data)) > m.options.MaxMetadataBytes {
+		return cache.Value{}, ErrTooLarge
+	}
+	out.Body = data
+	return out, nil
+}
+
 // Close cancels streaming bodies and metadata work and drains owned resources.
 // It is safe to call concurrently. It never closes the caller's PostgreSQL pool.
 func (m *Manager) Close() error {

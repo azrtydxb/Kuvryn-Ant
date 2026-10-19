@@ -73,7 +73,7 @@ func runApk(c *Ctx) {
 		},
 		al(setup(repoLine)+F(` && ! apk add --no-cache @p@=1.1-r0`, "p", pkg))))
 	c.Step("delete/unlist: management API delete 1.0", func() error { return c.MgmtVersion(slug, "main", "", "delete") })
-	c.Step("remote pull-through: apk adapter is local-only", func() error { return nil }, Skip("not supported: internal/apkrepo README: local sources only, no remote/replica materialization"))
+	c.Step("remote pull-through: apk (real upstream pending)", func() error { return nil }, Skip("pending: apk remote pull-through is implemented (httptest-covered); not yet run against a real upstream, see #288"))
 	c.Step("auth denial: apk update with invalid credentials rejected", al(setup(strings.Replace(repoLine, "$TOKEN", "$BADTOKEN", 1)), RunOpt{Env: map[string]string{"BADTOKEN": "invalid-token"}, ExpectFail: true, ExpectRe: regexp.MustCompile(`(?i)401|403|unauthori|forbidden|credential|denied|UNTRUSTED|not found|failed`)}))
 	c.Step("auth denial: unauthenticated APKINDEX returns 401", func() error {
 		return c.Expect("GET", "/feeds/"+slug+"/apk/v3.24/main/"+arch+"/APKINDEX.tar.gz", NoAuth, 401, 403)

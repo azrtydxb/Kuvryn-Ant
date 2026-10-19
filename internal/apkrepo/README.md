@@ -23,7 +23,28 @@ Client setup:
 
 - No real `apk` client conformance run yet (apk-tools 3.24.2 fixture pending); tests verify the signature and format in Go.
 - Uploaded package signatures are preserved but not verified (no trusted-key import yet).
-- Local sources only; no remote/replica materialization. Index is regenerated per request (max 4096 packages per channel).
+- Local channels: the index is regenerated per request (max 4096 packages per channel).
+- Remote sources (pull-through) are described below.
 - v3 wire format is out of scope.
 
 Run: `sh internal/apkrepo/test-postgres.sh`.
+
+## Remote sources (pull-through)
+
+The remote source origin is the repository root that holds `<branch>/<repository>/<arch>/`, for example
+`https://dl-cdn.alpinelinux.org/alpine`. The trust model is the one of APT and RPM:
+
+- `APKINDEX.tar.gz` is served byte for byte from upstream (through the metadata cache). Ant never rewrites, merges or
+  re-signs it, so `apk` verifies the upstream signature with the upstream key in `/etc/apk/keys`. Ant's own feed key signs
+  only locally published channels; `keys/` serves that key only.
+- A package is served only if the upstream index of its channel lists it. Before the first byte is served its control segment
+  is checked against the index checksum (`C:Q1` + base64 SHA-1 of the control segment, the identity `apk` itself uses), its size
+  against `S:` and its name/version/arch against the file name; it is then cached under the remote source. Signature segments
+  inside the package are preserved. A mismatch is a 503 and nothing is cached.
+- A channel has one owner: a channel with locally published packages is never extended from upstream.
+
+Limits: indexes (and therefore "which packages exist") come from the in-process metadata cache, so beyond its stale-if-error window
+an upstream outage makes `apk update` fail even though cached packages remain downloadable; compressed indexes above the metadata
+limit cannot be proxied (Alpine `main` and `community` are well below the default 24 MiB used by the server). Ant does not hold the
+upstream signing keys and does not verify the index signature itself. Cached remote packages are not part of the locally
+generated index. Remote packages are limited to 1 GiB.

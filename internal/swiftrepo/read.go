@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -54,12 +55,22 @@ func (q *req) loadRelease(ctx context.Context) (*release, artifact.Record, error
 func (q *req) list() {
 	ctx, cancel := context.WithTimeout(q.r.Context(), 15*time.Second)
 	defer cancel()
+	degraded := false
+	if done, e := q.remoteList(ctx); done {
+		return
+	} else if e != nil {
+		degraded = true // upstream outage: the locally cached releases are the offline view
+	}
 	vs, e := q.versions(ctx)
 	if e != nil {
 		failure(q.w, e)
 		return
 	}
 	if len(vs) == 0 {
+		if degraded {
+			failure(q.w, artifact.ErrUnavailable)
+			return
+		}
 		failure(q.w, artifact.ErrNotFound)
 		return
 	}
@@ -85,6 +96,14 @@ func (q *req) release() {
 	ctx, cancel := context.WithTimeout(q.r.Context(), 10*time.Second)
 	defer cancel()
 	rel, _, e := q.loadRelease(ctx)
+	if errors.Is(e, artifact.ErrNotFound) {
+		var doc artifact.Document
+		if rel, doc, e = q.remoteRelease(ctx); e == nil && doc.Stale {
+			for k, v := range artifact.StaleHeaders() {
+				q.w.Header().Set(k, v)
+			}
+		}
+	}
 	if e != nil {
 		failure(q.w, e)
 		return
@@ -104,11 +123,25 @@ func (q *req) release() {
 func (q *req) archive() {
 	ctx := q.r.Context()
 	rel, _, e := q.loadRelease(ctx)
-	if e != nil {
-		failure(q.w, e)
-		return
+	var rec artifact.Record
+	var body io.ReadCloser
+	if e == nil {
+		rec, body, e = q.s.service.Open(ctx, q.p, q.pub(q.version, archiveAsset, zipMediaType), 0, -1)
 	}
-	rec, body, e := q.s.service.Open(ctx, q.p, q.pub(q.version, archiveAsset, zipMediaType), 0, -1)
+	if errors.Is(e, artifact.ErrNotFound) {
+		// Pull-through: fetch, verify against the upstream checksum, cache, repeat.
+		served, re := q.remoteArchive(ctx)
+		if served {
+			return
+		}
+		if re != nil {
+			failure(q.w, re)
+			return
+		}
+		if rel, _, e = q.loadRelease(ctx); e == nil {
+			rec, body, e = q.s.service.Open(ctx, q.p, q.pub(q.version, archiveAsset, zipMediaType), 0, -1)
+		}
+	}
 	if e != nil {
 		failure(q.w, e)
 		return
@@ -138,6 +171,11 @@ func (q *req) manifest() {
 	ctx, cancel := context.WithTimeout(q.r.Context(), 10*time.Second)
 	defer cancel()
 	rel, _, e := q.loadRelease(ctx)
+	if errors.Is(e, artifact.ErrNotFound) {
+		if e = q.remoteManifest(ctx); e == nil {
+			rel, _, e = q.loadRelease(ctx)
+		}
+	}
 	if e != nil {
 		failure(q.w, e)
 		return
@@ -155,6 +193,11 @@ func (q *req) manifest() {
 		}
 	}
 	_, b, e := readAsset(ctx, q.s.service, q.p, q.pub(q.version, file, "text/x-swift"), maxManifest)
+	if errors.Is(e, artifact.ErrNotFound) && file == defaultManif {
+		if e = q.remoteManifest(ctx); e == nil {
+			_, b, e = readAsset(ctx, q.s.service, q.p, q.pub(q.version, file, "text/x-swift"), maxManifest)
+		}
+	}
 	if e != nil {
 		failure(q.w, e)
 		return

@@ -137,6 +137,16 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 				pub.Namespace, pub.Coordinate = alt, alt
 			}
 		}
+		if _, e := s.service.Lookup(r.Context(), p, pub); errors.Is(e, artifact.ErrNotFound) {
+			served, e := s.pullPackage(w, r, p, pub, arch)
+			if served {
+				return
+			}
+			if e != nil {
+				failure(w, e)
+				return
+			}
+		}
 		s.download(w, r, p, pub)
 	}
 }
@@ -349,6 +359,12 @@ func (s *Repository) publicKey(w http.ResponseWriter, r *http.Request, p identit
 }
 
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, channel string) {
+	degraded := false
+	if done, e := s.serveRemoteIndex(w, r, p, feed, channel); done {
+		return
+	} else if e != nil {
+		degraded = true // upstream outage: only a locally held channel can answer
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	rows, e := s.db.Query(ctx, `WITH owner AS (SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,o.namespace,v.version FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id WHERE a.asset_key='APKINDEX-entry' ORDER BY v.version LIMIT 4097`, p.InstanceID, feed, channel)
@@ -373,7 +389,7 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 		failure(w, e)
 		return
 	}
-	if len(list) > 4096 {
+	if len(list) > 4096 || (degraded && len(list) == 0) {
 		failure(w, artifact.ErrUnavailable)
 		return
 	}
