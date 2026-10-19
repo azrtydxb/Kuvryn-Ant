@@ -1,0 +1,405 @@
+{
+  "base_url": "https://ant.kw.watteel.lab",
+  "environment": {
+    "ant_image": "192.168.10.131/azrtydxb/kuvryn-ant@sha256:e0469b5205e0afd6893f61bc67a6dcb71f1c1ad6f869068ed30e576262c54a53",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "master-11",
+    "node_capacity": "8cpu/32385096Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-19T01:13:33Z",
+  "scenarios": {
+    "large": {
+      "1 GiB cancel@100MiB then full re-read": {
+        "cancelled": {
+          "bytes": 104865319,
+          "error_samples": ["cancelled after 104865319 bytes (intentional)"],
+          "errors": 1,
+          "extra": {
+            "cancel_after": 104857600,
+            "digest_mismatches": 0,
+            "expected_sha256": ""
+          },
+          "latency_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "mib_per_sec": 259.04079842487107,
+          "req_per_sec": 2.590217307679745,
+          "requests": 1,
+          "status": {
+            "error": 1
+          },
+          "ttfb_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "wall_seconds": 0.386067994
+        },
+        "reread": {
+          "body_sha256_counts": {
+            "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af": 1
+          },
+          "bytes": 1073741824,
+          "errors": 0,
+          "extra": {
+            "cancel_after": 0,
+            "digest_mismatches": 0,
+            "expected_sha256": "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af"
+          },
+          "latency_ms": {
+            "Max": 3756.171,
+            "Mean": 3756.171,
+            "P50": 3756.171,
+            "P95": 3756.171,
+            "P99": 3756.171
+          },
+          "mib_per_sec": 272.61424500739963,
+          "req_per_sec": 0.2662248486400387,
+          "requests": 1,
+          "status": {
+            "200": 1
+          },
+          "ttfb_ms": {
+            "Max": 15.831,
+            "Mean": 15.831,
+            "P50": 15.831,
+            "P95": 15.831,
+            "P99": 15.831
+          },
+          "wall_seconds": 3.756223377
+        }
+      },
+      "1 GiB publish (streamed PUT, X-Checksum-Sha256 declared), 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 457.7109375,
+          "rss_end_mib": 305.81640625,
+          "rss_peak_sampled_mib": 305.81640625,
+          "rss_start_mib": 232.453125,
+          "samples": 90
+        },
+        "bytes": 1073741824,
+        "errors": 0,
+        "extra": {
+          "accepted_body_sha256": [
+            "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af"
+          ],
+          "created_201_body_sha256": null,
+          "distinct_accepted_bodies": 1,
+          "dup": false,
+          "size": 1073741824
+        },
+        "latency_ms": {
+          "Max": 87640.763,
+          "Mean": 87640.763,
+          "P50": 87640.763,
+          "P95": 87640.763,
+          "P99": 87640.763
+        },
+        "mib_per_sec": 9.546189160868868,
+        "req_per_sec": 0.009322450352411004,
+        "requests": 1,
+        "status": {
+          "201": 1
+        },
+        "ttfb_ms": {
+          "Max": 87640.763,
+          "Mean": 87640.763,
+          "P50": 87640.763,
+          "P95": 87640.763,
+          "P99": 87640.763
+        },
+        "wall_seconds": 107.267935167
+      },
+      "1 GiB read, 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 457.7109375,
+          "rss_end_mib": 305.8359375,
+          "rss_peak_sampled_mib": 305.8359375,
+          "rss_start_mib": 305.81640625,
+          "samples": 4
+        },
+        "body_sha256_counts": {
+          "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af": 1
+        },
+        "bytes": 1073741824,
+        "errors": 0,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af"
+        },
+        "latency_ms": {
+          "Max": 3884.866,
+          "Mean": 3884.866,
+          "P50": 3884.866,
+          "P95": 3884.866,
+          "P99": 3884.866
+        },
+        "mib_per_sec": 263.5796791906808,
+        "req_per_sec": 0.2574020304596492,
+        "requests": 1,
+        "status": {
+          "200": 1
+        },
+        "ttfb_ms": {
+          "Max": 79.299,
+          "Mean": 79.299,
+          "P50": 79.299,
+          "P95": 79.299,
+          "P99": 79.299
+        },
+        "wall_seconds": 3.884973239
+      },
+      "1 GiB read, 4 concurrent streams": {
+        "ant_rss": {
+          "hwm_mib": 457.7109375,
+          "rss_end_mib": 305.86328125,
+          "rss_peak_sampled_mib": 305.86328125,
+          "rss_start_mib": 305.84375,
+          "samples": 13
+        },
+        "body_sha256_counts": {
+          "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af": 4
+        },
+        "bytes": 4294967296,
+        "errors": 0,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "68a963f49a2eb97717b3f279ff47dbe4b5e420dd649256e74829568a7c2a25af"
+        },
+        "latency_ms": {
+          "Max": 14880.985,
+          "Mean": 14073.325,
+          "P50": 14674.369,
+          "P95": 14880.985,
+          "P99": 14880.985
+        },
+        "mib_per_sec": 275.23908056270903,
+        "req_per_sec": 0.26878816461202054,
+        "requests": 4,
+        "status": {
+          "200": 4
+        },
+        "ttfb_ms": {
+          "Max": 21.263,
+          "Mean": 20.8615,
+          "P50": 20.792,
+          "P95": 21.263,
+          "P99": 21.263
+        },
+        "wall_seconds": 14.881607625000001
+      },
+      "4 GiB cancel@100MiB then full re-read": {
+        "cancelled": {
+          "bytes": 104883918,
+          "error_samples": ["cancelled after 104883918 bytes (intentional)"],
+          "errors": 1,
+          "extra": {
+            "cancel_after": 104857600,
+            "digest_mismatches": 0,
+            "expected_sha256": ""
+          },
+          "latency_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "mib_per_sec": 234.0269796486062,
+          "req_per_sec": 2.33968256422321,
+          "requests": 1,
+          "status": {
+            "error": 1
+          },
+          "ttfb_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "wall_seconds": 0.427408408
+        },
+        "reread": {
+          "body_sha256_counts": {
+            "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e": 1
+          },
+          "bytes": 4294967296,
+          "errors": 0,
+          "extra": {
+            "cancel_after": 0,
+            "digest_mismatches": 0,
+            "expected_sha256": "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e"
+          },
+          "latency_ms": {
+            "Max": 16151.459,
+            "Mean": 16151.459,
+            "P50": 16151.459,
+            "P95": 16151.459,
+            "P99": 16151.459
+          },
+          "mib_per_sec": 253.59776439632714,
+          "req_per_sec": 0.061913516698322055,
+          "requests": 1,
+          "status": {
+            "200": 1
+          },
+          "ttfb_ms": {
+            "Max": 19.607,
+            "Mean": 19.607,
+            "P50": 19.607,
+            "P95": 19.607,
+            "P99": 19.607
+          },
+          "wall_seconds": 16.151561942
+        }
+      },
+      "4 GiB publish (streamed PUT, X-Checksum-Sha256 declared), 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 457.7109375,
+          "rss_end_mib": 164.82421875,
+          "rss_peak_sampled_mib": 305.96875,
+          "rss_start_mib": 305.89453125,
+          "samples": 349
+        },
+        "bytes": 4294967296,
+        "errors": 0,
+        "extra": {
+          "accepted_body_sha256": [
+            "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e"
+          ],
+          "created_201_body_sha256": null,
+          "distinct_accepted_bodies": 1,
+          "dup": false,
+          "size": 4294967296
+        },
+        "latency_ms": {
+          "Max": 338108.272,
+          "Mean": 338108.272,
+          "P50": 338108.272,
+          "P95": 338108.272,
+          "P99": 338108.272
+        },
+        "mib_per_sec": 9.855230065246923,
+        "req_per_sec": 0.0024060620276481746,
+        "requests": 1,
+        "status": {
+          "201": 1
+        },
+        "ttfb_ms": {
+          "Max": 338108.272,
+          "Mean": 338108.272,
+          "P50": 338108.272,
+          "P95": 338108.272,
+          "P99": 338108.272
+        },
+        "wall_seconds": 415.616882902
+      },
+      "4 GiB read, 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 457.7109375,
+          "rss_end_mib": 164.82421875,
+          "rss_peak_sampled_mib": 164.82421875,
+          "rss_start_mib": 164.82421875,
+          "samples": 13
+        },
+        "body_sha256_counts": {
+          "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e": 1
+        },
+        "bytes": 4294967296,
+        "errors": 0,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e"
+        },
+        "latency_ms": {
+          "Max": 15205.073,
+          "Mean": 15205.073,
+          "P50": 15205.073,
+          "P95": 15205.073,
+          "P99": 15205.073
+        },
+        "mib_per_sec": 269.3828971586996,
+        "req_per_sec": 0.06576730887663565,
+        "requests": 1,
+        "status": {
+          "200": 1
+        },
+        "ttfb_ms": {
+          "Max": 33.072,
+          "Mean": 33.072,
+          "P50": 33.072,
+          "P95": 33.072,
+          "P99": 33.072
+        },
+        "wall_seconds": 15.205122683
+      },
+      "4 GiB read, 4 concurrent streams": {
+        "ant_rss": {
+          "hwm_mib": 457.7109375,
+          "rss_end_mib": 232.6015625,
+          "rss_peak_sampled_mib": 232.6015625,
+          "rss_start_mib": 164.82421875,
+          "samples": 50
+        },
+        "body_sha256_counts": {
+          "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e": 4
+        },
+        "bytes": 17179869184,
+        "errors": 0,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "01bb955a3d17ca21cd8ded7d8828dce1bd7ce19258dc4e955ce4ba4ae9b5730e"
+        },
+        "latency_ms": {
+          "Max": 59337.12,
+          "Mean": 55139.81375,
+          "P50": 58904.504,
+          "P95": 59337.12,
+          "P99": 59337.12
+        },
+        "mib_per_sec": 276.1166700557839,
+        "req_per_sec": 0.06741129640033787,
+        "requests": 4,
+        "status": {
+          "200": 4
+        },
+        "ttfb_ms": {
+          "Max": 25.459,
+          "Mean": 25.0835,
+          "P50": 25.182,
+          "P95": 25.459,
+          "P99": 25.459
+        },
+        "wall_seconds": 59.337235947
+      },
+      "_wall_seconds": 638.99345675,
+      "rss_after_mib (rss,hwm)": [239.6015625, 457.7109375],
+      "rss_before_mib (rss,hwm)": [232.453125, 457.7109375]
+    }
+  },
+  "started": "2026-10-19T01:02:48Z",
+  "target": "kw"
+}

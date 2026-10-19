@@ -1,0 +1,64 @@
+2026-10-18T23:01:58Z == scratch namespace, secrets copied from production (same root key, scratch DSN and S3 prefix)
+2026-10-18T23:02:00Z == install previous image 0.1.0-0cbc6e3
+2026-10-18T23:02:27Z install ok in 26s
+2026-10-18T23:02:27Z running image: 192.168.10.131/azrtydxb/kuvryn-ant:0.1.0-0cbc6e3
+2026-10-18T23:02:28Z migrations at previous image: {"applied_version":24,"binary_version":24,"pending":0,"database_newer_than_binary":false}
+2026-10-18T23:02:28Z == bootstrap admin and seed data through the previous image
+2026-10-18T23:02:28Z bootstrap credential fields: ["expires_at","instance_id","principal_id","token","token_id"] stderr: 
+2026-10-18T23:02:32Z port-forward health: 200 token length: 47
+put seed/o0.bin -> 404
+put seed/o1.bin -> 404
+put seed/o2.bin -> 404
+put seed/o3.bin -> 404
+put seed/o4.bin -> 404
+put seed/o5.bin -> 404
+put seed/o6.bin -> 404
+put seed/o7.bin -> 404
+put seed/o8.bin -> 404
+put seed/o9.bin -> 404
+put seed/o10.bin -> 404
+put seed/o11.bin -> 404
+put seed/o12.bin -> 404
+put seed/o13.bin -> 404
+put seed/o14.bin -> 404
+put seed/o15.bin -> 404
+put seed/o16.bin -> 404
+put seed/o17.bin -> 404
+put seed/o18.bin -> 404
+put seed/o19.bin -> 404
+put seed/o20.bin -> 404
+put seed/o21.bin -> 404
+put seed/o22.bin -> 404
+put seed/o23.bin -> 404
+put seed/o24.bin -> 404
+put seed/o25.bin -> 404
+put seed/o26.bin -> 404
+put seed/o27.bin -> 404
+put seed/o28.bin -> 404
+put seed/o29.bin -> 404
+seeded 30
+2026-10-18T23:02:35Z OCI push failed
+2026-10-18T23:02:35Z == pre-upgrade backup (procedure step 2) and verify
+2026-10-18T23:02:36Z pre-upgrade backup in 1s manifest_sha256=f7b11f336a6dda8c61d209c6cdb7003b88055d980e07c557770b704f88557bbe
+2026-10-18T23:02:36Z backup verify OK
+2026-10-18T23:02:36Z == availability poller (in-cluster, 0.5 s) during the upgrade
+2026-10-18T23:02:43Z == helm upgrade 0.1.0-0cbc6e3 -> 0.1.0-50d26c0
+2026-10-18T23:02:54Z upgrade ok; helm --wait returned after 11s
+2026-10-18T23:03:04Z availability: 28 up samples, 20 down samples; first down 1792364564 last down 1792364574 => observed outage ~11s (Recreate strategy; single replica)
+2026-10-18T23:03:06Z running image after upgrade: 192.168.10.131/azrtydxb/kuvryn-ant:0.1.0-50d26c0
+2026-10-18T23:03:09Z migrations after upgrade: {"applied_version":26,"binary_version":26,"pending":0,"database_newer_than_binary":false}
+2026-10-18T23:03:10Z == post-upgrade verification
+2026-10-18T23:03:15Z port-forward health: 200 token length: 47
+2026-10-18T23:03:16Z seeded raw objects re-read after upgrade: checked 30, mismatches 30
+2026-10-18T23:03:16Z OCI validate FAILED
+2026-10-18T23:03:16Z publish after upgrade: http 201
+2026-10-18T23:03:16Z new-in-this-release endpoint (delete-policy, migration 025) answers: http 200
+2026-10-18T23:03:16Z == rollback rehearsal 1: previous image against the upgraded schema must refuse to start
+2026-10-18T23:04:57Z previous image did not become ready (expected)
+{"time":"2026-10-18T23:04:33.826019889Z","level":"ERROR","msg":"schema initialization failed","reason":"unsupported schema version or non-contiguous history"}
+2026-10-18T23:05:03Z == rollback rehearsal 2: documented path = restore the pre-upgrade backup into a fresh database, previous image
+2026-10-18T23:05:25Z restore of the pre-upgrade backup with 0.1.0-0cbc6e3 OK in 0s
+2026-10-18T23:05:34Z previous image serves the restored pre-upgrade state
+2026-10-18T23:05:38Z rollback copy: checked 30, mismatches 30; post-upgrade write read back: http 404 (404 = correctly absent)
+2026-10-18T23:05:38Z == cleanup
+2026-10-18T23:05:44Z done (scratch blob prefixes upg/ and upg-rb/ removed separately with s3poke rmprefix)

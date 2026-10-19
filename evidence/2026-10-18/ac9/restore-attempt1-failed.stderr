@@ -1,0 +1,2 @@
+{"time":"2026-10-18T21:57:51.536348817Z","level":"ERROR","msg":"restore failed","reason":"load of table feed_sources failed: ERROR: duplicate key value violates unique constraint \"replication_changes_pkey\" (SQLSTATE 23505)"}
+command terminated with exit code 1

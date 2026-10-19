@@ -1,0 +1,24 @@
+{
+  "finished": "2026-10-18T19:50:56Z",
+  "oci": {
+    "busybox": {
+      "digest_equal": true,
+      "kw_digest": "sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662",
+      "kw_validate_remote": "PASS",
+      "oke_digest": "sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662"
+    },
+    "static": {
+      "digest_equal": true,
+      "kw_digest": "sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3",
+      "kw_validate_remote": "PASS",
+      "oke_digest": "sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3"
+    }
+  },
+  "raw": {
+    "artifacts": 350,
+    "examples": null,
+    "mismatch_or_missing": 0,
+    "seconds": 2.611399042
+  },
+  "started": "2026-10-18T19:50:47Z"
+}

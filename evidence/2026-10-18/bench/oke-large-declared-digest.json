@@ -1,0 +1,256 @@
+{
+  "base_url": "https://ant.azrty.com",
+  "environment": {
+    "ant_image": "dxb.ocir.io/axmcgpqk0w0z/azrty/kuvryn-ant@sha256:e0469b5205e0afd6893f61bc67a6dcb71f1c1ad6f869068ed30e576262c54a53",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "10.40.10.200",
+    "node_capacity": "4cpu/23496272Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-19T01:25:36Z",
+  "scenarios": {
+    "large": {
+      "1 GiB cancel@100MiB then full re-read": {
+        "cancelled": {
+          "bytes": 0,
+          "error_samples": [
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+          ],
+          "errors": 1,
+          "extra": {
+            "cancel_after": 104857600,
+            "digest_mismatches": 0,
+            "expected_sha256": ""
+          },
+          "latency_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "mib_per_sec": 0,
+          "req_per_sec": 303.661919823536,
+          "requests": 1,
+          "status": {
+            "error": 1
+          },
+          "ttfb_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "wall_seconds": 0.003293136
+        },
+        "reread": {
+          "bytes": 0,
+          "error_samples": [
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+          ],
+          "errors": 4,
+          "extra": {
+            "cancel_after": 0,
+            "digest_mismatches": 0,
+            "expected_sha256": "-c"
+          },
+          "latency_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "mib_per_sec": 0,
+          "req_per_sec": 0.9754584907977261,
+          "requests": 4,
+          "status": {
+            "error": 4
+          },
+          "ttfb_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "wall_seconds": 4.100635791
+        }
+      },
+      "1 GiB publish (streamed PUT, X-Checksum-Sha256 declared), 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 1025.1953125,
+          "rss_end_mib": 422.47265625,
+          "rss_peak_sampled_mib": 422.47265625,
+          "rss_start_mib": 420.02734375,
+          "samples": 19
+        },
+        "bytes": 0,
+        "error_samples": [
+          "Put \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": readfrom tcp 10.244.74.28:39734-\u003e10.96.65.73:8080: write tcp 10.244.74.28:39734-\u003e10.96.65.73:8080: use of closed network connection"
+        ],
+        "errors": 1,
+        "extra": {
+          "accepted_body_sha256": null,
+          "created_201_body_sha256": null,
+          "distinct_accepted_bodies": 0,
+          "dup": false,
+          "size": 1073741824
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 0.03393698783130906,
+        "requests": 1,
+        "status": {
+          "error": 1
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 29.466374711
+      },
+      "1 GiB read, 1 stream": {
+        "ant_rss": {},
+        "bytes": 0,
+        "error_samples": [
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+        ],
+        "errors": 4,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "-c"
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 1063.85864722926,
+        "requests": 4,
+        "status": {
+          "error": 4
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 0.003759898
+      },
+      "1 GiB read, 4 concurrent streams": {
+        "ant_rss": {},
+        "bytes": 0,
+        "error_samples": [
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/1g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+        ],
+        "errors": 4,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "-c"
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 1.969415489496152,
+        "requests": 4,
+        "status": {
+          "error": 4
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 2.03105948
+      },
+      "4 GiB cancel@100MiB then full re-read": {
+        "cancelled": {
+          "error": "kubectl -n kuvryn-ant exec evb-bench -- sh -c /bench/antbench stream -token-file /secrets/token.json -timeout 90m -url http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/4g-0.bin -c 1 -cancel-after 104857600: exit status 1: Error from server (NotFound): pods \"evb-bench\" not found\n"
+        },
+        "reread": {
+          "error": "kubectl -n kuvryn-ant exec evb-bench -- sh -c /bench/antbench stream -token-file /secrets/token.json -timeout 90m -url http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/4g-0.bin -expect-sha256  -c 1: exit status 1: Error from server (NotFound): pods \"evb-bench\" not found\n"
+        }
+      },
+      "4 GiB publish (streamed PUT, X-Checksum-Sha256 declared), 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 812.37890625,
+          "rss_end_mib": 428.765625,
+          "rss_peak_sampled_mib": 812.6328125,
+          "rss_start_mib": 51.34375,
+          "samples": 824
+        },
+        "error": "kubectl -n kuvryn-ant exec evb-bench -- sh -c /bench/antbench put -token-file /secrets/token.json -timeout 90m -url-template http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/4g-{i}.bin -n 1 -size 4294967296 -c 1 -seed large4: exit status 137: command terminated with exit code 137\n"
+      },
+      "4 GiB read, 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 812.37890625,
+          "rss_end_mib": 429.359375,
+          "rss_peak_sampled_mib": 429.359375,
+          "rss_start_mib": 429.359375,
+          "samples": 1
+        },
+        "error": "kubectl -n kuvryn-ant exec evb-bench -- sh -c /bench/antbench stream -token-file /secrets/token.json -timeout 90m -url http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/4g-0.bin -expect-sha256  -c 1: exit status 1: error: cannot exec into a container in a completed pod; current phase is Failed\n"
+      },
+      "4 GiB read, 4 concurrent streams": {
+        "ant_rss": {
+          "hwm_mib": 812.37890625,
+          "rss_end_mib": 429.37109375,
+          "rss_peak_sampled_mib": 429.37109375,
+          "rss_start_mib": 429.37109375,
+          "samples": 1
+        },
+        "error": "kubectl -n kuvryn-ant exec evb-bench -- sh -c /bench/antbench stream -token-file /secrets/token.json -timeout 90m -url http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad56c38/raw/large/4g-0.bin -expect-sha256  -c 4: exit status 1: Error from server (NotFound): pods \"evb-bench\" not found\n"
+      },
+      "_wall_seconds": 1359.419857708,
+      "rss_after_mib (rss,hwm)": [429.4765625, 812.37890625],
+      "rss_before_mib (rss,hwm)": [420.02734375, 1025.1953125]
+    }
+  },
+  "started": "2026-10-19T01:02:48Z",
+  "target": "oke"
+}

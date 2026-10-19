@@ -1,0 +1,8 @@
+Release "ant" does not exist. Installing it now.
+NAME: ant
+LAST DEPLOYED: Mon Oct 19 03:18:51 2026
+NAMESPACE: ant-upg
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None

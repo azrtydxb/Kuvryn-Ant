@@ -1,0 +1,38 @@
+{
+  "base_url": "https://ant.kw.watteel.lab",
+  "environment": {
+    "ant_image": "192.168.10.131/azrtydxb/kuvryn-ant@sha256:4f4a936d9fc8c2e6a07e65630086c1ec5641082eca939f4f59422465b3b3c8f6",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "master-11",
+    "node_capacity": "8cpu/32385096Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-19T01:22:57Z",
+  "scenarios": {
+    "npm": {
+      "_wall_seconds": 161.600923208,
+      "npm install (express+mocha) cold: origin npmjs via Ant": {
+        "raw": "rc=0\nseconds=12\npackages=139\nadded 138 packages in 12s\nnpm notice\nnpm notice New major version of npm available! 10.8.2 -\u003e 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice"
+      },
+      "npm install warm Ant cache, empty client cache": {
+        "raw": "rc=0\nseconds=5\npackages=139\nadded 138 packages in 5s\nnpm notice\nnpm notice New major version of npm available! 10.8.2 -\u003e 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice"
+      },
+      "npm install with origin unreachable, served from Ant cache": {
+        "raw": "rc=1\nseconds=141\npackages=0\nnpm error code E503\nnpm error 503 Service Unavailable - GET http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-npm-6ad5702d/npm/express - Service Unavailable\nnpm error A complete log of this run can be found in: /tmp/c3/_logs/2026-10-19T01_20_36_340Z-debug-0.log"
+      }
+    }
+  },
+  "started": "2026-10-19T01:19:41Z",
+  "target": "kw"
+}

@@ -1,0 +1,1001 @@
+{
+  "base_url": "https://ant.azrty.com",
+  "environment": {
+    "ant_image": "dxb.ocir.io/axmcgpqk0w0z/azrty/kuvryn-ant@sha256:8c17785be5742599b2095fcb1b07429c07dd65318706a77ece21faccff3b0d30",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "10.40.10.200",
+    "node_capacity": "4cpu/23496272Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-18T23:38:29Z",
+  "scenarios": {
+    "cold": {
+      "_wall_seconds": 99.854876917,
+      "cold 1MiB x8 sequential (origin over WAN)": {
+        "body_sha256_counts": {
+          "1a58ef821618809b7d699de6c2532690836dafc4fed08091f9fca3c8226d5b07": 1,
+          "1ed83c5e4a20afb5ede91984075f50df8db90dec84f91ed9649d3e15d76da1cb": 1,
+          "31f4cdf2d576e7233d57f0c7838b869faad379c33d2d2649b906c1d0ebd83bb9": 2,
+          "b300c321ce59775892d12d129e595add17d1f81d094fd299f21e6db941741064": 1,
+          "c83cb63a54b246dc4c9838f46b23cf56d2111be4c5e72210ff7d5f4824adc445": 3
+        },
+        "bytes": 8388608,
+        "digests_ok": true,
+        "errors": 0,
+        "expected_fetches": 8,
+        "latency_ms": {
+          "Max": 576.849,
+          "Mean": 261.779625,
+          "P50": 266.256,
+          "P95": 576.849,
+          "P99": 576.849
+        },
+        "mib_per_sec": 3.819729245711706,
+        "origin_background_gets_per_s": 2,
+        "origin_fetch_estimate": 5,
+        "origin_get_delta_raw": 25,
+        "req_per_sec": 3.819729245711706,
+        "requests": 8,
+        "status": {
+          "200": 8
+        },
+        "ttfb_ms": {
+          "Max": 571.396,
+          "Mean": 257.170375,
+          "P50": 263.575,
+          "P95": 571.396,
+          "P99": 571.396
+        },
+        "wall_seconds": 2.094389284
+      },
+      "cold 4MiB x8 sequential (origin over WAN)": {
+        "body_sha256_counts": {
+          "084ce969f8d8a833eaa687cf72a3d24f9a7a13e63c2fe6a37b2b2c69c445da2d": 1,
+          "34a677d2d730a08a1701ba9f5dc2a8e6c2d8c6aba32a64ff52bf05c2fd33afc9": 2,
+          "60f89071e5641ddd2a6279012fcc822e0ee25654d87dfaec16f4191b30f6cd6d": 3,
+          "7cd6f52cf25946011916074909e4c879a6c3b22f6189b5adddac02ee3d340d9c": 1,
+          "8801820144e0cf3675d04e56457b3614dc50b1b8d988089ecf931657228de2f1": 1
+        },
+        "bytes": 33554432,
+        "digests_ok": true,
+        "errors": 0,
+        "expected_fetches": 8,
+        "latency_ms": {
+          "Max": 394.538,
+          "Mean": 256.190875,
+          "P50": 337.667,
+          "P95": 394.538,
+          "P99": 394.538
+        },
+        "mib_per_sec": 15.612055349685237,
+        "origin_background_gets_per_s": 2,
+        "origin_fetch_estimate": 4,
+        "origin_get_delta_raw": 25,
+        "req_per_sec": 3.9030138374213093,
+        "requests": 8,
+        "status": {
+          "200": 8
+        },
+        "ttfb_ms": {
+          "Max": 352.879,
+          "Mean": 236.6265,
+          "P50": 325.314,
+          "P95": 352.879,
+          "P99": 352.879
+        },
+        "wall_seconds": 2.049698088
+      },
+      "warm 1MiB x64 c=8": {
+        "body_sha256_counts": {
+          "1004e4d7e7da79cddcd64489c801729bb427a79a3dd6d34bcddb8617d39c2274": 6,
+          "1a58ef821618809b7d699de6c2532690836dafc4fed08091f9fca3c8226d5b07": 10,
+          "1ed83c5e4a20afb5ede91984075f50df8db90dec84f91ed9649d3e15d76da1cb": 7,
+          "316782a3f73d2a87c161066d7c1abb7be06ece69a57dc06ab8f04880948862dc": 6,
+          "31f4cdf2d576e7233d57f0c7838b869faad379c33d2d2649b906c1d0ebd83bb9": 5,
+          "7333c5841b7e1bf0dd324e6dc07fe9cdb207a1bd30344c7ec5261adda26ea745": 3,
+          "b300c321ce59775892d12d129e595add17d1f81d094fd299f21e6db941741064": 12,
+          "c83cb63a54b246dc4c9838f46b23cf56d2111be4c5e72210ff7d5f4824adc445": 15
+        },
+        "bytes": 67108864,
+        "digests_ok": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 4740.976,
+          "Mean": 168.880234375,
+          "P50": 73.859,
+          "P95": 318.792,
+          "P99": 353.52
+        },
+        "mib_per_sec": 12.862412981078387,
+        "origin_fetch_estimate": 1,
+        "origin_get_delta_raw": 83,
+        "req_per_sec": 12.862412981078387,
+        "requests": 64,
+        "status": {
+          "200": 64
+        },
+        "ttfb_ms": {
+          "Max": 344.807,
+          "Mean": 89.590625,
+          "P50": 67.881,
+          "P95": 235.732,
+          "P99": 327.286
+        },
+        "wall_seconds": 4.97573823,
+        "warm_run_performed_no_upstream_blob_fetch": false
+      },
+      "warm 4MiB x64 c=8": {
+        "body_sha256_counts": {
+          "084ce969f8d8a833eaa687cf72a3d24f9a7a13e63c2fe6a37b2b2c69c445da2d": 10,
+          "20309178823403654a91dea1aeac761f446fb4e3bca9598810881d84a12bd9de": 8,
+          "34a677d2d730a08a1701ba9f5dc2a8e6c2d8c6aba32a64ff52bf05c2fd33afc9": 3,
+          "60f89071e5641ddd2a6279012fcc822e0ee25654d87dfaec16f4191b30f6cd6d": 11,
+          "7b51c6e12a53ceaf340247a5fadab246adf27f0b5bdd85047298a7df886c8631": 3,
+          "7cd6f52cf25946011916074909e4c879a6c3b22f6189b5adddac02ee3d340d9c": 15,
+          "8801820144e0cf3675d04e56457b3614dc50b1b8d988089ecf931657228de2f1": 8,
+          "cc44f33c2ee31d6f5f0ea2e3aeaac98ef1fc4cd2a7380e2165b42335e8b8588c": 6
+        },
+        "bytes": 268435456,
+        "digests_ok": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 4604.575,
+          "Mean": 284.5456875,
+          "P50": 120.597,
+          "P95": 430.885,
+          "P99": 4600.847
+        },
+        "mib_per_sec": 51.31511934322127,
+        "origin_fetch_estimate": 3,
+        "origin_get_delta_raw": 85,
+        "req_per_sec": 12.828779835805317,
+        "requests": 64,
+        "status": {
+          "200": 64
+        },
+        "ttfb_ms": {
+          "Max": 644.609,
+          "Mean": 115.8871875,
+          "P50": 90.003,
+          "P95": 335.941,
+          "P99": 400.068
+        },
+        "wall_seconds": 4.988783097,
+        "warm_run_performed_no_upstream_blob_fetch": false
+      }
+    },
+    "fanout": {
+      "_wall_seconds": 157.545434416,
+      "fanout 32 x 4MiB uncached key, round 0": {
+        "all_bodies_equal_expected_sha256": true,
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 268.2578125,
+          "rss_peak_sampled_mib": 394.87890625,
+          "rss_start_mib": 394.87890625,
+          "samples": 4
+        },
+        "assert_at_most_one_upstream_fetch": true,
+        "body_sha256_counts": {
+          "bebf6582e54635fd7089538bf29eeea256cbb665468d2c79eade5d83afe44b5e": 32
+        },
+        "bytes": 134217728,
+        "completion_consistent_with_one_fetch": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 977.51,
+          "Mean": 822.15640625,
+          "P50": 864.108,
+          "P95": 906.215,
+          "P99": 977.51
+        },
+        "mib_per_sec": 130.8915415364152,
+        "origin_background_gets_per_s": 2.4,
+        "origin_fetch_estimate": 0,
+        "origin_get_delta_raw": 45,
+        "req_per_sec": 32.7228853841038,
+        "requests": 32,
+        "single_transfer_floor_s": 3.3554432,
+        "slowest_client_s": 0.977,
+        "status": {
+          "200": 32
+        },
+        "ttfb_ms": {
+          "Max": 960.306,
+          "Mean": 687.08878125,
+          "P50": 683.954,
+          "P95": 755.734,
+          "P99": 960.306
+        },
+        "wall_seconds": 0.977908874
+      },
+      "fanout 32 x 4MiB uncached key, round 1": {
+        "all_bodies_equal_expected_sha256": true,
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 206.06640625,
+          "rss_peak_sampled_mib": 268.8203125,
+          "rss_start_mib": 268.8203125,
+          "samples": 4
+        },
+        "assert_at_most_one_upstream_fetch": true,
+        "body_sha256_counts": {
+          "c3221c5b567b3c7b3dba5230e6c1dea43bb11908b8d55f0f6ebfa8ba64cd617c": 32
+        },
+        "bytes": 134217728,
+        "completion_consistent_with_one_fetch": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 949.031,
+          "Mean": 842.9435625,
+          "P50": 873.944,
+          "P95": 944.933,
+          "P99": 949.031
+        },
+        "mib_per_sec": 134.78309753618342,
+        "origin_background_gets_per_s": 2.4,
+        "origin_fetch_estimate": 1,
+        "origin_get_delta_raw": 46,
+        "req_per_sec": 33.695774384045855,
+        "requests": 32,
+        "single_transfer_floor_s": 3.3554432,
+        "slowest_client_s": 0.949,
+        "status": {
+          "200": 32
+        },
+        "ttfb_ms": {
+          "Max": 778.693,
+          "Mean": 698.16571875,
+          "P50": 707.532,
+          "P95": 767.915,
+          "P99": 778.693
+        },
+        "wall_seconds": 0.949673975
+      },
+      "fanout 32 x 4MiB uncached key, round 2": {
+        "all_bodies_equal_expected_sha256": true,
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 264.11328125,
+          "rss_peak_sampled_mib": 264.11328125,
+          "rss_start_mib": 206.6328125,
+          "samples": 4
+        },
+        "assert_at_most_one_upstream_fetch": true,
+        "body_sha256_counts": {
+          "0757f6b662d998f0f0d07815c1eb712809bd7d393c09fca73cea05b7585d5d6f": 32
+        },
+        "bytes": 134217728,
+        "completion_consistent_with_one_fetch": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 814.159,
+          "Mean": 711.31596875,
+          "P50": 756.751,
+          "P95": 812.763,
+          "P99": 814.159
+        },
+        "mib_per_sec": 157.063463928311,
+        "origin_background_gets_per_s": 2.5,
+        "origin_fetch_estimate": 0,
+        "origin_get_delta_raw": 45,
+        "req_per_sec": 39.26586598207775,
+        "requests": 32,
+        "single_transfer_floor_s": 3.3554432,
+        "slowest_client_s": 0.814,
+        "status": {
+          "200": 32
+        },
+        "ttfb_ms": {
+          "Max": 683.279,
+          "Mean": 598.1670625,
+          "P50": 607.567,
+          "P95": 672.266,
+          "P99": 683.279
+        },
+        "wall_seconds": 0.814957195
+      },
+      "fanout 32 x 8MiB uncached key, round 0": {
+        "all_bodies_equal_expected_sha256": true,
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 572.6640625,
+          "rss_peak_sampled_mib": 572.6640625,
+          "rss_start_mib": 264.6796875,
+          "samples": 3
+        },
+        "assert_at_most_one_upstream_fetch": true,
+        "body_sha256_counts": {
+          "908f3d6593b47f3c4fc07b5a651f0f462e6e7033dc954bd4a1074bfb8dfdd9e3": 32
+        },
+        "bytes": 268435456,
+        "completion_consistent_with_one_fetch": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 1178.198,
+          "Mean": 1015.84621875,
+          "P50": 1085.488,
+          "P95": 1166.222,
+          "P99": 1178.198
+        },
+        "mib_per_sec": 217.17717035044436,
+        "origin_background_gets_per_s": 2.1,
+        "origin_fetch_estimate": 1,
+        "origin_get_delta_raw": 45,
+        "req_per_sec": 27.147146293805545,
+        "requests": 32,
+        "single_transfer_floor_s": 6.7108864,
+        "slowest_client_s": 1.178,
+        "status": {
+          "200": 32
+        },
+        "ttfb_ms": {
+          "Max": 984.403,
+          "Mean": 678.01265625,
+          "P50": 674.213,
+          "P95": 782.591,
+          "P99": 984.403
+        },
+        "wall_seconds": 1.178761099
+      },
+      "fanout 32 x 8MiB uncached key, round 1": {
+        "all_bodies_equal_expected_sha256": true,
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 609.7890625,
+          "rss_peak_sampled_mib": 609.7890625,
+          "rss_start_mib": 580.6640625,
+          "samples": 4
+        },
+        "assert_at_most_one_upstream_fetch": true,
+        "body_sha256_counts": {
+          "4877ca408e65faa432dfa0db456ec731dd3d7f62b52b6b6261b6ca7f538dc46a": 32
+        },
+        "bytes": 268435456,
+        "completion_consistent_with_one_fetch": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 1315.543,
+          "Mean": 1142.05021875,
+          "P50": 1232.987,
+          "P95": 1303.156,
+          "P99": 1315.543
+        },
+        "mib_per_sec": 194.5041318235403,
+        "origin_background_gets_per_s": 2.1,
+        "origin_fetch_estimate": 1,
+        "origin_get_delta_raw": 45,
+        "req_per_sec": 24.313016477942536,
+        "requests": 32,
+        "single_transfer_floor_s": 6.7108864,
+        "slowest_client_s": 1.315,
+        "status": {
+          "200": 32
+        },
+        "ttfb_ms": {
+          "Max": 927.132,
+          "Mean": 817.6910625,
+          "P50": 830.97,
+          "P95": 899.808,
+          "P99": 927.132
+        },
+        "wall_seconds": 1.316167413
+      },
+      "fanout 32 x 8MiB uncached key, round 2": {
+        "all_bodies_equal_expected_sha256": true,
+        "ant_rss": {
+          "hwm_mib": 723.37109375,
+          "rss_end_mib": 723.37109375,
+          "rss_peak_sampled_mib": 723.37109375,
+          "rss_start_mib": 557.671875,
+          "samples": 4
+        },
+        "assert_at_most_one_upstream_fetch": true,
+        "body_sha256_counts": {
+          "1b9836c44eefb4ea1e40bb8a85ea0b1c601a306c7c7af4075257aa3713d94948": 32
+        },
+        "bytes": 268435456,
+        "completion_consistent_with_one_fetch": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 1221.542,
+          "Mean": 1046.48790625,
+          "P50": 1070.957,
+          "P95": 1220.583,
+          "P99": 1221.542
+        },
+        "mib_per_sec": 209.5569925149574,
+        "origin_background_gets_per_s": 2.3,
+        "origin_fetch_estimate": 0,
+        "origin_get_delta_raw": 41,
+        "req_per_sec": 26.194624064369673,
+        "requests": 32,
+        "single_transfer_floor_s": 6.7108864,
+        "slowest_client_s": 1.221,
+        "status": {
+          "200": 32
+        },
+        "ttfb_ms": {
+          "Max": 1000.927,
+          "Mean": 779.51871875,
+          "P50": 788.68,
+          "P95": 947.836,
+          "P99": 1000.927
+        },
+        "wall_seconds": 1.221624709
+      }
+    },
+    "large": {
+      "1 GiB cancel@100MiB then full re-read": {
+        "cancelled": {
+          "body_sha256_counts": {
+            "7515bf959b73b956ceb967351c7e299cbb3668a53d35f9c770eb72e00d93ced6": 1
+          },
+          "bytes": 10,
+          "errors": 0,
+          "extra": {
+            "cancel_after": 104857600,
+            "digest_mismatches": 0,
+            "expected_sha256": ""
+          },
+          "latency_ms": {
+            "Max": 7.212,
+            "Mean": 7.212,
+            "P50": 7.212,
+            "P95": 7.212,
+            "P99": 7.212
+          },
+          "mib_per_sec": 0.0013092090053357503,
+          "req_per_sec": 137.28051419789398,
+          "requests": 1,
+          "status": {
+            "404": 1
+          },
+          "ttfb_ms": {
+            "Max": 7.026,
+            "Mean": 7.026,
+            "P50": 7.026,
+            "P95": 7.026,
+            "P99": 7.026
+          },
+          "wall_seconds": 0.007284355
+        },
+        "reread": {
+          "body_sha256_counts": {
+            "7515bf959b73b956ceb967351c7e299cbb3668a53d35f9c770eb72e00d93ced6": 4
+          },
+          "bytes": 40,
+          "errors": 0,
+          "extra": {
+            "cancel_after": 0,
+            "digest_mismatches": 4,
+            "expected_sha256": "-c"
+          },
+          "latency_ms": {
+            "Max": 10.886,
+            "Mean": 9.635,
+            "P50": 10.643,
+            "P95": 10.886,
+            "P99": 10.886
+          },
+          "mib_per_sec": 0.0034447407237464416,
+          "req_per_sec": 361.20724491431486,
+          "requests": 4,
+          "status": {
+            "404": 4
+          },
+          "ttfb_ms": {
+            "Max": 10.865,
+            "Mean": 9.56475,
+            "P50": 10.439,
+            "P95": 10.865,
+            "P99": 10.865
+          },
+          "wall_seconds": 0.011073975
+        }
+      },
+      "1 GiB publish (streamed PUT), 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 850.15625,
+          "rss_end_mib": 654.703125,
+          "rss_peak_sampled_mib": 813.66015625,
+          "rss_start_mib": 788.703125,
+          "samples": 356
+        },
+        "bytes": 0,
+        "error_samples": [
+          "Put \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/1g-0.bin\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)"
+        ],
+        "errors": 1,
+        "extra": {
+          "accepted_body_sha256": null,
+          "created_201_body_sha256": null,
+          "distinct_accepted_bodies": 0,
+          "dup": false,
+          "size": 1073741824
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 0.0016302471533589595,
+        "requests": 1,
+        "status": {
+          "error": 1
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 613.403923411
+      },
+      "1 GiB read, 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 850.15625,
+          "rss_end_mib": 655.3984375,
+          "rss_peak_sampled_mib": 655.3984375,
+          "rss_start_mib": 655.3984375,
+          "samples": 1
+        },
+        "body_sha256_counts": {
+          "7515bf959b73b956ceb967351c7e299cbb3668a53d35f9c770eb72e00d93ced6": 4
+        },
+        "bytes": 40,
+        "errors": 0,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 4,
+          "expected_sha256": "-c"
+        },
+        "latency_ms": {
+          "Max": 18.051,
+          "Mean": 14.05175,
+          "P50": 16.116,
+          "P95": 18.051,
+          "P99": 18.051
+        },
+        "mib_per_sec": 0.0020969956795849655,
+        "req_per_sec": 219.88593417164847,
+        "requests": 4,
+        "status": {
+          "404": 4
+        },
+        "ttfb_ms": {
+          "Max": 18.027,
+          "Mean": 14.027,
+          "P50": 16.101,
+          "P95": 18.027,
+          "P99": 18.027
+        },
+        "wall_seconds": 0.01819125
+      },
+      "1 GiB read, 4 concurrent streams": {
+        "ant_rss": {
+          "hwm_mib": 850.15625,
+          "rss_end_mib": 663.48046875,
+          "rss_peak_sampled_mib": 663.48046875,
+          "rss_start_mib": 663.48046875,
+          "samples": 1
+        },
+        "body_sha256_counts": {
+          "7515bf959b73b956ceb967351c7e299cbb3668a53d35f9c770eb72e00d93ced6": 4
+        },
+        "bytes": 40,
+        "errors": 0,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 4,
+          "expected_sha256": "-c"
+        },
+        "latency_ms": {
+          "Max": 18.7,
+          "Mean": 17.95525,
+          "P50": 18.448,
+          "P95": 18.7,
+          "P99": 18.7
+        },
+        "mib_per_sec": 0.0019912548347223898,
+        "req_per_sec": 208.79820295738645,
+        "requests": 4,
+        "status": {
+          "404": 4
+        },
+        "ttfb_ms": {
+          "Max": 18.277,
+          "Mean": 17.7965,
+          "P50": 18.276,
+          "P95": 18.277,
+          "P99": 18.277
+        },
+        "wall_seconds": 0.019157253
+      },
+      "4 GiB cancel@100MiB then full re-read": {
+        "cancelled": {
+          "bytes": 0,
+          "error_samples": [
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+          ],
+          "errors": 1,
+          "extra": {
+            "cancel_after": 104857600,
+            "digest_mismatches": 0,
+            "expected_sha256": ""
+          },
+          "latency_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "mib_per_sec": 0,
+          "req_per_sec": 266.05523625971034,
+          "requests": 1,
+          "status": {
+            "error": 1
+          },
+          "ttfb_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "wall_seconds": 0.003758618
+        },
+        "reread": {
+          "bytes": 0,
+          "error_samples": [
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+            "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+          ],
+          "errors": 4,
+          "extra": {
+            "cancel_after": 0,
+            "digest_mismatches": 0,
+            "expected_sha256": "-c"
+          },
+          "latency_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "mib_per_sec": 0,
+          "req_per_sec": 1.2967964726770247,
+          "requests": 4,
+          "status": {
+            "error": 4
+          },
+          "ttfb_ms": {
+            "Max": 0,
+            "Mean": 0,
+            "P50": 0,
+            "P95": 0,
+            "P99": 0
+          },
+          "wall_seconds": 3.084524121
+        }
+      },
+      "4 GiB publish (streamed PUT), 1 stream": {
+        "ant_rss": {
+          "hwm_mib": 850.15625,
+          "rss_end_mib": 654.87109375,
+          "rss_peak_sampled_mib": 741.1328125,
+          "rss_start_mib": 663.48046875,
+          "samples": 72
+        },
+        "bytes": 0,
+        "error_samples": [
+          "Put \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": readfrom tcp 10.244.74.109:53544-\u003e10.96.65.73:8080: write tcp 10.244.74.109:53544-\u003e10.96.65.73:8080: use of closed network connection"
+        ],
+        "errors": 1,
+        "extra": {
+          "accepted_body_sha256": null,
+          "created_201_body_sha256": null,
+          "distinct_accepted_bodies": 0,
+          "dup": false,
+          "size": 4294967296
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 0.008710125558090804,
+        "requests": 1,
+        "status": {
+          "error": 1
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 114.808907556
+      },
+      "4 GiB read, 1 stream": {
+        "ant_rss": {},
+        "bytes": 0,
+        "error_samples": [
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+        ],
+        "errors": 4,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "-c"
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 1202.9145416429467,
+        "requests": 4,
+        "status": {
+          "error": 4
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 0.003325257
+      },
+      "4 GiB read, 4 concurrent streams": {
+        "ant_rss": {},
+        "bytes": 0,
+        "error_samples": [
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused",
+          "Get \"http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-large-6ad553c0/raw/large/4g-0.bin\": dial tcp 10.96.65.73:8080: connect: connection refused"
+        ],
+        "errors": 4,
+        "extra": {
+          "cancel_after": 0,
+          "digest_mismatches": 0,
+          "expected_sha256": "-c"
+        },
+        "latency_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "mib_per_sec": 0,
+        "req_per_sec": 1.954943984694321,
+        "requests": 4,
+        "status": {
+          "error": 4
+        },
+        "ttfb_ms": {
+          "Max": 0,
+          "Mean": 0,
+          "P50": 0,
+          "P95": 0,
+          "P99": 0
+        },
+        "wall_seconds": 2.046094431
+      },
+      "_wall_seconds": 741.000546083,
+      "rss_after_mib (rss,hwm)": [0, 0],
+      "rss_before_mib (rss,hwm)": [723.40234375, 723.40234375]
+    },
+    "npm": {
+      "error": "POST /api/v1/feeds -\u003e 503 upstream connect error or disconnect/reset before headers. reset reason: remote connection failure"
+    },
+    "outage": {
+      "error": "POST /api/v1/feeds -\u003e 503 upstream connect error or disconnect/reset before headers. reset reason: remote connection failure"
+    },
+    "publish": {
+      "error": "POST /api/v1/feeds -\u003e 503 upstream connect error or disconnect/reset before headers. reset reason: remote connection failure"
+    },
+    "warm": {
+      "_wall_seconds": 155.272514041,
+      "metadata 100 rps (list packages, 16 workers)": {
+        "bytes": 1083000,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 15.065,
+          "Mean": 4.533266,
+          "P50": 4.455,
+          "P95": 5.327,
+          "P99": 6.416
+        },
+        "mib_per_sec": 0.034421782075563234,
+        "req_per_sec": 99.982976625113,
+        "requests": 3000,
+        "status": {
+          "200": 3000
+        },
+        "ttfb_ms": {
+          "Max": 15.049,
+          "Mean": 4.515114666666666,
+          "P50": 4.435,
+          "P95": 5.304,
+          "P99": 6.397
+        },
+        "wall_seconds": 30.005107882
+      },
+      "warm 64KiB c=1": {
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 128.09375,
+          "rss_peak_sampled_mib": 307.76171875,
+          "rss_start_mib": 191.16796875,
+          "samples": 20
+        },
+        "body_sha256_counts": {
+          "d26cd872a4fd42084197139906bbde6350806d0c3a3e64e6595890b24a211e0e": 758
+        },
+        "bytes": 49676288,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 204.922,
+          "Mean": 39.59154881266491,
+          "P50": 37.762,
+          "P95": 50.411,
+          "P99": 76.287
+        },
+        "mib_per_sec": 1.5780942381142893,
+        "req_per_sec": 25.24950780982863,
+        "requests": 758,
+        "status": {
+          "200": 758
+        },
+        "ttfb_ms": {
+          "Max": 204.754,
+          "Mean": 39.33884036939314,
+          "P50": 37.484,
+          "P95": 50.149,
+          "P99": 75.666
+        },
+        "wall_seconds": 30.020387158
+      },
+      "warm 64KiB c=16": {
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 141.55859375,
+          "rss_peak_sampled_mib": 273.375,
+          "rss_start_mib": 128.09375,
+          "samples": 19
+        },
+        "body_sha256_counts": {
+          "d26cd872a4fd42084197139906bbde6350806d0c3a3e64e6595890b24a211e0e": 7738
+        },
+        "bytes": 507117568,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 234.495,
+          "Mean": 62.08005156371156,
+          "P50": 59.755,
+          "P95": 83.487,
+          "P99": 106.701
+        },
+        "mib_per_sec": 16.09554152475374,
+        "req_per_sec": 257.52866439605987,
+        "requests": 7738,
+        "status": {
+          "200": 7738
+        },
+        "ttfb_ms": {
+          "Max": 232.775,
+          "Mean": 61.262174592918065,
+          "P50": 58.957,
+          "P95": 82.638,
+          "P99": 105.198
+        },
+        "wall_seconds": 30.047140648
+      },
+      "warm 8MiB c=1": {
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 135.14453125,
+          "rss_peak_sampled_mib": 249.1328125,
+          "rss_start_mib": 151.0078125,
+          "samples": 20
+        },
+        "body_sha256_counts": {
+          "64c311392ca54384594e9d839e0749344c7da115f87d05fef601795b0395881e": 281
+        },
+        "bytes": 2357198848,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 448.952,
+          "Mean": 107.04403914590748,
+          "P50": 99.778,
+          "P95": 139.095,
+          "P99": 260.748
+        },
+        "mib_per_sec": 74.72367466817293,
+        "req_per_sec": 9.340459333521617,
+        "requests": 281,
+        "status": {
+          "200": 281
+        },
+        "ttfb_ms": {
+          "Max": 417.767,
+          "Mean": 61.778679715302495,
+          "P50": 55.55,
+          "P95": 78.682,
+          "P99": 186.021
+        },
+        "wall_seconds": 30.08417359
+      },
+      "warm 8MiB c=16": {
+        "ant_rss": {
+          "hwm_mib": 692.37890625,
+          "rss_end_mib": 139.58203125,
+          "rss_peak_sampled_mib": 140.21875,
+          "rss_start_mib": 135.14453125,
+          "samples": 18
+        },
+        "body_sha256_counts": {
+          "64c311392ca54384594e9d839e0749344c7da115f87d05fef601795b0395881e": 1556
+        },
+        "bytes": 13052674048,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 4805.437,
+          "Mean": 309.76431169665807,
+          "P50": 297.586,
+          "P95": 419.296,
+          "P99": 585.983
+        },
+        "mib_per_sec": 411.7574820092909,
+        "req_per_sec": 51.469685251161366,
+        "requests": 1556,
+        "status": {
+          "200": 1556
+        },
+        "ttfb_ms": {
+          "Max": 557.798,
+          "Mean": 194.89900899742932,
+          "P50": 191.265,
+          "P95": 265.193,
+          "P99": 451.25
+        },
+        "wall_seconds": 30.231387513
+      }
+    }
+  },
+  "started": "2026-10-18T23:18:24Z",
+  "target": "oke"
+}

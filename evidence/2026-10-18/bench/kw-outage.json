@@ -1,0 +1,190 @@
+{
+  "base_url": "https://ant.kw.watteel.lab",
+  "environment": {
+    "ant_image": "192.168.10.131/azrtydxb/kuvryn-ant@sha256:4f4a936d9fc8c2e6a07e65630086c1ec5641082eca939f4f59422465b3b3c8f6",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "master-11",
+    "node_capacity": "8cpu/32385096Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-19T01:24:47Z",
+  "scenarios": {
+    "outage": {
+      "_wall_seconds": 14.549887083,
+      "origin back: previously failed object (no cache poisoning)": {
+        "body_sha256_counts": {
+          "22221e93d0002d0c80503e338e0c03149b31f099502c2381ea2935bc2f9b11e2": 3
+        },
+        "bytes": 786432,
+        "digest_ok": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 312.152,
+          "Mean": 204.7396666666667,
+          "P50": 278.579,
+          "P95": 312.152,
+          "P99": 312.152
+        },
+        "mib_per_sec": 1.220647637584847,
+        "req_per_sec": 4.882590550339388,
+        "requests": 3,
+        "status": {
+          "200": 3
+        },
+        "ttfb_ms": {
+          "Max": 277.478,
+          "Mean": 161.66400000000002,
+          "P50": 185.5,
+          "P95": 277.478,
+          "P99": 277.478
+        },
+        "wall_seconds": 0.614427929
+      },
+      "origin down: cached objects x40": {
+        "bytes": 10485760,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 36.52,
+          "Mean": 20.50025,
+          "P50": 18.789,
+          "P95": 34.688,
+          "P99": 36.52
+        },
+        "mib_per_sec": 46.6639666584465,
+        "req_per_sec": 186.655866633786,
+        "requests": 40,
+        "status": {
+          "200": 40
+        },
+        "ttfb_ms": {
+          "Max": 34.869,
+          "Mean": 19.278875,
+          "P50": 17.659,
+          "P95": 33.051,
+          "P99": 34.869
+        },
+        "wall_seconds": 0.214298113
+      },
+      "origin down: uncached object x5": {
+        "bytes": 100,
+        "errors": 5,
+        "latency_ms": {
+          "Max": 16.112,
+          "Mean": 10.047799999999999,
+          "P50": 9.177,
+          "P95": 16.112,
+          "P99": 16.112
+        },
+        "mib_per_sec": 0.0018908601432771092,
+        "req_per_sec": 99.13552827984691,
+        "requests": 5,
+        "status": {
+          "503": 5
+        },
+        "ttfb_ms": {
+          "Max": 16.074,
+          "Mean": 9.9958,
+          "P50": 9.06,
+          "P95": 16.074,
+          "P99": 16.074
+        },
+        "wall_seconds": 0.050436005
+      },
+      "variant B: origin rejects the proxy credential (token revoked), source config unchanged": {
+        "cached objects x40": {
+          "bytes": 10485760,
+          "errors": 0,
+          "latency_ms": {
+            "Max": 30.598,
+            "Mean": 18.9406,
+            "P50": 17.865,
+            "P95": 28.951,
+            "P99": 30.598
+          },
+          "mib_per_sec": 51.74959721606625,
+          "req_per_sec": 206.998388864265,
+          "requests": 40,
+          "status": {
+            "200": 40
+          },
+          "ttfb_ms": {
+            "Max": 28.629,
+            "Mean": 17.365000000000002,
+            "P50": 16.61,
+            "P95": 26.918,
+            "P99": 28.629
+          },
+          "wall_seconds": 0.193238219
+        },
+        "credential restored: previously failed object": {
+          "body_sha256_counts": {
+            "0aa946f06777d6d46b9bccacd026591f8864e119cb0dfc4b5b3d65452513ac07": 3
+          },
+          "bytes": 786432,
+          "digest_ok": true,
+          "errors": 0,
+          "latency_ms": {
+            "Max": 293.867,
+            "Mean": 187.81799999999998,
+            "P50": 249.489,
+            "P95": 293.867,
+            "P99": 293.867
+          },
+          "mib_per_sec": 1.330625145683494,
+          "req_per_sec": 5.322500582733976,
+          "requests": 3,
+          "status": {
+            "200": 3
+          },
+          "ttfb_ms": {
+            "Max": 247.762,
+            "Mean": 138.98499999999999,
+            "P50": 149.842,
+            "P95": 247.762,
+            "P99": 247.762
+          },
+          "wall_seconds": 0.563644842
+        },
+        "token revoked http": 200,
+        "uncached object x5": {
+          "bytes": 100,
+          "errors": 5,
+          "latency_ms": {
+            "Max": 34.856,
+            "Mean": 30.0888,
+            "P50": 29.654,
+            "P95": 34.856,
+            "P99": 34.856
+          },
+          "mib_per_sec": 0.0006331364642644657,
+          "req_per_sec": 33.19458505762882,
+          "requests": 5,
+          "status": {
+            "503": 5
+          },
+          "ttfb_ms": {
+            "Max": 34.811,
+            "Mean": 30.0476,
+            "P50": 29.594,
+            "P95": 34.811,
+            "P99": 34.811
+          },
+          "wall_seconds": 0.150626977
+        }
+      }
+    }
+  },
+  "started": "2026-10-19T01:24:28Z",
+  "target": "kw"
+}

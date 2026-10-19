@@ -1,0 +1,108 @@
+{
+  "base_url": "https://ant.kw.watteel.lab",
+  "environment": {
+    "ant_image": "192.168.10.131/azrtydxb/kuvryn-ant@sha256:e0469b5205e0afd6893f61bc67a6dcb71f1c1ad6f869068ed30e576262c54a53",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "master-11",
+    "node_capacity": "8cpu/32385096Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-19T00:08:46Z",
+  "scenarios": {
+    "outage": {
+      "_wall_seconds": 6.2244019999999995,
+      "origin back: previously failed object (no cache poisoning)": {
+        "body_sha256_counts": {
+          "22221e93d0002d0c80503e338e0c03149b31f099502c2381ea2935bc2f9b11e2": 3
+        },
+        "bytes": 786432,
+        "digest_ok": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 309.07,
+          "Mean": 197.23800000000003,
+          "P50": 268.332,
+          "P95": 309.07,
+          "P99": 309.07
+        },
+        "mib_per_sec": 1.2671633795054722,
+        "req_per_sec": 5.068653518021889,
+        "requests": 3,
+        "status": {
+          "200": 3
+        },
+        "ttfb_ms": {
+          "Max": 267.164,
+          "Mean": 161.841,
+          "P50": 205.806,
+          "P95": 267.164,
+          "P99": 267.164
+        },
+        "wall_seconds": 0.591873165
+      },
+      "origin down: cached objects x40": {
+        "bytes": 800,
+        "errors": 40,
+        "latency_ms": {
+          "Max": 22.657,
+          "Mean": 10.595775,
+          "P50": 8.321,
+          "P95": 19.919,
+          "P99": 22.657
+        },
+        "mib_per_sec": 0.00695011946249468,
+        "req_per_sec": 364.3864232752411,
+        "requests": 40,
+        "status": {
+          "503": 40
+        },
+        "ttfb_ms": {
+          "Max": 22.599,
+          "Mean": 10.547575,
+          "P50": 8.298,
+          "P95": 19.892,
+          "P99": 22.599
+        },
+        "wall_seconds": 0.109773574
+      },
+      "origin down: uncached object x5": {
+        "bytes": 100,
+        "errors": 5,
+        "latency_ms": {
+          "Max": 11.418,
+          "Mean": 9.7486,
+          "P50": 9.199,
+          "P95": 11.418,
+          "P99": 11.418
+        },
+        "mib_per_sec": 0.0019505232304558525,
+        "req_per_sec": 102.26359234492381,
+        "requests": 5,
+        "status": {
+          "503": 5
+        },
+        "ttfb_ms": {
+          "Max": 11.378,
+          "Mean": 9.7108,
+          "P50": 9.172,
+          "P95": 11.378,
+          "P99": 11.378
+        },
+        "wall_seconds": 0.048893256
+      }
+    }
+  },
+  "started": "2026-10-19T00:08:07Z",
+  "target": "kw"
+}

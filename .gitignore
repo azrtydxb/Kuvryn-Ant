@@ -9,3 +9,4 @@ __pycache__/
 
 # Locally built service binary
 /ant
+.bench-bin/

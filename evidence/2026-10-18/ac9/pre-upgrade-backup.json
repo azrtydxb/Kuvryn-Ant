@@ -1,0 +1,10 @@
+{
+  "created": true,
+  "manifest_sha256": "b1ac11a884783e64bffd334ef40c348990e236e358d00ee4255e2f9145706151",
+  "schema_version": 24,
+  "tables": 44,
+  "rows": 282,
+  "blobs": 33,
+  "blob_bytes": 5439784,
+  "notice": "Root keys are not part of this backup. Restore requires the same external keyring that protected the source deployment."
+}

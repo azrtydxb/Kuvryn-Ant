@@ -1,0 +1,59 @@
+2026-10-18T21:47:25Z == scratch resources
+2026-10-18T21:47:26Z scratch database ant_scratch created on ant-pg-1
+2026-10-18T21:47:42Z rehearsal pod ready; image 192.168.10.131/azrtydxb/kuvryn-ant@sha256:38bdcb81e9ce485770978befbcc044c1ab3c5f5518aae6696a849984117a0033
+2026-10-18T21:47:42Z production reference: {"feeds":33} {"blob_count":3010,"blob_bytes":11656685882} 
+2026-10-18T21:47:42Z == backup (online, service keeps running)
+2026-10-18T21:49:44Z backup done in 122s; manifest_sha256=88e552c5b34b76e0667aeb17d9886f57902b0a92b221a8d5365aa0647d16d28a
+{"schema_version":31,"blob_count":null,"blob_bytes":11656685882,"tables":62,"manifest_sha256":"88e552c5b34b76e0667aeb17d9886f57902b0a92b221a8d5365aa0647d16d28a"}
+2026-10-18T21:49:44Z backup directory size: 11128 MiB
+2026-10-18T21:49:44Z == backup verify (no database or keys needed)
+2026-10-18T21:50:28Z verify OK in 44s
+2026-10-18T21:50:28Z == negative: wrong expected manifest digest must be refused
+2026-10-18T21:50:28Z refused as expected: command terminated with exit code 1
+2026-10-18T21:50:28Z == restore into scratch database + scratch blob prefix
+2026-10-18T21:57:51Z RESTORE FAILED
+2026-10-18T22:09:44Z == scratch resources
+2026-10-18T22:09:45Z scratch database ant_scratch created on ant-pg-1
+2026-10-18T22:10:52Z rehearsal pod ready; image 192.168.10.131/azrtydxb/kuvryn-ant@sha256:4039775e550a219994ac259f8db228960e44c9a2fcc4228a62bbbbbc2736dd0b
+2026-10-18T22:11:06Z production reference: {"feeds":35} {"blob_count":3097,"blob_bytes":11738635826} 
+2026-10-18T22:11:06Z reusing the existing backup directory, manifest_sha256=88e552c5b34b76e0667aeb17d9886f57902b0a92b221a8d5365aa0647d16d28a
+2026-10-18T22:11:07Z WORKAROUND: ant_scratch has session_replication_role=replica so the replication triggers do not fire during COPY (bug 5)
+2026-10-18T22:11:07Z == restore into scratch database + scratch blob prefix
+2026-10-18T22:18:56Z restore done in 469s
+{"restored":true,"manifest_sha256":"88e552c5b34b76e0667aeb17d9886f57902b0a92b221a8d5365aa0647d16d28a","schema_version":31,"tables":62,"rows":20376,"blobs":3010,"blob_bytes":11656685882,"secrets_verified":18,"migrated_to_current_schema":true}
+2026-10-18T22:18:56Z workaround removed again before serving (triggers active)
+2026-10-18T22:18:56Z == serve the restored copy (scratch DB + scratch prefix) on 127.0.0.1:8081 inside the pod
+2026-10-18T22:18:58Z restored server ready after ~0s
+2026-10-18T22:18:58Z restored reference: {"feeds":33} {"blob_count":3010,"blob_bytes":11656685882} 
+2026-10-18T22:18:58Z production reference was: {"feeds":35} {"blob_count":3097,"blob_bytes":11738635826}  (restored may differ by objects created after the snapshot)
+2026-10-18T22:19:05Z restored raw feed: DIGEST SET DIFFERS
+2026-10-18T22:19:05Z == diagnostics of the restored instance
+2026-10-18T22:19:05Z == cleanup
+deleted 3023 objects (11658597639 bytes) under scratch/
+2026-10-18T22:20:07Z done
+2026-10-18T22:21:36Z == scratch resources
+2026-10-18T22:21:37Z scratch database ant_scratch created on ant-pg-1
+2026-10-18T22:21:53Z rehearsal pod ready; image 192.168.10.131/azrtydxb/kuvryn-ant@sha256:4039775e550a219994ac259f8db228960e44c9a2fcc4228a62bbbbbc2736dd0b
+2026-10-18T22:21:56Z production reference: {"feeds":36} {"blob_count":3140,"blob_bytes":11738717812} 
+2026-10-18T22:21:56Z == backup (online, service keeps running)
+2026-10-18T22:23:46Z backup done in 109s; manifest_sha256=f102820f58dc8c7de26d0963b94a9e7c14ebc91d4ae006f9b604a41b6936d46c
+{"schema_version":32,"blob_count":null,"blob_bytes":11738717812,"tables":63,"manifest_sha256":"f102820f58dc8c7de26d0963b94a9e7c14ebc91d4ae006f9b604a41b6936d46c"}
+2026-10-18T22:23:47Z backup directory size: 11207 MiB
+2026-10-18T22:23:47Z == backup verify (no database or keys needed)
+2026-10-18T22:24:24Z verify OK in 36s
+2026-10-18T22:24:25Z == negative: wrong expected manifest digest must be refused
+2026-10-18T22:24:25Z refused as expected: command terminated with exit code 1
+2026-10-18T22:24:26Z WORKAROUND: ant_scratch has session_replication_role=replica so the replication triggers do not fire during COPY (bug 5)
+2026-10-18T22:24:26Z == restore into scratch database + scratch blob prefix
+2026-10-18T22:31:42Z restore done in 436s
+{"restored":true,"manifest_sha256":"f102820f58dc8c7de26d0963b94a9e7c14ebc91d4ae006f9b604a41b6936d46c","schema_version":32,"tables":63,"rows":22105,"blobs":3140,"blob_bytes":11738717812,"secrets_verified":20,"migrated_to_current_schema":true}
+2026-10-18T22:31:42Z workaround removed again before serving (triggers active)
+2026-10-18T22:31:42Z == serve the restored copy (scratch DB + scratch prefix) on 127.0.0.1:8081 inside the pod
+2026-10-18T22:31:43Z restored server ready after ~0s
+2026-10-18T22:31:44Z restored reference: {"feeds":36} {"blob_count":3140,"blob_bytes":11738717812} 
+2026-10-18T22:31:44Z production reference was: {"feeds":36} {"blob_count":3140,"blob_bytes":11738717812}  (restored may differ by objects created after the snapshot)
+2026-10-18T22:32:02Z restored raw feed: all 350 replicated artifacts digest-identical to the publisher manifest (status {"200":350})
+2026-10-18T22:32:03Z == diagnostics of the restored instance
+2026-10-18T22:32:03Z == cleanup
+deleted 3140 objects (11738717812 bytes) under scratch/
+2026-10-18T22:33:05Z done

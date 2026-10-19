@@ -1,0 +1,238 @@
+{
+  "backend": "local-disk",
+  "base": "http://127.0.0.1:56007",
+  "finished": "2026-10-18T20:06:40Z",
+  "run_id": "6ad526cb",
+  "steps": [
+    {
+      "detail": "{\"backend\":\"local-disk\",\"base\":\"http://127.0.0.1:56007\",\"started\":\"2026-10-18T20:06:35Z\"}",
+      "name": "environment",
+      "result": "info"
+    },
+    {
+      "detail": "{\"latency_ms\":4,\"status\":\"ok\"}",
+      "name": "blob_storage readiness",
+      "result": "info"
+    },
+    {
+      "detail": "backend=disk blobs=9 bytes=87038381",
+      "name": "storage.usage",
+      "result": "info"
+    },
+    {
+      "detail": "http 201 in 0.0s",
+      "name": "publish empty (0 B)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 201 in 0.0s",
+      "name": "publish one-byte (1 B)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 201 in 0.0s",
+      "name": "publish 4k (4096 B)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 201 in 0.0s",
+      "name": "publish 1m (1048593 B)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 201 in 0.0s",
+      "name": "publish 8m (8388611 B)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 201 in 0.2s",
+      "name": "publish big (69206021 B)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=0 in 0.0s",
+      "name": "read+sha256 empty",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=1 in 0.0s",
+      "name": "read+sha256 one-byte",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=4096 in 0.0s",
+      "name": "read+sha256 4k",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=1048593 in 0.0s",
+      "name": "read+sha256 1m",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=8388611 in 0.0s",
+      "name": "read+sha256 8m",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=69206021 in 0.1s",
+      "name": "read+sha256 big",
+      "result": "pass"
+    },
+    {
+      "detail": "http 206 content-range=bytes 0-99/69206021",
+      "name": "range first 100 B",
+      "result": "pass"
+    },
+    {
+      "detail": "http 206 content-range=bytes 34603010-34604033/69206021",
+      "name": "range middle 1 KiB",
+      "result": "pass"
+    },
+    {
+      "detail": "http 206 content-range=bytes 67104768-67112959/69206021",
+      "name": "range across 64 MiB part boundary",
+      "result": "pass"
+    },
+    {
+      "detail": "http 206 content-range=bytes 69206011-69206020/69206021",
+      "name": "range open-ended last 10 B",
+      "result": "pass"
+    },
+    {
+      "detail": "http 206 content-range=bytes 69206014-69206020/69206021",
+      "name": "range suffix 7 B",
+      "result": "pass"
+    },
+    {
+      "detail": "http 416",
+      "name": "range unsatisfiable -\u003e 416",
+      "result": "pass"
+    },
+    {
+      "detail": "conflict http 409; identical re-put http 204",
+      "name": "immutable: different content rejected, original intact",
+      "result": "pass"
+    },
+    {
+      "detail": "2026/10/19 00:06:36 base unspecified, using empty image\n2026/10/19 00:06:36 pushed blob: sha256:b971f10f7b7b3b9de8489f541d9a7d253f114c88b2cbc33207b495cb75032d9c\n2026/10/19 00:06:36 pushed blob: sha256:16b81b72a59210e71cf170e612f779df084dfb5cc721b11b1fbbb706e67c180d\n2026/10/19 00:06:36 127.0.0.1:56007/ac6o-6ad526cb/demo:v1: digest: sha256:0e3b9a9a4ab093472aa2d361ea39a6988087af0b008ae2dbbf44edd67b5de965 size: 405\n127.0.0.1:56007/ac6o-6ad526cb/demo@sha256:0e3b9a9a4ab093472aa2d361ea39a6988087af0b008ae2dbbf44edd67b5de965",
+      "name": "oci: push (crane append, 8 MiB layer)",
+      "result": "pass"
+    },
+    {
+      "detail": "sha256:0e3b9a9a4ab093472aa2d361ea39a6988087af0b008ae2dbbf44edd67b5de965",
+      "name": "oci: digest resolves",
+      "result": "pass"
+    },
+    {
+      "detail": "",
+      "name": "oci: pull + client-side digest verification",
+      "result": "pass"
+    },
+    {
+      "detail": "PASS: 127.0.0.1:56007/ac6o-6ad526cb/demo:v1",
+      "name": "oci: crane validate --remote (re-reads every blob and verifies digests)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 {\"action\":\"unlist\",\"version_removed\":false,\"component_removed\":false,\"assets_removed\":0,\"tags_removed\":0,\"unchanged\":false}\n",
+      "name": "lifecycle: unlist version accepted",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 (unlisted content: direct read behaviour)",
+      "name": "read after unlist",
+      "result": "info"
+    },
+    {
+      "detail": "http 200 {\"action\":\"relist\",\"version_removed\":false,\"component_removed\":false,\"assets_removed\":0,\"tags_removed\":0,\"unchanged\":false}\n",
+      "name": "lifecycle: relist version",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200",
+      "name": "read after relist intact",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 {\"action\":\"delete\",\"version_removed\":true,\"component_removed\":true,\"assets_removed\":1,\"tags_removed\":0,\"unchanged\":false}\n",
+      "name": "lifecycle: delete version (8m)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 404",
+      "name": "deleted object -\u003e 404",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200",
+      "name": "neighbouring object unaffected",
+      "result": "pass"
+    },
+    {
+      "detail": "http 403 {\"code\":\"forbidden\",\"message\":\"deletion denied by policy: artifact access denied\",\"request_id\":\"SREQSCBGWXRAEGKIN56WRLH4VS\"}\n",
+      "name": "delete policy=denied blocks delete",
+      "result": "pass"
+    },
+    {
+      "detail": "{\"blobs_marked\":0,\"blobs_swept\":0,\"blobs_unmarked\":0,\"gc_failed\":0,\"integrity_bytes\":174076739,\"integrity_checked\":18,\"integrity_errors\":0,\"integrity_mismatches\":0,\"integrity_wrapped\":true,\"protected_release\":0,\"protected_tagged\":0,\"skipped_referenced\":0,\"truncated\":false,\"versions_deleted\":0}",
+      "name": "gc dry-run completes, sweeps nothing",
+      "result": "pass"
+    },
+    {
+      "detail": "runs=1 last={\"blobs_marked\":0,\"blobs_swept\":0,\"blobs_unmarked\":0,\"gc_failed\":0,\"integrity_bytes\":174076739,\"integrity_checked\":18,\"integrity_errors\":0,\"integrity_mismatches\":0,\"integrity_wrapped\":true,\"protected_release\":0,\"protected_tagged\":0,\"skipped_referenced\":0,\"truncated\":false,\"versions_deleted\":0}",
+      "name": "integrity scan completes a full pass without findings on our fresh blobs",
+      "result": "pass"
+    },
+    {
+      "detail": "0",
+      "name": "open integrity findings before injection (whole instance)",
+      "result": "info"
+    },
+    {
+      "detail": "disk [/tmp/ae6/storage/blobs/3e2196ce-894d-4148-8673-b30d7c16a08b/objects/8b155c3d2eafc039b799e21380c11ccd66fcca9caf0f64121d243d76e178460a /tmp/ae6/storage/blobs/9a564fbb-b411-4a91-9eb0-344251df9d2a/objects/8b155c3d2eafc039b799e21380c11ccd66fcca9caf0f64121d243d76e178460a]",
+      "name": "blob location",
+      "result": "info"
+    },
+    {
+      "detail": "disk",
+      "name": "fault injected: one byte flipped in stored blob (same size)",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200 len=1048593 sha256_matches_original=false",
+      "name": "read of corrupted blob",
+      "result": "info"
+    },
+    {
+      "detail": "{\"blobs_marked\":0,\"blobs_swept\":0,\"blobs_unmarked\":0,\"gc_failed\":0,\"integrity_bytes\":174076739,\"integrity_checked\":18,\"integrity_errors\":0,\"integrity_mismatches\":1,\"integrity_wrapped\":true,\"mismatches\":[{\"digest\":\"8b155c3d2eafc039b799e21380c11ccd66fcca9caf0f64121d243d76e178460a\",\"domain_id\":\"3e2196ce-894d-4148-8673-b30d7c16a08b\",\"kind\":\"digest\"}],\"protected_release\":0,\"protected_tagged\":0,\"skipped_referenced\":0,\"truncated\":false,\"versions_deleted\":0}",
+      "name": "scan run that detected it",
+      "result": "info"
+    },
+    {
+      "detail": "",
+      "name": "integrity scan detects the corrupted blob and records a finding",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200",
+      "name": "after repair the object reads correctly again",
+      "result": "pass"
+    },
+    {
+      "detail": "passes=1",
+      "name": "finding resolves automatically after repair + clean pass",
+      "result": "pass"
+    },
+    {
+      "detail": "http 200",
+      "name": "cleanup feed 1d9dbc38-a8e5-4285-ade8-890089c1e707",
+      "result": "info"
+    },
+    {
+      "detail": "http 200",
+      "name": "cleanup feed 2910aaf6-07ca-4b0d-b99d-e2d71d64fa0c",
+      "result": "info"
+    }
+  ]
+}

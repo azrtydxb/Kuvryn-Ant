@@ -1,0 +1,202 @@
+{
+  "base_url": "https://ant.azrty.com",
+  "environment": {
+    "ant_image": "dxb.ocir.io/axmcgpqk0w0z/azrty/kuvryn-ant@sha256:4f4a936d9fc8c2e6a07e65630086c1ec5641082eca939f4f59422465b3b3c8f6",
+    "ant_resources": {
+      "limits": {
+        "cpu": "4",
+        "memory": "8Gi"
+      },
+      "requests": {
+        "cpu": "1",
+        "memory": "2Gi"
+      }
+    },
+    "arch": "arm64",
+    "bench_path": "pod -\u003e http://ant-ant.kuvryn-ant.svc:8080 (ClusterIP, plain HTTP; ingress/LB excluded)",
+    "node": "10.40.10.200",
+    "node_capacity": "4cpu/23496272Ki",
+    "storage_backend": "s3"
+  },
+  "finished": "2026-10-19T01:28:40Z",
+  "scenarios": {
+    "npm": {
+      "_wall_seconds": 161.352445041,
+      "npm install (express+mocha) cold: origin npmjs via Ant": {
+        "raw": "rc=0\nseconds=12\npackages=139\nadded 138 packages in 12s\nnpm notice\nnpm notice New major version of npm available! 10.8.2 -\u003e 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice"
+      },
+      "npm install warm Ant cache, empty client cache": {
+        "raw": "rc=0\nseconds=4\npackages=139\nadded 138 packages in 4s\nnpm notice\nnpm notice New major version of npm available! 10.8.2 -\u003e 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice"
+      },
+      "npm install with origin unreachable, served from Ant cache": {
+        "raw": "rc=1\nseconds=140\npackages=0\nWarning: Ignoring extra certs from `/tmp/ant-ca.pem`, load failed: error:80000002:system library::No such file or directory\nnpm error code E503\nnpm error 503 Service Unavailable - GET http://ant-ant.kuvryn-ant.svc:8080/feeds/evb-npm-6ad5716d/npm/express - Service Unavailable\nnpm error A complete log of this run can be found in: /tmp/c3/_logs/2026-10-19T01_26_20_247Z-debug-0.log"
+      }
+    },
+    "outage": {
+      "_wall_seconds": 18.253247125,
+      "origin back: previously failed object (no cache poisoning)": {
+        "body_sha256_counts": {
+          "22221e93d0002d0c80503e338e0c03149b31f099502c2381ea2935bc2f9b11e2": 3
+        },
+        "bytes": 786432,
+        "digest_ok": true,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 261.844,
+          "Mean": 140.38433333333333,
+          "P50": 122.872,
+          "P95": 261.844,
+          "P99": 261.844
+        },
+        "mib_per_sec": 1.7804411658308812,
+        "req_per_sec": 7.121764663323525,
+        "requests": 3,
+        "status": {
+          "200": 3
+        },
+        "ttfb_ms": {
+          "Max": 261.118,
+          "Mean": 139.18,
+          "P50": 121.558,
+          "P95": 261.118,
+          "P99": 261.118
+        },
+        "wall_seconds": 0.421243911
+      },
+      "origin down: cached objects x40": {
+        "bytes": 10485760,
+        "errors": 0,
+        "latency_ms": {
+          "Max": 129.394,
+          "Mean": 70.783775,
+          "P50": 68.287,
+          "P95": 100.094,
+          "P99": 129.394
+        },
+        "mib_per_sec": 13.64577943506315,
+        "req_per_sec": 54.5831177402526,
+        "requests": 40,
+        "status": {
+          "200": 40
+        },
+        "ttfb_ms": {
+          "Max": 127.943,
+          "Mean": 69.58415,
+          "P50": 66.519,
+          "P95": 99.023,
+          "P99": 127.943
+        },
+        "wall_seconds": 0.732827322
+      },
+      "origin down: uncached object x5": {
+        "bytes": 100,
+        "errors": 5,
+        "latency_ms": {
+          "Max": 19.072,
+          "Mean": 12.139,
+          "P50": 10.233,
+          "P95": 19.072,
+          "P99": 19.072
+        },
+        "mib_per_sec": 0.001568058964824417,
+        "req_per_sec": 82.2114498549864,
+        "requests": 5,
+        "status": {
+          "503": 5
+        },
+        "ttfb_ms": {
+          "Max": 19.032,
+          "Mean": 12.1128,
+          "P50": 10.2,
+          "P95": 19.032,
+          "P99": 19.032
+        },
+        "wall_seconds": 0.060818779
+      },
+      "variant B: origin rejects the proxy credential (token revoked), source config unchanged": {
+        "cached objects x40": {
+          "bytes": 10485760,
+          "errors": 0,
+          "latency_ms": {
+            "Max": 89.243,
+            "Mean": 57.727374999999995,
+            "P50": 55.654,
+            "P95": 86.044,
+            "P99": 89.243
+          },
+          "mib_per_sec": 17.181203005876892,
+          "req_per_sec": 68.72481202350757,
+          "requests": 40,
+          "status": {
+            "200": 40
+          },
+          "ttfb_ms": {
+            "Max": 87.754,
+            "Mean": 56.166275,
+            "P50": 54.49,
+            "P95": 84.027,
+            "P99": 87.754
+          },
+          "wall_seconds": 0.582031421
+        },
+        "credential restored: previously failed object": {
+          "body_sha256_counts": {
+            "0aa946f06777d6d46b9bccacd026591f8864e119cb0dfc4b5b3d65452513ac07": 3
+          },
+          "bytes": 786432,
+          "digest_ok": true,
+          "errors": 0,
+          "latency_ms": {
+            "Max": 512.139,
+            "Mean": 220.93033333333335,
+            "P50": 102.596,
+            "P95": 512.139,
+            "P99": 512.139
+          },
+          "mib_per_sec": 1.131378475955022,
+          "req_per_sec": 4.525513903820088,
+          "requests": 3,
+          "status": {
+            "200": 3
+          },
+          "ttfb_ms": {
+            "Max": 510.47,
+            "Mean": 219.66666666666666,
+            "P50": 101.273,
+            "P95": 510.47,
+            "P99": 510.47
+          },
+          "wall_seconds": 0.662908139
+        },
+        "token revoked http": 200,
+        "uncached object x5": {
+          "bytes": 100,
+          "errors": 5,
+          "latency_ms": {
+            "Max": 24.66,
+            "Mean": 21.589199999999998,
+            "P50": 21.101,
+            "P95": 24.66,
+            "P99": 24.66
+          },
+          "mib_per_sec": 0.0008827018156076584,
+          "req_per_sec": 46.278996950130804,
+          "requests": 5,
+          "status": {
+            "503": 5
+          },
+          "ttfb_ms": {
+            "Max": 24.611,
+            "Mean": 21.5566,
+            "P50": 21.07,
+            "P95": 24.611,
+            "P99": 24.611
+          },
+          "wall_seconds": 0.108040371
+        }
+      }
+    }
+  },
+  "started": "2026-10-19T01:25:01Z",
+  "target": "oke"
+}

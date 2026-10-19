@@ -1,0 +1,72 @@
+1792365615 up
+1792365616 up
+1792365616 up
+1792365617 up
+1792365617 up
+1792365618 up
+1792365618 up
+1792365619 up
+1792365619 up
+1792365620 up
+1792365620 up
+1792365621 up
+1792365621 up
+1792365622 up
+1792365622 up
+1792365623 up
+1792365624 up
+1792365624 up
+1792365625 up
+1792365625 up
+1792365626 up
+1792365626 up
+1792365627 up
+1792365627 up
+1792365628 up
+1792365628 up
+wget: download timed out
+1792365630 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365630 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365631 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365631 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365632 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365632 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365633 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365633 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365634 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365634 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365635 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365635 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365636 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365636 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365637 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365637 down
+wget: can't connect to remote host (10.43.132.130): No route to host
+1792365638 down
+1792365638 up
+1792365639 up
+1792365639 up
+1792365640 up
+1792365640 up
+1792365641 up
+1792365641 up
+1792365642 up
+1792365642 up
+1792365643 up
+1792365643 up
+1792365644 up
