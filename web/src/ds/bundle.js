@@ -1,7 +1,8 @@
 // @ts-nocheck
 // Vendored from the Azrty design system bundle (components only).
-// Local patches: keyboard-operable table rows, dialog focus management, unique field ids.
+// Local patches: accessible names for action column headers, portal-rendered dropdown menus, keyboard-operable table rows, dialog focus management, unique field ids.
 import * as React from "react";
+import { createPortal } from "react-dom";
 const __ds_ns = { __errors: [] };
 const __ds_scope = {};
 function useDialogFocus(open, inline) {
@@ -678,7 +679,9 @@ function Table({
       textAlign: c.align || 'left',
       width: c.width
     }
-  }, c.label)))), /*#__PURE__*/React.createElement("tbody", null, rows.map((r, i) => /*#__PURE__*/React.createElement("tr", {
+  }, c.label === '' ? /*#__PURE__*/React.createElement("span", {
+    className: "az-sr-only"
+  }, "Actions") : c.label)))), /*#__PURE__*/React.createElement("tbody", null, rows.map((r, i) => /*#__PURE__*/React.createElement("tr", {
     key: r[rowKey] != null ? r[rowKey] : i,
     className: onRowClick ? 'az-table__row--click' : undefined,
     tabIndex: onRowClick ? 0 : undefined,
@@ -851,35 +854,62 @@ function DropdownMenu({
   style
 }) {
   const [open, setOpen] = React.useState(false);
+  const [pos, setPos] = React.useState(null);
   const ref = React.useRef(null);
+  const menuRef = React.useRef(null);
   const isOpen = forced != null ? forced : open;
+  // The menu is rendered in a portal on document.body with fixed coordinates so it
+  // is never clipped by an overflow container (tables, drawers, cards).
+  const place = React.useCallback(() => {
+    if (!ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    const m = menuRef.current;
+    const w = m ? m.offsetWidth : 200;
+    const h = m ? m.offsetHeight : 0;
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    let left = align === 'end' ? r.right - w : r.left;
+    left = Math.max(8, Math.min(left, vw - w - 8));
+    let top = r.bottom + 6;
+    if (h && top + h > vh - 8 && r.top - 6 - h >= 8) top = r.top - 6 - h;
+    else if (h && top + h > vh - 8) top = Math.max(8, vh - h - 8);
+    setPos(p => p && p.left === left && p.top === top ? p : { left, top });
+  }, [align]);
+  React.useLayoutEffect(() => {
+    if (!isOpen) { setPos(null); return; }
+    place();
+  }, [isOpen, place, items.length]);
   React.useEffect(() => {
-    if (!open) return;
+    if (!isOpen) return;
     const off = e => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && ref.current.contains(e.target)) return;
+      if (menuRef.current && menuRef.current.contains(e.target)) return;
+      setOpen(false);
     };
     const esc = e => {
       if (e.key === 'Escape') setOpen(false);
     };
+    const move = e => {
+      if (menuRef.current && e.target instanceof Node && menuRef.current.contains(e.target)) return;
+      place();
+    };
     document.addEventListener('mousedown', off);
     document.addEventListener('keydown', esc);
+    window.addEventListener('resize', move);
+    window.addEventListener('scroll', move, true);
     return () => {
       document.removeEventListener('mousedown', off);
       document.removeEventListener('keydown', esc);
+      window.removeEventListener('resize', move);
+      window.removeEventListener('scroll', move, true);
     };
-  }, [open]);
-  return /*#__PURE__*/React.createElement("div", {
-    ref: ref,
-    className: ('az-menu-wrap ' + className).trim(),
-    style: style
-  }, /*#__PURE__*/React.createElement("span", {
-    onClick: () => setOpen(o => !o),
-    style: {
-      display: 'inline-flex'
-    }
-  }, trigger), isOpen && /*#__PURE__*/React.createElement("div", {
-    className: 'az-menu' + (align === 'end' ? ' az-menu--end' : ''),
-    role: "menu"
+  }, [isOpen, place]);
+  const menu = isOpen && /*#__PURE__*/React.createElement("div", {
+    ref: menuRef,
+    className: 'az-menu az-menu--portal' + (align === 'end' ? ' az-menu--end' : ''),
+    role: "menu",
+    style: pos ? { top: pos.top, left: pos.left } : { top: 0, left: 0, visibility: 'hidden' },
+    onClick: e => e.stopPropagation()
   }, items.map((it, k) => it.divider ? /*#__PURE__*/React.createElement("div", {
     key: k,
     className: "az-menu__sep",
@@ -901,7 +931,20 @@ function DropdownMenu({
     size: 15
   }), it.label, it.kbd && /*#__PURE__*/React.createElement("span", {
     className: "az-menu__kbd"
-  }, it.kbd)))));
+  }, it.kbd))));
+  return /*#__PURE__*/React.createElement("div", {
+    ref: ref,
+    className: ('az-menu-wrap ' + className).trim(),
+    style: style
+  }, /*#__PURE__*/React.createElement("span", {
+    onClick: e => {
+      e.stopPropagation();
+      setOpen(o => !o);
+    },
+    style: {
+      display: 'inline-flex'
+    }
+  }, trigger), menu && createPortal(menu, document.body));
 }
 Object.assign(__ds_scope, { DropdownMenu });
 })(); } catch (e) { __ds_ns.__errors.push({ path: "components/disclosure/DropdownMenu.jsx", error: String((e && e.message) || e) }); }

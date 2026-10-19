@@ -603,7 +603,9 @@ function FeedDetail({
         text={
           feed ? (
             <>
-              Revision {feed.revision} · <Copyable text={endpoint(feed.slug)} />
+              Revision {feed.revision}
+              {" · "}
+              <Copyable text={endpoint(feed.slug)} />
             </>
           ) : undefined
         }

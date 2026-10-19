@@ -18,11 +18,12 @@ import {
   Select,
   Switch,
   Table,
+  Tabs,
 } from "./ds/bundle";
 import {
+  Digest,
   Failure,
   Loading,
-  Mono,
   Unavailable,
   chk,
   count,
@@ -50,6 +51,7 @@ export function RetentionPane({ client }: { client: Client }) {
   const [editing, setEditing] = useState<RetentionPolicy | "new">();
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<RetentionRun>();
+  const [tab, setTab] = useState("policies");
   if (policies.state === "loading") return <Loading what="retention" />;
   if (policies.state === "unavailable")
     return <Unavailable what="Retention and cleanup" />;
@@ -68,143 +70,168 @@ export function RetentionPane({ client }: { client: Client }) {
         Tagged versions and releases are protected unless a policy says
         otherwise.
       </Alert>
-      <div className="section-head">
-        <h2>Policies</h2>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon="plus"
-          onClick={() => setEditing("new")}
-        >
-          Add policy
-        </Button>
-      </div>
-      {policies.data.items.length ? (
-        <Table
-          onRowClick={(p: RetentionPolicy) => setEditing(p)}
-          columns={[
-            { key: "scope", label: "Scope", render: scope },
-            {
-              key: "keep_last",
-              label: "Keep last",
-              align: "right",
-              render: (p: RetentionPolicy) => p.keep_last ?? "—",
-            },
-            {
-              key: "age",
-              label: "Max age",
-              align: "right",
-              render: (p: RetentionPolicy) =>
-                p.max_age_seconds ? `${days(p.max_age_seconds)} d` : "—",
-            },
-            {
-              key: "idle",
-              label: "Max idle",
-              align: "right",
-              render: (p: RetentionPolicy) =>
-                p.max_idle_seconds ? `${days(p.max_idle_seconds)} d` : "—",
-            },
-            { key: "min_keep", label: "Min keep", align: "right" },
-            {
-              key: "enabled",
-              label: "Status",
-              render: (p: RetentionPolicy) => (
-                <Badge tone={p.enabled ? "good" : "neutral"} dot>
-                  {p.enabled ? "Enabled" : "Disabled"}
-                </Badge>
-              ),
-            },
-          ]}
-          rows={policies.data.items}
-        />
-      ) : (
-        <p className="muted">No retention policies. Nothing is deleted.</p>
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        className="spaced-tabs"
+        items={[
+          { id: "policies", label: "Policies" },
+          { id: "runs", label: "Runs" },
+          { id: "findings", label: "Integrity findings" },
+        ]}
+      />
+      {tab === "policies" && (
+        <>
+          <div className="section-head">
+            <h2>Policies</h2>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="plus"
+              onClick={() => setEditing("new")}
+            >
+              Add policy
+            </Button>
+          </div>
+          {policies.data.items.length ? (
+            <Table
+              onRowClick={(p: RetentionPolicy) => setEditing(p)}
+              columns={[
+                { key: "scope", label: "Scope", render: scope },
+                {
+                  key: "keep_last",
+                  label: "Keep last",
+                  align: "right",
+                  render: (p: RetentionPolicy) => p.keep_last ?? "—",
+                },
+                {
+                  key: "age",
+                  label: "Max age",
+                  align: "right",
+                  render: (p: RetentionPolicy) =>
+                    p.max_age_seconds ? `${days(p.max_age_seconds)} d` : "—",
+                },
+                {
+                  key: "idle",
+                  label: "Max idle",
+                  align: "right",
+                  render: (p: RetentionPolicy) =>
+                    p.max_idle_seconds ? `${days(p.max_idle_seconds)} d` : "—",
+                },
+                { key: "min_keep", label: "Min keep", align: "right" },
+                {
+                  key: "enabled",
+                  label: "Status",
+                  render: (p: RetentionPolicy) => (
+                    <Badge tone={p.enabled ? "good" : "neutral"} dot>
+                      {p.enabled ? "Enabled" : "Disabled"}
+                    </Badge>
+                  ),
+                },
+              ]}
+              rows={policies.data.items}
+            />
+          ) : (
+            <p className="muted">No retention policies. Nothing is deleted.</p>
+          )}
+        </>
       )}
-      <div className="section-head">
-        <h2>Runs</h2>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon="play"
-          onClick={() => setRunning(true)}
-        >
-          Start run
-        </Button>
-      </div>
-      {runs.state === "ready" &&
-        (runs.data.items.length ? (
-          <Table
-            onRowClick={(r: RetentionRun) => setReport(r)}
-            columns={[
-              {
-                key: "started_at",
-                label: "Started",
-                render: (r: RetentionRun) => when(r.started_at),
-              },
-              { key: "trigger", label: "Trigger" },
-              {
-                key: "dry_run",
-                label: "Mode",
-                render: (r: RetentionRun) => (r.dry_run ? "Dry run" : "Live"),
-              },
-              {
-                key: "state",
-                label: "State",
-                render: (r: RetentionRun) => (
-                  <Badge
-                    tone={
-                      r.state === "succeeded"
-                        ? "good"
-                        : r.state === "failed"
-                          ? "bad"
-                          : "info"
-                    }
-                    dot
-                  >
-                    {r.state}
-                  </Badge>
-                ),
-              },
-              {
-                key: "report",
-                label: "Result",
-                render: (r: RetentionRun) =>
-                  r.report
-                    ? `${count(r.report.versions_deleted)} versions · ${count(r.report.blobs_swept)} blobs swept`
-                    : "—",
-              },
-            ]}
-            rows={runs.data.items}
-          />
-        ) : (
-          <p className="muted">No runs yet.</p>
-        ))}
-      {runs.state === "error" && <Failure error={runs.error} />}
-      <div className="section-head">
-        <h2>Integrity findings</h2>
-      </div>
-      {findings.state === "ready" &&
-        (findings.data.items.length ? (
-          <Table
-            columns={[
-              { key: "kind", label: "Kind" },
-              {
-                key: "digest",
-                label: "Digest",
-                render: (f: IntegrityFinding) => <Mono muted>{f.digest}</Mono>,
-              },
-              {
-                key: "detected_at",
-                label: "Detected",
-                render: (f: IntegrityFinding) => when(f.detected_at),
-              },
-            ]}
-            rows={findings.data.items}
-          />
-        ) : (
-          <p className="muted">No blob integrity problems found.</p>
-        ))}
-      {findings.state === "error" && <Failure error={findings.error} />}
+      {tab === "runs" && (
+        <>
+          <div className="section-head">
+            <h2>Runs</h2>
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="play"
+              onClick={() => setRunning(true)}
+            >
+              Start run
+            </Button>
+          </div>
+          {runs.state === "ready" &&
+            (runs.data.items.length ? (
+              <Table
+                onRowClick={(r: RetentionRun) => setReport(r)}
+                columns={[
+                  {
+                    key: "started_at",
+                    label: "Started",
+                    render: (r: RetentionRun) => when(r.started_at),
+                  },
+                  { key: "trigger", label: "Trigger" },
+                  {
+                    key: "dry_run",
+                    label: "Mode",
+                    render: (r: RetentionRun) =>
+                      r.dry_run ? "Dry run" : "Live",
+                  },
+                  {
+                    key: "state",
+                    label: "State",
+                    render: (r: RetentionRun) => (
+                      <Badge
+                        tone={
+                          r.state === "succeeded"
+                            ? "good"
+                            : r.state === "failed"
+                              ? "bad"
+                              : "info"
+                        }
+                        dot
+                      >
+                        {r.state}
+                      </Badge>
+                    ),
+                  },
+                  {
+                    key: "report",
+                    label: "Result",
+                    render: (r: RetentionRun) =>
+                      r.report
+                        ? `${count(r.report.versions_deleted)} versions · ${count(r.report.blobs_swept)} blobs swept`
+                        : "—",
+                  },
+                ]}
+                rows={runs.data.items}
+              />
+            ) : (
+              <p className="muted">No runs yet.</p>
+            ))}
+          {runs.state === "error" && <Failure error={runs.error} />}
+        </>
+      )}
+      {tab === "findings" && (
+        <>
+          <div className="section-head">
+            <h2>Integrity findings</h2>
+          </div>
+          {findings.state === "ready" &&
+            (findings.data.items.length ? (
+              <Table
+                columns={[
+                  { key: "kind", label: "Kind" },
+                  {
+                    key: "digest",
+                    label: "Digest",
+                    render: (f: IntegrityFinding) => (
+                      <Digest value={f.digest} />
+                    ),
+                  },
+                  {
+                    key: "detected_at",
+                    label: "Detected",
+                    render: (f: IntegrityFinding) => when(f.detected_at),
+                  },
+                ]}
+                rows={findings.data.items}
+              />
+            ) : (
+              <p className="muted">No blob integrity problems found.</p>
+            ))}
+          {findings.state === "error" && <Failure error={findings.error} />}
+        </>
+      )}
       {editing && (
         <PolicyModal
           client={client}

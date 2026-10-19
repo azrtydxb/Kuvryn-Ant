@@ -409,6 +409,25 @@ export function when(value?: string | null) {
   const d = new Date(value);
   return Number.isFinite(d.getTime()) ? d.toLocaleString() : value;
 }
+/** First characters of a UUID or digest, for places where the full value would force horizontal scroll. */
+export function shortId(id: string, n = 8) {
+  const v = id.replace(/^sha256:/, "");
+  return v.length > n + 2 ? v.slice(0, n) + "…" : v;
+}
+/** Truncated identifier with the full value on hover and for assistive technology. */
+export function Digest({
+  value,
+  muted = true,
+}: {
+  value: string;
+  muted?: boolean;
+}) {
+  return (
+    <span className={"mono" + (muted ? " muted" : "")} title={value}>
+      {shortId(value, 12)}
+    </span>
+  );
+}
 export function count(n?: number) {
   return n == null ? "—" : n.toLocaleString();
 }

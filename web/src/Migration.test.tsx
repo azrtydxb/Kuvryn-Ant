@@ -27,6 +27,8 @@ const open = () =>
       screen.getByRole("navigation", { name: "Main navigation" }),
     ).getByRole("button", { name: "Import & migrate" }),
   );
+const tab = (name: string) =>
+  fireEvent.click(screen.getByRole("tab", { name: new RegExp(name) }));
 const report = (dry: boolean) => ({
   dry_run: dry,
   summary: { feed: { created: 1 }, asset: { conflict: 1 } },
@@ -63,13 +65,15 @@ it("requires a dry run before applying an import and shows the mapping report", 
   render(<App />);
   await signInWithToken();
   open();
+  tab("History");
   await screen.findByText("No transfers yet.");
+  tab("Import");
   const apply = screen.getByRole("button", { name: "Apply import" });
   expect(apply).toHaveProperty("disabled", true);
   fireEvent.change(screen.getByLabelText("Export document"), {
     target: { value: JSON.stringify(doc) },
   });
-  fireEvent.click(screen.getAllByRole("button", { name: "Dry run" })[0]);
+  fireEvent.click(screen.getByRole("button", { name: "Dry run" }));
   await screen.findByText("Dry run — nothing was changed");
   await screen.findByText("target has different content");
   await screen.findByText("provision the secret");
@@ -134,7 +138,7 @@ it("sends Nexus credentials only in the request body and compares coordinates", 
   render(<App />);
   await signInWithToken();
   open();
-  await screen.findByText("No transfers yet.");
+  tab("Migrate from Nexus");
   fireEvent.change(screen.getByLabelText("Nexus URL"), {
     target: { value: "https://nexus.example.com" },
   });
@@ -144,7 +148,7 @@ it("sends Nexus credentials only in the request body and compares coordinates", 
   fireEvent.change(screen.getByLabelText("Password"), {
     target: { value: "s3cret" },
   });
-  fireEvent.click(screen.getAllByRole("button", { name: "Dry run" })[1]);
+  fireEvent.click(screen.getByRole("button", { name: "Dry run" }));
   await screen.findByText("maven-public");
   const nexus = calls.find((c) => c.url === "/api/v1/migrations/nexus")!;
   expect(JSON.parse(String(nexus.init.body))).toMatchObject({
@@ -160,4 +164,37 @@ it("sends Nexus credentials only in the request body and compares coordinates", 
   fireEvent.click(screen.getByRole("button", { name: "Compare" }));
   await screen.findByText("differs");
   await screen.findByText("raw/a.txt");
+});
+
+it("splits the page into Export, Import, Nexus and History tabs and keeps work across switches", async () => {
+  install((url) => {
+    if (url === "/api/v1/transfer/runs") return json({ items: [] });
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  open();
+  const tabs = screen.getAllByRole("tab").map((t) => t.textContent);
+  expect(tabs.map((t) => t?.replace(/\d+$/, ""))).toEqual([
+    "Export",
+    "Import",
+    "Migrate from Nexus",
+    "History",
+  ]);
+  expect(
+    screen.getByRole("button", { name: "Export definitions" }),
+  ).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Apply import" })).toBeNull();
+  tab("Import");
+  fireEvent.change(screen.getByLabelText("Export document"), {
+    target: { value: "{}" },
+  });
+  tab("History");
+  expect(
+    screen.getByLabelText("Export document").closest("[hidden]"),
+  ).not.toBeNull();
+  tab("Import");
+  expect(
+    (screen.getByLabelText("Export document") as HTMLTextAreaElement).value,
+  ).toBe("{}");
 });
