@@ -17441,6 +17441,208 @@
           }
         }
       }
+    },
+    "/api/v1/retention/settings": {
+      "get": {
+        "operationId": "getRetentionSettings",
+        "description": "Instance retention defaults, the storage-pressure trigger and the read-only maintenance schedule. Fields listed in locked are set by the deployment environment. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "putRetentionSettings",
+        "description": "Replaces the editable retention settings. The default policy applies only to remote-cached content of feeds without their own policy. Changing a locked field is a 409. Requires instance admin.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutRetentionSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/retention/pressure": {
+      "get": {
+        "operationId": "getRetentionPressure",
+        "description": "Live storage-pressure status: usage against capacity, watermarks and the last eviction. Requires instance admin.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PressureStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -20046,6 +20248,13 @@
           "checked_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Conditions that do not make the instance unready, for example storage_pressure_unevictable."
           }
         }
       },
@@ -20392,6 +20601,19 @@
           "measured_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "reclaimable_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unreferenced bytes garbage collection will free: already marked, or older than the grace period."
+          },
+          "in_grace_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unreferenced bytes still inside the grace period; they explain unreferenced_bytes > 0 with gc_candidates = 0."
+          },
+          "pressure": {
+            "$ref": "#/components/schemas/PressureStatus"
           }
         }
       },
@@ -21095,6 +21317,9 @@
           },
           "truncated": {
             "type": "boolean"
+          },
+          "pressure": {
+            "$ref": "#/components/schemas/PressureReport"
           }
         },
         "description": "Counters are exact. Lists hold at most 500 entries (truncated tells whether any was cut). For a dry run, the lists show exactly what a real run started then would do."
@@ -29842,6 +30067,381 @@
             "minLength": 14,
             "maxLength": 256,
             "description": "Write-only. Stored as an argon2id hash."
+          }
+        }
+      },
+      "DefaultRetentionPolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "enabled",
+          "min_keep",
+          "include_tagged"
+        ],
+        "description": "Instance-wide default; applies only to remote-cached content in feeds with no policy of their own. Local and replica content is never deleted by it.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "keep_last": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "max_age_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "min_keep": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "include_tagged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PressureSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "enabled",
+          "high_percent",
+          "low_percent"
+        ],
+        "description": "Eviction starts at high_percent of capacity and continues until the projected usage is at or below low_percent.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "high_percent": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 2,
+            "maximum": 99
+          },
+          "low_percent": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "maximum": 98
+          },
+          "capacity_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "Capacity quota in bytes. Required for object storage; for disk it overrides the filesystem size."
+          }
+        }
+      },
+      "GCSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "interval_seconds",
+          "grace_seconds",
+          "dry_run",
+          "pressure_interval_seconds",
+          "pressure_sweep_grace_seconds"
+        ],
+        "description": "Read-only maintenance schedule from the deployment environment.",
+        "properties": {
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "grace_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dry_run": {
+            "type": "boolean"
+          },
+          "pressure_interval_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pressure_sweep_grace_seconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RetentionSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "default_policy",
+          "pressure",
+          "locked",
+          "gc"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "default_policy": {
+            "$ref": "#/components/schemas/DefaultRetentionPolicy"
+          },
+          "pressure": {
+            "$ref": "#/components/schemas/PressureSettings"
+          },
+          "locked": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Dotted field names set by the environment, for example pressure.capacity_bytes."
+          },
+          "gc": {
+            "$ref": "#/components/schemas/GCSettings"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PutRetentionSettings": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "default_policy",
+          "pressure"
+        ],
+        "properties": {
+          "default_policy": {
+            "$ref": "#/components/schemas/DefaultRetentionPolicy"
+          },
+          "pressure": {
+            "$ref": "#/components/schemas/PressureSettings"
+          }
+        }
+      },
+      "PressureStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "enabled",
+          "state",
+          "capacity_source",
+          "used_bytes",
+          "capacity_bytes",
+          "usage_ratio",
+          "high_percent",
+          "low_percent",
+          "reclaimable_bytes",
+          "last_evicted_versions",
+          "last_evicted_bytes",
+          "total_evicted_versions",
+          "total_evicted_bytes"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "no_capacity",
+              "invalid",
+              "ok",
+              "pressure",
+              "unevictable"
+            ],
+            "description": "no_capacity: object storage without a capacity quota. unevictable: above the high watermark with nothing evictable (a health warning)."
+          },
+          "detail": {
+            "type": "string"
+          },
+          "capacity_source": {
+            "type": "string",
+            "enum": [
+              "filesystem",
+              "quota",
+              "none"
+            ]
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "capacity_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usage_ratio": {
+            "type": "number",
+            "format": "double"
+          },
+          "high_percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "low_percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reclaimable_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_evicted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_evicted_versions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last_evicted_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_evicted_versions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total_evicted_bytes": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PressureReport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dry_run",
+          "state",
+          "capacity_source",
+          "used_bytes",
+          "capacity_bytes",
+          "usage_ratio",
+          "high_percent",
+          "low_percent",
+          "reclaimable_bytes",
+          "target_bytes",
+          "evicted_versions",
+          "evicted_bytes",
+          "shortfall_bytes",
+          "expedited",
+          "swept",
+          "evicted"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "no_capacity",
+              "invalid",
+              "ok",
+              "pressure",
+              "unevictable"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "capacity_source": {
+            "type": "string"
+          },
+          "used_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "capacity_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usage_ratio": {
+            "type": "number",
+            "format": "double"
+          },
+          "high_percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "low_percent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reclaimable_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "target_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "evicted_versions": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "evicted_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "shortfall_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expedited": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "swept": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "evicted": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source_id",
+                "coordinate",
+                "version",
+                "version_id",
+                "reason"
+              ],
+              "properties": {
+                "source_id": {
+                  "type": "string"
+                },
+                "coordinate": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "version_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }

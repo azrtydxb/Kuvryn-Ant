@@ -116,8 +116,8 @@ func (s Settings) Validate() error {
 	return nil
 }
 
-// apply overlays env onto s and returns the locked field names.
-func (o Overrides) apply(s *Settings) []string {
+// Apply overlays env onto s and returns the locked field names.
+func (o Overrides) Apply(s *Settings) []string {
 	locked := []string{}
 	if o.DefaultKeepLast != nil {
 		s.Default.KeepLast = *o.DefaultKeepLast
@@ -202,7 +202,7 @@ func (s *Service) Settings(ctx context.Context) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	stored.Locked = s.Env.apply(&stored)
+	stored.Locked = s.Env.Apply(&stored)
 	return stored, nil
 }
 
@@ -222,7 +222,7 @@ func SaveSettings(ctx context.Context, tx pgx.Tx, instance string, env Overrides
 		return Settings{}, database.ErrRevisionConflict
 	}
 	effective := current
-	locked := env.apply(&effective)
+	locked := env.Apply(&effective)
 	next := in
 	keep := func(field string, differs bool, restore func()) error {
 		if !slices.Contains(locked, field) {
@@ -254,7 +254,7 @@ func SaveSettings(ctx context.Context, tx pgx.Tx, instance string, env Overrides
 	}
 	// Validate what will actually be effective (stored under the overrides).
 	check := next
-	env.apply(&check)
+	env.Apply(&check)
 	if err = check.Validate(); err != nil {
 		return Settings{}, err
 	}
@@ -281,6 +281,6 @@ func SaveSettings(ctx context.Context, tx pgx.Tx, instance string, env Overrides
 	if err != nil {
 		return Settings{}, err
 	}
-	saved.Locked = env.apply(&saved)
+	saved.Locked = env.Apply(&saved)
 	return saved, nil
 }

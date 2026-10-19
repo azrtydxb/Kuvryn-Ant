@@ -273,6 +273,8 @@ func opsCatalog() []*tool {
 				return c.api(http.MethodPost, "/api/v1/prewarm/runs/"+c.str("run_id")+"/retry", nil, nil, key(c)).result()
 			}},
 		simple("get_settings", "Get settings", "Read instance settings and their revision.", "/api/v1/settings", nil),
+		simple("get_retention_settings", "Get retention settings", "Read the instance default retention policy (remote-cached content only), the storage-pressure watermarks and capacity quota, and which fields the environment locks.", "/api/v1/retention/settings", nil),
+		simple("get_storage_pressure", "Get storage pressure", "Live storage-pressure status: usage against capacity, watermarks, state (including unevictable) and the last eviction.", "/api/v1/retention/pressure", nil),
 		simple("get_diagnostics", "Diagnostics", "Instance diagnostics (admin only).", "/api/v1/diagnostics", nil),
 		byID("get_delete_policy", "Get delete policy", "Get a feed's package delete policy.", "feed_id", "Feed ID.", "/api/v1/feeds/", "/delete-policy"),
 		{name: "submit_security_result", title: "Submit security result", desc: "Record an external scanner result for an asset. Stored and emitted as an asset.security_result event.", idempotent: true,

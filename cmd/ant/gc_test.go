@@ -141,7 +141,7 @@ func TestRetentionWorkerRunsUnderInstanceLease(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	// Disabled interval and absent runtime are inert.
-	workers.startRetention(pool, nil, cfg.Retention, nil)
+	workers.startRetention(pool, nil, cfg, nil)
 	cfg.Retention.Interval = 0
 	workers.startRetention(pool, runtime, cfg, nil)
 	(*backgroundWorkers)(nil).startRetention(pool, runtime, cfg, nil)
