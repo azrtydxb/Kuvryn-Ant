@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"net"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
@@ -229,4 +230,37 @@ func checkRenewalKey(current *x509.Certificate, csrPEM, signature string) error 
 		return errCSR
 	}
 	return nil
+}
+
+// sameHost reports whether two federation URLs name the same certificate
+// host (SAN). Loopback hosts are compared with their port, since they only
+// occur in single-machine labs and tests, where members differ by port.
+func sameHost(a, b string) bool {
+	ua, err1 := url.Parse(a)
+	ub, err2 := url.Parse(b)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	ha, hb := strings.ToLower(strings.TrimSuffix(ua.Hostname(), ".")), strings.ToLower(strings.TrimSuffix(ub.Hostname(), "."))
+	if ip := net.ParseIP(ha); ip != nil {
+		ha = ip.String()
+	}
+	if ip := net.ParseIP(hb); ip != nil {
+		hb = ip.String()
+	}
+	if ha != hb {
+		return false
+	}
+	if loopback(ha) {
+		return ua.Port() == ub.Port()
+	}
+	return true
+}
+
+func loopback(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

@@ -232,15 +232,16 @@ func (h federationHandlers) join(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		AuthorityURL string            `json:"authority_url"`
 		CASHA256     string            `json:"ca_sha256"`
+		CertSHA256   string            `json:"authority_cert_sha256"`
 		Invitation   string            `json:"invitation"`
 		Labels       map[string]string `json:"labels"`
 	}
-	if !sourceJSON(w, r, &in, "authority_url", "ca_sha256", "invitation", "labels") {
+	if !sourceJSON(w, r, &in, "authority_url", "ca_sha256", "authority_cert_sha256", "invitation", "labels") {
 		return
 	}
 	ctx, cancel := h.ctx(r, 45*time.Second)
 	defer cancel()
-	st, err := svc.Join(ctx, p.PrincipalID, federation.JoinInput{AuthorityURL: in.AuthorityURL, CASHA256: in.CASHA256, Invitation: in.Invitation, Labels: in.Labels})
+	st, err := svc.Join(ctx, p.PrincipalID, federation.JoinInput{AuthorityURL: in.AuthorityURL, CASHA256: in.CASHA256, AuthorityCertSHA256: in.CertSHA256, Invitation: in.Invitation, Labels: in.Labels})
 	if err != nil {
 		federationError(w, r, err)
 		return

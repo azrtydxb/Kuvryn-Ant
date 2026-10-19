@@ -12,6 +12,10 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -450,4 +454,67 @@ func serialOf(t *testing.T, certPEM string) string {
 		t.Fatal(err)
 	}
 	return c.SerialNumber.Text(16)
+}
+
+// A member's CA-issued certificate cannot be used to intercept another
+// instance's join: the joiner checks that the answering server presents the
+// authority's published certificate (and can pin it up front from the
+// invitation), and the authority refuses a second member on the same host.
+func TestFederationJoinInterception(t *testing.T) {
+	ctx := context.Background()
+	alpha, gamma, delta, epsilon := newInstance(t, "alpha"), newInstance(t, "gamma"), newInstance(t, "delta"), newInstance(t, "epsilon")
+	founded := found(t, alpha, gamma)
+
+	// gamma relays joins to the authority with its own member certificate,
+	// which chains to the pinned CA and is valid for the shared lab host.
+	upstream, _ := url.Parse(alpha.fedURL)
+	relay := httptest.NewUnstartedServer(&httputil.ReverseProxy{
+		Rewrite:   func(r *httputil.ProxyRequest) { r.SetURL(upstream) },
+		Transport: &http.Transport{DisableKeepAlives: true, TLSClientConfig: &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS13}}, //nolint:gosec // test relay
+	})
+	relay.TLS = &tls.Config{Certificates: []tls.Certificate{*gamma.memberIdentity("").Certificate}, MinVersion: tls.VersionTLS13}
+	relay.StartTLS()
+	defer relay.Close()
+	inv := alpha.invite("delta")
+	var e struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+	code := delta.call("POST", "/api/v1/federation/join", map[string]any{"authority_url": relay.URL, "ca_sha256": inv.CASHA256, "invitation": inv.Secret}, &e)
+	if code != 409 || !strings.Contains(e.Message, "authority_certificate_mismatch") {
+		t.Fatalf("join answered through another member's certificate: %d %+v", code, e)
+	}
+	if st := delta.status(); st.State != "none" {
+		t.Fatalf("delta applied an intercepted join: %+v", st)
+	}
+
+	// With the authority certificate from the invitation the relay is refused
+	// before the invitation is sent.
+	inv2 := alpha.invite("epsilon")
+	if inv2.AuthorityCertSHA256 == "" || inv2.AuthorityCertSHA256 != alpha.members()["alpha"].CertSHA256 {
+		t.Fatalf("invitation authority certificate: %q", inv2.AuthorityCertSHA256)
+	}
+	pinned := map[string]any{"authority_url": relay.URL, "ca_sha256": inv2.CASHA256, "authority_cert_sha256": inv2.AuthorityCertSHA256, "invitation": inv2.Secret}
+	if code := epsilon.call("POST", "/api/v1/federation/join", pinned, nil); code != 503 {
+		t.Fatalf("pinned join through the relay: %d", code)
+	}
+	pinned["authority_url"] = alpha.fedURL
+	if code := epsilon.call("POST", "/api/v1/federation/join", pinned, nil); code != 200 {
+		t.Fatalf("pinned join (the invitation must still be unused): %d", code)
+	}
+
+	// A second member on an existing member's host is refused and audited.
+	var id string
+	_ = alpha.pool.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&id)
+	req := cloneJoinRequest(t, alpha.invite("zeta").Secret, id)
+	req.FederationURL = gamma.fedURL
+	body, _ := json.Marshal(req)
+	if _, err := (peer.Client{}).DoPinned(ctx, alpha.fedURL, founded.CASHA256, "POST", "/federation/v1/join", body); peerCode(err) != "duplicate_instance" {
+		t.Fatalf("join on another member's host: %v", err)
+	}
+	var n int
+	_ = alpha.pool.QueryRow(ctx, `SELECT count(*) FROM audit_events WHERE action='federation.invitation.rejected' AND details->>'reason'='duplicate_host'`).Scan(&n)
+	if n != 1 {
+		t.Fatalf("duplicate host audits: %d", n)
+	}
 }

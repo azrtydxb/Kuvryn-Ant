@@ -427,33 +427,58 @@ func (c Client) DoHeader(ctx context.Context, id Identity, baseURL, method, path
 // by SHA-256 (the join bootstrap). The server chain must contain the pinned CA
 // certificate and the leaf must verify against it for the URL host.
 func (c Client) DoPinned(ctx context.Context, baseURL, caSHA256, method, path string, body []byte) ([]byte, error) {
+	b, _, err := c.DoPinnedLeaf(ctx, baseURL, caSHA256, "", method, path, body)
+	return b, err
+}
+
+// DoPinnedLeaf is DoPinned that also pins the server leaf certificate to
+// leafSHA256 when set (checked before any request byte is sent), and returns
+// the SHA-256 of the leaf the server presented, so the caller can match it
+// against the authority's published certificate.
+func (c Client) DoPinnedLeaf(ctx context.Context, baseURL, caSHA256, leafSHA256, method, path string, body []byte) ([]byte, string, error) {
 	full, err := target(baseURL, path)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	u, _ := url.Parse(full)
 	host := u.Hostname()
+	var mu sync.Mutex
+	seen := ""
 	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS13,
 		// Trust comes only from the pinned CA fingerprint, verified below;
 		// the system trust store is deliberately not consulted.
 		InsecureSkipVerify: true, //nolint:gosec // pinned verification in VerifyConnection
 		VerifyConnection: func(cs tls.ConnectionState) error {
-			return verifyPinned(cs.PeerCertificates, caSHA256, host)
+			if err := verifyPinned(cs.PeerCertificates, caSHA256, host); err != nil {
+				return err
+			}
+			sum := sha256.Sum256(cs.PeerCertificates[0].Raw)
+			got := hex.EncodeToString(sum[:])
+			if leafSHA256 != "" && got != leafSHA256 {
+				return errors.New("federation: server certificate does not match the pinned authority certificate")
+			}
+			mu.Lock()
+			seen = got
+			mu.Unlock()
+			return nil
 		},
 	}
 	req, err := http.NewRequestWithContext(ctx, method, full, bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	hc := c.httpClient(cfg)
 	defer hc.CloseIdleConnections()
 	resp, err := hc.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return readResponse(resp)
+	b, err := readResponse(resp)
+	mu.Lock()
+	defer mu.Unlock()
+	return b, seen, err
 }
 
 func verifyPinned(chain []*x509.Certificate, caSHA256, host string) error {

@@ -782,12 +782,14 @@ function JoinModal({
 }) {
   const [url, setUrl] = useState("");
   const [ca, setCa] = useState("");
+  const [leaf, setLeaf] = useState("");
   const [invitation, setInvitation] = useState("");
   const action = useAction();
   const toast = useToast();
   const valid =
     url.startsWith("https://") &&
     /^[0-9a-fA-F]{64}$/.test(ca.trim()) &&
+    (leaf.trim() === "" || /^[0-9a-fA-F]{64}$/.test(leaf.trim())) &&
     invitation.trim().length >= 40;
   return (
     <FormModal
@@ -804,6 +806,7 @@ function JoinModal({
               body: {
                 authority_url: url.trim(),
                 ca_sha256: ca.trim(),
+                ...(leaf.trim() ? { authority_cert_sha256: leaf.trim() } : {}),
                 invitation: invitation.trim(),
               },
             }),
@@ -829,6 +832,13 @@ function JoinModal({
         value={ca}
         onChange={val(setCa)}
         hint="64 hex characters, received out of band from the authority."
+      />
+      <Input
+        label="Authority certificate fingerprint (SHA-256)"
+        mono
+        value={leaf}
+        onChange={val(setLeaf)}
+        hint="Recommended: from the invitation. Pins the authority certificate before the invitation is sent."
       />
       <Input
         label="Invitation"
@@ -884,6 +894,7 @@ function InviteModal({
                 items: [
                   ["Authority URL", result.authority_url],
                   ["CA fingerprint", result.ca_sha256],
+                  ["Authority certificate", result.authority_cert_sha256],
                   ["Invitation", result.secret],
                 ],
               });

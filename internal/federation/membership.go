@@ -257,6 +257,9 @@ type IssuedInvitation struct {
 	Secret       string `json:"secret"`
 	CASHA256     string `json:"ca_sha256"`
 	AuthorityURL string `json:"authority_url"`
+	// AuthorityCertSHA256 pins the authority's listener certificate for the
+	// join (with the CA fingerprint); pass it to join as authority_cert_sha256.
+	AuthorityCertSHA256 string `json:"authority_cert_sha256"`
 }
 
 // InvitationInput creates an invitation bound to a member name.
@@ -311,6 +314,9 @@ func (s *Service) CreateInvitation(ctx context.Context, actor string, in Invitat
 		}
 		out.Invitation = Invitation{ID: id, Name: in.Name, Labels: nonNil(in.Labels), ExpiresAt: expires, CreatedAt: out.CreatedAt, State: "pending"}
 		out.Secret, out.CASHA256, out.AuthorityURL = secret, st.CASHA256, st.FederationURL
+		if cert, err := parseCertPEM(st.MemberCert); err == nil {
+			out.AuthorityCertSHA256 = CertSHA256(cert.Raw)
+		}
 		return audit(ctx, tx, s.cfg.InstanceID, actor, "federation.invitation.created", id, "success", map[string]any{"name": in.Name, "expires_at": expires})
 	})
 	return out, err
@@ -462,6 +468,14 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 				reason = "duplicate_instance"
 				return ErrDuplicateInstance
 			}
+			// Member certificates carry the federation URL host as SAN: a
+			// second member on the same host would hold a CA-issued
+			// certificate valid for another member's (or the authority's)
+			// listener and could intercept joins.
+			if sameHost(m.FederationURL, req.FederationURL) {
+				reason = "duplicate_host"
+				return ErrDuplicateInstance
+			}
 		}
 		certPEM, serial, certSHA, _, err := s.issueFor(ctx, st, req.CSR, req.InstanceID, req.FederationURL)
 		if err != nil {
@@ -569,8 +583,11 @@ func (s *Service) rejectInvitation(ctx context.Context, invitation, instance, re
 type JoinInput struct {
 	AuthorityURL string
 	CASHA256     string
-	Invitation   string
-	Labels       map[string]string
+	// AuthorityCertSHA256, when set, pins the authority's listener
+	// certificate before the invitation is sent.
+	AuthorityCertSHA256 string
+	Invitation          string
+	Labels              map[string]string
 }
 
 // Join connects to the authority (TLS pinned to the CA fingerprint received
@@ -585,6 +602,10 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 		return Status{}, ErrListenerMissing
 	}
 	in.CASHA256 = strings.ToLower(strings.TrimSpace(in.CASHA256))
+	in.AuthorityCertSHA256 = strings.ToLower(strings.TrimSpace(in.AuthorityCertSHA256))
+	if in.AuthorityCertSHA256 != "" && !hexPattern.MatchString(in.AuthorityCertSHA256) {
+		return Status{}, invalid("authority_cert_sha256 must be 64 hex characters")
+	}
 	if !ValidFederationURL(in.AuthorityURL) || !hexPattern.MatchString(in.CASHA256) || len(in.Invitation) < 40 || len(in.Invitation) > 256 || !ValidLabels(in.Labels) {
 		return Status{}, invalid("authority_url (https), ca_sha256 (64 hex) and invitation are required")
 	}
@@ -606,7 +627,7 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 	req := JoinRequest{Invitation: in.Invitation, InstanceID: s.cfg.InstanceID, APIURL: s.cfg.APIURL, FederationURL: s.cfg.PublicURL, CSR: csr,
 		SigningKey: encodeKey(signer.Public().(ed25519.PublicKey)), SoftwareVersion: s.cfg.SoftwareVersion, Protocol: ProtocolRange{ProtocolMin, ProtocolMax}, Labels: in.Labels}
 	body, _ := json.Marshal(req)
-	raw, err := s.client.DoPinned(ctx, in.AuthorityURL, in.CASHA256, "POST", "/federation/v1/join", body)
+	raw, leaf, err := s.client.DoPinnedLeaf(ctx, in.AuthorityURL, in.CASHA256, in.AuthorityCertSHA256, "POST", "/federation/v1/join", body)
 	if err != nil {
 		return Status{}, peerError(in.AuthorityURL, err)
 	}
@@ -630,6 +651,13 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 		if cert, err := parseCertPEM(c); err == nil && CertSHA256(cert.Raw) == in.CASHA256 {
 			caOK, caPEM = true, c
 		}
+	}
+	// The server that answered must be the authority itself: its leaf
+	// certificate is the one the verified membership publishes for the
+	// authority (another member's certificate, also issued by the federation
+	// CA, would otherwise pass the CA pin and relay the join).
+	if authority, ok := head.Member(head.Authority.InstanceID); !ok || !slices.Contains(authority.AcceptedCerts(s.now()), leaf) {
+		return Status{}, &RejectedError{Reason: "authority_certificate_mismatch", Err: ErrMalformed}
 	}
 	self, found := head.Member(s.cfg.InstanceID)
 	if !caOK || !found || self.Status != "active" || self.SigningKey != req.SigningKey {
@@ -843,4 +871,3 @@ func viewFromDocument(doc *Membership, member, self string) MemberView {
 func (s *Service) AfterPublish(ctx context.Context, doc *Membership, extra ...string) {
 	s.afterPublish(ctx, doc, extra...)
 }
-

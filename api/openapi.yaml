@@ -23071,6 +23071,11 @@
             "pattern": "^[0-9a-fA-F]{64}$",
             "description": "Federation CA fingerprint received out of band; the join connection is pinned to it."
           },
+          "authority_cert_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{64}$",
+            "description": "Optional fingerprint of the authority listener certificate (from the invitation). When set, the join connection is pinned to it before the invitation is sent. In every case the joiner refuses an answer from a server whose certificate is not the one the verified membership publishes for the authority."
+          },
           "invitation": {
             "type": "string",
             "minLength": 40,
@@ -23269,6 +23274,10 @@
           },
           "authority_url": {
             "type": "string"
+          },
+          "authority_cert_sha256": {
+            "type": "string",
+            "description": "Fingerprint of the authority listener certificate; pass it to join as authority_cert_sha256 to pin the connection before the invitation is sent."
           }
         },
         "required": [
@@ -23280,7 +23289,8 @@
           "state",
           "secret",
           "ca_sha256",
-          "authority_url"
+          "authority_url",
+          "authority_cert_sha256"
         ]
       },
       "RotateFederationRecoveryKey": {
