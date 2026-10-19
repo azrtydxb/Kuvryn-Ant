@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -83,5 +84,20 @@ func TestServiceStartupAndRestart(t *testing.T) {
 		case <-time.After(5 * time.Second):
 			t.Fatal("shutdown timeout")
 		}
+	}
+}
+
+func TestRootRedirectsToConsole(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("GET /{$}", rootRedirect())
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/console/" {
+		t.Fatalf("got %d %q", rec.Code, rec.Header().Get("Location"))
+	}
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/other", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("/other got %d", rec.Code)
 	}
 }

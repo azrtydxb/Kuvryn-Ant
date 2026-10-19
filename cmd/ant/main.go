@@ -310,6 +310,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		mcp.Register(mux, pool, logger)
 		mux.Handle("/console", console.Handler())
 		mux.Handle("/console/", console.Handler())
+		mux.Handle("GET /{$}", rootRedirect())
 	})
 	// Installed inside the browser-session middleware so session principals
 	// are visible to per-principal limits.
@@ -356,3 +357,8 @@ func main() {
 
 // bootstrapPoll is how often a server without an instance looks for one.
 var bootstrapPoll = 2 * time.Second
+
+// rootRedirect sends exactly "/" to the console; "/{$}" matches no other path.
+func rootRedirect() http.Handler {
+	return http.RedirectHandler("/console/", http.StatusFound)
+}
