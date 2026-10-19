@@ -9,8 +9,9 @@ persistence:
   size: 120Gi
   storageClass: longhorn
 # Same reasoning as azrty-oke: the `data` volume is local application state whose
-# authoritative objects live in the S3 bucket below, and it is too large for the
-# platform's Velero fs-backup to fit in its schedule. Excluded 2026-10-19.
+# authoritative objects live in the S3 bucket below; a full upload of it does not
+# fit Velero's schedule and pod rolls cancel it mid-upload, which stalls the whole
+# backup. Excluded 2026-10-19.
 podAnnotations:
   backup.velero.io/backup-volumes-excludes: data
 storage:
