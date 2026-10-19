@@ -1,0 +1,16 @@
+[
+  {
+    "name": "kw",
+    "status": "active",
+    "rtt_ms": 3868,
+    "last_seen_at": "2026-10-19T03:20:36.233919Z",
+    "authority": false
+  },
+  {
+    "name": "oke",
+    "status": "active",
+    "rtt_ms": null,
+    "last_seen_at": null,
+    "authority": true
+  }
+]
