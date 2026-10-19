@@ -10,7 +10,7 @@ import {
 } from "@testing-library/react";
 import App from "./App";
 import { Client } from "./api";
-import { getProviders, parseSession } from "./auth";
+import { AUTH_TIMEOUT_MS, getProviders, parseSession } from "./auth";
 const csrf = "a".repeat(43),
   prelogin = "b".repeat(43);
 const session = {
@@ -205,4 +205,28 @@ it("never adds replay keys to one-shot token issuance, including browser session
   expect(new Headers(init.headers).has("Idempotency-Key")).toBe(false);
   expect(new Headers(init.headers).get("X-CSRF-Token")).toBe(csrf);
   expect(init.credentials).toBe("same-origin");
+});
+
+it("stops checking the session and offers sign-in when /auth/session hangs", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string, init: RequestInit) => {
+      if (url === "/auth/providers")
+        return Promise.resolve(json({ providers: [] }));
+      return new Promise<Response>((_, reject) =>
+        init.signal?.addEventListener("abort", () =>
+          reject(init.signal?.reason),
+        ),
+      );
+    }),
+  );
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  render(<App />);
+  await vi.advanceTimersByTimeAsync(AUTH_TIMEOUT_MS + 1);
+  expect(await screen.findByText(/could not be reached/i)).toBeTruthy();
+  expect(screen.queryByText(/Checking your browser session/)).toBeNull();
+  expect(
+    screen.getByRole("button", { name: /retry session check/i }),
+  ).toBeTruthy();
+  vi.useRealTimers();
 });
