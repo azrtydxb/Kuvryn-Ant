@@ -1,0 +1,12 @@
+02:49:13 {"health":"degraded","policy":3,"staleness":"warning","alerts":["member_unreachable","membership_stale","policy_stale"]} fed-qual-read=503
+02:49:23 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:49:33 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:49:44 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:49:54 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:50:04 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:50:14 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:50:24 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:50:34 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:50:44 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:50:55 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200
+02:51:05 {"health":"ok","policy":4,"staleness":"fresh","alerts":[]} fed-qual-read=200

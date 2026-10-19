@@ -1,0 +1,388 @@
+{
+  "generation": 31,
+  "hash": "sha256:9df5bab661b7e1bffb75403f47aab1d48c62dc8ba0d5e3b7f5a652cefca5a2b5",
+  "applied_at": "2026-10-19T02:29:59.657569Z",
+  "authority": true,
+  "feeds": [
+    {
+      "key": "watteel/cargo",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "cargo",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "9c4884a2-f16f-47cc-920d-5d1483777906",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/fed-oci",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "oci",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "31c2964e-0203-4d4b-91e3-ddfbba5a2af1",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/fed-qual",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "raw",
+        "anonymous_read": false
+      },
+      "revision": 9,
+      "transfer": {
+        "id": "395d405a-c914-4747-a242-3ce52e4a2eec",
+        "from": "f56c8b72-e0b3-4412-8549-691700cb03e0",
+        "to": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+        "mode": "planned",
+        "state": "complete",
+        "head": 3082,
+        "checkpoint": 3082,
+        "baseline": 9484,
+        "started_at": "2026-10-19T02:25:44.13521553Z",
+        "deadline": "2026-10-19T02:40:44.13521553Z",
+        "updated_at": "2026-10-19T02:26:00.658243612Z"
+      },
+      "home_name": "oke",
+      "local_feed_id": "129717db-96bd-4063-ac5a-84bde097c6aa",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/fed-route",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "raw",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "2bc5753c-ebc1-43aa-968c-d47caa1993e7",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/go",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "go",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "78e95f84-beae-4e5b-b376-696e34b33d86",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/helm",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "helm",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "91d8b0cd-a1f1-4c9f-bdc4-fdd65041aa3d",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/maven",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "maven",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "f0445011-2f52-415e-886a-ded23f10b5a1",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/npm",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "npm",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "69dda828-2160-4f93-aa81-4e585e93e0fe",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/nuget",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "nuget",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "cb51960b-8f86-42bd-85a9-7cab1e19e808",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/oci-hosted",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "oci",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "8c499ee0-5e31-418b-9655-ef34accda47a",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/pypi",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "pypi",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "2aa5aeb8-b358-4602-8093-8518170918c4",
+      "local_role": "home",
+      "frozen": false
+    },
+    {
+      "key": "watteel/sccache",
+      "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "descriptor": {
+        "format": "raw",
+        "anonymous_read": false
+      },
+      "revision": 1,
+      "home_name": "oke",
+      "local_feed_id": "ab7bf244-c7ab-4ee9-b15d-0a53b7079db0",
+      "local_role": "home",
+      "frozen": false
+    }
+  ],
+  "rules": [
+    {
+      "id": "0790cb18-ec0a-4263-8036-80e715edccd7",
+      "feed_key": "watteel/oci-hosted",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "0ef5737c-e9d4-4172-a176-bdfd07ce0a41",
+      "feed_key": "watteel/fed-qual",
+      "targets": {
+        "members": [
+          "e78798f0-fef7-48f5-a13c-6148e77a846b"
+        ]
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "15f2166e-54b9-4f41-a383-9ab3b3c0d24f",
+      "feed_key": "watteel/npm",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "7927dbdc-4f8b-4b70-9de1-2948a2bba986",
+      "feed_key": "watteel/sccache",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "84373d30-9b9f-4ab8-bfed-684da28b31b2",
+      "feed_key": "watteel/pypi",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "844f551e-42ea-47bb-ba81-284df7090f97",
+      "feed_key": "watteel/nuget",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "9d59ce28-7089-4ba2-8727-9f732809b3d8",
+      "feed_key": "watteel/go",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "e5156888-bdf5-4c8c-aa4e-8e158f315442",
+      "feed_key": "watteel/fed-qual",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "eadec945-4fe9-4d8e-ac4c-418ec42a87dd",
+      "feed_key": "watteel/helm",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "eb12384b-af66-4a75-9ae4-36487b96c02c",
+      "feed_key": "watteel/maven",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    },
+    {
+      "id": "face3f20-4284-4648-8413-c9396cdafe3d",
+      "feed_key": "watteel/cargo",
+      "targets": {
+        "labels": {
+          "site": "kw"
+        }
+      },
+      "mode": "continuous",
+      "interval_seconds": 30,
+      "include_cached": false,
+      "filters": {},
+      "deletion_policy": "propagate",
+      "destination_read_only": true,
+      "create_destination_feed": true,
+      "adopt_existing": true,
+      "max_lag_seconds": 900,
+      "revision": 1
+    }
+  ]
+}

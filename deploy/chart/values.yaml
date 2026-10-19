@@ -5,6 +5,11 @@ image:
   digest: "" # Prefer an immutable sha256 digest for deployment.
   pullPolicy: IfNotPresent
 imagePullSecrets: []
+# Static name-to-address entries for the pod (/etc/hosts), for example the
+# federation endpoint of a member whose name only its own site resolves:
+# - ip: 192.168.10.150
+#   hostnames: [ant-federation.kw.watteel.lab]
+hostAliases: []
 replicaCount: 1 # This release enforces exactly one writer.
 publicURL: https://ant.example.invalid
 instanceID: "" # Empty resolves the bootstrapped instance from PostgreSQL.

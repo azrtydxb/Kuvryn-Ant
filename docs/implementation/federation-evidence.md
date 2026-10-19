@@ -1,0 +1,46 @@
+# Federation qualification evidence (OKE + kw)
+
+Phase 2 (`docs/planning/phase-2-federation.md`, section 16 and P2-M6) was qualified on the two real sites on 2026-10-19. Raw outputs are committed under `evidence/2026-10-19/federation/` (file names below); nothing in them is a secret (tokens and keys are never written there). Times are UTC.
+
+## Environment
+
+| Item           | OKE (authority, home of the shared feeds)                                       | kw (member, label `site=kw`)                                            |
+| -------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Public API     | `https://ant.azrty.com` (Envoy Gateway, public certificate)                     | `https://ant.kw.watteel.lab` (ingress-nginx, private `cluster-ca`)      |
+| Federation     | `https://ant-federation.azrty.com:8444`, OCI flexible LoadBalancer `145.241.116.14` | `https://ant-federation.kw.watteel.lab:8444`, LAN address `192.168.10.150` |
+| Storage        | OCI Object Storage, 3-instance PostgreSQL                                       | TrueNAS MinIO, PostgreSQL                                               |
+| Image          | `0.1.0-87059be` = `sha256:a4d4bdda4fa24e7117d10e7bbd0435a3ce4d1a3f2d9472471503d6754ec2d725` (multi-arch, built from main at `87059be`, PR 274); kw runs the same digest copied to the local registry | same |
+| Before         | `sha256:4f4a936d…` (`0.1.0-9c2d0b0`: PR 270, without placement-aware routing)   | same                                                                    |
+
+Federation: `watteel`, epoch 1, two members, membership generation 2 (founded and joined earlier the same day, see `00-status-before-*.json`).
+
+## Upgrade rehearsal (Phase 1 to Phase 2 operations)
+
+1. `ant backup` on both sites before the roll (OKE: schema 36, 67,094 rows, 8,074 blobs, 33.7 GB, manifest `e7fd9026…`; kw: 29,519 rows, 3,635 blobs, 19.6 GB, manifest `78408f29…`), then `ant backup verify --expect-manifest-sha256` on both: `verified: true`.
+2. `helm upgrade --reset-then-reuse-values --set image.tag=… --set image.digest=sha256:…` on kw (02:13) and OKE (02:18); the migrations `037` and `038` applied once per site, pods ready within the rollout, no federation or serving interruption beyond the pod restart. Images: `02-image-before-*.txt`, `04-image-after-*.txt`.
+3. One additional OKE `helm upgrade` raised the federation LoadBalancer bandwidth maximum from 10 to 100 Mbit/s (see findings).
+
+## Scenario results
+
+| Scenario | Result | Evidence |
+| -------- | ------ | -------- |
+| (a) Adopt the nine `oke-*` jobs in place | **Pass for eight feeds; `oci-hosted` adopted but catching up** (below). The nine shared feeds were bound to `watteel/<slug>` on both sites, OKE published the keys with itself as home and one rule per key reproducing the job settings (continuous, 30 s, `include_cached` false, deletions propagate, read-only destination). Within 40 s kw reported every rule `adopted: true`; the jobs kept their IDs, checkpoint, phase and counters (`reseeds` 0), their origin changed from `local` to `federation`, and eight of nine were `in_sync` with `changes_behind` 0 and lag 0. | `03-jobs-pre-adoption.json`, `05-rules-oke.json`, `05-topology-oke.json`, `06-adoption-status-kw.json`, `07-jobs-post-adoption.json` |
+| (b) Federated search from kw finds OKE content | **Pass.** As the federated service account `fed-qual` (a federated role with read on the keys, tokens issued locally on kw) the query fanned out kw and OKE (`partial: false`) and returned OKE-only content (`watteel/fed-route`, `watteel/fed-qual`) next to replicated packages with their holders. | `08-federated-search-from-kw.json` |
+| (c) Routed read of an OKE-only artifact at kw | **Pass.** `GET /feeds/fed-route/raw/qualification/hello-fed-route.txt` at kw (no local feed) answered `200` with `X-Kuvryn-Route: proxy; member=oke`; an OCI image pushed to an OKE-only feed (`fed-oci/hello:1`) was resolved and pulled with `crane` at kw through the same proxy (digest `00f9d834…`); `GET /api/v1/federation/routes/watteel/fed-route` explains the decision. | `09-routed-read.txt`, `09-route-explain-kw.json` |
+| (d) Planned home transfer OKE to kw and back | **Pass.** Feed `watteel/fed-qual` (replicated to kw): planned transfer to kw completed in about 30 s (freeze, drain, promote, demote; kw `home`, writable; OKE refused a publish with `403`; a file written on kw reached OKE). A rule targeting OKE was added (a transfer needs a replica target), and the planned transfer back completed in about 24 s. After each move the new home accepted publishes and the replica refused them, and all files were present on both. | `11-audit-oke-sample.json` (`federation.transfer.started|frozen|advanced|fenced|promoted|demoted`), `12-federated-audit-kw-admin-both.json` |
+| (e) Partition kw and OKE, then restore | **Pass.** 2026-10-19 02:32:41 to 02:49:08 (16.5 min): kw lost the OKE federation endpoint (egress) and OKE lost kw's (ingress closed). kw kept serving replicated packages to a federated principal and to local administrators; it kept enforcing the last good policy (it stayed at generation 3 while OKE published generation 4: the principal's grant removed in 3 stayed removed, grants kept in 3 stayed valid); `membership_stale`, `policy_stale` and `member_unreachable` were raised at 15 min on kw and `member_unreachable` on OKE (audited as `federation.alert.raised`); health `degraded`, never `unready`. After the policy was deleted kw applied generation 4 and cleared all alerts within 10 s, and replication resumed after the jobs' backoff (all rules `in_sync` at 02:54, including the artifact OKE published during the partition). | `10-partition-*` |
+| Federated audit across members (P2-M6) | **Pass.** With an instance-admin federated grant accepted on kw only, kw answered and OKE reported `forbidden` (`audit_read_denied`, `partial: true`); a read-only token was refused by both; with the grant accepted on both, 16 transfer events from the two members merged newest first and paged. The setting, the role and the tokens were reverted afterwards. | `12-federated-audit-*.json` |
+
+Scenarios that the plan lists and were qualified in the multi-instance harness instead of the live sites (they would put the production federation at risk): authority outage with relay, planned authority handover and back, forced recovery (including a compromised authority and fencing of a returning old authority), the recovery-key drill, intercepted joins, revocation pruning, leave and rejoin. See `internal/federation/harness/operations_test.go` and `harness_test.go`. The recovery key was not used on the live sites (it signs only the offline operations of the runbooks).
+
+## Findings from the live run
+
+1. **kw was reachable only in one direction.** kw's federation Service was ClusterIP, so OKE could not call kw (no pings, nudges, search or proxied reads from OKE, and no replication of a feed homed on kw). Fixed with a second LoadBalancer Service on the LAN (`deploy/examples/kw-federation-lan.yaml`, Cilium LB-IPAM `192.168.10.150`) and `hostAliases` on the OKE pod (new chart value, `deploy/examples/azrty-oke.yaml`). Without it scenario (d) cannot complete in the return direction.
+2. **The federation LoadBalancer was a 10 Mbit/s bottleneck.** After adoption `oke-oci-hosted` moved from the public gateway to the federation listener. Its backlog (about 7 GB, 3,000 changes, built up earlier because blob streams were cut by the write timeout fixed in PR 271) crawled at a few MB per minute; raising the flexible-shape maximum to 100 Mbit/s lifted the transfer rate to about 20 MB/s. Size the federation LoadBalancer for replication traffic, or keep large feeds on the token transport until their backlog is gone.
+3. **`oci-hosted` lag.** Adoption keeps a lagging job lagging: the job came over with its checkpoint (6398 of 9482) and its failure backoff (up to 15 minutes). It was catching up when the other eight feeds were already in sync; final state below.
+4. **Partition drills need an explicit in-cluster allow.** The first partition attempt used an `ipBlock: 0.0.0.0/0` egress rule with an exception for the OKE address; Cilium does not match cluster endpoints with `ipBlock`, so PostgreSQL became unreachable and the kw pod crash-looped for about 80 s (02:30:52 to 02:32:09) until the policy was deleted (`10-partition-attempt1.txt`). The tested policy adds `namespaceSelector: {}` (`10-partition-networkpolicy.yaml`). The same 30-second gap let kw sync policy generation 3, so the stale-policy demonstration uses generations 3 and 4.
+5. Known limitation, not changed: a federation URL cannot be edited after joining. The kw name is `ant-federation.kw.watteel.lab:8444` for ever, so other sites need the address through DNS or `hostAliases`.
+
+## Final state
+
+See `13-final-state.md` in the evidence directory for the last status of both sites after clean-up (qualification service account, role and tokens removed; the feeds `fed-route`, `fed-qual` and `fed-oci` and the rule for `fed-qual` are left as federation canaries).

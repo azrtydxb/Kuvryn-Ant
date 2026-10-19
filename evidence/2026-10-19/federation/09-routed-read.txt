@@ -1,0 +1,32 @@
+# routed read at kw of an artifact homed on OKE only (watteel/fed-route); federated service account fed-qual
+HTTP/2 200 
+date: Mon, 19 Oct 2026 03:05:53 GMT
+content-type: application/x-www-form-urlencoded
+content-length: 66
+accept-ranges: bytes
+cache-control: private, no-store
+content-disposition: attachment
+etag: "sha256:61e2b700723a4fc9fad35d61b606c7fa8e9a6d11549a33e20860a6cece3d1b7f"
+x-checksum-sha256: 61e2b700723a4fc9fad35d61b606c7fa8e9a6d11549a33e20860a6cece3d1b7f
+x-content-type-options: nosniff
+x-kuvryn-route: proxy; member=oke
+strict-transport-security: max-age=31536000; includeSubDomains
+
+Kuvryn Ant federation qualification fed-route 2026-10-19T02:22:33Z
+
+# OCI manifest HEAD at kw for fed-oci/hello:1 (feed homed on OKE only)
+HTTP/2 200 
+date: Mon, 19 Oct 2026 03:05:53 GMT
+content-type: application/vnd.docker.distribution.manifest.v2+json
+content-length: 423
+accept-ranges: bytes
+cache-control: private, no-cache
+docker-content-digest: sha256:00f9d834fa5c599b914e51d4d73d65a808753720bbb54ea1ff70f59773a2667d
+docker-distribution-api-version: registry/2.0
+etag: "sha256:00f9d834fa5c599b914e51d4d73d65a808753720bbb54ea1ff70f59773a2667d"
+x-kuvryn-cache: hit
+x-kuvryn-route: proxy; member=oke
+strict-transport-security: max-age=31536000; includeSubDomains
+
+# crane at kw: digest sha256:00f9d834fa5c599b914e51d4d73d65a808753720bbb54ea1ff70f59773a2667d
+# crane pull at kw succeeded: 4096 bytes (image tarball)

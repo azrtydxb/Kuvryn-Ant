@@ -1,0 +1,1 @@
+2026-10-19T02:32:41Z first attempt aborted: ipBlock-only egress also blocked in-cluster PostgreSQL (cilium excludes cluster identities from ipBlock); kw pod crash-looped about 80 s; policy deleted
