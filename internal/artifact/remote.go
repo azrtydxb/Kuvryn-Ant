@@ -645,6 +645,9 @@ func (s *Service) commitMaterialized(ctx context.Context, p identity.Principal, 
 	if err = tx.QueryRow(ctx, `INSERT INTO versions(instance_id,component_id,version) VALUES($1,$2,$3) ON CONFLICT(component_id,version) DO UPDATE SET version=excluded.version RETURNING id::text`, p.InstanceID, component, r.Version).Scan(&version); err != nil {
 		return Record{}, ErrUnavailable
 	}
+	if err = recordChildren(ctx, tx, component, r.Version, r.Children); err != nil {
+		return Record{}, err
+	}
 	result := Record{SourceID: source, VersionID: version, DomainID: domain, Info: r.Info, MediaType: r.MediaType}
 	var oldDigest string
 	var oldSize int64

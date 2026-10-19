@@ -23,6 +23,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteconfig"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/safedir"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -365,6 +366,9 @@ func (r *Registry) serve(w http.ResponseWriter, req *http.Request) {
 		failService(w, err)
 		return
 	}
+	if req.Method == http.MethodGet || req.Method == http.MethodHead {
+		rep = r.canonicalOfficial(req.Context(), p.InstanceID, rep)
+	}
 	if rep.mirror && req.Method != http.MethodGet && req.Method != http.MethodHead {
 		failure(w, 405, "UNSUPPORTED", "mirror feeds are read-only")
 		return
@@ -455,4 +459,39 @@ func (r *Registry) deleteManifest(w http.ResponseWriter, req *http.Request, p id
 		return
 	}
 	w.WriteHeader(202)
+}
+
+// canonicalOfficial maps a single-segment name ("alpine") to Docker Hub's
+// canonical "library/alpine" for reads on feeds that pull through from Docker
+// Hub, so both forms address one component instead of creating duplicates. A
+// component already stored under the short name keeps it, so nothing existing
+// stops resolving. Writes are never rewritten.
+func (r *Registry) canonicalOfficial(ctx context.Context, instance string, rep repository) repository {
+	if rep.name == "" || strings.Contains(rep.name, "/") {
+		return rep
+	}
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	rows, err := r.db.Query(ctx, `SELECT rc.config->>'origin' FROM feed_sources fs JOIN remote_source_configs rc ON rc.instance_id=fs.instance_id AND rc.source_id=fs.source_id WHERE fs.instance_id=$1 AND fs.feed_id=$2`, instance, rep.feed)
+	if err != nil {
+		return rep
+	}
+	hub := false
+	for rows.Next() {
+		var origin string
+		if rows.Scan(&origin) == nil && remoteconfig.IsDockerHub(origin) {
+			hub = true
+		}
+	}
+	rows.Close()
+	if !hub {
+		return rep
+	}
+	var exists bool
+	if err = r.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM feed_sources fs JOIN components c ON c.instance_id=fs.instance_id AND c.source_id=fs.source_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3)`, instance, rep.feed, rep.name).Scan(&exists); err != nil || exists {
+		return rep
+	}
+	rep.name = "library/" + rep.name
+	rep.namespace = "library"
+	return rep
 }

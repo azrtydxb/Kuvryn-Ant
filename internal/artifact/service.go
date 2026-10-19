@@ -60,12 +60,18 @@ type Reference struct {
 	Version, AssetKey string
 	Info              blob.Info
 }
+
+// Child is one grouped version of an index version, with its platform label.
+type Child struct{ Version, Platform string }
 type Publication struct {
-	Subject                                                     *Subject
-	ArtifactType                                                string
-	Annotations                                                 map[string]string
-	ExpectedSource                                              string
-	References                                                  []Reference
+	Subject        *Subject
+	ArtifactType   string
+	Annotations    map[string]string
+	ExpectedSource string
+	References     []Reference
+	// Children names the other versions of this component that an index version
+	// groups (an OCI image index's per-platform manifests). Optional metadata.
+	Children                                                    []Child
 	Tag                                                         string
 	FeedID, Namespace, Coordinate, Version, AssetKey, MediaType string
 	// MatchedRule is the publish-policy rule that selected the target, recorded as provenance.
@@ -357,6 +363,9 @@ func (s *Service) publishTx(ctx context.Context, p identity.Principal, r Publica
 	}
 	result, err := commitAsset(commitCtx, tx, store, p, r, source, domain, component, version, true)
 	if err != nil {
+		return Record{}, err
+	}
+	if err = recordChildren(commitCtx, tx, component, version, r.Children); err != nil {
 		return Record{}, err
 	}
 	if err = tx.Commit(commitCtx); err != nil {

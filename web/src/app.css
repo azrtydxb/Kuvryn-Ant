@@ -673,3 +673,31 @@ details > summary {
   padding-left: 10px;
   padding-right: 10px;
 }
+
+/* Drawer body is a scrolling flex column: its children must keep their own
+   height instead of shrinking (which emptied the Install box and clipped the
+   tab strip when the content was taller than the drawer). */
+.az-drawer__body > * {
+  flex-shrink: 0;
+}
+.az-drawer__body .az-tabs {
+  position: sticky;
+  top: -22px;
+  z-index: 1;
+  background: var(--az-surface, var(--az-bg, inherit));
+  padding-top: 4px;
+}
+/* Version and tag tables fit the drawer: no horizontal scrolling at normal
+   widths, long values wrap instead. */
+.pkg-table {
+  min-width: 0;
+}
+.pkg-table table {
+  width: 100%;
+  table-layout: auto;
+}
+.pkg-table td,
+.pkg-table th {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

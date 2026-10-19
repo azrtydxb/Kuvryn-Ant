@@ -272,11 +272,20 @@ export function Mono({
     </span>
   );
 }
-export function Copyable({ text, label }: { text: string; label?: string }) {
+export function Copyable({
+  text,
+  label,
+  display,
+}: {
+  text: string;
+  label?: string;
+  // Shorter text to show; the full value stays in the tooltip and the copy.
+  display?: string;
+}) {
   const [done, setDone] = useState(false);
   return (
-    <span className="row tight">
-      <Mono muted>{text}</Mono>
+    <span className="row tight" title={display ? text : undefined}>
+      <Mono muted>{display ?? text}</Mono>
       <IconButton
         icon={done ? "check" : "copy"}
         label={label ?? "Copy " + text}

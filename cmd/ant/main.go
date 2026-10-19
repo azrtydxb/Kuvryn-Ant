@@ -103,7 +103,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		mode = args[0]
 	}
 	if mode != "serve" && mode != "bootstrap" && mode != "bootstrap-token" && mode != "rotate-secrets" && mode != "gc" || len(args) > 2 || len(args) > 1 && mode != "bootstrap" && mode != "gc" || mode == "gc" && len(args) == 2 && args[1] != "--dry-run" {
-		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata [--dry-run] | backup | restore | admin break-glass|local-user | export | import | migrate | compare | federation status|re-identify|purge|recovery]")
+		logger.Error("usage: ant [serve | bootstrap [name] | bootstrap-token | rotate-secrets | gc [--dry-run] | storage | diagnostics [-o FILE] | repair metadata|oci-index-children [--dry-run] | backup | restore | admin break-glass|local-user | export | import | migrate | compare | federation status|re-identify|purge|recovery]")
 		return 1
 	}
 	if len(args) == 2 {
