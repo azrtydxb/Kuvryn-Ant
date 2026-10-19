@@ -1,68 +1,137 @@
-# Kuvryn Ant — State and Handover
+# Kuvryn Ant: state and handover
 
-Date: 2026-10-18 · Branch: `feat/service-foundation` · Last commit: `a1ee0cc` "Implement atomic artifact adapters, enterprise sessions, console and deployment"
+As of 2026-10-19, `main` at `6c81cfe` (PR #287). Everything described here is merged; there is no uncommitted or
+branch-only work. The GitHub backlog (#12 to #219) was reconciled against code and evidence on the same date: each
+issue carries a "Backlog sync 2026-10-19" comment, finished issues are closed with links to PRs and evidence, and
+partly finished ones are open with the `partial` label and a list of what remains.
 
-Everything below exists in the **uncommitted working tree** (~50 files). Nothing on this branch except the three prior commits is committed. A future session should review, split, and commit this work deliberately — see [Handover for the next session](#handover-for-the-next-session).
+## 1. Implemented scope
 
-## 1. What this phase delivered
+**Phase 1 platform** (PRs #223 to #267, fixes #271, #279, #280, #282 to #287)
 
-Backend adapter work, the remote-source management contract, and the administration console all reached a green, verified state. The prior session left four broken adapters (`conan`, `ansiblerepo`, `condarepo`, `cran`), an untested `remoteruntime` fetch/cache layer, and a web console with three failing tests. All of that is now complete and verified.
+- Go service on PostgreSQL (migrations up to 040), disk and S3 blob storage with multipart resume, disk/S3 migration,
+  writer lease, and two-phase GC, retention and integrity scans.
+- All 26 format adapters mounted under `/feeds/{slug}/<format>/` (OCI under `/v2/` too). Remote pull-through works for
+  22 of them; apk, git-lfs, p2 and swift serve local content only.
+- Feed read policies with explain (`GET /feeds/{id}/resolve`), publish policies, policy-gated delete and unlist,
+  rate limits, quotas and policy templates.
+- Management API `/api/v1` (OpenAPI, generated Go and TS clients, idempotency keys, `If-Match`, transactional audit and
+  outbox), webhooks, MCP at `/mcp` with API parity, audit sink and retention, tracing and diagnostics bundle.
+- Identity: scoped service tokens, PATs, GitHub Actions OIDC exchange, OIDC/SAML/LDAP browser login, provider
+  administration with diagnostics and preview, OIDC claim-to-role mapping with JIT provisioning (#287), local user
+  accounts and username/password sign-in (#286), break-glass account and SSO-mandatory policy, envelope-encrypted
+  secrets with resumable root-key rotation.
+- Replication: peers, manifests, seed, incremental, continuous jobs, filters, deletion dry runs, reseed and back-fill,
+  read-only replicas.
+- Adoption and operations: import/export bundles, Nexus 3 mapping with dry run and `ant compare`, `ant backup` /
+  `restore` (including to object storage, #285), metadata repair, Helm chart and Compose.
+- React console (`web/`, embedded from `internal/console/dist`) covering every area above.
 
-### Backend
+**Phase 2 federation, P2-M1 to P2-M6** (#259, #265, #268, #266, #272, #274; security hardening #270, #277;
+qualification #276): membership and signed documents, shared identity and policy, coordinated replication with
+in-place adoption of Phase 1 jobs, federated search, placement-aware routing (proxy, redirect, signed blob URLs),
+authority handover and recovery, federated audit, runbooks. Design and per-milestone deviations are in
+`docs/planning/phase-2-federation.md`.
 
-- **Format adapters implemented and mounted** in `cmd/ant/artifacts.go` + `cmd/ant/main.go`, each with integration tests (`internal/<pkg>/integration_test.go`), a README, and a `test-postgres.sh` fixture:
-  - `internal/conan` — stage/search/upload/download/metadata, manifest-sealed atomic bundles
-  - `internal/ansiblerepo` — Galaxy v3 collection index (detail, versions, version detail)
-  - `internal/condarepo` — channel/repodata publication
-  - `internal/cran` — package index + source/binary metadata
-  - plus the earlier `gitlfs`, `pubrepo`, `composer`, `rubygems` adapters
-- **OCI / package discovery**: `internal/oci/referrers.go` (OCI 1.1 referrers API), `internal/artifact/subject.go` (immutable subject locks with `ON CONFLICT` retry-identity), migrations `016_package_discovery.sql` (namespace backfill) and `017_artifact_subjects.sql`, and `internal/management/packages.go` (package list/versions/tags/assets search with namespace partition authorization and cursor scope binding).
-- **Remote-source management contract**: `internal/remoteconfig` (normalized origin/cache policy, source-bound encrypted credential purposes, operator-only CA refs), `internal/management/remote_sources.go` (GET/PUT remote-config, PUT remote-credential, revision + If-Match), migration `018_remote_source_configs.sql`, and `internal/config/upstream.go` (operator CA bundles).
-- **Key rotation**: `cmd/ant/rotate.go` + `rotate_test.go` (resumable root-key rotation, batch rewraps, replay-safe fingerprint derivation via HMAC of the root key).
-- **Remote runtime layer**: `internal/remoteruntime` — fetch/cache integration tests covering metadata caching, negative caching, credential forwarding/rotation reload, config-revision/CA reload, and request bounds. (Materialization is still not wired to the adapters — see §3.)
-- **OG tag**: `api/openapi.yaml` + `api/generated.go` (Go) + `web/src/generated.ts` (TS) are in sync; enforced by `scripts/check-generated.sh`.
+## 2. Deployments
 
-### Administration console (`web/` + `internal/console`)
+|                                       | OKE                                                              | kw                                                                                                     |
+| ------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| URL                                   | `https://ant.azrty.com` (public certificate)                     | `https://ant.kw.watteel.lab` (private CA `cluster-ca`)                                                 |
+| Role                                  | Federation authority; home of the nine shared feeds              | Federation member (`site=kw`); read-only replica of the shared feeds, plus its own pull-through caches |
+| kube context / namespace              | `azrty-oke` / `kuvryn-ant`, Helm release `ant` (revision 24)     | `kw` / `kuvryn-ant`, Helm release `ant` (revision 20)                                                  |
+| Image                                 | `dxb.ocir.io/axmcgpqk0w0z/azrty/kuvryn-ant`                      | `192.168.10.131/azrtydxb/kuvryn-ant`                                                                   |
+| Running digest (2026-10-19 13:14 +04) | `sha256:a89c1dacfdf3...`                                         | same digest                                                                                            |
+| Storage                               | OCI Object Storage (S3 compatibility), CloudNativePG 3 instances | TrueNAS MinIO, CloudNativePG 2 instances                                                               |
+| Values                                | `deploy/examples/azrty-oke.yaml`                                 | `deploy/examples/kw.yaml`, `deploy/examples/kw-federation-lan.yaml`                                    |
 
-- New views from the run-3 increment: `web/src/Packages.tsx` (package discovery with prefix/namespace/digest filters), `web/src/RemoteSource.tsx` (remote-config + per-source encrypted credential forms), `web/src/Webhooks.tsx` (create/rotate/disable, delivery history), plus the earlier Feeds/Sources/Identity views.
-- Fixed three failing tests:
-  - `web/src/api.ts` — the SHA-256 replay fingerprint was awaited before `fetch` on every call, racing dispose/abort in `web/src/api.test.ts` ("aborts in-flight requests when session ends"). The digest now runs only for idempotent operations, so GETs reach the network synchronously and abort correctly.
-  - `web/src/App.test.tsx` — the new `Packages` view's `listPackages` request fell through the mock to the bare `feed` object, crashing the render (`r.value.data.items.map`) and unmounting the tree before tests reached "Add rule" / "Attach a source". Added an empty-page mock branch for `/packages`.
-- Real-backend browser QA recorded in `web/README.md` (§ "Run 3"): created feeds/sources, attached at priority, saved publish policy, pushed a real OCI image through `/v2/` and verified package discovery + filters, configured a remote source with encrypted credentials (secret never returned), created a webhook and opened delivery history. All flows green.
+- Data plane on OKE goes through the shared Envoy Gateway `edge` (HTTPRoute; `/` redirects to `/console/`, #283).
+  Federation traffic uses TLS passthrough on port 8444 of the shared edge gateway (chart TLSRoute, #281). kw exposes
+  its federation listener on the LAN (`192.168.10.150:8444`); OKE reaches it through `hostAliases`.
+- Shared feeds (`oci-hosted npm go cargo pypi maven helm nuget sccache`) are homed on OKE and replicated to kw by the
+  adopted `oke-*` federation jobs (in sync at the end of qualification, `evidence/2026-10-19/federation/13-final-state.md`).
+- Node container mirrors on both clusters pull through Ant (`ANT_OCI_MIRROR_MAP`: docker.io, ghcr.io, quay.io,
+  registry.k8s.io, gcr.io, public.ecr.aws).
+- GitHub Actions ARC runners are unified on Ant and configure clients with `azrtydxb/ant-setup-action`.
+- Console sign-in: Zitadel (OIDC, claim-to-role mapping) plus username/password local accounts; API tokens behind
+  "Use an API token". Break-glass procedure: `docs/operations/break-glass.md`.
+- Upgrades: verified `ant backup` on both sites first, then
+  `helm upgrade --reset-then-reuse-values --set image.tag=... --set image.digest=...` (`docs/operations/upgrade.md`,
+  `docs/operations/multi-site.md`).
 
-## 2. Verification status
+## 3. Evidence per acceptance criterion (spec §11)
 
-All of the following pass on this working tree:
+| AC                                              | State                | Evidence                                                                                                                                      | Gap                                                                                                |
+| ----------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1 Conformance per ecosystem                     | Partial              | `conformance/results/{local,oke,kw}/2026-10-19` (harness #273): 16 formats pass on all three targets                                          | Failures in 10 formats fixed in #280 but not re-run (#288)                                         |
+| 2 Local/remote/routing/same-endpoint            | Partial              | Same runs: publish, consume, same-endpoint, remote miss and upstream-down hit per format                                                      | apk, git-lfs, p2, swift have no remote; pending re-run                                             |
+| 3 Identity (Zitadel + generic OIDC, SAML, LDAP) | Partial              | Unit/integration tests in `internal/{oidclogin,samllogin,directory}`; Zitadel used in production                                              | No recorded real-provider evidence; SAML SLO unrouted; LDAP group mapping not applied (#46 to #50) |
+| 4 UI/API/MCP authz + audit parity               | Partial              | `internal/mcp/parity_test.go`, management deny/audit tests                                                                                    | MCP lacks identity-admin tools; no UI parity tests (#65)                                           |
+| 5 Two-instance replication                      | Pass with follow-ups | `evidence/2026-10-18` AC5 (seed, interrupt/resume, digests, lag, corruption, outage); federation adoption in `evidence/2026-10-19/federation` | Re-run with large blobs after #271/#279; disk-to-S3 pair (#68)                                     |
+| 6 Disk vs S3 equivalence                        | Pass                 | `evidence/2026-10-18/ac6/*.json`: 46/46 steps on disk, MinIO, OCI Object Storage                                                              | Throttling/visibility tests (#29)                                                                  |
+| 7 Import/export inventory and dry run           | Partial              | #260 tests (synthetic Nexus fixtures)                                                                                                         | No real Nexus run (#83, #290)                                                                      |
+| 8 Performance                                   | Partial              | `evidence/2026-10-18` AC8, `bench/`                                                                                                           | Targets missed or not run (#289)                                                                   |
+| 9 Backup/restore, upgrade, recovery             | Partial              | `evidence/2026-10-18/ac9`; restore trigger fix #279, object-storage backups #285                                                              | Restore and rollback not re-run since the fixes (#76, #77)                                         |
+| 10 No claim without evidence + limitations      | Partial              | Per-adapter READMEs, harness `unsupported` records                                                                                            | Release evidence and known-limitations doc not yet published (#219)                                |
 
-```sh
-go build ./...        # clean
-go vet ./...          # clean
-scripts/check-generated.sh   # generated code in sync
-cd web && npm test    # 24/24
-cd web && npm run build       # contract check + tsc + vite
-cd web && npx prettier --check src/
-go test ./internal/console/...            # embedded assets, routing, headers
-scripts/test-postgres.sh                  # full DB-backed suite (40+ packages)
-```
+The 2026-10-18 qualification defects 1 to 11 were fixed in #271 and #279 (export timeout, source and job deletion,
+anonymous raw read, restore triggers, serving after bootstrap, raw spool, lag reporting). Defects 12 (publish
+throughput), 13 (data-plane metrics labelled `unmatched`, no upstream/cache metrics) and 14 (RSS after seeds) remain.
 
-Scoped `go test` passed for: `internal/{conan,ansiblerepo,condarepo,cran,gitlfs,pubrepo,composer,rubygems,oci,console,configuration,management,remoteconfig,remoteruntime,secrets,artifact}`.
+## 4. Known gaps
 
-## 3. Known gaps / not done
+- Fresh 26-format conformance run after #280 (#288); swift native client aborts on the https targets (#204).
+- Remote sources for apk, git-lfs, p2 and swift (#120, #155, #180, #205); npm mutable dist-tags (#169).
+- Per-format replica integrity checks: only raw and OCI were verified by AC5 (all `-T4` issues).
+- Prewarm jobs and schedules do not exist (#43); cache effectiveness reporting is incomplete (#44).
+- Observability: data-plane route labels and upstream/cache metrics (#22); failure drills (#23).
+- Identity: real-provider evidence for Zitadel, a second OIDC provider, SAML and LDAP; SAML single logout route; LDAP
+  group-to-role mapping; group management (#46 to #50, #61).
+- Console accessibility audit and capacity/freshness on the overview (#55, #56).
+- AC8 targets (#289); restore throughput and re-runs of restore/upgrade/rollback (#76, #77).
+- Nexus migration and decommissioning (#290).
+- kw-authoritative feeds / push replication (#291); federation client conformance profile (#293).
+- Owner decision pending: kw ingress `externalTrafficPolicy` (#292).
+- License remains undecided by owner direction.
 
-- **Remote materialization is wired for raw, npm, pypi, maven, go and OCI** (see `docs/implementation/pull-through.md`). The other adapters still serve local content only and can be enabled with the two documented hooks. Replica resolution remains a release gate.
-- **Formats remaining** (8 of 26 are still not implemented): APK, APT, CocoaPods, HuggingFace, p2, Swift, Terraform, RPM. Implemented (18): ansible, cargo, composer, conan, conda, cran, git-lfs, go, helm, maven, npm, nuget, oci, oci-artifacts, pub, pypi, raw, rubygems.
-- **Phase-1 backlog still open**: replication, retention/GC (failed metadata commits can leave unreferenced verified bytes), backups/restore, provider administration, release packaging/qualification, deployment evidence. Target: OKE + MinIO on TrueNAS SCALE; AWS and compatible providers supported without a separate fleet.
-- **Web console**: live OIDC/SAML/LDAP provider end-to-end auth is not exercised (covered only by frontend tests with mocked fixtures).
-- **Review rounds that previously failed mid-run were re-run in this session** (config-review-r2, protocol-review-r2). Both produced no blocking findings; no code changes were required from them.
+## 5. Runbooks and references
 
-## 4. Handover for the next session
+| Topic                                              | Document                                                                     |
+| -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Deployment and chart values                        | `deploy/README.md`, `deploy/examples/`                                       |
+| Upgrade and rollback                               | `docs/operations/upgrade.md`                                                 |
+| Backup and restore                                 | `docs/operations/backup-restore.md`                                          |
+| Storage migration (disk/S3)                        | `docs/operations/storage-migration.md`                                       |
+| Import, export, Nexus migration                    | `docs/operations/import-export-migration.md`                                 |
+| Observability, diagnostics                         | `docs/operations/observability.md`                                           |
+| Break-glass access                                 | `docs/operations/break-glass.md`                                             |
+| OKE/kw topology, replication, credentials rotation | `docs/operations/multi-site.md`                                              |
+| Federation setup and procedures                    | `docs/operations/federation.md`, `docs/operations/federation-runbooks.md`    |
+| Client setup                                       | `docs/clients/` (docker, go, cargo, pnpm) and the console feed view          |
+| Conformance harness                                | `conformance/README.md` (`conformance/run.sh <local\|oke\|kw> [formats...]`) |
+| Benchmarks                                         | `bench/README.md`                                                            |
+| Evidence sessions                                  | `evidence/README.md`, `docs/implementation/federation-evidence.md`           |
 
-1. **Commit discipline**: ~50 files are uncommitted on `feat/service-foundation`. Review `git status`/`git diff`, split into coherent commits (adapters, management contract + migrations, rotate, console, docs), and never commit secrets. `.local/`, `.qa-fixture.json`, and fixture artifacts are gitignored.
-2. **Merge/PR**: continue on `feat/service-foundation`; open the PR against the base when the intended parent is known. If a PR already exists, check `gh pr status` before creating another.
-3. **Next work options (in no order)**:
-   - Wire `remoteruntime` materialization into adapters (closes the largest remaining gate).
-   - Next format adapters per the delivery order still in the product spec (APK, APT, CocoaPods, HuggingFace, p2, Swift, Terraform, RPM), following the per-adapter standard: integration tests via `scripts/test-postgres.sh`, README, `test-postgres.sh`, and mounting in `cmd/ant/artifacts.go` + `main.go` (`SetPublicURL` wiring).
-   - Replication, retention/GC, backups/restore, release packaging.
-4. **When touching the API**: run both `npm run generate` in `web/` and the Go generator, keep `generated.go`/`generated.ts` in sync with `openapi.yaml`, and gate on `scripts/check-generated.sh`.
-5. **QA fixture**: `go run ./cmd/qafixture start|stop` is the shared real-backend browser QA harness (disposable socket-only Postgres, bootstrapped token, loopback server). T3 preview or ego-browser can drive it; record evidence under "Real backend QA evidence" in `web/README.md`.
-6. **Known fact to preserve**: remote-source credentials are stored encrypted per source with a purpose bound to the exact source UUID; the API returns only an opaque `credential_id`, never the secret. CA refs are operator-configured IDs, never request-supplied paths. Keep those invariants when wiring materialization.
+## 6. Credential locations (paths only)
+
+All under `~/.kuvryn-ant/` on the operator workstation, never committed: `azrty-oke-root.key`, `kw-root.key`
+(instance root keys); `azrty-oke-s3.json`, `kw-s3.json` (object storage); `azrty-oke-bootstrap.txt`,
+`kw-bootstrap.txt`; `azrty-oke-automation-token.txt`, `kw-automation-token.txt`; `azrty-oke-console-admin.txt`,
+`kw-console-admin.txt`; `federation-recovery.key` (offline federation recovery key); `truenas-minio-admin.txt`;
+`backup-manifests.txt` (backup manifest digests). In-cluster: Secrets `ant-root-key`, `ant-s3`, `ant-postgres`,
+`ant-pg-rootcert` in namespace `kuvryn-ant` on each cluster. The kw peer token for OKE is stored encrypted in Ant
+(see `docs/operations/multi-site.md`, expiry 2027-10-13).
+
+## 7. Next work
+
+1. Deploy main to both sites and run the fresh 26-format conformance (#288); close the format T2/T3 issues it clears.
+2. AC8: fix the publish throughput bottleneck and re-run the benchmarks, including W2 1M-asset and W3 10 GiB (#289).
+3. Re-run restore, upgrade and rollback on kw without workarounds; write RTO/RPO (#76, #77).
+4. Real-provider identity evidence (Zitadel plus one more OIDC provider, SAML, LDAP) and the SAML SLO and LDAP group
+   mapping gaps (#45 to #50).
+5. Remote support for apk, git-lfs, p2, swift and npm mutable dist-tags.
+6. Prewarm (#43) and cache/upstream metrics (#22, #44).
+7. Nexus migration and decommissioning (#290); kw-owned feeds (#291); owner decision on #292.
+
+Delivery rules are unchanged: branch, verify locally (build, vet, touched tests, `scripts/check-generated.sh`), PR,
+`gh pr merge --merge --admin` (CI bypassed by owner decision, AGENTS.md).
