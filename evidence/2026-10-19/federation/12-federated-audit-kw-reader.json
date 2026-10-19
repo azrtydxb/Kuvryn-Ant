@@ -1,0 +1,25 @@
+{
+  "items": [],
+  "members": [
+    {
+      "id": "f56c8b72-e0b3-4412-8549-691700cb03e0",
+      "name": "kw",
+      "status": "forbidden",
+      "code": "audit_read_denied",
+      "took_ms": 0,
+      "events": 0
+    },
+    {
+      "id": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "name": "oke",
+      "status": "forbidden",
+      "code": "audit_read_denied",
+      "took_ms": 61,
+      "events": 0
+    }
+  ],
+  "partial": true,
+  "page": {
+    "has_more": false
+  }
+}

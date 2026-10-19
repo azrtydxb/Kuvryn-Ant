@@ -1,0 +1,1072 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Kuvryn Ant federation peer protocol",
+    "version": "1",
+    "description": "Member-to-member protocol served on the dedicated federation listener (ANT_FEDERATION_LISTEN, TLS 1.3 with mutual authentication), never on the public HTTP listener. Protocol version 1 (membership protocol.min/max). The management API for administrators is api/openapi.yaml.\n\nAuthentication of every route except the two join routes: the client certificate must be issued by a federation CA of the applied membership and pinned by fingerprint in the membership (cert_sha256, or previous_cert_sha256 during the 24 h renewal grace), and its serial must not be revoked; the request carries X-Ant-Fed-Member (instance ID), X-Ant-Fed-Timestamp (RFC 3339, at most 60 s skew), X-Ant-Fed-Nonce (single use for 5 minutes per member) and X-Ant-Fed-Signature, an Ed25519 signature with the member's membership signing key over the lines `kuvryn-ant-federation-v1`, method, path and query, member, timestamp, nonce and the hex SHA-256 of the body. Requests that act for a user additionally carry X-Ant-Fed-Assertion: a signed, 60-second, request-bound principal assertion issued by the entry member; the receiving member authorizes the asserted principal with its own policy. Request bodies are limited to 8 MiB; routes are rate limited per calling member (429 rate_limited). Errors are {\"code\": \"<stable code>\"}."
+  },
+  "servers": [
+    {
+      "url": "https://{member}:{port}",
+      "variables": {
+        "member": {
+          "default": "ant-federation.example"
+        },
+        "port": {
+          "default": "8444"
+        }
+      }
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "memberSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Ant-Fed-Signature",
+        "description": "Ed25519 request signature; see info.description (also X-Ant-Fed-Member, -Timestamp, -Nonce)."
+      },
+      "principalAssertion": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Ant-Fed-Assertion",
+        "description": "Signed, 60 s, request-bound assertion of the acting federated principal."
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Stable error code",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/federation/v1/join": {
+      "post": {
+        "operationId": "peerJoin",
+        "description": "Authority only, unauthenticated (rate limited per remote IP: burst 10, then one per 6 s). Claims a one-time invitation, adds the joiner as a provisional member, issues its certificate from the CSR and returns the membership chain. The joiner must confirm (join/confirm) within 10 minutes or the claim is released.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "certificate and membership documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "invitation, instance_id, api_url, federation_url, csr, signing_key, software_version, protocol, labels",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "invitation": {
+                    "type": "string"
+                  },
+                  "instance_id": {
+                    "type": "string"
+                  },
+                  "csr": {
+                    "type": "string"
+                  },
+                  "signing_key": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/join/confirm": {
+      "post": {
+        "operationId": "peerJoinConfirm",
+        "description": "Authority only, unauthenticated (same limit). The joiner proves, with a statement signed by the member key it submitted, that it verified the answer came from the authority; this consumes the invitation.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "invitation, instance_id, signature",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "invitation": {
+                    "type": "string"
+                  },
+                  "instance_id": {
+                    "type": "string"
+                  },
+                  "signature": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/heads": {
+      "get": {
+        "operationId": "peerHeads",
+        "description": "Applied generation and hash of the membership, policy and topology documents, and the membership authority epoch.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "document heads",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/documents/{kind}": {
+      "get": {
+        "operationId": "peerDocuments",
+        "description": "Chain segment after a generation (query after, limit) of kind membership, policy or topology. Documents are self-authenticating, so any member can relay them.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/federation/v1/nudge": {
+      "post": {
+        "operationId": "peerNudge",
+        "description": "Pushed by the authority after a change (or by the member that became authority of a higher epoch): the latest documents. Applying one still requires a valid chain.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "documents, policy_documents, topology_documents",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/leave": {
+      "post": {
+        "operationId": "peerLeave",
+        "description": "Authority only: the calling member leaves; its certificate serial is revoked.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "after (generation)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "after": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/csr/renew": {
+      "post": {
+        "operationId": "peerRenew",
+        "description": "Authority only: new certificate for the caller's CSR (a new key must be signed by the current certificate key).",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "certificate and documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "csr, csr_signature",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "csr": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/status": {
+      "get": {
+        "operationId": "peerStatus",
+        "description": "Instance state, name, clock (for skew), software version, protocol range, membership head and authority epoch. Used for pings.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "peer status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/access-check": {
+      "post": {
+        "operationId": "peerAccessCheck",
+        "description": "The receiving member's own authorization decision for the asserted principal.",
+        "security": [
+          {
+            "memberSignature": [],
+            "principalAssertion": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "decision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "kind, feed_key, namespace, action",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/search": {
+      "post": {
+        "operationId": "peerSearch",
+        "description": "Package search under the asserted principal's policy on this member (50 requests per second per peer, 20 per principal).",
+        "security": [
+          {
+            "memberSignature": [],
+            "principalAssertion": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "hits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "SearchQuery",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/audit/query": {
+      "post": {
+        "operationId": "peerAuditQuery",
+        "description": "Audit events of this member for the asserted principal, newest first, strictly older than the given (created_at, id) watermark. Requires instance administration on this member (403 forbidden otherwise); 20 requests per second per peer and per principal.",
+        "security": [
+          {
+            "memberSignature": [],
+            "principalAssertion": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "events and more",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "AuditQuery: action, prefix, result, from, to, after {at, id}, limit (1..200)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/authority/prepare": {
+      "post": {
+        "operationId": "peerAuthorityPrepare",
+        "description": "Planned handover, called by the current authority on the target: the target generates the authority key of epoch N+1 and returns its public key. Refused with member_not_current unless the target has applied the same membership, policy and topology.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "public_key and epoch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "epoch, base_generation, base_hash, policy_generation, policy_hash, topology_generation, topology_hash",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "epoch": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/authority/commit": {
+      "post": {
+        "operationId": "peerAuthorityCommit",
+        "description": "Planned handover, second step: the authority's certificate of the target's key (certified_by previous_epoch) and the federation CA material. The target adds its own acceptance, publishes the first document of the new epoch signed by the new key, takes the role and returns it.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "documents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "description": "base_generation, base_hash, authority (certificate), ca (key and certificate)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/replication/feeds/{fed}/{slug}": {
+      "get": {
+        "operationId": "peerHomeFeed",
+        "description": "The home's feed identity for a feed key (served only to members a rule targets).",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/federation/v1/replication/transfer-state": {
+      "get": {
+        "operationId": "peerTransferState",
+        "description": "Home-transfer state used to drain and promote.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "transfer state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/replication/status": {
+      "get": {
+        "operationId": "peerReplicationStatus",
+        "description": "Replication state of this member's replicas (placement and routing input).",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": []
+      }
+    },
+    "/federation/v1/replication/export/feeds/{feed}/{part}": {
+      "get": {
+        "operationId": "peerReplicationExport",
+        "description": "Replication export of a feed the caller is entitled to replicate: head, manifest, changes, and blobs/{digest} (Range supported); same wire format as the bearer export API.",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "export part",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "feed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "part",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/federation/v1/routes/feeds/{fed}/{slug}": {
+      "get": {
+        "operationId": "peerRouteInfo",
+        "description": "Whether and how this member holds a feed key (routing).",
+        "security": [
+          {
+            "memberSignature": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "route info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/federation/v1/proxy/feeds/{fed}/{slug}/{rest}": {
+      "get": {
+        "operationId": "peerProxy",
+        "description": "Proxied read (GET and HEAD, Range, conditional headers) of a federated feed served from this member's own content under the asserted principal's policy; never routed again.",
+        "security": [
+          {
+            "memberSignature": [],
+            "principalAssertion": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the upstream response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rest",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/federation/blob/{name}": {
+      "get": {
+        "operationId": "federationBlob",
+        "description": "Public listener (not the federation listener): a signed blob URL ticket (query k, p, t) issued by the entry member; five-minute lifetime.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "blob bytes"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

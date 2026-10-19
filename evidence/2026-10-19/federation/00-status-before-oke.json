@@ -1,0 +1,63 @@
+{
+  "instance_id": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+  "state": "active",
+  "role": "authority",
+  "health": "ok",
+  "federation_id": "d1f6cc83-ada5-4a48-84e8-cb2c410bfd9a",
+  "federation_name": "watteel",
+  "authority_epoch": 1,
+  "authority_instance_id": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+  "authority_url": "https://ant-federation.azrty.com:8444",
+  "listener_configured": true,
+  "listen_address": "0.0.0.0:8444",
+  "federation_url": "https://ant-federation.azrty.com:8444",
+  "ca_sha256": "7ad7705226083698d32d60c55e7b07429fb5fafadd48e335b4c26daf9f5b4618",
+  "recovery_key_fingerprint": "0ac966fca2628802",
+  "membership": {
+    "generation": 2,
+    "hash": "sha256:0a5cf751d4248b8a7431ac24fca8c91a02e15040a89ce56cfb7f04378e50da70",
+    "applied_at": "2026-10-18T22:00:21.137317Z",
+    "age_seconds": 0,
+    "issued_at": "2026-10-18T22:00:21.131177075Z"
+  },
+  "certificate": {
+    "serial": "2d326205811c5e137a5d1ac33b35e2eb",
+    "expires_at": "2026-11-17T21:58:05Z"
+  },
+  "sync": {},
+  "members": {
+    "active": 2,
+    "suspended": 0,
+    "removed": 0
+  },
+  "software_version": "(devel)",
+  "protocol": {
+    "min": 1,
+    "max": 1
+  },
+  "policy": {
+    "generation": 0,
+    "age_seconds": 0,
+    "staleness": "fresh",
+    "report": {
+      "roles": 0,
+      "grants": 0,
+      "principals": 0,
+      "revoked": 0,
+      "unresolved_feed_keys": [],
+      "inert_admin_grants": 0,
+      "conflicts": []
+    }
+  },
+  "topology": {
+    "generation": 0,
+    "age_seconds": 0,
+    "feeds": 0,
+    "rules": 0,
+    "home_feeds": 0,
+    "rules_targeting_self": 0,
+    "active_transfers": 0,
+    "unresolved_quarantines": 0
+  },
+  "alerts": []
+}

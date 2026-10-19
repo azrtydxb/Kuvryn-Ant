@@ -1,0 +1,28 @@
+{
+  "feed_key": "watteel/fed-route",
+  "format": "raw",
+  "home": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+  "local_role": "unbound",
+  "routing": {
+    "mode": "proxy",
+    "blob_urls": false,
+    "cache": false
+  },
+  "decision": "proxy",
+  "reason": "a local miss is proxied over the federation listener with the caller's assertion",
+  "candidates": [
+    {
+      "member_id": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+      "name": "oke",
+      "role": "home",
+      "api_url": "https://ant.azrty.com",
+      "circuit": "closed",
+      "consecutive_failures": 0,
+      "rtt_ms": 39.7,
+      "preference": 0,
+      "eligible": true,
+      "order": 1,
+      "reason": "home: authoritative holder, tried after replicas"
+    }
+  ]
+}

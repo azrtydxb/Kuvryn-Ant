@@ -1,0 +1,10 @@
+{"key":"watteel/oci-hosted","state":"failed","lag":12496.998349}
+{"key":"watteel/npm","state":"in_sync","lag":0}
+{"key":"watteel/sccache","state":"in_sync","lag":0}
+{"key":"watteel/pypi","state":"in_sync","lag":0}
+{"key":"watteel/nuget","state":"in_sync","lag":0}
+{"key":"watteel/go","state":"in_sync","lag":0}
+{"key":"watteel/fed-qual","state":"in_sync","lag":0}
+{"key":"watteel/helm","state":"in_sync","lag":0}
+{"key":"watteel/maven","state":"in_sync","lag":0}
+{"key":"watteel/cargo","state":"in_sync","lag":0}

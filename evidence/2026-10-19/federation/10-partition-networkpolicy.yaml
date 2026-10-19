@@ -1,0 +1,27 @@
+# Qualification partition between kw and OKE: kw cannot reach OKE's federation
+# endpoint (egress to 145.241.116.14; everything inside the cluster and every
+# other address stays reachable, including PostgreSQL and object storage), and
+# nothing can reach kw's federation listener (ingress is allowed only on the
+# HTTP and metrics port 8080).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: qual-partition
+  namespace: kuvryn-ant
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/instance: ant
+      app.kubernetes.io/name: kuvryn-ant
+  policyTypes: [Egress, Ingress]
+  egress:
+    - to:
+        - namespaceSelector: {}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [145.241.116.14/32]
+  ingress:
+    - ports:
+        - port: 8080
+          protocol: TCP

@@ -1,0 +1,92 @@
+{
+  "instance_id": "f56c8b72-e0b3-4412-8549-691700cb03e0",
+  "state": "active",
+  "role": "member",
+  "health": "degraded",
+  "federation_id": "d1f6cc83-ada5-4a48-84e8-cb2c410bfd9a",
+  "federation_name": "watteel",
+  "authority_epoch": 1,
+  "authority_instance_id": "e78798f0-fef7-48f5-a13c-6148e77a846b",
+  "authority_url": "https://ant-federation.azrty.com:8444",
+  "listener_configured": true,
+  "listen_address": "0.0.0.0:8444",
+  "federation_url": "https://ant-federation.kw.watteel.lab:8444",
+  "ca_sha256": "7ad7705226083698d32d60c55e7b07429fb5fafadd48e335b4c26daf9f5b4618",
+  "recovery_key_fingerprint": "0ac966fca2628802",
+  "membership": {
+    "generation": 2,
+    "hash": "sha256:0a5cf751d4248b8a7431ac24fca8c91a02e15040a89ce56cfb7f04378e50da70",
+    "applied_at": "2026-10-18T22:00:21.165733Z",
+    "age_seconds": 992,
+    "issued_at": "2026-10-18T22:00:21.131177075Z"
+  },
+  "certificate": {
+    "serial": "64890048efea8db2d32b6f74f805006d",
+    "expires_at": "2026-11-17T22:00:21Z"
+  },
+  "sync": {
+    "last_attempt_at": "2026-10-19T02:48:26.220946Z",
+    "last_success_at": "2026-10-19T02:32:21.40086Z",
+    "last_error": "oke: Get \"https://ant-federation.azrty.com:8444/federation/v1/heads\": dial tcp 145.241.116.14:8444: i/o timeout",
+    "source": "oke"
+  },
+  "members": {
+    "active": 2,
+    "suspended": 0,
+    "removed": 0
+  },
+  "software_version": "(devel)",
+  "protocol": {
+    "min": 1,
+    "max": 1
+  },
+  "policy": {
+    "generation": 3,
+    "hash": "sha256:1035865350d9589eae408a36a8e86d4a02a783687341bde6435a5a3621fb1e9e",
+    "applied_at": "2026-10-19T02:32:21.38919Z",
+    "confirmed_at": "2026-10-19T02:32:21.294Z",
+    "age_seconds": 992,
+    "staleness": "warning",
+    "report": {
+      "roles": 1,
+      "grants": 22,
+      "principals": 1,
+      "revoked": 0,
+      "unresolved_feed_keys": [
+        "watteel/fed-oci",
+        "watteel/fed-route"
+      ],
+      "inert_admin_grants": 0,
+      "conflicts": []
+    }
+  },
+  "topology": {
+    "generation": 31,
+    "hash": "sha256:9df5bab661b7e1bffb75403f47aab1d48c62dc8ba0d5e3b7f5a652cefca5a2b5",
+    "applied_at": "2026-10-19T02:30:03.137578Z",
+    "age_seconds": 992,
+    "feeds": 12,
+    "rules": 11,
+    "home_feeds": 0,
+    "rules_targeting_self": 10,
+    "active_transfers": 0,
+    "unresolved_quarantines": 0
+  },
+  "alerts": [
+    {
+      "code": "member_unreachable",
+      "severity": "warning",
+      "message": "not reachable for over 15 minutes: oke; see the member-loss runbook"
+    },
+    {
+      "code": "membership_stale",
+      "severity": "warning",
+      "message": "membership not confirmed current for 16m32s"
+    },
+    {
+      "code": "policy_stale",
+      "severity": "warning",
+      "message": "federation policy not confirmed current for 16m32s; the last known good policy stays enforced"
+    }
+  ]
+}

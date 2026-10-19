@@ -138,3 +138,33 @@ The kw → OKE federation path must work (it is the one kw already uses to
 sync documents). If adoption is not wanted yet, create the rules with
 `"adopt_existing": false`: kw reports `conflict` and keeps the Phase 1 jobs
 untouched; adopt them one at a time with `POST /api/v1/federation/replication/adopt`.
+
+## Federation as run (P2-M6)
+
+OKE is the federation authority and home of the nine shared feeds, kw a member
+labelled `site=kw`; the nine `oke-*` jobs were adopted in place (see
+`docs/implementation/federation-evidence.md` for the evidence and
+`docs/operations/federation-runbooks.md` for procedures).
+
+- **Both directions must work.** kw -> OKE (`ant-federation.azrty.com:8444`, the
+  OKE LoadBalancer, source ranges restricted) carries document sync, replication
+  and kw's search and routed reads. OKE -> kw carries OKE's status pings and
+  nudges, searches and proxied reads started at OKE, and replication of any feed
+  whose home moves to kw (a planned home transfer to kw makes OKE a replica that
+  pulls from kw). kw's chart-managed federation Service is ClusterIP, so kw
+  publishes a second Service with its own LAN address
+  (`deploy/examples/kw-federation-lan.yaml`, `192.168.10.150:8444`) and OKE's pod
+  resolves `ant-federation.kw.watteel.lab` through `hostAliases`
+  (`deploy/examples/azrty-oke.yaml`). OKE reaches the LAN over the site link;
+  only port 8444 on that address is added.
+- **Partition drills on kw.** A NetworkPolicy that blocks egress to the OKE
+  federation address must still allow in-cluster destinations explicitly
+  (`namespaceSelector: {}`): Cilium does not match cluster endpoints with
+  `ipBlock: 0.0.0.0/0`, so an `ipBlock`-only egress policy cuts PostgreSQL and
+  crash-loops the pod (observed, about 80 s of downtime). The tested policy is
+  `evidence/2026-10-19/federation/10-partition-networkpolicy.yaml`; it also
+  closes kw's federation port for ingress so OKE cannot nudge kw during the drill.
+- **Upgrades.** Take and verify `ant backup` on both sites first (about 5 and
+  10 minutes for the current data), roll with
+  `helm upgrade ... --reset-then-reuse-values --set image.tag=... --set image.digest=sha256:<build output>`,
+  and let the migrations run once per site.

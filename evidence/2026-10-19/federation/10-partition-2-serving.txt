@@ -1,0 +1,18 @@
+# partition t0+16min (2026-10-19T02:48:53Z): kw lost OKE since 2026-10-19T02:32:21Z; kw applied policy generation 3, OKE published generation 4 meanwhile
+# kw metrics:
+ant_federation_document_generation{kind="membership"} 2
+ant_federation_document_generation{kind="policy"} 3
+ant_federation_document_generation{kind="topology"} 31
+ant_federation_authority_epoch 1
+ant_federation_member_up{member="oke"} 0
+ant_federation_document_age_seconds{kind="policy"} 964
+ant_federation_alert{code="member_unreachable",severity="warning"} 1
+ant_federation_alert{code="membership_stale",severity="warning"} 1
+ant_federation_alert{code="policy_stale",severity="warning"} 1
+# serving at kw (fresh clients, no network to OKE):
+npm packument csstype, federated principal fed-qual (grant kept in generation 3): 200
+npm packument csstype, local administrator: 200
+fed-qual replica, federated principal (grant removed by generation 3, generation 4 not received): 503
+fed-qual replica, local administrator: 200
+OKE-only fed-route (needs the partitioned link), federated principal: 503
+

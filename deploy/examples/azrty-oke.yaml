@@ -48,3 +48,11 @@ extraEnv:
 #     loadBalancerSourceRanges: [] # restrict to the other members
 trustedProxies:
   - 10.244.0.0/16 # OKE pod network (Envoy Gateway proxies)
+# kw's federation endpoint (https://ant-federation.kw.watteel.lab:8444) is a LAN
+# name that OKE cannot resolve. OKE initiates traffic to kw (status pings,
+# nudges, search and proxied reads from OKE, pulling a feed whose home moved to
+# kw), so give the pod the address of kw's federation Service
+# (deploy/examples/kw-federation-lan.yaml).
+hostAliases:
+  - ip: 192.168.10.150
+    hostnames: [ant-federation.kw.watteel.lab]

@@ -1,0 +1,34 @@
+# Exposes kw's federation listener on the LAN, so members that cannot reach the
+# cluster network (OKE over the site link) can call it: a LoadBalancer Service
+# with its own address from the cluster's Cilium LB-IPAM pool, announced on the
+# LAN like the other services. Apply it next to the chart release (the chart's
+# own ant-ant-federation Service stays ClusterIP):
+#
+#   kubectl --context kw apply -f deploy/examples/kw-federation-lan.yaml
+#
+# The federation URL in membership keeps the name ant-federation.kw.watteel.lab;
+# members outside the LAN resolve it with hostAliases (see azrty-oke.yaml).
+apiVersion: v1
+kind: Service
+metadata:
+  name: ant-ant-federation-lan
+  namespace: kuvryn-ant
+  annotations:
+    lbipam.cilium.io/ips: 192.168.10.150
+  labels:
+    app.kubernetes.io/name: kuvryn-ant
+    app.kubernetes.io/instance: ant
+    app.kubernetes.io/component: federation-lan
+    lb.kw.watteel.lab/announcer: cilium
+spec:
+  type: LoadBalancer
+  loadBalancerClass: io.cilium/l2-announcer
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/instance: ant
+    app.kubernetes.io/name: kuvryn-ant
+  ports:
+    - name: federation
+      port: 8444
+      protocol: TCP
+      targetPort: federation
