@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/replication"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -72,4 +73,13 @@ func lagAlertThreshold() int64 {
 		}
 	}
 	return 10000
+}
+
+// attachFederation enables coordinated replication: the export API on the
+// federation listener for federation-mode peers, the rule reconciler and job
+// adoption. It must run before the federation listener serves.
+func (rr *replicationRuntime) attachFederation(fed *federation.Service) {
+	if rr != nil && fed != nil {
+		rr.service.AttachFederation(fed, rr.exporter)
+	}
 }

@@ -268,11 +268,24 @@ func (s *Service) runJob(ctx context.Context, id string) error {
 }
 
 func (s *Service) peerFor(ctx context.Context, peerID string) (*peerClient, error) {
-	var url, secretID string
+	var url, secretID, mode, member string
 	var ca *string
-	err := s.cfg.DB.QueryRow(ctx, `SELECT url,token_secret_id::text,ca_ref FROM replication_peers WHERE instance_id=$1 AND id=$2`, s.cfg.InstanceID, peerID).Scan(&url, &secretID, &ca)
+	err := s.cfg.DB.QueryRow(ctx, `SELECT url,COALESCE(token_secret_id::text,''),ca_ref,auth_mode,COALESCE(member_instance_id::text,'') FROM replication_peers WHERE instance_id=$1 AND id=$2`, s.cfg.InstanceID, peerID).Scan(&url, &secretID, &ca, &mode, &member)
 	if err != nil {
 		return nil, dbError(err)
+	}
+	if mode == "federation" {
+		// Member mTLS and request signature on the federation listener; the
+		// URL comes from the applied membership, never from the peer row.
+		fed := s.fed.Load()
+		if fed == nil {
+			return nil, fmt.Errorf("%w: federation transport not available", ErrUnavailable)
+		}
+		id, base, err := fed.ReplicationIdentity(member)
+		if err != nil {
+			return nil, fmt.Errorf("%w: federation member unavailable", ErrPeer)
+		}
+		return newFederationClient(base, member, id, time.Now), nil
 	}
 	_, token, err := (secrets.Store{DB: s.cfg.DB, Keys: s.cfg.Keys}).Open(ctx, s.cfg.InstanceID, secretID, "replication-peer:"+peerID)
 	if err != nil {

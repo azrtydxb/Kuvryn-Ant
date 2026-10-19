@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 )
 
 // ValidatePeerURL requires HTTPS. Plain HTTP is accepted only for a loopback
@@ -43,9 +45,13 @@ func ValidatePeerURL(raw string) (string, error) {
 // It never follows redirects, so the bearer token cannot be forwarded to a
 // different origin.
 type peerClient struct {
-	base  string
-	token string
-	http  *http.Client
+	base   string
+	token  string
+	prefix string // export feed path prefix
+	// sign, when set, authenticates the request with the federation member
+	// signature (mTLS transport) instead of the bearer token.
+	sign func(*http.Request)
+	http *http.Client
 }
 
 func newPeerClient(base, token, caPath string) (*peerClient, error) {
@@ -65,7 +71,7 @@ func newPeerClient(base, token, caPath string) (*peerClient, error) {
 		}
 		transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots}
 	}
-	return &peerClient{base: base, token: token, http: &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
+	return &peerClient{base: base, token: token, prefix: "/api/v1/replication/export/feeds/", http: &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
 }
 func readBounded(path string, limit int64) ([]byte, error) {
 	f, err := os.Open(path)
@@ -94,7 +100,11 @@ func (c *peerClient) doRange(ctx context.Context, path string, q url.Values, off
 	if err != nil {
 		return nil, ErrInput
 	}
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	if c.sign != nil {
+		c.sign(req)
+	} else {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
 	req.Header.Set("Accept", "application/json")
 	if offset > 0 {
 		req.Header.Set("Range", "bytes="+strconv.FormatInt(offset, 10)+"-")
@@ -128,11 +138,29 @@ func (c *peerClient) json(ctx context.Context, path string, q url.Values, dst an
 	}
 	return nil
 }
-func feedPath(feed string) string { return "/api/v1/replication/export/feeds/" + feed }
+func (c *peerClient) feedPath(feed string) string { return c.prefix + feed }
+
+// newFederationClient talks to a member's federation listener: mTLS with
+// the member certificate (server CN pinned to the member), every request
+// signed with the member key, no redirects and no system trust store.
+func newFederationClient(base, member string, id peer.Identity, now func() time.Time) *peerClient {
+	transport := &http.Transport{
+		TLSClientConfig:       peer.ClientTLS(id, member),
+		Proxy:                 nil,
+		DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+		MaxIdleConns:          8,
+		IdleConnTimeout:       60 * time.Second,
+		ForceAttemptHTTP2:     true,
+	}
+	return &peerClient{base: strings.TrimRight(base, "/"), prefix: FederationExportPrefix, sign: func(r *http.Request) { peer.SignRequest(r, id, nil, now()) },
+		http: &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
+}
 
 func (c *peerClient) Head(ctx context.Context, feed string) (Head, error) {
 	var h Head
-	err := c.json(ctx, feedPath(feed)+"/head", nil, &h)
+	err := c.json(ctx, c.feedPath(feed)+"/head", nil, &h)
 	return h, err
 }
 func addFilters(q url.Values, f Filters) {
@@ -159,7 +187,7 @@ func (c *peerClient) Manifest(ctx context.Context, feed, kind, after string, lim
 	}
 	addFilters(q, f)
 	var p ManifestPage
-	err := c.json(ctx, feedPath(feed)+"/manifest", q, &p)
+	err := c.json(ctx, c.feedPath(feed)+"/manifest", q, &p)
 	return p, err
 }
 
@@ -169,14 +197,14 @@ func (c *peerClient) Changes(ctx context.Context, feed string, after int64, limi
 	q := url.Values{"after": {strconv.FormatInt(after, 10)}, "limit": {strconv.Itoa(limit)}, "include_cached": {strconv.FormatBool(includeCached)}}
 	addFilters(q, f)
 	var p ChangePage
-	err := c.json(ctx, feedPath(feed)+"/changes", q, &p)
+	err := c.json(ctx, c.feedPath(feed)+"/changes", q, &p)
 	return p, err
 }
 
 // Template fetches the peer's non-secret feed configuration template.
 func (c *peerClient) Template(ctx context.Context, feed string) (Template, error) {
 	var t Template
-	err := c.json(ctx, feedPath(feed)+"/template", nil, &t)
+	err := c.json(ctx, c.feedPath(feed)+"/template", nil, &t)
 	return t, err
 }
 
@@ -185,7 +213,7 @@ func (c *peerClient) Template(ctx context.Context, feed string) (Template, error
 // (206 with a matching Content-Range), otherwise 0 (the peer sent the whole
 // blob). length is the number of bytes the stream will deliver, or -1.
 func (c *peerClient) Blob(ctx context.Context, feed, digest string, includeCached bool, offset int64) (body io.ReadCloser, start, length int64, err error) {
-	resp, err := c.doRange(ctx, feedPath(feed)+"/blobs/"+digest, url.Values{"include_cached": {strconv.FormatBool(includeCached)}}, offset)
+	resp, err := c.doRange(ctx, c.feedPath(feed)+"/blobs/"+digest, url.Values{"include_cached": {strconv.FormatBool(includeCached)}}, offset)
 	if err != nil {
 		return nil, 0, 0, err
 	}

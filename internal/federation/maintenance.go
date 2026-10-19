@@ -52,6 +52,8 @@ func resetFederationRows(ctx context.Context, tx pgx.Tx, instance string) error 
 		`DELETE FROM federation_assertion_nonces WHERE instance_id=$1`,
 		`DELETE FROM federation_policy_drafts WHERE instance_id=$1`,
 		`DELETE FROM federated_feed_bindings WHERE instance_id=$1`,
+		`DELETE FROM federation_quarantines WHERE instance_id=$1`,
+		`DELETE FROM replication_peers p WHERE p.instance_id=$1 AND p.auth_mode='federation' AND NOT EXISTS(SELECT 1 FROM replication_jobs j WHERE j.instance_id=p.instance_id AND j.peer_id=p.id)`,
 		`DELETE FROM federation_state WHERE instance_id=$1`,
 		`DELETE FROM encrypted_secrets WHERE instance_id=$1 AND purpose LIKE 'federation-%'`,
 	} {

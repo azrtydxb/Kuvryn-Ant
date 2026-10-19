@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
@@ -48,6 +50,9 @@ type Service struct {
 	cfg            Config
 	owner          string
 	fingerprintKey []byte
+	// fed is the federation service once attached (coordinated replication
+	// and federation-mode peers); nil without federation.
+	fed atomic.Pointer[federation.Service]
 }
 
 func New(cfg Config) (*Service, error) {
@@ -129,7 +134,7 @@ func dbError(err error) error {
 			return ErrInput
 		}
 	}
-	if errors.Is(err, ErrInput) || errors.Is(err, ErrNotFound) || errors.Is(err, ErrConflict) || errors.Is(err, secrets.ErrRevisionConflict) {
+	if errors.Is(err, ErrInput) || errors.Is(err, ErrNotFound) || errors.Is(err, ErrConflict) || errors.Is(err, ErrManaged) || errors.Is(err, secrets.ErrRevisionConflict) {
 		return err
 	}
 	return ErrUnavailable
@@ -150,13 +155,17 @@ func audit(ctx context.Context, tx pgx.Tx, instance, principal, action, resource
 
 // Peer is a configured remote instance. The token is never returned.
 type Peer struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	URL       string    `json:"url"`
-	CARef     string    `json:"ca_ref,omitempty"`
-	Revision  int64     `json:"revision"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	CARef string `json:"ca_ref,omitempty"`
+	// AuthMode is token (bearer token, Phase 1) or federation (member mTLS
+	// and request signature; managed by the federation reconciler).
+	AuthMode         string    `json:"auth_mode"`
+	MemberInstanceID string    `json:"member_instance_id,omitempty"`
+	Revision         int64     `json:"revision"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 type PeerInput struct {
 	Name  string `json:"name"`
@@ -173,11 +182,11 @@ func (s *Service) validCARef(ref string) bool {
 	return ok
 }
 
-const peerColumns = `id::text,name,url,COALESCE(ca_ref,''),revision,created_at,updated_at`
+const peerColumns = `id::text,name,url,COALESCE(ca_ref,''),revision,created_at,updated_at,auth_mode,COALESCE(member_instance_id::text,'')`
 
 func scanPeer(row pgx.Row) (Peer, error) {
 	var p Peer
-	err := row.Scan(&p.ID, &p.Name, &p.URL, &p.CARef, &p.Revision, &p.CreatedAt, &p.UpdatedAt)
+	err := row.Scan(&p.ID, &p.Name, &p.URL, &p.CARef, &p.Revision, &p.CreatedAt, &p.UpdatedAt, &p.AuthMode, &p.MemberInstanceID)
 	return p, err
 }
 
@@ -262,11 +271,14 @@ func (s *Service) UpdatePeerTx(ctx context.Context, tx pgx.Tx, instance, actor, 
 	}
 	var err error
 	var rev int64
-	var secretID, url string
+	var secretID, url, mode string
 	var ca *string
-	err = tx.QueryRow(ctx, `SELECT revision,token_secret_id::text,url,ca_ref FROM replication_peers WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&rev, &secretID, &url, &ca)
+	err = tx.QueryRow(ctx, `SELECT revision,COALESCE(token_secret_id::text,''),url,ca_ref,auth_mode FROM replication_peers WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&rev, &secretID, &url, &ca, &mode)
 	if err != nil {
 		return Peer{}, dbError(err)
+	}
+	if mode == "federation" {
+		return Peer{}, ErrManaged
 	}
 	if rev != in.Revision {
 		return Peer{}, ErrConflict
@@ -319,6 +331,13 @@ func (s *Service) UpdatePeer(ctx context.Context, instance, actor, id string, in
 func (s *Service) DeletePeerTx(ctx context.Context, tx pgx.Tx, instance, actor, id string) error {
 	var err error
 	var secretID string
+	var mode string
+	if err = tx.QueryRow(ctx, `SELECT auth_mode FROM replication_peers WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&mode); err != nil {
+		return dbError(err)
+	}
+	if mode == "federation" {
+		return ErrManaged
+	}
 	err = tx.QueryRow(ctx, `DELETE FROM replication_peers WHERE instance_id=$1 AND id=$2 RETURNING token_secret_id::text`, instance, id).Scan(&secretID)
 	if err != nil {
 		return dbError(err)
@@ -398,6 +417,12 @@ type Job struct {
 	Revision            int64     `json:"revision"`
 	CreatedAt           time.Time `json:"created_at"`
 	Status              Status    `json:"status"`
+	// Origin is local, or federation for jobs created, adopted or re-pointed by
+	// a federation replication rule (read-only through this API).
+	Origin            string     `json:"origin"`
+	FederationRuleID  string     `json:"federation_rule_id,omitempty"`
+	FederationFeedKey string     `json:"federation_feed_key,omitempty"`
+	AdoptedAt         *time.Time `json:"adopted_at,omitempty"`
 }
 
 // jobRow carries internal-only fields in addition to the public job.
@@ -414,13 +439,15 @@ type jobRow struct {
 	seedGeneration     int64
 	backfillsPending   int64
 	reseeding          bool
+	ruleRevision       int64
 }
 
 const jobColumns = `j.id::text,j.name,j.peer_id::text,j.remote_feed_id::text,j.dest_feed_id::text,j.replica_source_id::text,j.mode,j.interval_seconds,j.include_cached,j.filters,j.deletion_policy,j.enabled,j.revision,j.created_at,
  j.phase,j.seed_head,j.seed_cursor,j.seed_total,j.seed_done,j.checkpoint,j.checkpoint_change_at,j.remote_head,j.remote_head_at,j.remote_checked_at,j.next_run_at,j.run_requested,j.lease_owner::text,j.lease_until,
  j.last_attempt_at,j.last_success_at,COALESCE(j.last_error,''),j.consecutive_failures,j.assets_applied,j.blobs_transferred,j.blobs_deduplicated,j.bytes_transferred,j.deletions_applied,j.conflicts,
  (SELECT count(*) FROM replication_held_deletions h WHERE h.job_id=j.id),clock_timestamp(),
- j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id),j.destination_read_only`
+ j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id),j.destination_read_only,
+ j.origin,COALESCE(j.federation_rule_id::text,''),COALESCE(j.federation_feed_key,''),j.adopted_at,COALESCE(j.federation_rule_revision,0)`
 
 func scanJob(row pgx.Row) (jobRow, error) {
 	var j jobRow
@@ -431,7 +458,8 @@ func scanJob(row pgx.Row) (jobRow, error) {
 		&st.Phase, &j.seedHead, &j.seedCursor, &st.SeedTotal, &st.SeedDone, &st.Checkpoint, &j.checkpointChangeAt, &st.RemoteHead, &j.remoteHeadAt, &st.RemoteCheckedAt, &st.NextRunAt, &j.runRequested, &j.leaseOwner, &j.leaseUntil,
 		&st.LastAttemptAt, &st.LastSuccessAt, &st.LastError, &st.ConsecutiveFailures, &st.AssetsApplied, &st.BlobsTransferred, &st.BlobsDeduplicated, &st.BytesTransferred, &st.DeletionsApplied, &st.Conflicts,
 		&j.held, &now,
-		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending, &j.DestinationReadOnly)
+		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending, &j.DestinationReadOnly,
+		&j.Origin, &j.FederationRuleID, &j.FederationFeedKey, &j.AdoptedAt, &j.ruleRevision)
 	if err != nil {
 		return jobRow{}, err
 	}
@@ -640,6 +668,9 @@ func (s *Service) UpdateJobTx(ctx context.Context, tx pgx.Tx, instance, actor, i
 	if err != nil {
 		return Job{}, dbError(err)
 	}
+	if cur.Origin == "federation" {
+		return Job{}, ErrManaged
+	}
 	if cur.Revision != in.Revision {
 		return Job{}, ErrConflict
 	}
@@ -695,9 +726,13 @@ func (s *Service) UpdateJob(ctx context.Context, instance, actor, id string, in 
 func (s *Service) DeleteJobTx(ctx context.Context, tx pgx.Tx, instance, actor, id string) error {
 	var err error
 	var running bool
-	err = tx.QueryRow(ctx, `SELECT COALESCE(lease_until>clock_timestamp(),false) FROM replication_jobs WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&running)
+	var origin string
+	err = tx.QueryRow(ctx, `SELECT COALESCE(lease_until>clock_timestamp(),false),origin FROM replication_jobs WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&running, &origin)
 	if err != nil {
 		return dbError(err)
+	}
+	if origin == "federation" {
+		return ErrManaged
 	}
 	if running {
 		return ErrConflict

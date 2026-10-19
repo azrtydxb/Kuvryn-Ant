@@ -118,7 +118,8 @@ type heads struct {
 		Hash           string `json:"hash"`
 		AuthorityEpoch int64  `json:"authority_epoch"`
 	} `json:"membership"`
-	Policy policyHead `json:"policy"`
+	Policy   policyHead `json:"policy"`
+	Topology policyHead `json:"topology"`
 }
 
 // SyncOnce fetches newer membership generations, trying the authority first
@@ -187,8 +188,11 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 			return &RejectedError{Reason: "wrong_federation", Err: ErrWrongFed}
 		}
 		if h.Membership.Generation <= st.AppliedGeneration {
-			// Membership is current: bring the policy up to this source.
-			return s.syncPolicyFrom(ctx, id, src, h.Policy)
+			// Membership is current: bring policy and topology up to this source.
+			if err := s.syncPolicyFrom(ctx, id, src, h.Policy); err != nil {
+				return err
+			}
+			return s.syncTopologyFrom(ctx, id, src, h.Topology)
 		}
 		raw, err = s.client.Do(ctx, id, src.FederationURL, "GET", "/federation/v1/documents/membership?after="+strconv.FormatInt(st.AppliedGeneration, 10)+"&limit=100", nil, src.InstanceID)
 		if err != nil {
@@ -234,6 +238,9 @@ func (s *Service) Nudge() {
 // Run is the federation worker: document sync, member pings and certificate
 // renewal. It runs under the instance writer lease and returns when ctx ends.
 func (s *Service) Run(ctx context.Context) {
+	reconciled := make(chan struct{})
+	go func() { s.reconcileLoop(ctx); close(reconciled) }()
+	defer func() { <-reconciled }()
 	ticker := time.NewTicker(s.cfg.PollInterval)
 	defer ticker.Stop()
 	for {
@@ -317,7 +324,15 @@ func (s *Service) nudgeMembers(ctx context.Context, extra ...string) {
 	if err != nil {
 		return
 	}
-	body, _ := json.Marshal(map[string]any{"documents": docs, "policy_documents": policies})
+	ts, err := loadTopologyState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil {
+		return
+	}
+	topologies, err := topologyDocumentsAfter(ctx, s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, max(0, ts.Generation-16), 16)
+	if err != nil {
+		return
+	}
+	body, _ := json.Marshal(map[string]any{"documents": docs, "policy_documents": policies, "topology_documents": topologies})
 	targets := map[string]Member{}
 	for _, m := range t.doc.Members {
 		if m.InstanceID != s.cfg.InstanceID && (m.Status == "active" || contains(extra, m.InstanceID)) {

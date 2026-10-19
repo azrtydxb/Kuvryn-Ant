@@ -82,6 +82,15 @@ func (s *Service) PeerHandler() http.Handler {
 	mux.HandleFunc("GET /federation/v1/status", s.peerStatus)
 	mux.HandleFunc("POST /federation/v1/access-check", s.peerAccessCheck)
 	mux.HandleFunc("POST /federation/v1/search", s.peerSearch)
+
+	mux.HandleFunc("GET /federation/v1/replication/feeds/{fed}/{slug}", s.peerHomeFeed)
+	mux.HandleFunc("GET /federation/v1/replication/transfer-state", s.peerTransferState)
+	mux.HandleFunc("GET /federation/v1/replication/status", s.peerReplicationStatus)
+	s.peerMu.Lock()
+	for pattern, h := range s.peerRoutes {
+		mux.Handle(pattern, h)
+	}
+	s.peerMu.Unlock()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { peerFail(w, http.StatusNotFound, "not_found") })
 	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true}, Logger: s.cfg.Logger, Reject: s.peerRejected}
 }
@@ -146,12 +155,16 @@ func (s *Service) peerHeads(w http.ResponseWriter, r *http.Request) {
 		peerFail(w, http.StatusServiceUnavailable, "unavailable")
 		return
 	}
+	if h.Topology, err = s.localTopologyHead(r.Context(), t.state.Role); err != nil {
+		peerFail(w, http.StatusServiceUnavailable, "unavailable")
+		return
+	}
 	peerJSON(w, http.StatusOK, h)
 }
 
 func (s *Service) peerDocuments(w http.ResponseWriter, r *http.Request) {
 	kind := r.PathValue("kind")
-	if kind != "membership" && kind != "policy" {
+	if kind != "membership" && kind != "policy" && kind != "topology" {
 		peerFail(w, http.StatusNotFound, "not_found")
 		return
 	}
@@ -169,9 +182,12 @@ func (s *Service) peerDocuments(w http.ResponseWriter, r *http.Request) {
 		limit = 100
 	}
 	var docs any
-	if kind == "policy" {
+	switch kind {
+	case "policy":
 		docs, err = policyDocumentsAfter(r.Context(), s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, after, min(limit, 50))
-	} else {
+	case "topology":
+		docs, err = topologyDocumentsAfter(r.Context(), s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, after, min(limit, 50))
+	default:
 		docs, err = documentsAfter(r.Context(), s.cfg.DB, s.cfg.InstanceID, t.doc.FederationID, after, limit)
 	}
 	if err != nil {
@@ -191,8 +207,9 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		Documents       []Membership     `json:"documents"`
-		PolicyDocuments []PolicyDocument `json:"policy_documents"`
+		Documents         []Membership       `json:"documents"`
+		PolicyDocuments   []PolicyDocument   `json:"policy_documents"`
+		TopologyDocuments []TopologyDocument `json:"topology_documents"`
 	}
 	if !decodeBody(w, r, &body) {
 		return
@@ -230,6 +247,29 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 			defer cancel()
 			// Pushed by the authority itself: current as of now.
 			if _, err := s.applyPolicyDocuments(ctx, next, caller.Name, s.now()); err != nil {
+				peerErr(w, err)
+				return
+			}
+		} else if len(next) > 0 {
+			s.Nudge()
+		}
+	}
+	if len(body.TopologyDocuments) > 0 {
+		ts, err := loadTopologyState(r.Context(), s.cfg.DB, s.cfg.InstanceID)
+		if err != nil {
+			peerErr(w, err)
+			return
+		}
+		next := []TopologyDocument{}
+		for _, d := range body.TopologyDocuments {
+			if d.Generation > ts.Generation {
+				next = append(next, d)
+			}
+		}
+		if len(next) > 0 && next[0].Generation == ts.Generation+1 {
+			ctx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+			defer cancel()
+			if _, err := s.applyTopologyDocuments(ctx, next, caller.Name, s.now()); err != nil {
 				peerErr(w, err)
 				return
 			}

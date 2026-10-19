@@ -20,6 +20,8 @@ var (
 	ErrCorrupt     = errors.New("replicated blob failed digest verification")
 	ErrLeaseLost   = errors.New("replication job lease lost")
 	ErrPeer        = errors.New("replication peer request failed")
+	// ErrManaged rejects local changes to federation-managed peers and jobs.
+	ErrManaged = errors.New("replication resource is federation-managed")
 	// ErrHistoryPurged means the peer no longer holds the change history the
 	// caller asked for (cursor below the low-water mark); the consumer must reseed.
 	ErrHistoryPurged = errors.New("replication change history purged below cursor")

@@ -12838,7 +12838,8 @@
               "type": "string",
               "enum": [
                 "membership",
-                "policy"
+                "policy",
+                "topology"
               ]
             }
           }
@@ -12903,7 +12904,8 @@
               "type": "string",
               "enum": [
                 "membership",
-                "policy"
+                "policy",
+                "topology"
               ]
             }
           },
@@ -14271,6 +14273,1037 @@
           }
         }
       }
+    },
+    "/api/v1/federation/topology": {
+      "get": {
+        "operationId": "getFederationTopology",
+        "description": "The applied signed topology: feed keys with their single home member, descriptors and transfer state, replication rules, and the local role of each feed key on this member. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationTopologyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/feeds": {
+      "post": {
+        "operationId": "createFederationFeed",
+        "description": "Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationTopologyFeed"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFederationFeed"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/feeds/{fed}/{slug}": {
+      "delete": {
+        "operationId": "deleteFederationFeed",
+        "description": "Removes a feed key without rules or an active transfer. Local content on every member is untouched. Authority only; requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "204": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/feeds/{fed}/{slug}/transfer": {
+      "post": {
+        "operationId": "startFederationFeedTransfer",
+        "description": "DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "202": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationFeedTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartFederationTransfer"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/feeds/{fed}/{slug}/transfer/abort": {
+      "post": {
+        "operationId": "abortFederationFeedTransfer",
+        "description": "Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationFeedTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbortFederationTransfer"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/replication/rules": {
+      "get": {
+        "operationId": "listFederationReplicationRules",
+        "description": "Replication rules of the applied topology. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationReplicationRuleList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createFederationReplicationRule",
+        "description": "Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationReplicationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFederationRule"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/replication/rules/{id}": {
+      "get": {
+        "operationId": "getFederationReplicationRule",
+        "description": "One replication rule. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationReplicationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "updateFederationReplicationRule",
+        "description": "Changes a rule at its revision (If-Match \"N\" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationReplicationRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchFederationRule"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteFederationReplicationRule",
+        "description": "Removes a rule. Targets disable the job and release it to local management; replicated content and the replica source stay. Authority only; requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "204": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/replication/rules/{id}/compliance": {
+      "get": {
+        "operationId": "getFederationReplicationRuleCompliance",
+        "description": "The rule's state on every target member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled); unreachable members are reported unknown. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationRuleCompliance"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/replication/status": {
+      "get": {
+        "operationId": "getFederationReplicationStatus",
+        "description": "Local view of the rules that target this member (job, phase, lag, adoption) and quarantined sources. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationReplicationStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/replication/adopt": {
+      "post": {
+        "operationId": "adoptFederationReplicationJob",
+        "description": "Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationAdoptResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdoptFederationReplicationJob"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/quarantines": {
+      "get": {
+        "operationId": "listFederationQuarantines",
+        "description": "Sources an old home kept after a forced transfer (detached, never merged) with the number of changes the new home may not have. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationQuarantineList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/quarantines/{id}/resolve": {
+      "post": {
+        "operationId": "resolveFederationQuarantine",
+        "description": "Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationQuarantine"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveFederationQuarantine"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -14356,7 +15389,9 @@
               "stale_generation",
               "document_rejected",
               "federation_managed",
-              "not_federated"
+              "not_federated",
+              "feed_home_elsewhere",
+              "feed_transferring"
             ],
             "x-enum-varnames": [
               "ErrorCodeInvalidRequest",
@@ -14375,7 +15410,9 @@
               "ErrorCodeStaleGeneration",
               "ErrorCodeDocumentRejected",
               "ErrorCodeFederationManaged",
-              "ErrorCodeNotFederated"
+              "ErrorCodeNotFederated",
+              "ErrorCodeFeedHomeElsewhere",
+              "ErrorCodeFeedTransferring"
             ]
           },
           "message": {
@@ -18156,7 +19193,8 @@
           "url",
           "revision",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "auth_mode"
         ],
         "properties": {
           "id": {
@@ -18184,6 +19222,18 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "token",
+              "federation"
+            ],
+            "description": "token (bearer token) or federation (member mTLS on the federation listener, managed by the federation reconciler; read-only here)."
+          },
+          "member_instance_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -18441,7 +19491,8 @@
           "revision",
           "created_at",
           "status",
-          "destination_read_only"
+          "destination_read_only",
+          "origin"
         ],
         "properties": {
           "id": {
@@ -18510,6 +19561,25 @@
           "destination_read_only": {
             "type": "boolean",
             "description": "When true the destination feed rejects publishes with 409 (replica feed, publish to the peer) unless an explicit publish rule routes them to a separate local source."
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "local",
+              "federation"
+            ],
+            "description": "federation for jobs created, adopted or re-pointed by a federation replication rule; those are read-only through this API (409 federation_managed)."
+          },
+          "federation_rule_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "federation_feed_key": {
+            "type": "string"
+          },
+          "adopted_at": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -21766,6 +22836,9 @@
             "items": {
               "$ref": "#/components/schemas/FederationAlert"
             }
+          },
+          "topology": {
+            "$ref": "#/components/schemas/FederationTopologyStatus"
           }
         },
         "required": [
@@ -22419,7 +23492,8 @@
             "type": "string",
             "enum": [
               "membership",
-              "policy"
+              "policy",
+              "topology"
             ]
           },
           "generation": {
@@ -23477,7 +24551,9 @@
               "policy_stale",
               "policy_rejected",
               "membership_stale",
-              "policy_conflicts"
+              "policy_conflicts",
+              "topology_rejected",
+              "feed_home_conflict"
             ]
           },
           "severity": {
@@ -24148,6 +25224,842 @@
         "required": [
           "name",
           "origin"
+        ]
+      },
+      "FederationFeedDescriptor": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "anonymous_read": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "format",
+          "anonymous_read"
+        ]
+      },
+      "FederationFeedTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "to": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "forced"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "freeze",
+              "drain",
+              "promote",
+              "complete",
+              "aborted"
+            ]
+          },
+          "head": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "checkpoint": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "baseline": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "started_at": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "from",
+          "to",
+          "mode",
+          "state",
+          "head",
+          "checkpoint",
+          "baseline",
+          "started_at",
+          "updated_at"
+        ]
+      },
+      "FederationRuleTargets": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": []
+      },
+      "FederationRuleFilters": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "namespaces": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "version_prefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": []
+      },
+      "FederationReplicationRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_key": {
+            "type": "string"
+          },
+          "targets": {
+            "$ref": "#/components/schemas/FederationRuleTargets"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "scheduled",
+              "manual"
+            ]
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_cached": {
+            "type": "boolean"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/FederationRuleFilters"
+          },
+          "deletion_policy": {
+            "type": "string",
+            "enum": [
+              "ignore",
+              "propagate"
+            ]
+          },
+          "destination_read_only": {
+            "type": "boolean"
+          },
+          "create_destination_feed": {
+            "type": "boolean"
+          },
+          "adopt_existing": {
+            "type": "boolean"
+          },
+          "max_lag_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "id",
+          "feed_key",
+          "targets",
+          "mode",
+          "interval_seconds",
+          "include_cached",
+          "filters",
+          "deletion_policy",
+          "destination_read_only",
+          "create_destination_feed",
+          "adopt_existing",
+          "max_lag_seconds",
+          "revision"
+        ]
+      },
+      "FederationReplicationRuleList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationReplicationRule"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FederationTopologyFeed": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "home": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descriptor": {
+            "$ref": "#/components/schemas/FederationFeedDescriptor"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transfer": {
+            "$ref": "#/components/schemas/FederationFeedTransfer"
+          }
+        },
+        "required": [
+          "key",
+          "home",
+          "descriptor",
+          "revision"
+        ]
+      },
+      "FederationTopologyFeedView": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "home": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descriptor": {
+            "$ref": "#/components/schemas/FederationFeedDescriptor"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "transfer": {
+            "$ref": "#/components/schemas/FederationFeedTransfer"
+          },
+          "home_name": {
+            "type": "string"
+          },
+          "local_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "local_role": {
+            "type": "string",
+            "enum": [
+              "home",
+              "replica",
+              "unbound"
+            ]
+          },
+          "frozen": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "home",
+          "descriptor",
+          "revision",
+          "home_name",
+          "local_role",
+          "frozen"
+        ]
+      },
+      "FederationTopologyView": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string"
+          },
+          "authority": {
+            "type": "boolean"
+          },
+          "feeds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationTopologyFeedView"
+            }
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationReplicationRule"
+            }
+          }
+        },
+        "required": [
+          "generation",
+          "authority",
+          "feeds",
+          "rules"
+        ]
+      },
+      "FederationTopologyStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hash": {
+            "type": "string"
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "age_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "error": {
+            "type": "string"
+          },
+          "feeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rules": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "home_feeds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rules_targeting_self": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "active_transfers": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unresolved_quarantines": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "generation",
+          "age_seconds",
+          "feeds",
+          "rules",
+          "home_feeds",
+          "rules_targeting_self",
+          "active_transfers",
+          "unresolved_quarantines"
+        ]
+      },
+      "CreateFederationFeed": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feed_key": {
+            "type": "string"
+          },
+          "home_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "descriptor": {
+            "$ref": "#/components/schemas/FederationFeedDescriptor"
+          }
+        },
+        "required": [
+          "feed_key",
+          "home_member_id"
+        ]
+      },
+      "CreateFederationRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "feed_key": {
+            "type": "string"
+          },
+          "targets": {
+            "$ref": "#/components/schemas/FederationRuleTargets"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "scheduled",
+              "manual"
+            ]
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_cached": {
+            "type": "boolean"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/FederationRuleFilters"
+          },
+          "deletion_policy": {
+            "type": "string",
+            "enum": [
+              "ignore",
+              "propagate"
+            ]
+          },
+          "destination_read_only": {
+            "type": "boolean"
+          },
+          "create_destination_feed": {
+            "type": "boolean"
+          },
+          "adopt_existing": {
+            "type": "boolean"
+          },
+          "max_lag_seconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "feed_key",
+          "targets"
+        ]
+      },
+      "PatchFederationRule": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "targets": {
+            "$ref": "#/components/schemas/FederationRuleTargets"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "continuous",
+              "scheduled",
+              "manual"
+            ]
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "include_cached": {
+            "type": "boolean"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/FederationRuleFilters"
+          },
+          "deletion_policy": {
+            "type": "string",
+            "enum": [
+              "ignore",
+              "propagate"
+            ]
+          },
+          "destination_read_only": {
+            "type": "boolean"
+          },
+          "create_destination_feed": {
+            "type": "boolean"
+          },
+          "adopt_existing": {
+            "type": "boolean"
+          },
+          "max_lag_seconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": []
+      },
+      "StartFederationTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "to_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "forced"
+            ]
+          },
+          "confirm": {
+            "type": "boolean"
+          },
+          "accept_data_loss": {
+            "type": "boolean"
+          },
+          "drain_timeout_seconds": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "to_member_id",
+          "confirm"
+        ]
+      },
+      "AbortFederationTransfer": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm"
+        ]
+      },
+      "FederationRuleStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_key": {
+            "type": "string"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "in_sync",
+              "lagging",
+              "seeding",
+              "failed",
+              "pending",
+              "missing_feed",
+              "conflict",
+              "disabled",
+              "unknown",
+              "ready"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "adopted": {
+            "type": "boolean"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "checkpoint": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "changes_behind": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lag_seconds": {
+            "type": "number"
+          },
+          "last_success_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "rule_id",
+          "feed_key",
+          "member_id",
+          "state",
+          "adopted",
+          "checkpoint",
+          "consecutive_failures"
+        ]
+      },
+      "FederationRuleCompliance": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "$ref": "#/components/schemas/FederationReplicationRule"
+          },
+          "home": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationRuleStatus"
+            }
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "rule",
+          "home",
+          "members",
+          "summary"
+        ]
+      },
+      "FederationQuarantine": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_key": {
+            "type": "string"
+          },
+          "transfer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_name": {
+            "type": "string"
+          },
+          "divergent_changes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "feed_key",
+          "source_id",
+          "source_name",
+          "created_at"
+        ]
+      },
+      "FederationQuarantineList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationQuarantine"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "FederationReplicationStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationRuleStatus"
+            }
+          },
+          "quarantines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationQuarantine"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "quarantines"
+        ]
+      },
+      "AdoptFederationReplicationJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rule_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "job_id",
+          "rule_id"
+        ]
+      },
+      "FederationAdoptResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rule_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_key": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "checkpoint": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previous_peer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "peer_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "job_id",
+          "rule_id",
+          "feed_key",
+          "phase",
+          "checkpoint",
+          "previous_peer_id",
+          "peer_id"
+        ]
+      },
+      "ResolveFederationQuarantine": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirm"
         ]
       }
     }

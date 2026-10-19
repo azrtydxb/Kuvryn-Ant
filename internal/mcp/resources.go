@@ -12,7 +12,7 @@ import (
 // Resources are read-only views backed by the same tools (and therefore the
 // same authorization): ant://feeds, ant://feeds/{id}, ant://sources,
 // ant://sources/{id}, ant://health, ant://federation, ant://federation/members,
-// ant://federation/policy.
+// ant://federation/policy, ant://federation/topology.
 
 func (s *Server) listResources() any {
 	return map[string]any{"resources": []any{
@@ -22,6 +22,7 @@ func (s *Server) listResources() any {
 		map[string]any{"uri": "ant://federation", "name": "federation", "title": "Federation status", "description": "Local federation view, policy head and alerts.", "mimeType": "application/json"},
 		map[string]any{"uri": "ant://federation/members", "name": "federation-members", "title": "Federation members", "description": "Members of the applied membership.", "mimeType": "application/json"},
 		map[string]any{"uri": "ant://federation/policy", "name": "federation-policy", "title": "Federation policy", "description": "The applied signed federation policy.", "mimeType": "application/json"},
+		map[string]any{"uri": "ant://federation/topology", "name": "federation-topology", "title": "Federation topology", "description": "The applied signed topology: feed keys, homes, transfers and replication rules.", "mimeType": "application/json"},
 	}}
 }
 
@@ -67,6 +68,8 @@ func (s *Server) readResource(r *http.Request, p identity.Principal, params json
 			name = "list_federation_members"
 		case "policy":
 			name = "get_federation_policy"
+		case "topology":
+			name = "get_federation_topology"
 		default:
 			return nil, &rpcError{codeInvalidParams, "unknown resource"}
 		}

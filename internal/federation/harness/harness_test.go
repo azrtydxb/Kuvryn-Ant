@@ -70,6 +70,8 @@ type instance struct {
 	router   routers.Router
 	clock    *fakeClock
 	proxy    *faultProxy
+	mux      *http.ServeMux
+	repl     *replRuntime
 }
 
 func newInstance(t *testing.T, name string) *instance {
@@ -132,8 +134,11 @@ func newInstance(t *testing.T, name string) *instance {
 	in.proxy = newFaultProxy(t, in.addr)
 	in.clock = &fakeClock{}
 	in.fedURL = "https://" + in.proxy.addr()
+	// The management API listens before the service is built, so membership
+	// carries the real API URL (token-mode replication peers point at it).
+	apiServer := httptest.NewUnstartedServer(nil)
 	in.svc, err = federation.New(federation.Config{DB: pool, Keys: in.keys, InstanceID: in.id, PublicURL: in.fedURL, ListenAddress: in.addr,
-		APIURL: "http://" + name + ".example.test", SoftwareVersion: "harness", PeerTimeout: 5 * time.Second, Logger: quiet, Now: in.clock.Now,
+		APIURL: "http://" + apiServer.Listener.Addr().String(), SoftwareVersion: "harness", PeerTimeout: 5 * time.Second, Logger: quiet, Now: in.clock.Now,
 		SearchMemberTimeout: 700 * time.Millisecond, SearchTimeout: 2 * time.Second, SearchPeerRate: 30, SearchPrincipalRate: 15})
 	if err != nil {
 		t.Fatal(err)
@@ -148,7 +153,10 @@ func newInstance(t *testing.T, name string) *instance {
 	management.RegisterFederation(mux, pool, in.svc)
 	management.RegisterFederationSearch(mux, pool, in.svc, management.NewCursorCodec(key))
 	management.RegisterIdentities(mux, pool)
-	in.api = httptest.NewServer(management.WithRequestID(mux))
+	in.mux = mux
+	apiServer.Config.Handler = management.WithRequestID(mux)
+	apiServer.Start()
+	in.api = apiServer
 	doc, err := api.GetSwagger()
 	if err != nil {
 		t.Fatal(err)

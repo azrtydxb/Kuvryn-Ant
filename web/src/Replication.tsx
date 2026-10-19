@@ -102,6 +102,9 @@ export function ReplicationPage({ client }: { client: Client }) {
                         render: (j: ReplicationJob) => (
                           <>
                             {j.name}
+                            {j.origin === "federation" && (
+                              <Badge tone="info">federation</Badge>
+                            )}
                             <small>
                               {peerList.find((p) => p.id === j.peer_id)?.name ??
                                 j.peer_id}
@@ -351,6 +354,13 @@ export function ReplicationPage({ client }: { client: Client }) {
                 label: "Remote feed",
                 value: current.remote_feed_id,
                 mono: true,
+              },
+              {
+                label: "Managed by",
+                value:
+                  current.origin === "federation"
+                    ? `Federation rule (${current.federation_feed_key ?? ""})${current.adopted_at ? ", adopted" : ""}`
+                    : "Local",
               },
               { label: "Deletion policy", value: current.deletion_policy },
               {

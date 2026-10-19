@@ -414,3 +414,38 @@ func randomNonce() string {
 	_, _ = rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
 }
+
+// ClientTLS is the mTLS client configuration of a member identity. expectID,
+// when set, must be the CN of the server certificate.
+func ClientTLS(id Identity, expectID string) *tls.Config {
+	var certs []tls.Certificate
+	if id.Certificate != nil {
+		certs = []tls.Certificate{*id.Certificate}
+	}
+	return &tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		RootCAs:      id.Roots,
+		Certificates: certs,
+		VerifyConnection: func(cs tls.ConnectionState) error {
+			if expectID != "" && (len(cs.PeerCertificates) == 0 || cs.PeerCertificates[0].Subject.CommonName != expectID) {
+				return errors.New("federation: peer certificate does not match the expected member")
+			}
+			return nil
+		},
+	}
+}
+
+// SignRequest adds the member request signature headers to req for body
+// (nil for GET). It is the same signature Do uses, for callers that need
+// their own transport (for example streaming replication transfers).
+func SignRequest(req *http.Request, id Identity, body []byte, now time.Time) {
+	ts := strconv.FormatInt(now.Unix(), 10)
+	nonce := randomNonce()
+	req.Header.Set(HeaderMember, id.InstanceID)
+	req.Header.Set(HeaderTimestamp, ts)
+	req.Header.Set(HeaderNonce, nonce)
+	req.Header.Set(HeaderSignature, base64.RawURLEncoding.EncodeToString(ed25519.Sign(id.SigningKey, signingString(req.Method, req.URL.RequestURI(), id.InstanceID, ts, nonce, body))))
+}
+
+// TargetURL joins a member federation base URL and a path (https only).
+func TargetURL(base, path string) (string, error) { return target(base, path) }
