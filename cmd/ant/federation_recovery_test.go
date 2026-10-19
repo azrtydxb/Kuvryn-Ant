@@ -91,3 +91,59 @@ func TestFederationRecoverySigningIsOffline(t *testing.T) {
 		t.Fatal("key read from standard input")
 	}
 }
+
+// A forced authority recovery and the recovery-key drill use the same offline
+// signer: the key must be the current recovery key.
+func TestFederationRecoveryEpochAndDrillAreSignedOffline(t *testing.T) {
+	t.Setenv("ANT_DATABASE_URL", "")
+	t.Setenv("ANT_ROOT_KEY_FILE", "")
+	dir := t.TempDir()
+	current, currentPub, _ := federation.NewRecoveryKey()
+	_, authorityPub, _ := federation.NewRecoveryKey()
+	write := func(name, content string) string {
+		p := filepath.Join(dir, name)
+		if err := os.WriteFile(p, []byte(content), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	run := func(args ...string) (int, []byte) {
+		var out bytes.Buffer
+		code := execute(context.Background(), logger, append([]string{"federation", "recovery"}, args...), &out)
+		return code, out.Bytes()
+	}
+	tpl := federation.RecoveryTemplate{FederationID: "11111111-2222-4333-8444-555555555555", Generation: 5, PreviousKey: currentPub,
+		Authority: federation.AuthorityCert{Epoch: 2, InstanceID: "66666666-7777-4888-8999-000000000000", PublicKey: authorityPub, CertifiedBy: "recovery"}}
+	raw, _ := json.Marshal(tpl)
+	tplPath, keyPath := write("template.json", string(raw)), write("recovery.key", current+"\n")
+	code, out := run("sign-authority-cert", "--template", tplPath, "--key", keyPath)
+	var req struct {
+		Cert federation.AuthorityCert `json:"authority_certificate"`
+	}
+	if code != 0 || json.Unmarshal(out, &req) != nil || req.Cert.Epoch != 2 || req.Cert.CertifiedBy != "recovery" || req.Cert.Signature == "" {
+		t.Fatalf("forced recovery certificate: %d %s", code, out)
+	}
+	if strings.Contains(string(out), "ant-recovery-v1:") {
+		t.Fatal("a private key was printed")
+	}
+	stranger, _, _ := federation.NewRecoveryKey()
+	if code, _ := run("sign-authority-cert", "--template", tplPath, "--key", write("stranger.key", stranger)); code == 0 {
+		t.Fatal("a forced recovery was signed with a key that is not the recovery key")
+	}
+
+	ch := federation.RecoveryChallenge{FederationID: tpl.FederationID, Challenge: "c2FtcGxlLWNoYWxsZW5nZQ", PublicKey: currentPub}
+	chRaw, _ := json.Marshal(ch)
+	chPath := write("challenge.json", string(chRaw))
+	code, out = run("sign-challenge", "--challenge", chPath, "--key", keyPath)
+	var proof map[string]string
+	if code != 0 || json.Unmarshal(out, &proof) != nil || proof["challenge"] != ch.Challenge || proof["signature"] == "" {
+		t.Fatalf("drill proof: %d %s", code, out)
+	}
+	if code, _ := run("sign-challenge", "--challenge", chPath, "--key", write("stranger2.key", stranger)); code == 0 {
+		t.Fatal("a challenge was signed with a key that is not the recovery key")
+	}
+	if code, _ := run("sign-challenge", "--challenge", chPath, "--key", "-"); code == 0 {
+		t.Fatal("key read from standard input")
+	}
+}

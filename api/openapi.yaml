@@ -15513,6 +15513,517 @@
           }
         ]
       }
+    },
+    "/api/v1/federation/authority": {
+      "get": {
+        "operationId": "getFederationAuthority",
+        "description": "Authority epoch history (each epoch's authority, certification and first generation), this instance's role, a handover in progress, the fence record of a former authority and the recovery-key drill state. Requires instance read.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationAuthorityStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/authority/handover": {
+      "post": {
+        "operationId": "handoverFederationAuthority",
+        "description": "Planned authority handover to another active member (authority only). The target generates its own epoch key; this authority certifies it with its epoch key, hands the federation CA key to the target over the mutually authenticated channel, and the target publishes the first document of the next epoch. Publishing here is paused from the start until the new epoch is applied, aborted or ten minutes pass. Refused while a feed home transfer is in progress or when the target has not applied the latest documents (409). Requires instance admin and confirm: true. Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationHandoverResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HandoverFederationAuthority"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/authority/handover/abort": {
+      "post": {
+        "operationId": "abortFederationAuthorityHandover",
+        "description": "Clears the handover pause on this authority (authority only). If the target already published the new epoch, the next sync still applies it and fences this instance. Requires instance admin. Idempotency-Key is rejected.",
+        "responses": {
+          "204": {
+            "description": "Handover pause cleared",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/authority/recovery-template": {
+      "post": {
+        "operationId": "createFederationRecoveryEpochTemplate",
+        "description": "Forced recovery step 1, on the member that takes over: generates (or returns the pending) authority key of the next epoch and returns the template the recovery-key holder signs offline with `ant federation recovery sign-authority-cert`. Refused on the authority. Requires instance admin. Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationRecoveryTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/authority/recover": {
+      "post": {
+        "operationId": "recoverFederationAuthority",
+        "description": "Forced recovery step 3, on the member that takes over: verifies the authority certificate signed offline by the recovery key, creates a new federation CA (the old CA key is not available here; both CAs stay trusted for one certificate lifetime), publishes the first document of the next epoch and takes the role. A returning previous authority learns of the higher epoch from its peers and fences itself. Requires instance admin and confirm: true. Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationRecoverResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoverFederationAuthority"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/recovery-key/challenge": {
+      "post": {
+        "operationId": "createFederationRecoveryChallenge",
+        "description": "Recovery-key drill step 1 (authority only): a one-time challenge, valid for one hour, that the recovery-key holder signs offline with `ant federation recovery sign-challenge`. Requires instance admin. Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationRecoveryChallenge"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/federation/recovery-key/verify": {
+      "post": {
+        "operationId": "verifyFederationRecoveryKey",
+        "description": "Recovery-key drill step 2 (authority only): records that possession of the recovery key was proven. The challenge is consumed whether or not the signature is valid; an invalid signature answers 400. Requires instance admin. Idempotency-Key is rejected.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationAuthorityStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyFederationRecoveryKey"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/federation/audit": {
+      "get": {
+        "operationId": "federatedAudit",
+        "description": "Federated audit query: this member's audit events and those of the other members, newest first. The query fans out over the mTLS peer listener with a signed principal assertion; each member authorizes the asserted caller itself and requires instance admin there (the grant of GET /api/v1/audit), so a member where the caller is not an administrator is reported as forbidden and partial=true. Members that time out or are unreachable are reported in members[] and never fail the query. Federated principals only (403 not_federated otherwise). Pagination uses one watermark per member inside an authenticated cursor.",
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "description": "Action prefix, for example federation."
+          },
+          {
+            "name": "result",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "success",
+                "denied",
+                "failure"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "members",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated member IDs or names; default all."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationAuditPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -23319,10 +23830,15 @@
             "type": "string",
             "enum": [
               "pending",
+              "claimed",
               "consumed",
               "expired",
               "revoked"
             ]
+          },
+          "claimed_at": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
@@ -23654,6 +24170,10 @@
           },
           "signature": {
             "type": "string"
+          },
+          "acceptance": {
+            "type": "string",
+            "description": "The new authority member's own signing-key signature accepting the role (epoch changes)."
           }
         },
         "required": [
@@ -24868,7 +25388,11 @@
               "membership_stale",
               "policy_conflicts",
               "topology_rejected",
-              "feed_home_conflict"
+              "feed_home_conflict",
+              "authority_fenced",
+              "handover_pending",
+              "recovery_key_unverified",
+              "member_unreachable"
             ]
           },
           "severity": {
@@ -26569,6 +27093,423 @@
         },
         "required": [
           "confirm"
+        ]
+      },
+      "FederationEpochRecord": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "epoch": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "certified_by": {
+            "type": "string",
+            "enum": [
+              "recovery",
+              "previous_epoch"
+            ]
+          },
+          "from_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "key_fingerprint": {
+            "type": "string"
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "epoch",
+          "instance_id",
+          "certified_by",
+          "from_generation",
+          "key_fingerprint"
+        ]
+      },
+      "FederationHandoverStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "to_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "to_name": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "base_generation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "to_member_id",
+          "started_at",
+          "base_generation",
+          "expires_at"
+        ]
+      },
+      "FederationFenceStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "by_epoch": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "at",
+          "by_epoch"
+        ]
+      },
+      "FederationRecoveryDrill": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "verified_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "due": {
+            "type": "boolean",
+            "description": "True when the recovery key was never proven or last proven more than 180 days ago."
+          }
+        },
+        "required": [
+          "due"
+        ]
+      },
+      "FederationAuthorityStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "member",
+              "authority"
+            ]
+          },
+          "epoch": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "authority_instance_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authority_name": {
+            "type": "string"
+          },
+          "key_fingerprint": {
+            "type": "string"
+          },
+          "recovery_key_fingerprint": {
+            "type": "string"
+          },
+          "epochs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationEpochRecord"
+            }
+          },
+          "handover": {
+            "$ref": "#/components/schemas/FederationHandoverStatus"
+          },
+          "fenced": {
+            "$ref": "#/components/schemas/FederationFenceStatus"
+          },
+          "recovery": {
+            "$ref": "#/components/schemas/FederationRecoveryDrill"
+          },
+          "pending_authority_key": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "epoch",
+          "authority_instance_id",
+          "key_fingerprint",
+          "recovery_key_fingerprint",
+          "epochs",
+          "recovery",
+          "pending_authority_key"
+        ]
+      },
+      "HandoverFederationAuthority": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "to_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "to_member_id",
+          "confirm"
+        ]
+      },
+      "FederationHandoverResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FederationStatus"
+          },
+          "epoch": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "applied": {
+            "type": "boolean",
+            "description": "False when the new authority published the epoch but this instance has not applied it yet; the next sync does."
+          }
+        },
+        "required": [
+          "status",
+          "epoch",
+          "applied"
+        ]
+      },
+      "RecoverFederationAuthority": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "authority_certificate": {
+            "$ref": "#/components/schemas/FederationAuthorityCertificate"
+          },
+          "remove_previous_authority": {
+            "type": "boolean",
+            "description": "Remove the previous authority from the membership and revoke its certificate (key compromise)."
+          },
+          "confirm": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "authority_certificate",
+          "confirm"
+        ]
+      },
+      "FederationRecoverResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/FederationStatus"
+          },
+          "epoch": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ca_sha256": {
+            "type": "string"
+          },
+          "previous_authority_removed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "epoch",
+          "ca_sha256",
+          "previous_authority_removed"
+        ]
+      },
+      "FederationRecoveryChallenge": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "federation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "recovery_public_key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "federation_id",
+          "challenge",
+          "expires_at",
+          "recovery_public_key"
+        ]
+      },
+      "VerifyFederationRecoveryKey": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "challenge": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "challenge",
+          "signature"
+        ]
+      },
+      "FederationAuditEvent": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "member": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "action": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "success",
+              "denied",
+              "failure"
+            ]
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "member",
+          "member_name",
+          "id",
+          "created_at",
+          "action",
+          "result"
+        ]
+      },
+      "FederationAuditMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "forbidden",
+              "timeout",
+              "error",
+              "skipped"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "description": "audit_read_denied, deadline, unreachable, rate_limited, no_identity, unavailable, or a peer error code."
+          },
+          "took_ms": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "events": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "took_ms",
+          "events"
+        ]
+      },
+      "FederationAuditPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/FederationAuditEvent"
+            }
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationAuditMember"
+            }
+          },
+          "partial": {
+            "type": "boolean",
+            "description": "True when any member is not ok (including members that deny the caller)."
+          },
+          "page": {
+            "$ref": "#/components/schemas/PageInfo"
+          }
+        },
+        "required": [
+          "items",
+          "members",
+          "partial",
+          "page"
         ]
       }
     }

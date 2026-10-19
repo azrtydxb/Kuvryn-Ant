@@ -261,7 +261,9 @@ func replaySafe(method, path string) bool {
 		return false
 	}
 	for _, once := range []string{"/api/v1/federation", "/api/v1/federation/invitations", "/api/v1/federation/join", "/api/v1/federation/leave",
-		"/api/v1/federation/recovery-key/rotate", "/api/v1/federation/access-check"} {
+		"/api/v1/federation/recovery-key/rotate", "/api/v1/federation/access-check",
+		"/api/v1/federation/authority/handover", "/api/v1/federation/authority/handover/abort", "/api/v1/federation/authority/recovery-template",
+		"/api/v1/federation/authority/recover", "/api/v1/federation/recovery-key/challenge", "/api/v1/federation/recovery-key/verify"} {
 		if path == once {
 			return false
 		}

@@ -85,6 +85,13 @@ func RegisterFederation(mux *http.ServeMux, pool *pgxpool.Pool, svc *federation.
 		"POST /api/v1/federation/quarantines/{id}/resolve":          h.resolveQuarantine,
 		"PUT /api/v1/federation/feeds/{fed}/{slug}/routing":         h.setFeedRouting,
 		"GET /api/v1/federation/routes/{fed}/{slug}":                h.explainRoute,
+		"GET /api/v1/federation/authority":                          h.authorityStatus,
+		"POST /api/v1/federation/authority/handover":                h.handover,
+		"POST /api/v1/federation/authority/handover/abort":          h.abortHandover,
+		"POST /api/v1/federation/authority/recovery-template":       h.recoveryEpochTemplate,
+		"POST /api/v1/federation/authority/recover":                 h.recoverAuthority,
+		"POST /api/v1/federation/recovery-key/challenge":            h.recoveryChallenge,
+		"POST /api/v1/federation/recovery-key/verify":               h.recoveryVerify,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
@@ -139,6 +146,8 @@ func federationError(w http.ResponseWriter, r *http.Request, err error) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "federation resource not found")
 	case errors.Is(err, federation.ErrAuthorityLeave):
 		Error(w, r, 409, api.ErrorCodeConflict, "the authority cannot leave; hand over authority first")
+	case errors.Is(err, federation.ErrHandoverPending):
+		Error(w, r, 409, api.ErrorCodeConflict, "an authority handover is in progress; wait for it or abort it")
 	case errors.Is(err, federation.ErrSelf):
 		Error(w, r, 409, api.ErrorCodeConflict, "the authority cannot suspend or remove itself")
 	case errors.Is(err, federation.ErrRecoveryMismatch):

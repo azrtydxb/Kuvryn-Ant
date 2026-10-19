@@ -28,7 +28,7 @@ type PolicyStatus struct {
 // outbox events (federation.alert.raised / federation.alert.cleared), so
 // webhooks and audit sinks deliver them.
 type Alert struct {
-	Code     string `json:"code"`     // policy_stale | policy_rejected | membership_stale | policy_conflicts | topology_rejected | feed_home_conflict
+	Code     string `json:"code"`     // policy_stale | policy_rejected | membership_stale | policy_conflicts | topology_rejected | feed_home_conflict | authority_fenced | handover_pending | recovery_key_unverified | member_unreachable
 	Severity string `json:"severity"` // warning | critical
 	Message  string `json:"message"`
 }
@@ -133,6 +133,8 @@ func (s *Service) EvaluateAlerts(ctx context.Context) ([]Alert, error) {
 			active = append(active, topologyAlerts(topo)...)
 			sortAlerts(active)
 		}
+		active = append(active, s.operationAlerts(ctx, st)...)
+		sortAlerts(active)
 		next := map[string]string{}
 		for _, a := range active {
 			next[a.Code] = a.Severity

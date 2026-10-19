@@ -346,6 +346,29 @@ func catalog() []*tool {
 				}
 				return c.api(http.MethodPost, "/api/v1/federation/feeds/"+url.PathEscape(fed)+"/"+url.PathEscape(slug)+"/transfer", nil, body, map[string]string{"Idempotency-Key": c.idempotencyKey()}).result()
 			}},
+		{name: "explain_route", title: "Explain federated routing", desc: "Explain how this member would route a read of a federated feed key: the decision (local, proxy, redirect or no holder), every candidate member with its role, replica state, circuit, round-trip time and preference, and the order they are tried in. The decision does not depend on the path. Requires read on the instance.", readOnly: true,
+			params: []param{{name: "feed_key", typ: "string", required: true, desc: "<federation>/<feed-slug>."}},
+			run: func(c *call) *toolResult {
+				fed, slug, ok := strings.Cut(c.str("feed_key"), "/")
+				if !ok || fed == "" || slug == "" || strings.Contains(slug, "/") {
+					return errResult("invalid_request: feed_key must be <federation>/<feed-slug>")
+				}
+				return c.get("/api/v1/federation/routes/"+url.PathEscape(fed)+"/"+url.PathEscape(slug), nil)
+			}},
+		{name: "get_federation_authority", title: "Federation authority status", desc: "Authority epoch history (who held the role, how each epoch was certified, from which generation), this instance's role, a handover in progress, the fence record of a former authority and the recovery-key drill state. Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/authority", nil) }},
+		{name: "federated_audit", title: "Federated audit query", desc: "Query the audit log of every federation member, newest first. The query fans out over the mTLS peer listener with a signed assertion of the calling federated principal; each member authorizes the caller itself and requires instance admin there, so members where the caller is not an administrator are reported as forbidden. Unreachable members are reported in members[] with partial=true. Local-only principals get not_federated.", readOnly: true,
+			params: with(pageParams, param{name: "action", typ: "string", desc: "Exact audit action."}, param{name: "prefix", typ: "string", desc: "Action prefix, for example federation."},
+				param{name: "result", typ: "string", desc: "success, denied or failure.", enum: []string{"success", "denied", "failure"}}, param{name: "from", typ: "string", desc: "RFC 3339 start (inclusive)."},
+				param{name: "to", typ: "string", desc: "RFC 3339 end (exclusive)."}, param{name: "members", typ: "string", desc: "Comma-separated member IDs or names to query; default all."}),
+			run: func(c *call) *toolResult {
+				return c.get("/api/v1/federation/audit", c.page(nil, "action", "prefix", "result", "from", "to", "members", "limit", "cursor"))
+			}},
+		{name: "handover_federation_authority", title: "Hand over the federation authority", desc: "DESTRUCTIVE: planned authority handover to another active member that has applied the latest documents. The target generates its own epoch key, this authority certifies it and hands over the federation CA, and the target publishes the first document of the next epoch; this instance then becomes a plain member and destroys its authority and CA keys. Publishing is paused for the duration. Refused while a feed home transfer is in progress. Requires instance admin on the authority and confirm: true. Forced recovery needs the offline recovery key and is not an MCP operation.", destructive: true,
+			params: []param{{name: "to_member_id", typ: "uuid", required: true, desc: "Member that becomes the authority."}},
+			run: func(c *call) *toolResult {
+				return c.api(http.MethodPost, "/api/v1/federation/authority/handover", nil, map[string]any{"to_member_id": c.args["to_member_id"], "confirm": true}, nil).result()
+			}},
 		{name: "list_webhooks", title: "List webhooks", desc: "List webhook subscriptions (secrets are never returned).", readOnly: true,
 			params: []param{{name: "after", typ: "uuid", desc: "Return items after this webhook ID."}, pageParams[0]},
 			run: func(c *call) *toolResult {
