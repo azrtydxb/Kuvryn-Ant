@@ -59,4 +59,24 @@ spec:
                 port:
                   name: federation
 {{- end }}
+{{- if .Values.federation.tlsRoute.enabled }}
+---
+# TLS Passthrough through a shared Gateway API gateway: routes by SNI and forwards
+# the TLS stream unterminated, so member client certificates reach the pod.
+apiVersion: gateway.networking.k8s.io/v1
+kind: TLSRoute
+metadata:
+  name: {{ include "ant.name" . | trunc 52 | trimSuffix "-" }}-federation
+  labels:
+    {{- include "ant.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    {{- toYaml .Values.federation.tlsRoute.parentRefs | nindent 4 }}
+  hostnames:
+    - {{ .Values.federation.tlsRoute.hostname | quote }}
+  rules:
+    - backendRefs:
+        - name: {{ include "ant.name" . | trunc 52 | trimSuffix "-" }}-federation
+          port: {{ .Values.federation.service.port }}
+{{- end }}
 {{- end }}

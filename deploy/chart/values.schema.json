@@ -37,6 +37,15 @@
             }
           }
         },
+        "tlsRoute": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "hostname": { "type": "string" },
+            "parentRefs": { "type": "array", "items": { "type": "object" } }
+          }
+        },
         "ingressPassthrough": {
           "type": "object",
           "additionalProperties": false,

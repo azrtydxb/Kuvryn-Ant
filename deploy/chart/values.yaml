@@ -120,6 +120,10 @@ federation:
     nodePort: null
     annotations: {}
     loadBalancerSourceRanges: []
+  tlsRoute: # Gateway API TLSRoute (TLS Passthrough listener on a shared gateway)
+    enabled: false
+    hostname: ""
+    parentRefs: []
   ingressPassthrough: # ingress-nginx with --enable-ssl-passthrough
     enabled: false
     className: nginx
