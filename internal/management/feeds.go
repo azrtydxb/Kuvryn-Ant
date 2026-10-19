@@ -24,24 +24,30 @@ import (
 )
 
 type Feed struct {
-	ID            string `json:"id"`
-	Slug          string `json:"slug"`
-	Format        string `json:"format"`
-	Revision      int64  `json:"revision"`
-	AnonymousRead bool   `json:"anonymous_read"`
+	ID            string       `json:"id"`
+	Slug          string       `json:"slug"`
+	Format        string       `json:"format"`
+	Revision      int64        `json:"revision"`
+	AnonymousRead bool         `json:"anonymous_read"`
+	Purpose       string       `json:"purpose"`
+	CachePolicy   *CachePolicy `json:"cache_policy,omitempty"`
 }
 type FeedPage struct {
 	Items []Feed       `json:"items"`
 	Page  api.PageInfo `json:"page"`
 }
 type CreateFeed struct {
-	Slug          string `json:"slug"`
-	Format        string `json:"format"`
-	AnonymousRead bool   `json:"anonymous_read"`
+	Slug          string            `json:"slug"`
+	Format        string            `json:"format"`
+	AnonymousRead bool              `json:"anonymous_read"`
+	Purpose       string            `json:"purpose,omitempty"`
+	CachePolicy   *CachePolicyInput `json:"cache_policy,omitempty"`
 }
 type PatchFeed struct {
-	Slug          *string `json:"slug,omitempty"`
-	AnonymousRead *bool   `json:"anonymous_read,omitempty"`
+	Slug          *string           `json:"slug,omitempty"`
+	AnonymousRead *bool             `json:"anonymous_read,omitempty"`
+	Purpose       *string           `json:"purpose,omitempty"`
+	CachePolicy   *CachePolicyInput `json:"cache_policy,omitempty"`
 }
 type feedHandlers struct {
 	db    *pgxpool.Pool
@@ -84,7 +90,17 @@ func feedID(raw string) (string, bool) {
 	return id.String(), true
 }
 func (f feedHandlers) list(w http.ResponseWriter, r *http.Request) {
-	q, err := ParsePage(r.URL.Query())
+	values := r.URL.Query()
+	purpose := ""
+	if vs, present := values["purpose"]; present {
+		if len(vs) != 1 || !validPurpose(vs[0]) {
+			Error(w, r, 400, api.ErrorCodeInvalidRequest, "purpose must be artifacts or cache")
+			return
+		}
+		purpose = vs[0]
+		values.Del("purpose")
+	}
+	q, err := ParsePage(values)
 	if err != nil {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid page parameters")
 		return
@@ -93,7 +109,7 @@ func (f feedHandlers) list(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	scopeBytes, _ := json.Marshal([]string{"feeds", p.InstanceID, p.PrincipalID, p.TokenID, q.Prefix})
+	scopeBytes, _ := json.Marshal([]string{"feeds", p.InstanceID, p.PrincipalID, p.TokenID, q.Prefix, purpose})
 	scope := string(scopeBytes)
 	after := ""
 	if q.Cursor != "" {
@@ -108,7 +124,7 @@ func (f feedHandlers) list(w http.ResponseWriter, r *http.Request) {
 	// Prefix is a literal string, never a SQL LIKE pattern. Keyset ordering does
 	// not shift when earlier rows are inserted/deleted. Permission-filter before
 	// producing either data or a next-page marker.
-	rows, err := f.db.Query(ctx, `SELECT id,slug,format,revision,anonymous_read FROM feeds WHERE instance_id=$1 AND ($2='' OR id>NULLIF($2,'')::uuid) AND starts_with(slug,$3) ORDER BY id`, p.InstanceID, after, q.Prefix)
+	rows, err := f.db.Query(ctx, `SELECT `+feedColumns+` FROM feeds WHERE instance_id=$1 AND ($2='' OR id>NULLIF($2,'')::uuid) AND starts_with(slug,$3) AND ($4='' OR purpose=$4) ORDER BY id`, p.InstanceID, after, q.Prefix, purpose)
 	if err != nil {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "feed listing unavailable")
 		return
@@ -117,7 +133,7 @@ func (f feedHandlers) list(w http.ResponseWriter, r *http.Request) {
 	page := FeedPage{Items: []Feed{}}
 	for rows.Next() {
 		var item Feed
-		if err = rows.Scan(&item.ID, &item.Slug, &item.Format, &item.Revision, &item.AnonymousRead); err != nil {
+		if err = scanFeed(rows, &item); err != nil {
 			break
 		}
 		if !feedAllowed(policy, p, item.ID, identity.Read) {
@@ -158,7 +174,7 @@ func (f feedHandlers) get(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	var item Feed
-	err := f.db.QueryRow(ctx, `SELECT id,slug,format,revision,anonymous_read FROM feeds WHERE instance_id=$1 AND id=$2`, p.InstanceID, id).Scan(&item.ID, &item.Slug, &item.Format, &item.Revision, &item.AnonymousRead)
+	err := scanFeed(f.db.QueryRow(ctx, `SELECT `+feedColumns+` FROM feeds WHERE instance_id=$1 AND id=$2`, p.InstanceID, id), &item)
 	if errors.Is(err, pgx.ErrNoRows) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "feed not found")
 		return
@@ -188,7 +204,7 @@ func strictJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 		// encoding/json otherwise matches struct fields case-insensitively.
 		// The wire contract uses exact property names, including duplicates.
 		for key := range fields {
-			valid := key == "slug" || key == "anonymous_read"
+			valid := key == "slug" || key == "anonymous_read" || key == "purpose" || key == "cache_policy"
 			if _, create := dst.(*CreateFeed); create && key == "format" {
 				valid = true
 			}
@@ -269,6 +285,12 @@ func (f feedHandlers) create(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid feed configuration")
 		return
 	}
+	if body.Purpose == "" {
+		body.Purpose = PurposeArtifacts
+	}
+	if rejectCacheInput(w, r, validateCacheInput(body.Purpose, body.Format, body.CachePolicy)) {
+		return
+	}
 	key, ok := mutationKey(w, r)
 	if !ok {
 		return
@@ -284,12 +306,18 @@ func (f feedHandlers) create(w http.ResponseWriter, r *http.Request) {
 	canonical, _ := json.Marshal(body)
 	result, err := database.ExecuteMutation(r.Context(), f.db, database.MutationRequest{InstanceID: p.InstanceID, PrincipalID: p.PrincipalID, Operation: "feed.create", Resource: "feeds", Key: key, Fingerprint: sha256.Sum256(canonical), NonSecretResult: true}, func(ctx context.Context, tx pgx.Tx) (json.RawMessage, error) {
 		var item Feed
-		err := tx.QueryRow(ctx, `INSERT INTO feeds(instance_id,slug,format,anonymous_read) VALUES($1,$2,$3,$4) RETURNING id,slug,format,revision,anonymous_read`, p.InstanceID, body.Slug, body.Format, body.AnonymousRead).Scan(&item.ID, &item.Slug, &item.Format, &item.Revision, &item.AnonymousRead)
+		idle, maxBytes := cachePolicyValues(body.CachePolicy, DefaultCacheMaxIdleSeconds, nil)
+		err := scanFeed(tx.QueryRow(ctx, `INSERT INTO feeds(instance_id,slug,format,anonymous_read,purpose,cache_max_idle_seconds,cache_max_bytes) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING `+feedColumns, p.InstanceID, body.Slug, body.Format, body.AnonymousRead, body.Purpose, idle, maxBytes), &item)
 		if err != nil {
 			return nil, feedConflict(err)
 		}
 		if err = feedEvent(ctx, tx, p, item, "feed.create"); err != nil {
 			return nil, err
+		}
+		if item.Purpose == PurposeCache {
+			if err = feedPurposeAudit(ctx, tx, p, item, ""); err != nil {
+				return nil, err
+			}
 		}
 		return json.Marshal(item)
 	})
@@ -338,7 +366,7 @@ func (f feedHandlers) patch(w http.ResponseWriter, r *http.Request) {
 	if !strictJSON(w, r, &body) {
 		return
 	}
-	if (body.Slug == nil && body.AnonymousRead == nil) || (body.Slug != nil && !slugPattern.MatchString(*body.Slug)) {
+	if (body.Slug == nil && body.AnonymousRead == nil && body.Purpose == nil && body.CachePolicy == nil) || (body.Slug != nil && !slugPattern.MatchString(*body.Slug)) || (body.Purpose != nil && !validPurpose(*body.Purpose)) {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid feed update")
 		return
 	}
@@ -354,13 +382,18 @@ func (f feedHandlers) patch(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "feed not found")
 		return
 	}
+	if body.Purpose != nil && !purposeChangeAllowed(policy, p, id) {
+		Error(w, r, 403, api.ErrorCodeForbidden, "changing the feed purpose requires feed administration")
+		return
+	}
 	canonical, _ := json.Marshal(struct {
 		Body     PatchFeed
 		Revision int64
 	}{body, revision})
+	var pr *problem
 	result, err := database.ExecuteMutation(r.Context(), f.db, database.MutationRequest{InstanceID: p.InstanceID, PrincipalID: p.PrincipalID, Operation: "feed.patch", Resource: id, Key: key, Fingerprint: sha256.Sum256(canonical), NonSecretResult: true}, func(ctx context.Context, tx pgx.Tx) (json.RawMessage, error) {
 		var item Feed
-		err := tx.QueryRow(ctx, `SELECT id,slug,format,revision,anonymous_read FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, id).Scan(&item.ID, &item.Slug, &item.Format, &item.Revision, &item.AnonymousRead)
+		err := scanFeed(tx.QueryRow(ctx, `SELECT `+feedColumns+` FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, id), &item)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, database.ErrNotFound
 		}
@@ -373,16 +406,55 @@ func (f feedHandlers) patch(w http.ResponseWriter, r *http.Request) {
 		if body.AnonymousRead != nil {
 			item.AnonymousRead = *body.AnonymousRead
 		}
+		fromPurpose := item.Purpose
+		idle, maxBytes := DefaultCacheMaxIdleSeconds, (*int64)(nil)
+		if item.CachePolicy != nil {
+			idle, maxBytes = item.CachePolicy.MaxIdleSeconds, item.CachePolicy.MaxBytes
+		}
+		if body.Purpose != nil {
+			item.Purpose = *body.Purpose
+		}
+		if msg := validateCacheInput(item.Purpose, item.Format, body.CachePolicy); msg != "" {
+			pr = &problem{400, api.ErrorCodeInvalidRequest, msg}
+			return nil, database.ErrConflict
+		}
+		if item.Purpose == PurposeCache && fromPurpose != PurposeCache {
+			reason, e := checkPurposeChange(ctx, tx, p.InstanceID, id)
+			if e != nil {
+				return nil, e
+			}
+			if reason != "" {
+				pr = &problem{409, api.ErrorCodeConflict, "feed cannot become a cache feed: " + reason}
+				return nil, database.ErrConflict
+			}
+		}
+		idle, maxBytes = cachePolicyValues(body.CachePolicy, idle, maxBytes)
 		item.Revision, err = database.UpdateFeed(ctx, tx, database.FeedUpdate{InstanceID: p.InstanceID, ID: id, Slug: item.Slug, AnonymousRead: item.AnonymousRead, ExpectedRevision: revision})
 		if err != nil {
 			return nil, feedConflict(err)
 		}
+		if err = applyCacheColumns(ctx, tx, p.InstanceID, id, item.Purpose, idle, maxBytes); err != nil {
+			return nil, err
+		}
+		item.CachePolicy = nil
+		if item.Purpose == PurposeCache {
+			item.CachePolicy = &CachePolicy{MaxIdleSeconds: idle, MaxBytes: maxBytes}
+		}
 		if err = feedEvent(ctx, tx, p, item, "feed.patch"); err != nil {
 			return nil, err
+		}
+		if item.Purpose != fromPurpose || body.CachePolicy != nil {
+			if err = feedPurposeAudit(ctx, tx, p, item, fromPurpose); err != nil {
+				return nil, err
+			}
 		}
 		return json.Marshal(item)
 	})
 	if err != nil {
+		if pr != nil && errors.Is(err, database.ErrConflict) {
+			writeProblem(w, r, pr)
+			return
+		}
 		mutationError(w, r, err)
 		return
 	}

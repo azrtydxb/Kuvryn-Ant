@@ -376,9 +376,13 @@ func catalog() []*tool {
 			}},
 		{name: "create_feed", title: "Create feed", desc: "Create a feed. Requires configure permission.", idempotent: true,
 			params: []param{{name: "slug", typ: "string", required: true, desc: "Unique feed slug."}, {name: "format", typ: "string", required: true, desc: "Package format, e.g. raw, oci, npm, pypi, maven."},
-				{name: "anonymous_read", typ: "boolean", desc: "Allow anonymous reads (default false)."}},
+				{name: "anonymous_read", typ: "boolean", desc: "Allow anonymous reads (default false)."},
+				{name: "purpose", typ: "string", desc: "artifacts (default) or cache. A cache feed is a build cache (buildx registry cache, sccache): oci or raw format only, evictable, never replicated."}},
 			run: func(c *call) *toolResult {
 				body := map[string]any{"slug": c.args["slug"], "format": c.args["format"]}
+				if v, ok := c.args["purpose"]; ok {
+					body["purpose"] = v
+				}
 				if v, ok := c.args["anonymous_read"]; ok {
 					body["anonymous_read"] = v
 				}

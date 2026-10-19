@@ -55,12 +55,16 @@ func (s *Service) BindFeedTx(ctx context.Context, tx pgx.Tx, actor, key, feedID 
 		return FeedBinding{}, PolicyReport{}, invalid("feed_key must be " + st.Name + "/<feed-slug>")
 	}
 	var out FeedBinding
-	err = tx.QueryRow(ctx, `SELECT slug FROM feeds WHERE instance_id=$1 AND id=$2`, s.cfg.InstanceID, feedID).Scan(&out.FeedSlug)
+	var purpose string
+	err = tx.QueryRow(ctx, `SELECT slug,purpose FROM feeds WHERE instance_id=$1 AND id=$2`, s.cfg.InstanceID, feedID).Scan(&out.FeedSlug, &purpose)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return FeedBinding{}, PolicyReport{}, ErrNotFound
 	}
 	if err != nil {
 		return FeedBinding{}, PolicyReport{}, err
+	}
+	if purpose == "cache" {
+		return FeedBinding{}, PolicyReport{}, invalid("cache feeds are never part of a federation: a feed with purpose cache cannot be bound to a federation feed key")
 	}
 	var existing string
 	err = tx.QueryRow(ctx, `SELECT feed_id::text FROM federated_feed_bindings WHERE instance_id=$1 AND feed_key=$2`, s.cfg.InstanceID, key).Scan(&existing)

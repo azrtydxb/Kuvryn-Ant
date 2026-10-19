@@ -22,6 +22,8 @@ var (
 	ErrPeer        = errors.New("replication peer request failed")
 	// ErrManaged rejects local changes to federation-managed peers and jobs.
 	ErrManaged = errors.New("replication resource is federation-managed")
+	// ErrCacheFeed rejects replicating a cache feed (feed purpose cache), as source or destination.
+	ErrCacheFeed = fmt.Errorf("%w: cache feeds are never replicated", ErrConflict)
 	// ErrHistoryPurged means the peer no longer holds the change history the
 	// caller asked for (cursor below the low-water mark); the consumer must reseed.
 	ErrHistoryPurged = errors.New("replication change history purged below cursor")

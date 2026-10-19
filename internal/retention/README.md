@@ -6,14 +6,14 @@ Retention policies, safe orphan-blob garbage collection and integrity scanning
 
 ## Entry points
 
-| API | Purpose |
-| --- | --- |
-| `Service.RunOnce(ctx, dryRun)` | retention, then GC, then one integrity batch; returns a JSON-able `Report` |
-| `Service.ApplyRetention` / `CollectGarbage` / `VerifyIntegrity` | the individual stages |
-| `Service.SetPolicy` / `ListPolicies` / `DeletePolicy` / `OpenFindings` | policy and finding administration |
-| `Service.Run(ctx, interval, dryRun, handle)` | periodic loop used by the worker |
-| `ant gc [--dry-run]` | one run from the CLI (`cmd/ant/gc.go`), JSON report on stdout |
-| worker | started from `serve` when `ANT_GC_INTERVAL` is non-zero, fenced by the instance writer lease |
+| API                                                                    | Purpose                                                                                      |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `Service.RunOnce(ctx, dryRun)`                                         | retention, then GC, then one integrity batch; returns a JSON-able `Report`                   |
+| `Service.ApplyRetention` / `CollectGarbage` / `VerifyIntegrity`        | the individual stages                                                                        |
+| `Service.SetPolicy` / `ListPolicies` / `DeletePolicy` / `OpenFindings` | policy and finding administration                                                            |
+| `Service.Run(ctx, interval, dryRun, handle)`                           | periodic loop used by the worker                                                             |
+| `ant gc [--dry-run]`                                                   | one run from the CLI (`cmd/ant/gc.go`), JSON report on stdout                                |
+| worker                                                                 | started from `serve` when `ANT_GC_INTERVAL` is non-zero, fenced by the instance writer lease |
 
 Settings: `ANT_GC_INTERVAL` (default 6h, `0` disables the worker), `ANT_GC_GRACE`
 (24h), `ANT_GC_DRY_RUN`, `ANT_GC_BATCH_SIZE`, `ANT_INTEGRITY_BATCH`,
@@ -60,9 +60,9 @@ A policy targets one feed or one source (`retention_policies`). Rules: `KeepLast
 `assets.last_accessed_at`, falling back to `created_at`; call `retention.Touch`
 from readers). A version is selected when it violates any rule, except:
 
-* the `MinKeep` newest versions (default 1) are exempt from age/idle rules;
-* tagged versions are exempt unless `IncludeTagged`;
-* content of `local`/`replica` sources is release content and is never selected
+- the `MinKeep` newest versions (default 1) are exempt from age/idle rules;
+- tagged versions are exempt unless `IncludeTagged`;
+- content of `local`/`replica` sources is release content and is never selected
   unless `AllowReleaseDelete`; `remote` (cache) sources are not gated.
 
 A source policy overrides feed policies. Without one, every feed attached to the
@@ -82,13 +82,13 @@ Nothing is deleted or repaired; transient backend errors are counted and retried
 
 ## Limitations
 
-* No management API or console for policies yet (`api/` is out of scope); use the
+- No management API or console for policies yet (`api/` is out of scope); use the
   Go API or SQL.
-* Nothing in the tree calls `Touch` yet and remote materialization is not wired,
+- Nothing in the tree calls `Touch` yet and remote materialization is not wired,
   so idle eviction currently falls back to `created_at`.
-* Multi-process runs (worker plus CLI) are safe via row locks but may duplicate
+- Multi-process runs (worker plus CLI) are safe via row locks but may duplicate
   listing work. Abandoned S3 multipart uploads are not aborted here.
-* S3 listing/deletion is covered by the in-process fixture, not a live provider.
+- S3 listing/deletion is covered by the in-process fixture, not a live provider.
 
 ## Instance default and storage pressure
 
@@ -100,3 +100,16 @@ content and watermark-driven eviction. `RunOnce` runs retention, then pressure, 
 sweep transaction is unchanged (row lock, reference re-check). The earlier "no
 management API" and "Touch not wired" limitations are obsolete: policies have an API
 and console, and idle time uses `asset_downloads.last_downloaded_at`.
+
+## Cache feeds
+
+`cache.go` implements the `cache` feed purpose (migration 046): per-feed `max_idle` and
+`max_bytes` (`ApplyCache`, part of `ApplyRetention`), cache-first pressure eviction
+(`evictCachePressure`, run before `evict`), and `CacheTick`, the periodic pass of the pressure
+loop (idle and size eviction plus the sweep of expedited candidates, independent of whether
+pressure eviction is enabled). Cache sources ignore retention policies, the instance default and
+`allow_release_delete`. Eviction picks _roots_: versions no manifest names (`version_refs`),
+and releases them with the layers only they referenced through `internal/cacherelease`, which
+the artifact core also uses for an OCI tag overwrite and for `DELETE /feeds/{id}/cache`. Freed
+blobs get the short `sweep_after`; the sweep transaction is unchanged. See
+`docs/operations/build-caches.md`.

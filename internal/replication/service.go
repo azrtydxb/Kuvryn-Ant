@@ -134,7 +134,7 @@ func dbError(err error) error {
 			return ErrInput
 		}
 	}
-	if errors.Is(err, ErrInput) || errors.Is(err, ErrNotFound) || errors.Is(err, ErrConflict) || errors.Is(err, ErrManaged) || errors.Is(err, secrets.ErrRevisionConflict) {
+	if errors.Is(err, ErrInput) || errors.Is(err, ErrNotFound) || errors.Is(err, ErrConflict) || errors.Is(err, ErrCacheFeed) || errors.Is(err, ErrManaged) || errors.Is(err, secrets.ErrRevisionConflict) {
 		return err
 	}
 	return ErrUnavailable
@@ -566,9 +566,12 @@ func (s *Service) CreateJobTx(ctx context.Context, tx pgx.Tx, instance, actor st
 	}
 	encoded, _ := json.Marshal(filters)
 	var err error
-	var format string
-	if err = tx.QueryRow(ctx, `SELECT format FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, in.DestFeedID).Scan(&format); err != nil {
+	var format, purpose string
+	if err = tx.QueryRow(ctx, `SELECT format,purpose FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, in.DestFeedID).Scan(&format, &purpose); err != nil {
 		return Job{}, dbError(err)
+	}
+	if purpose == "cache" {
+		return Job{}, ErrCacheFeed
 	}
 	var peerOK bool
 	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM replication_peers WHERE instance_id=$1 AND id=$2)`, instance, in.PeerID).Scan(&peerOK); err != nil {

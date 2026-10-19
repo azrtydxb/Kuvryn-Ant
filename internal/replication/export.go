@@ -60,6 +60,9 @@ func clampLimit(n int) int {
 func (e Exporter) Head(ctx context.Context, instance, feed string) (Head, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	if err := e.notCache(ctx, instance, feed); err != nil {
+		return Head{}, err
+	}
 	var h Head
 	err := e.DB.QueryRow(ctx, `SELECT f.format,COALESCE(h.seq,0),h.changed_at,clock_timestamp(),COALESCE(h.low_water,0) FROM feeds f LEFT JOIN replication_heads h ON h.instance_id=f.instance_id WHERE f.instance_id=$1 AND f.id=$2`, instance, feed).Scan(&h.Format, &h.Seq, &h.ChangedAt, &h.Now, &h.LowWater)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -69,6 +72,22 @@ func (e Exporter) Head(ctx context.Context, instance, feed string) (Head, error)
 		return Head{}, ErrUnavailable
 	}
 	return h, nil
+}
+
+// notCache refuses to export a cache feed: replicating a build cache makes no
+// sense, and its changes are not recorded in the change sequence either.
+func (e Exporter) notCache(ctx context.Context, instance, feed string) error {
+	var purpose string
+	err := e.DB.QueryRow(ctx, `SELECT purpose FROM feeds WHERE instance_id=$1 AND id=$2`, instance, feed).Scan(&purpose)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return ErrNotFound
+	case err != nil:
+		return ErrUnavailable
+	case purpose == "cache":
+		return ErrCacheFeed
+	}
+	return nil
 }
 
 const itemSelect = `SELECT s.id::text,s.name,s.kind,fs.priority,c.namespace,c.coordinate,c.metadata,v.version,a.asset_key,a.media_type,b.digest,b.size_bytes,
@@ -173,6 +192,9 @@ type ManifestQuery struct {
 func (e Exporter) Manifest(ctx context.Context, instance, feed string, q ManifestQuery) (ManifestPage, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+	if err := e.notCache(ctx, instance, feed); err != nil {
+		return ManifestPage{}, err
+	}
 	if (q.Kind != manifestAssets && q.Kind != manifestTags) || !q.Filters.valid() || (q.SourceID != "" && !uuidPattern.MatchString(q.SourceID)) {
 		return ManifestPage{}, ErrInput
 	}
@@ -284,6 +306,9 @@ func itoa(n int) string {
 func (e Exporter) Changes(ctx context.Context, instance, feed string, q ChangeQuery) (ChangePage, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
+	if err := e.notCache(ctx, instance, feed); err != nil {
+		return ChangePage{}, err
+	}
 	after, includeCached := q.After, q.IncludeCached
 	if after < 0 || !q.Filters.valid() {
 		return ChangePage{}, ErrInput
@@ -391,6 +416,9 @@ func (e Exporter) OpenBlob(ctx context.Context, instance, feed, digest string, i
 	}
 	qctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	if err := e.notCache(qctx, instance, feed); err != nil {
+		return blob.Info{}, nil, err
+	}
 	var domain string
 	var size int64
 	err := e.DB.QueryRow(qctx, `SELECT b.dedup_domain_id::text,b.size_bytes FROM blobs b JOIN assets a ON a.blob_id=b.id JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id

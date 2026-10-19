@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/cacherelease"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diskusage"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
 	"github.com/jackc/pgx/v5"
@@ -211,10 +212,17 @@ func (s *Service) RunPressure(ctx context.Context, dryRun bool) (PressureReport,
 	}
 	exhausted := true
 	if rep.TargetBytes > 0 {
-		var evictErr error
-		exhausted, evictErr = s.evict(ctx, settings, dryRun, &rep)
-		if evictErr != nil {
-			errs = append(errs, evictErr)
+		// Cache feeds first, least recently used first, then remote-cached content.
+		cacheFreed, cacheErr := s.evictCachePressure(ctx, rep.TargetBytes, dryRun, &rep)
+		if cacheErr != nil {
+			errs = append(errs, cacheErr)
+		}
+		if remaining := rep.TargetBytes - cacheFreed; remaining > 0 {
+			var evictErr error
+			exhausted, evictErr = s.evict(ctx, settings, dryRun, remaining, &rep)
+			if evictErr != nil {
+				errs = append(errs, evictErr)
+			}
 		}
 		rep.ShortfallBytes = max(0, rep.TargetBytes-rep.EvictedBytes)
 	}
@@ -256,6 +264,10 @@ func (s *Service) pressureSources(ctx context.Context, settings Settings) ([]pre
 	if err != nil {
 		return nil, err
 	}
+	cacheSources, err := s.cacheSourceSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 	policies := map[string]sourceInfo{}
 	for _, si := range withPolicy {
 		policies[si.ID] = si
@@ -281,6 +293,9 @@ func (s *Service) pressureSources(ctx context.Context, settings Settings) ([]pre
 	def := settings.Default
 	var out []pressureSource
 	for _, sk := range all {
+		if cacheSources[sk.id] {
+			continue // cache feeds are evicted first, by evictCachePressure
+		}
 		ps := pressureSource{ID: sk.id, MinKeep: 1}
 		si, has := policies[sk.id]
 		if sk.kind != "remote" {
@@ -438,12 +453,12 @@ func (s *Service) selectEvictions(ctx context.Context, sources []pressureSource,
 
 // evict selects and, unless dryRun, deletes versions. exhausted is true when
 // every evictable version was considered.
-func (s *Service) evict(ctx context.Context, settings Settings, dryRun bool, rep *PressureReport) (exhausted bool, err error) {
+func (s *Service) evict(ctx context.Context, settings Settings, dryRun bool, target int64, rep *PressureReport) (exhausted bool, err error) {
 	sources, err := s.pressureSources(ctx, settings)
 	if err != nil || len(sources) == 0 {
 		return true, err
 	}
-	picked, freed, exhausted, err := s.selectEvictions(ctx, sources, rep.TargetBytes)
+	picked, freed, exhausted, err := s.selectEvictions(ctx, sources, target)
 	if err != nil {
 		return false, err
 	}
@@ -451,7 +466,8 @@ func (s *Service) evict(ctx context.Context, settings Settings, dryRun bool, rep
 		for _, c := range picked {
 			rep.Evicted = append(rep.Evicted, Deletion{SourceID: c.SourceID, Coordinate: c.Coordinate, Version: c.Version, VersionID: c.VersionID, Reason: "pressure_lru"})
 		}
-		rep.EvictedVersions, rep.EvictedBytes = len(picked), freed
+		rep.EvictedVersions += len(picked)
+		rep.EvictedBytes += freed
 		return exhausted, nil
 	}
 	byComponent := map[string][]evictCandidate{}
@@ -572,14 +588,8 @@ func (s *Service) evictComponent(ctx context.Context, src pressureSource, group 
 	if _, err = tx.Exec(ctx, `DELETE FROM versions WHERE instance_id=$1 AND component_id=$2 AND id=ANY($3::uuid[])`, s.InstanceID, group[0].ComponentID, batchIDs); err != nil {
 		return nil, 0, err
 	}
-	var freed int64
-	const unreferenced = `b.id=ANY($1::uuid[]) AND NOT EXISTS(SELECT 1 FROM assets a WHERE a.blob_id=b.id) AND NOT EXISTS(SELECT 1 FROM federation_route_cache rc WHERE rc.blob_id=b.id)`
-	if err = tx.QueryRow(ctx, `SELECT COALESCE(sum(b.size_bytes),0)::bigint FROM blobs b WHERE `+unreferenced, blobIDs).Scan(&freed); err != nil {
-		return nil, 0, err
-	}
-	if _, err = tx.Exec(ctx, `INSERT INTO gc_candidates(instance_id,dedup_domain_id,digest,kind,sweep_after) SELECT b.instance_id,b.dedup_domain_id,b.digest,'row',clock_timestamp()+$2::interval FROM blobs b WHERE `+unreferenced+`
- ON CONFLICT(dedup_domain_id,digest) DO UPDATE SET sweep_after=LEAST(COALESCE(gc_candidates.sweep_after,gc_candidates.first_seen_at+$3::interval),excluded.sweep_after) WHERE gc_candidates.kind='row'`,
-		blobIDs, microseconds(s.sweepGrace()), s.graceInterval()); err != nil {
+	freed, err := cacherelease.ExpediteBlobs(ctx, tx, blobIDs, s.sweepGrace(), s.opts().Grace)
+	if err != nil {
 		return nil, 0, err
 	}
 	done := make([]Deletion, len(batch))
@@ -731,7 +741,7 @@ func (s *Service) RunPressureLoop(ctx context.Context, interval time.Duration, h
 	if interval <= 0 {
 		return
 	}
-	timer := time.NewTimer(30 * time.Second)
+	timer := time.NewTimer(min(30*time.Second, interval))
 	defer timer.Stop()
 	for {
 		select {
@@ -742,6 +752,12 @@ func (s *Service) RunPressureLoop(ctx context.Context, interval time.Duration, h
 		rep, err := s.RunPressure(ctx, false)
 		if handle != nil {
 			handle(rep, err)
+		}
+		// Cache feeds: idle and size eviction, then the short sweep of everything
+		// freed by it, a tag overwrite or a cleanup. Independent of pressure.
+		crep, cerr := s.CacheTick(ctx)
+		if handle != nil && ctx.Err() == nil && (cerr != nil || len(crep.Evicted) > 0 || crep.Swept > 0) {
+			handle(PressureReport{State: "cache", Evicted: crep.Evicted, EvictedVersions: len(crep.Evicted), EvictedBytes: crep.Bytes, Swept: crep.Swept}, cerr)
 		}
 		timer.Reset(interval)
 	}

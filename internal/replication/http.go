@@ -77,6 +77,8 @@ func fail(w http.ResponseWriter, r *http.Request, err error) {
 		management.Error(w, r, http.StatusBadRequest, api.ErrorCodeInvalidRequest, "invalid replication configuration")
 	case errors.Is(err, ErrNotFound):
 		management.Error(w, r, http.StatusNotFound, api.ErrorCodeNotFound, "replication resource not found")
+	case errors.Is(err, ErrCacheFeed):
+		management.Error(w, r, http.StatusConflict, api.ErrorCodeConflict, "cache feeds (purpose cache) are never replicated")
 	case errors.Is(err, ErrConflict):
 		management.Error(w, r, http.StatusConflict, api.ErrorCodeConflict, "replication resource conflicts with current state")
 	case errors.Is(err, ErrManaged):

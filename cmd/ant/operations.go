@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/auditsink"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
@@ -154,6 +155,12 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 				return nil
 			}
 			return r.migrator
+		}
+		d.Artifacts = func(instance string) *artifact.Service {
+			if instance != r.instanceID {
+				return nil
+			}
+			return r.service
 		}
 		d.Retention = func(instance string) *retention.Service {
 			if instance != r.instanceID {

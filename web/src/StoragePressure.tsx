@@ -2,6 +2,7 @@ import { useState } from "react";
 import { requireETag, type Client } from "./api";
 import { useOptionalCall } from "./gaps";
 import type {
+  CacheFeedUsage,
   PressureReport,
   PressureStatus,
   RetentionSettings,
@@ -14,7 +15,9 @@ import {
   Meter,
   PropertyList,
   Switch,
+  Table,
 } from "./ds/bundle";
+import { CacheBadge, idleLabel } from "./CachePolicy";
 import {
   Failure,
   Loading,
@@ -161,6 +164,68 @@ export function OverviewTab({
           short while.
         </p>
       </div>
+      <CacheFeedsSection feeds={u.cache_feeds ?? []} />
+    </>
+  );
+}
+
+/** Bytes held by each cache feed. Cache feeds are evicted first under pressure. */
+export function CacheFeedsSection({ feeds }: { feeds: CacheFeedUsage[] }) {
+  if (!feeds.length) return null;
+  const total = feeds.reduce((n, f) => n + f.bytes, 0);
+  return (
+    <>
+      <div className="section-head">
+        <h2>Build caches</h2>
+        <span className="muted small">
+          {feeds.length} cache feed{feeds.length === 1 ? "" : "s"} ·{" "}
+          {bytes(total)}
+        </span>
+      </div>
+      <Table
+        columns={[
+          {
+            key: "slug",
+            label: "Cache feed",
+            render: (f: CacheFeedUsage) => (
+              <>
+                <span className="mono">{f.slug}</span> <CacheBadge />
+              </>
+            ),
+          },
+          { key: "format", label: "Format" },
+          {
+            key: "bytes",
+            label: "Stored",
+            align: "right",
+            render: (f: CacheFeedUsage) => bytes(f.bytes),
+          },
+          {
+            key: "max_bytes",
+            label: "Size limit",
+            align: "right",
+            render: (f: CacheFeedUsage) =>
+              f.max_bytes ? bytes(f.max_bytes) : "No limit",
+          },
+          {
+            key: "max_idle_seconds",
+            label: "Evicted when idle",
+            align: "right",
+            render: (f: CacheFeedUsage) => idleLabel(f.max_idle_seconds),
+          },
+          {
+            key: "versions",
+            label: "Versions",
+            align: "right",
+            render: (f: CacheFeedUsage) => count(f.versions),
+          },
+        ]}
+        rows={feeds}
+      />
+      <p className="muted small">
+        Cache feeds are evicted before any other content when storage fills,
+        least recently used first, and need no release-deletion policy.
+      </p>
     </>
   );
 }

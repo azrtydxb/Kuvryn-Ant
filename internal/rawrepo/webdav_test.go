@@ -172,3 +172,68 @@ func tail(b []byte) string {
 }
 
 func base64Std(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
+
+// An sccache/OpenDAL client creates every parent collection (MKCOL, one level
+// at a time, nested paths) before a PUT, then reads with GET, HEAD and PROPFIND.
+// The same sequence must work on a cache feed, where the entries are also
+// evictable: after eviction the key can be written again.
+func TestWebDAVNestedMKCOLOnCacheFeed(t *testing.T) {
+	f := newPublishFixture(t)
+	if _, err := f.pool.Exec(context.Background(), `UPDATE feeds SET purpose='cache'`); err != nil {
+		t.Fatal(err)
+	}
+	// sccache key layout: <prefix>/<h0>/<h1>/<h2>/<hash>, prefix itself nested.
+	const key = "ci/repo/main/a/b/c/abcdef0123456789"
+	dirs := []string{"ci/", "ci/repo/", "ci/repo/main/", "ci/repo/main/a/", "ci/repo/main/a/b/", "ci/repo/main/a/b/c/"}
+	for _, dir := range dirs {
+		if w := f.request("MKCOL", dir, "", nil); w.Code != 201 {
+			t.Fatalf("MKCOL %s: %d %s", dir, w.Code, w.Body)
+		}
+	}
+	// MKCOL of a nested collection whose parents were never created is accepted
+	// as well: directories are virtual and appear with the first file.
+	if w := f.request("MKCOL", "ci/repo/other/x/y/", "", nil); w.Code != 201 {
+		t.Fatalf("MKCOL of a deep new path: %d", w.Code)
+	}
+	if w := f.request("PUT", key, "object bytes", nil); w.Code != 201 {
+		t.Fatalf("PUT %d %s", w.Code, w.Body)
+	}
+	if w := f.request("GET", key, "", nil); w.Code != 200 || w.Body.String() != "object bytes" {
+		t.Fatalf("GET %d %q", w.Code, w.Body)
+	}
+	if w := f.request("HEAD", key, "", nil); w.Code != 200 || w.Header().Get("Content-Length") != "12" {
+		t.Fatalf("HEAD %d %v", w.Code, w.Header())
+	}
+	for _, dir := range dirs {
+		if w := f.request("PROPFIND", dir, "", map[string]string{"Depth": "0"}); w.Code != 207 || !strings.Contains(w.Body.String(), "<D:collection/>") {
+			t.Fatalf("PROPFIND %s: %d %s", dir, w.Code, w.Body)
+		}
+	}
+	if w := f.request("PROPFIND", key, "", map[string]string{"Depth": "0"}); w.Code != 207 || !strings.Contains(w.Body.String(), "<D:getlastmodified>") {
+		t.Fatalf("PROPFIND file: %d %s", w.Code, w.Body)
+	}
+	// Writing the same bytes again is accepted, different bytes are a conflict
+	// (sccache logs it and carries on).
+	if w := f.request("PUT", key, "object bytes", nil); w.Code != 201 && w.Code != 200 && w.Code != 204 {
+		t.Fatalf("identical re-PUT: %d", w.Code)
+	}
+	if w := f.request("PUT", key, "different", nil); w.Code != 409 {
+		t.Fatalf("different re-PUT: %d, want 409", w.Code)
+	}
+	// Evicted (deleted by retention or cleanup): the key is gone and writable again.
+	for _, q := range []string{
+		`DELETE FROM assets WHERE version_id IN (SELECT v.id FROM versions v JOIN components c ON c.id=v.component_id WHERE c.coordinate='` + key + `')`,
+		`DELETE FROM versions WHERE component_id IN (SELECT id FROM components WHERE coordinate='` + key + `')`,
+		`DELETE FROM components WHERE coordinate='` + key + `'`,
+	} {
+		if _, err := f.pool.Exec(context.Background(), q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if w := f.request("GET", key, "", nil); w.Code != 404 {
+		t.Fatalf("GET after eviction: %d", w.Code)
+	}
+	if w := f.request("PUT", key, "different", nil); w.Code != 201 {
+		t.Fatalf("PUT after eviction: %d", w.Code)
+	}
+}

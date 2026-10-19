@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteruntime"
@@ -83,6 +84,9 @@ type OpsDeps struct {
 	Limits *limits.Limiter
 	// Prewarm is the running prewarm service, or nil when this instance is not serving.
 	Prewarm PrewarmBackend
+	// Artifacts returns the artifact core of the serving instance, or nil. Cache
+	// cleanup goes through it so authorization, policy and audit stay in the core.
+	Artifacts func(instance string) *artifact.Service
 }
 
 type opsHandlers struct {
@@ -165,6 +169,7 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"GET /api/v1/feeds/{id}/policy-templates":       h.getBinding,
 		"PUT /api/v1/feeds/{id}/policy-templates":       h.putBinding,
 		"GET /api/v1/feeds/{id}/effective-policy":       h.effectivePolicy,
+		"DELETE /api/v1/feeds/{id}/cache":               h.cacheClean,
 		"GET /api/v1/prewarm/formats":                   h.listPrewarmFormats,
 		"POST /api/v1/prewarm/preview":                  h.previewPrewarm,
 		"GET /api/v1/prewarm/jobs":                      h.listPrewarmJobs,

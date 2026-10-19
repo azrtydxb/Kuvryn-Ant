@@ -83,6 +83,19 @@
               "type": "string",
               "maxLength": 200
             }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "artifacts",
+                "cache"
+              ]
+            },
+            "description": "Only feeds with this purpose."
           }
         ],
         "responses": {
@@ -3869,6 +3882,20 @@
               "type": "string",
               "maxLength": 2048
             }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "artifacts",
+                "cache",
+                "all"
+              ]
+            },
+            "description": "Feed purpose to search. Defaults to artifacts: cache feeds are build caches and are not part of the package catalogue unless asked for (or addressed with the feed parameter)."
           }
         ],
         "responses": {
@@ -17643,6 +17670,81 @@
           }
         }
       }
+    },
+    "/api/v1/feeds/{id}/cache": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "delete": {
+        "operationId": "cleanFeedCache",
+        "description": "Removes cache content by prefix from a cache feed (purpose cache). For an OCI feed the prefix is <repository>[:<tag prefix>]: the matching tags are deleted, and the manifests and layers nothing else references are released; without a colon every tag of the repository is deleted. For a raw feed the prefix is a path prefix. Requires the delete action on the feed's artifacts, which a scoped CI service token (including one issued by a GitHub OIDC trust rule) can hold. Idempotent: repeating a finished cleanup removes nothing. Removal is metadata only; freed blobs are deleted by garbage collection after the short sweep wait.",
+        "parameters": [
+          {
+            "name": "prefix",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "OCI: <repository>[:<tag prefix>]. Raw: a path prefix."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheCleanResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -17787,7 +17889,8 @@
           "slug",
           "format",
           "revision",
-          "anonymous_read"
+          "anonymous_read",
+          "purpose"
         ],
         "properties": {
           "id": {
@@ -17837,6 +17940,18 @@
           "anonymous_read": {
             "type": "boolean",
             "default": false
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "artifacts",
+              "cache"
+            ],
+            "default": "artifacts",
+            "description": "artifacts is ordinary published content. cache is a build cache (buildx registry layer cache, sccache over WebDAV): only the oci and raw formats, evictable by retention and storage pressure without allow_release_delete, never replicated, hidden from package search by default."
+          },
+          "cache_policy": {
+            "$ref": "#/components/schemas/CachePolicy"
           }
         }
       },
@@ -17886,6 +18001,18 @@
           "anonymous_read": {
             "type": "boolean",
             "default": false
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "artifacts",
+              "cache"
+            ],
+            "default": "artifacts",
+            "description": "artifacts is ordinary published content. cache is a build cache (buildx registry layer cache, sccache over WebDAV): only the oci and raw formats, evictable by retention and storage pressure without allow_release_delete, never replicated, hidden from package search by default."
+          },
+          "cache_policy": {
+            "$ref": "#/components/schemas/CachePolicyInput"
           }
         }
       },
@@ -17901,6 +18028,18 @@
           "anonymous_read": {
             "type": "boolean",
             "default": false
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "artifacts",
+              "cache"
+            ],
+            "default": "artifacts",
+            "description": "artifacts is ordinary published content. cache is a build cache (buildx registry layer cache, sccache over WebDAV): only the oci and raw formats, evictable by retention and storage pressure without allow_release_delete, never replicated, hidden from package search by default. Changing it requires feed administration; a feed can become a cache feed only if it has local sources used by no other feed and takes no part in replication or federation."
+          },
+          "cache_policy": {
+            "$ref": "#/components/schemas/CachePolicyInput"
           }
         }
       },
@@ -19526,6 +19665,18 @@
           },
           "publish_policy": {
             "$ref": "#/components/schemas/PutPublishPolicy"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "artifacts",
+              "cache"
+            ],
+            "default": "artifacts",
+            "description": "artifacts is ordinary published content. cache is a build cache (buildx registry layer cache, sccache over WebDAV): only the oci and raw formats, evictable by retention and storage pressure without allow_release_delete, never replicated, hidden from package search by default."
+          },
+          "cache_policy": {
+            "$ref": "#/components/schemas/CachePolicyInput"
           }
         }
       },
@@ -20555,7 +20706,8 @@
           "unreferenced_bytes",
           "gc_candidates",
           "domains",
-          "measured_at"
+          "measured_at",
+          "cache_feeds"
         ],
         "properties": {
           "backend": {
@@ -20614,6 +20766,13 @@
           },
           "pressure": {
             "$ref": "#/components/schemas/PressureStatus"
+          },
+          "cache_feeds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CacheFeedUsage"
+            },
+            "description": "Cache feeds and the bytes each holds."
           }
         }
       },
@@ -30442,6 +30601,137 @@
                 }
               }
             }
+          }
+        }
+      },
+      "CachePolicy": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "max_idle_seconds"
+        ],
+        "description": "Per-feed cache policy of a cache feed.",
+        "properties": {
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 60,
+            "description": "Content not created, accessed or downloaded for longer than this is evicted. Default 604800 (7 days)."
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1,
+            "description": "When present, least recently used content is evicted until the feed holds no more than this many bytes. Absent means no size limit."
+          }
+        }
+      },
+      "CachePolicyInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 60
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "0 removes the size limit."
+          }
+        }
+      },
+      "CacheCleanResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "prefix",
+          "matched",
+          "tags_removed",
+          "versions_removed",
+          "components_removed",
+          "bytes_released",
+          "truncated"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "matched": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Repositories (OCI) or files (raw) that had content removed."
+          },
+          "tags_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "versions_removed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Manifests, layers or files released."
+          },
+          "components_removed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Repositories or files left empty and removed."
+          },
+          "bytes_released": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Bytes of blobs left unreferenced and queued for the short sweep."
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "The per-call batch limit stopped the cleanup; repeat the call to continue."
+          }
+        }
+      },
+      "CacheFeedUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "slug",
+          "format",
+          "bytes",
+          "versions",
+          "max_idle_seconds"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Distinct blob bytes referenced through the feed's sources."
+          },
+          "versions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_idle_seconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_bytes": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }

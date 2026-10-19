@@ -26,6 +26,15 @@ import {
   Tabs,
 } from "./ds/bundle";
 import { FeedSources } from "./FeedSources";
+import {
+  CacheBadge,
+  CachePolicyFields,
+  cacheFormats,
+  draftToInput,
+  isCache,
+  policySummary,
+  useDraft,
+} from "./CachePolicy";
 import { PolicyTab } from "./Policy";
 import { FeedPackages, pullCommand, type PackageRef } from "./Packages";
 import {
@@ -119,13 +128,19 @@ function FeedList({
 }) {
   const [cursor, setCursor] = useState("");
   const [filter, setFilter] = useState("");
+  const [purpose, setPurpose] = useState("");
   const prefix = useDebounced(filter);
   const r = useResource(
     () =>
       client.call("listFeeds", {
-        query: { limit: "50", ...(cursor ? { cursor } : {}), prefix },
+        query: {
+          limit: "50",
+          ...(cursor ? { cursor } : {}),
+          prefix,
+          ...(purpose ? { purpose } : {}),
+        },
       }),
-    [client, cursor, prefix, epoch],
+    [client, cursor, prefix, purpose, epoch],
   );
   const ops = useOpsMaps(client);
   const rows = r.value?.data.items ?? [];
@@ -159,6 +174,20 @@ function FeedList({
             setCursor("");
           }}
           className="w260"
+        />
+        <Select
+          size="sm"
+          aria-label="Filter by purpose"
+          value={purpose}
+          options={[
+            { value: "", label: "All purposes" },
+            { value: "artifacts", label: "Artifacts" },
+            { value: "cache", label: "Build caches" },
+          ]}
+          onChange={(e: { target: { value: string } }) => {
+            setPurpose(e.target.value);
+            setCursor("");
+          }}
         />
         <Button
           size="sm"
@@ -198,7 +227,17 @@ function FeedList({
                 {
                   key: "format",
                   label: "Format",
-                  render: (f: Feed) => <Badge tone="outline">{f.format}</Badge>,
+                  render: (f: Feed) => (
+                    <>
+                      <Badge tone="outline">{f.format}</Badge>
+                      {isCache(f) && (
+                        <>
+                          {" "}
+                          <CacheBadge />
+                        </>
+                      )}
+                    </>
+                  ),
                 },
                 {
                   key: "anonymous_read",
@@ -266,6 +305,8 @@ function CreateFeed({
   const [step, setStep] = useState(0);
   const [slug, setSlug] = useState("");
   const [format, setFormat] = useState<Feed["format"]>("oci");
+  const [purpose, setPurpose] = useState<"artifacts" | "cache">("artifacts");
+  const [draft, setDraft] = useDraft();
   const [anon, setAnon] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [target, setTarget] = useState("");
@@ -273,7 +314,9 @@ function CreateFeed({
   const toast = useToast();
   const sources = useAllSources(client);
   const action = useAction();
-  const valid = slugPattern.test(slug);
+  const cacheInput = purpose === "cache" ? draftToInput(draft) : undefined;
+  const valid =
+    slugPattern.test(slug) && (purpose !== "cache" || cacheInput !== undefined);
   const matching = sourcesForFormat(sources.items, format);
   const pickedSources = picked
     .map((id) => matching.find((s) => s.id === id))
@@ -301,6 +344,9 @@ function CreateFeed({
                 slug,
                 format,
                 anonymous_read: anon,
+                ...(purpose === "cache"
+                  ? { purpose, cache_policy: cacheInput }
+                  : {}),
                 ...(picked.length ? { source_ids: picked } : {}),
                 ...(writeTarget
                   ? {
@@ -322,7 +368,14 @@ function CreateFeed({
         }
         if (!id) {
           const feed = await client.call("createFeed", {
-            body: { slug, format, anonymous_read: anon },
+            body: {
+              slug,
+              format,
+              anonymous_read: anon,
+              ...(purpose === "cache"
+                ? { purpose, cache_policy: cacheInput }
+                : {}),
+            },
           });
           id = feed.data.id;
           revision = feed.data.revision;
@@ -435,8 +488,30 @@ function CreateFeed({
             }
           />
           <Select
+            label="Purpose"
+            options={[
+              { value: "artifacts", label: "Artifacts (published content)" },
+              { value: "cache", label: "Build cache (buildx, sccache)" },
+            ]}
+            value={purpose}
+            onChange={(e: { target: { value: string } }) => {
+              const next = e.target.value as "artifacts" | "cache";
+              setPurpose(next);
+              if (next === "cache" && !cacheFormats.includes(format)) {
+                setFormat("oci");
+                setPicked([]);
+              }
+            }}
+            hint="A cache feed is evictable, never replicated and hidden from package search. Only oci and raw feeds can be caches."
+          />
+          {purpose === "cache" && (
+            <CachePolicyFields draft={draft} set={setDraft} />
+          )}
+          <Select
             label="Format"
-            options={formats.map((f) => ({ value: f, label: f }))}
+            options={formats
+              .filter((f) => purpose !== "cache" || cacheFormats.includes(f))
+              .map((f) => ({ value: f, label: f }))}
             value={format}
             onChange={(e: { target: { value: string } }) => {
               setFormat(e.target.value as Feed["format"]);
@@ -522,6 +597,13 @@ function CreateFeed({
               { label: "Slug", value: slug, mono: true },
               { label: "Format", value: format },
               {
+                label: "Purpose",
+                value:
+                  purpose === "cache"
+                    ? `Build cache · ${policySummary({ max_idle_seconds: cacheInput?.max_idle_seconds ?? 0, max_bytes: cacheInput?.max_bytes || undefined })}`
+                    : "Artifacts",
+              },
+              {
                 label: "Access",
                 value: anon ? "Anonymous read" : "Authenticated",
               },
@@ -588,6 +670,7 @@ function FeedDetail({
           feed ? (
             <>
               <span className="mono title-mono">{feed.slug}</span>
+              {isCache(feed) && <CacheBadge />}
               {feed.anonymous_read ? (
                 <Badge tone="warn" icon="globe">
                   Anonymous read
@@ -604,6 +687,12 @@ function FeedDetail({
           feed ? (
             <>
               Revision {feed.revision}
+              {isCache(feed) && feed.cache_policy && (
+                <>
+                  {" · "}
+                  {policySummary(feed.cache_policy)}
+                </>
+              )}
               {" · "}
               <Copyable text={endpoint(feed.slug)} />
             </>
@@ -752,9 +841,13 @@ function FeedSettings({
 }) {
   const [slug, setSlug] = useState(feed.slug);
   const [anon, setAnon] = useState(feed.anonymous_read);
+  const [purpose, setPurpose] = useState<"artifacts" | "cache">(feed.purpose);
+  const [draft, setDraft] = useDraft(feed.cache_policy);
   const action = useAction();
   const toast = useToast();
-  const valid = slugPattern.test(slug);
+  const cacheInput = purpose === "cache" ? draftToInput(draft) : undefined;
+  const valid =
+    slugPattern.test(slug) && (purpose !== "cache" || cacheInput !== undefined);
   return (
     <div className="narrow">
       <form
@@ -765,7 +858,12 @@ function FeedSettings({
             await client.call("updateFeed", {
               params: { id: feed.id },
               etag: requireETag(etag),
-              body: { slug, anonymous_read: anon },
+              body: {
+                slug,
+                anonymous_read: anon,
+                ...(purpose !== feed.purpose ? { purpose } : {}),
+                ...(purpose === "cache" ? { cache_policy: cacheInput } : {}),
+              },
             });
           });
           if (ok) {
@@ -796,6 +894,28 @@ function FeedSettings({
             }
             hint="Renaming changes every client URL."
           />
+          <Select
+            label="Purpose"
+            options={[
+              { value: "artifacts", label: "Artifacts (published content)" },
+              { value: "cache", label: "Build cache (buildx, sccache)" },
+            ]}
+            value={purpose}
+            disabled={
+              feed.purpose !== "cache" && !cacheFormats.includes(feed.format)
+            }
+            onChange={(e: { target: { value: string } }) =>
+              setPurpose(e.target.value as "artifacts" | "cache")
+            }
+            hint={
+              cacheFormats.includes(feed.format)
+                ? "Changing the purpose needs feed administration. A cache feed needs local sources used by no other feed and no replication."
+                : "Only oci and raw feeds can be build caches."
+            }
+          />
+          {purpose === "cache" && (
+            <CachePolicyFields draft={draft} set={setDraft} />
+          )}
           <SettingsRow
             label="Anonymous reads"
             description="Anyone who can reach the endpoint can pull. The server enforces resource permissions."

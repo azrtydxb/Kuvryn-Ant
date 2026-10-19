@@ -2,9 +2,9 @@
 export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1"; "readiness"?: ReadinessDetail };
 export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited" | "federation_not_configured" | "not_authority" | "member_unreachable" | "invitation_invalid" | "stale_generation" | "document_rejected" | "federation_managed" | "not_federated" | "feed_home_elsewhere" | "feed_transferring"; "message": string; "request_id": string };
 export type PageInfo = { "has_more": boolean; "next_cursor"?: string };
-export type Feed = { "id": string; "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number; "anonymous_read": boolean };
-export type CreateFeed = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean };
-export type PatchFeed = { "slug"?: string; "anonymous_read"?: boolean };
+export type Feed = { "id": string; "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number; "anonymous_read": boolean; "purpose": "artifacts" | "cache"; "cache_policy"?: CachePolicy };
+export type CreateFeed = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean; "purpose"?: "artifacts" | "cache"; "cache_policy"?: CachePolicyInput };
+export type PatchFeed = { "slug"?: string; "anonymous_read"?: boolean; "purpose"?: "artifacts" | "cache"; "cache_policy"?: CachePolicyInput };
 export type FeedPage = { "items": Array<Feed>; "page": PageInfo };
 export type Source = { "id": string; "name": string; "kind": "local" | "remote" | "replica"; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "revision": number };
 export type CreateSource = { "name": string; "kind": "local" | "remote" | "replica"; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm" };
@@ -55,7 +55,7 @@ export type PackageSearchPage = { "items": Array<PackageSearchResult>; "page": P
 export type ReorderSources = { "source_ids": Array<string> };
 export type SourceOrderItem = { "source_id": string; "priority": number };
 export type SourceOrder = { "feed_id": string; "feed_revision": number; "items": Array<SourceOrderItem> };
-export type CreateFeedBatch = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean; "source_ids"?: Array<string>; "publish_policy"?: PutPublishPolicy };
+export type CreateFeedBatch = { "slug": string; "format": "apk" | "ansible" | "apt" | "cocoapods" | "composer" | "conan" | "conda" | "oci" | "git-lfs" | "go" | "helm" | "huggingface" | "maven" | "npm" | "nuget" | "oci-artifacts" | "p2" | "pub" | "pypi" | "cran" | "raw" | "rubygems" | "cargo" | "swift" | "terraform" | "rpm"; "anonymous_read"?: boolean; "source_ids"?: Array<string>; "publish_policy"?: PutPublishPolicy; "purpose"?: "artifacts" | "cache"; "cache_policy"?: CachePolicyInput };
 export type FeedBatchResult = { "feed": Feed; "sources": Array<SourceOrderItem>; "publish_policy"?: PublishPolicy };
 export type ResolveSource = { "source_id": string; "name": string; "kind": "local" | "remote" | "replica"; "priority": number; "role": "serving" | "shadowed" | "absent" | "pull_through_candidate"; "reason": string; "versions": number };
 export type ResolveCache = { "state": "not_applicable" | "not_cached" | "fresh" | "stale"; "last_cached_at"?: string; "last_accessed_at"?: string; "age_seconds"?: number; "metadata_ttl_seconds": number; "stale_if_error_seconds": number; "expires_at"?: string; "servable_stale_on_error": boolean };
@@ -84,7 +84,7 @@ export type FeedStatsPage = { "items": Array<FeedStats>; "page": PageInfo };
 export type SourceStats = { "source_id": string; "name": string; "kind": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "attached_feeds": number; "cache_hits": number; "cache_misses": number };
 export type SourceStatsPage = { "items": Array<SourceStats>; "page": PageInfo };
 export type DomainUsage = { "domain_id": string; "name": string; "blob_count": number; "blob_bytes": number };
-export type StorageUsage = { "backend": string; "blob_count": number; "blob_bytes": number; "logical_bytes": number; "dedup_saved_bytes": number; "unreferenced_bytes": number; "gc_candidates": number; "staging_bytes"?: number; "domains": Array<DomainUsage>; "measured_at": string; "reclaimable_bytes"?: number; "in_grace_bytes"?: number; "pressure"?: PressureStatus };
+export type StorageUsage = { "backend": string; "blob_count": number; "blob_bytes": number; "logical_bytes": number; "dedup_saved_bytes": number; "unreferenced_bytes": number; "gc_candidates": number; "staging_bytes"?: number; "domains": Array<DomainUsage>; "measured_at": string; "reclaimable_bytes"?: number; "in_grace_bytes"?: number; "pressure"?: PressureStatus; "cache_feeds": Array<CacheFeedUsage> };
 export type TrafficPoint = { "bucket": string; "pulls": number; "publishes": number; "bytes_out": number; "bytes_in": number; "cache_hits": number; "cache_misses": number; "errors": number; "cache_hit_ratio"?: number };
 export type TrafficSeries = { "scope": "instance" | "feed" | "source"; "ref"?: string; "from": string; "to": string; "step_seconds": number; "points": Array<TrafficPoint>; "totals": TrafficPoint };
 export type Provenance = { "asset_id": string; "coordinate": string; "version": string; "asset_key": string; "source_id": string; "feed_id"?: string; "origin": "local" | "remote" | "replica"; "created_at": string; "uploader_id"?: string; "uploader_subject"?: string; "token_id"?: string; "matched_rule"?: string; "digest": string; "verification": "verified" | "integrity_failure"; "verification_detail": string; "downloads": number; "last_downloaded_at"?: string };
@@ -362,6 +362,10 @@ export type RetentionSettings = { "revision": number; "default_policy": DefaultR
 export type PutRetentionSettings = { "default_policy": DefaultRetentionPolicy; "pressure": PressureSettings };
 export type PressureStatus = { "enabled": boolean; "state": "disabled" | "no_capacity" | "invalid" | "ok" | "pressure" | "unevictable"; "detail"?: string; "capacity_source": "filesystem" | "quota" | "none"; "used_bytes": number; "capacity_bytes": number; "usage_ratio": number; "high_percent": number; "low_percent": number; "reclaimable_bytes": number; "checked_at"?: string; "last_evicted_at"?: string; "last_evicted_versions": number; "last_evicted_bytes": number; "total_evicted_versions": number; "total_evicted_bytes": number };
 export type PressureReport = { "dry_run": boolean; "state": "disabled" | "no_capacity" | "invalid" | "ok" | "pressure" | "unevictable"; "detail"?: string; "capacity_source": string; "used_bytes": number; "capacity_bytes": number; "usage_ratio": number; "high_percent": number; "low_percent": number; "reclaimable_bytes": number; "target_bytes": number; "evicted_versions": number; "evicted_bytes": number; "shortfall_bytes": number; "expedited": number; "swept": number; "evicted": Array<{ "source_id": string; "coordinate": string; "version": string; "version_id": string; "reason": string }> };
+export type CachePolicy = { "max_idle_seconds": number; "max_bytes"?: number };
+export type CachePolicyInput = { "max_idle_seconds"?: number; "max_bytes"?: number };
+export type CacheCleanResult = { "feed_id": string; "prefix": string; "matched": number; "tags_removed": number; "versions_removed": number; "components_removed": number; "bytes_released": number; "truncated": boolean };
+export type CacheFeedUsage = { "feed_id": string; "slug": string; "format": string; "bytes": number; "versions": number; "max_idle_seconds": number; "max_bytes"?: number };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -597,6 +601,7 @@ deleteLocalUser: { body: undefined; response: undefined };
 getRetentionSettings: { body: undefined; response: RetentionSettings };
 putRetentionSettings: { body: PutRetentionSettings; response: RetentionSettings };
 getRetentionPressure: { body: undefined; response: PressureStatus };
+cleanFeedCache: { body: undefined; response: CacheCleanResult };
 }
 export const routes = {
   "getStatus": {
@@ -1762,6 +1767,11 @@ export const routes = {
   "getRetentionPressure": {
     "path": "/api/v1/retention/pressure",
     "method": "GET",
+    "idempotent": false
+  },
+  "cleanFeedCache": {
+    "path": "/api/v1/feeds/{id}/cache",
+    "method": "DELETE",
     "idempotent": false
   }
 } as const;

@@ -21,19 +21,19 @@ Editable in the console and through `GET/PUT /api/v1/retention/settings` (If-Mat
 revision, audited). A value set by the environment wins, is listed in `locked` and is
 read-only there.
 
-| Setting | Environment | Chart value | Default |
-| --- | --- | --- | --- |
-| Maintenance interval | `ANT_GC_INTERVAL` | `maintenance.gcInterval` | `6h` (`0` disables) |
-| Orphan grace | `ANT_GC_GRACE` | `maintenance.gcGrace` | `24h` |
-| Default policy: not accessed for | `ANT_RETENTION_DEFAULT_MAX_IDLE` | `maintenance.defaultPolicy.maxIdle` | unset |
-| Default policy: older than | `ANT_RETENTION_DEFAULT_MAX_AGE` | `maintenance.defaultPolicy.maxAge` | unset |
-| Default policy: keep last | `ANT_RETENTION_DEFAULT_KEEP_LAST` | (extraEnv) | unset |
-| Default policy: enabled | `ANT_RETENTION_DEFAULT_ENABLED` | (extraEnv) | implied by a rule above |
-| Pressure enabled | `ANT_PRESSURE_ENABLED` | `maintenance.pressure.enabled` | `false` |
-| High / low watermark | `ANT_PRESSURE_HIGH_PERCENT` / `_LOW_PERCENT` | `maintenance.pressure.highPercent` / `lowPercent` | 85 / 75 |
-| Capacity quota | `ANT_STORAGE_CAPACITY_BYTES` (`500GiB`, `2TB`, bytes) | `maintenance.pressure.capacity` | unset |
-| Check interval | `ANT_PRESSURE_INTERVAL` | `maintenance.pressure.interval` | `5m` (`0` disables the worker) |
-| Sweep wait after eviction | `ANT_PRESSURE_SWEEP_GRACE` | `maintenance.pressure.sweepGrace` | `15m` |
+| Setting                          | Environment                                           | Chart value                                       | Default                        |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------------------- | ------------------------------ |
+| Maintenance interval             | `ANT_GC_INTERVAL`                                     | `maintenance.gcInterval`                          | `6h` (`0` disables)            |
+| Orphan grace                     | `ANT_GC_GRACE`                                        | `maintenance.gcGrace`                             | `24h`                          |
+| Default policy: not accessed for | `ANT_RETENTION_DEFAULT_MAX_IDLE`                      | `maintenance.defaultPolicy.maxIdle`               | unset                          |
+| Default policy: older than       | `ANT_RETENTION_DEFAULT_MAX_AGE`                       | `maintenance.defaultPolicy.maxAge`                | unset                          |
+| Default policy: keep last        | `ANT_RETENTION_DEFAULT_KEEP_LAST`                     | (extraEnv)                                        | unset                          |
+| Default policy: enabled          | `ANT_RETENTION_DEFAULT_ENABLED`                       | (extraEnv)                                        | implied by a rule above        |
+| Pressure enabled                 | `ANT_PRESSURE_ENABLED`                                | `maintenance.pressure.enabled`                    | `false`                        |
+| High / low watermark             | `ANT_PRESSURE_HIGH_PERCENT` / `_LOW_PERCENT`          | `maintenance.pressure.highPercent` / `lowPercent` | 85 / 75                        |
+| Capacity quota                   | `ANT_STORAGE_CAPACITY_BYTES` (`500GiB`, `2TB`, bytes) | `maintenance.pressure.capacity`                   | unset                          |
+| Check interval                   | `ANT_PRESSURE_INTERVAL`                               | `maintenance.pressure.interval`                   | `5m` (`0` disables the worker) |
+| Sweep wait after eviction        | `ANT_PRESSURE_SWEEP_GRACE`                            | `maintenance.pressure.sweepGrace`                 | `15m`                          |
 
 ## Default policy
 
@@ -82,3 +82,22 @@ budget you want to pay for, not a bucket limit), 85/75, `defaultPolicy.maxIdle=7
 kw (MinIO on TrueNAS, about 8.5 GB unreferenced): `capacity` set to the dataset or quota
 size you want to protect (for example `500GiB`), 85/75, `defaultPolicy.maxIdle=720h`.
 MinIO has no capacity API either, so the quota is required.
+
+## Cache feeds
+
+Feeds with purpose `cache` (buildx registry cache, sccache; `docs/operations/build-caches.md`)
+follow their own per-feed policy instead of retention policies and the instance default:
+`max_idle_seconds` (default 7 days) and optionally `max_bytes`. Their content is evictable
+without `allow_release_delete`, tagged versions and the newest version are not exempt, and
+they are never replicated.
+
+Under storage pressure the order is: cache feeds first (least recently used first), then
+remote-cached content, then release content that explicitly allows deletion. A cache feed
+never makes the state `unevictable` worse: if the cache feeds free enough, nothing else is
+touched. Blobs freed from a cache feed (eviction, an OCI tag overwrite, the cleanup API) get
+the short sweep wait (`ANT_PRESSURE_SWEEP_GRACE`) and are deleted by the next pressure-loop
+pass, which runs every `ANT_PRESSURE_INTERVAL` whether or not pressure eviction is enabled.
+`GET /api/v1/storage/usage` lists `cache_feeds` with the bytes each holds and the console
+shows them under Retention and cleanup, Overview. Metrics:
+`ant_storage_evicted_{versions,bytes}_total{purpose,reason}`, `ant_feed_used_bytes`,
+`ant_feed_max_bytes`.

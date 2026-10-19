@@ -52,6 +52,10 @@ type Service struct {
 	// Changed, when set, is called after a delete/unlist/relist commits so derived
 	// metadata and caches can be invalidated. It must not block.
 	Changed func(Change)
+	// CacheSweepGrace is how long a blob freed from a cache feed waits before the
+	// short sweep may delete it, and GCGrace the ordinary grace period it replaces.
+	// Zero values select retention.DefaultPressureSweepGrace and DefaultGrace.
+	CacheSweepGrace, GCGrace time.Duration
 
 	flightMu sync.Mutex
 	flights  map[string]*flight
@@ -361,7 +365,7 @@ func (s *Service) publishTx(ctx context.Context, p identity.Principal, r Publica
 	if err != nil {
 		return Record{}, dbErr(err)
 	}
-	result, err := commitAsset(commitCtx, tx, store, p, r, source, domain, component, version, true)
+	result, err := s.commitAsset(commitCtx, tx, store, p, r, source, domain, component, version, true)
 	if err != nil {
 		return Record{}, err
 	}
@@ -375,7 +379,7 @@ func (s *Service) publishTx(ctx context.Context, p identity.Principal, r Publica
 }
 
 // commitAsset never commits: its caller owns atomic visibility and rollback.
-func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p identity.Principal, r Publication, source, domain, component, version string, checkReferences bool) (Record, error) {
+func (s *Service) commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p identity.Principal, r Publication, source, domain, component, version string, checkReferences bool) (Record, error) {
 	var err error
 	// Manifest/index closures are checked in the same transaction as publication.
 	if checkReferences {
@@ -394,12 +398,26 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p ident
 			}
 		}
 	}
-	// Tags are immutable until an explicit mutable-tag policy is implemented.
+	// Tags are immutable, except in a cache feed where a build cache re-pushes the
+	// same tag with a new manifest: the tag moves and the version it left is
+	// released below once the new manifest and its references are recorded.
+	supersede := ""
 	if r.Tag != "" {
 		var tagged string
 		err = tx.QueryRow(commitCtx, "SELECT version_id::text FROM tags WHERE component_id=$1 AND name=$2", component, r.Tag).Scan(&tagged)
 		if err == nil && tagged != version {
-			return Record{}, ErrConflict
+			cache, cerr := feedIsCache(commitCtx, tx, p.InstanceID, r.FeedID)
+			if cerr != nil {
+				return Record{}, ErrUnavailable
+			}
+			if !cache {
+				return Record{}, ErrConflict
+			}
+			if _, cerr = tx.Exec(commitCtx, "UPDATE tags SET version_id=$3,revision=revision+1 WHERE component_id=$1 AND name=$2", component, r.Tag, version); cerr != nil {
+				return Record{}, ErrUnavailable
+			}
+			supersede = tagged
+			err = nil
 		}
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return Record{}, ErrUnavailable
@@ -433,6 +451,9 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p ident
 			return Record{}, err
 		}
 		result.Replayed = true
+		if err = s.afterCachePublish(commitCtx, tx, p, r, component, version, supersede); err != nil {
+			return Record{}, err
+		}
 		return result, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -481,6 +502,9 @@ func commitAsset(commitCtx context.Context, tx pgx.Tx, store blob.Store, p ident
 	_, err = tx.Exec(commitCtx, `INSERT INTO outbox_events(audit_id,topic,payload) VALUES($1,'artifact.publish',jsonb_build_object('asset_id',$2::text,'source_id',$3::text,'digest',$4::text))`, audit, result.ID, source, r.Info.Digest)
 	if err != nil {
 		return Record{}, ErrUnavailable
+	}
+	if err = s.afterCachePublish(commitCtx, tx, p, r, component, version, supersede); err != nil {
+		return Record{}, err
 	}
 	return result, nil
 }

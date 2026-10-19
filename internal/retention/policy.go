@@ -209,6 +209,12 @@ func (s *Service) loadSources(ctx context.Context) ([]sourceInfo, error) {
 		return nil, err
 	}
 	fallback := settings.Default.policy()
+	// Cache feeds follow their own cache policy (ApplyCache); retention policies and
+	// the instance default never apply to their sources.
+	cacheSources, err := s.cacheSourceSet(ctx)
+	if err != nil {
+		return nil, err
+	}
 	bySource, byFeed := map[string]*Policy{}, map[string]*Policy{}
 	for i := range policies {
 		if policies[i].SourceID != "" {
@@ -244,6 +250,9 @@ func (s *Service) loadSources(ctx context.Context) ([]sourceInfo, error) {
 		var si sourceInfo
 		if err = rows.Scan(&si.ID, &si.Kind); err != nil {
 			return nil, err
+		}
+		if cacheSources[si.ID] {
+			continue
 		}
 		var fp []*Policy
 		for _, f := range feeds[si.ID] {
@@ -305,6 +314,11 @@ func (s *Service) ApplyRetention(ctx context.Context, dryRun bool) (RetentionRep
 				}
 			}
 		}
+	}
+	cache, err := s.ApplyCache(ctx, dryRun)
+	report.Deleted = append(report.Deleted, cache.Evicted...)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("cache: %w", err))
 	}
 	return report, errors.Join(errs...)
 }
