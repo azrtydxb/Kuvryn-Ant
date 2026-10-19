@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Go } from "./App";
 import { requireETag, type Client } from "./api";
 import { useAllSources, useOpsMaps } from "./data";
 import { isUnavailable } from "./gaps";
@@ -43,9 +44,11 @@ import {
 export function SourcesPage({
   client,
   openId,
+  go,
 }: {
   client: Client;
   openId: string;
+  go?: Go;
 }) {
   const all = useAllSources(client);
   const ops = useOpsMaps(client);
@@ -53,6 +56,7 @@ export function SourcesPage({
   const [filter, setFilter] = useState("");
   const [open, setOpen] = useState<string>(openId);
   const [creating, setCreating] = useState(false);
+  const [fresh, setFresh] = useState("");
   useEffect(() => setOpen(openId), [openId]);
   const items = all.items;
   const rows = items.filter(
@@ -67,7 +71,7 @@ export function SourcesPage({
       <PageHeading
         eyebrow="Content origins"
         title="Sources"
-        text="Where content lives: local storage, cached upstream registries, or replicas. Attach sources to feeds of the same format."
+        text="Where content lives: local storage, cached upstream registries, or replicas created by Replication. Attach sources to feeds of the same format."
       >
         <Button icon="plus" onClick={() => setCreating(true)}>
           Create source
@@ -192,7 +196,7 @@ export function SourcesPage({
             }
             description={
               kind === "replica"
-                ? "Replication setup is not available in this console."
+                ? "Replica sources are created by a replication job. Set one up under Replication."
                 : "Create a source, then attach it to a feed of the same format."
             }
           />
@@ -200,6 +204,7 @@ export function SourcesPage({
       {current && (
         <SourceDrawer
           key={current.id}
+          initialTab={fresh === current.id ? "upstream" : "overview"}
           client={client}
           source={current}
           onClose={() => setOpen("")}
@@ -214,10 +219,12 @@ export function SourcesPage({
       {creating && (
         <CreateSource
           client={client}
+          go={go}
           onClose={() => setCreating(false)}
           created={(s) => {
             setCreating(false);
             all.reload();
+            setFresh(s.id);
             setOpen(s.id);
           }}
         />
@@ -228,10 +235,12 @@ export function SourcesPage({
 
 function CreateSource({
   client,
+  go,
   onClose,
   created,
 }: {
   client: Client;
+  go?: Go;
   onClose: () => void;
   created: (s: Source) => void;
 }) {
@@ -244,7 +253,7 @@ function CreateSource({
   return (
     <Modal
       title="Create source"
-      description="Remote trust, cache and credentials are configured right after creation."
+      description="A source is where content lives. Pick its format and kind."
       onClose={onClose}
       actions={
         <>
@@ -304,15 +313,29 @@ function CreateSource({
             options={[
               { value: "local", label: "local · store published content" },
               { value: "remote", label: "remote · cache an upstream" },
-              { value: "replica", label: "replica · setup not available here" },
             ]}
             value={kind}
             onChange={val((v) => setKind(v as Source["kind"]))}
           />
         </div>
         <p className="muted small">
-          This creates the source record only. Source kind and format are
-          configuration; the API does not report which protocols are served.
+          {kind === "remote"
+            ? "Next you will set the upstream origin, credentials and cache behaviour for this source."
+            : "A local source stores what you publish. Attach it to a feed of the same format and point that feed's publish policy at it."}{" "}
+          Need a copy of another Kuvryn Ant instance? Replica sources are
+          created under{" "}
+          {go ? (
+            <button
+              type="button"
+              className="rowlink"
+              onClick={() => go("replication")}
+            >
+              Replication
+            </button>
+          ) : (
+            "Replication"
+          )}
+          .
         </p>
         <Failure error={action.error} />
       </form>
@@ -327,6 +350,7 @@ function SourceDrawer({
   health,
   onClose,
   refresh,
+  initialTab = "overview",
 }: {
   client: Client;
   source: Source;
@@ -334,8 +358,10 @@ function SourceDrawer({
   health?: SourceHealth;
   onClose: () => void;
   refresh: () => void;
+  initialTab?: string;
 }) {
   const remote = source.kind === "remote";
+  const [tab, setTab] = useState(remote ? initialTab : "overview");
   return (
     <Drawer
       open
@@ -359,65 +385,83 @@ function SourceDrawer({
             : "No successful request recorded."}
         </Alert>
       )}
-      <PropertyList
-        items={[
-          { label: "Source ID", value: <Copyable text={source.id} /> },
-          { label: "Revision", value: source.revision, mono: true },
-          {
-            label: "Attached to",
-            value:
-              stats == null ? "—" : `${count(stats.attached_feeds)} feed(s)`,
-          },
-          { label: "Stored", value: bytes(stats?.bytes) },
-          ...(stats
-            ? [
-                {
-                  label: "Packages",
-                  value: `${count(stats.packages)} · ${count(stats.versions)} versions`,
-                },
-                {
-                  label: "Cache hits / misses",
-                  value: `${count(stats.cache_hits)} / ${count(stats.cache_misses)}`,
-                },
-              ]
-            : []),
-          ...(health && health.status !== "not_applicable"
-            ? [
-                {
-                  label: "Upstream requests",
-                  value: `${count(health.requests)} (${count(health.failures)} failed)`,
-                },
-                ...(health.last_error
-                  ? [{ label: "Last error", value: health.last_error }]
-                  : []),
-              ]
-            : []),
-        ]}
-      />
-      <Rename client={client} source={source} refresh={refresh} />
-      <DeleteSource
-        client={client}
-        source={source}
-        attached={stats?.attached_feeds ?? 0}
-        done={() => {
-          refresh();
-          onClose();
-        }}
-      />
-      {remote ? (
+      {remote && (
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            { id: "overview", label: "Overview" },
+            { id: "upstream", label: "Upstream" },
+          ]}
+        />
+      )}
+      {tab === "overview" && (
+        <>
+          <PropertyList
+            items={[
+              { label: "Source ID", value: <Copyable text={source.id} /> },
+              { label: "Revision", value: source.revision, mono: true },
+              {
+                label: "Attached to",
+                value:
+                  stats == null
+                    ? "—"
+                    : `${count(stats.attached_feeds)} feed(s)`,
+              },
+              { label: "Stored", value: bytes(stats?.bytes) },
+              ...(stats
+                ? [
+                    {
+                      label: "Packages",
+                      value: `${count(stats.packages)} · ${count(stats.versions)} versions`,
+                    },
+                    {
+                      label: "Cache hits / misses",
+                      value: `${count(stats.cache_hits)} / ${count(stats.cache_misses)}`,
+                    },
+                  ]
+                : []),
+              ...(health && health.status !== "not_applicable"
+                ? [
+                    {
+                      label: "Upstream requests",
+                      value: `${count(health.requests)} (${count(health.failures)} failed)`,
+                    },
+                    ...(health.last_error
+                      ? [{ label: "Last error", value: health.last_error }]
+                      : []),
+                  ]
+                : []),
+            ]}
+          />
+          <Rename client={client} source={source} refresh={refresh} />
+          <DeleteSource
+            client={client}
+            source={source}
+            attached={stats?.attached_feeds ?? 0}
+            done={() => {
+              refresh();
+              onClose();
+            }}
+          />
+          {remote ? null : source.kind === "local" ? (
+            <Alert tone="info" title="Local source">
+              Stores content published through feeds whose publish policy
+              targets it. Content is immutable once written.
+            </Alert>
+          ) : (
+            <Alert tone="info" title="Replica source">
+              Filled by a replication job from another Kuvryn Ant instance and
+              read-only here. Manage it under Replication.
+            </Alert>
+          )}
+        </>
+      )}
+      {remote && tab === "upstream" && (
         <>
           <RemoteSource client={client} source={source} />
           <RemoteOps client={client} source={source} changed={refresh} />
         </>
-      ) : source.kind === "local" ? (
-        <Alert tone="info" title="Local source">
-          Stores content published through feeds whose publish policy targets
-          it. Content is immutable once written.
-        </Alert>
-      ) : (
-        <Alert tone="info" title="Replica source">
-          Replication setup is not available in this console.
-        </Alert>
       )}
     </Drawer>
   );

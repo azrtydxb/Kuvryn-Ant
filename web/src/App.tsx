@@ -222,7 +222,7 @@ function Shell({
       />
     );
   else if (page === "sources")
-    body = <SourcesPage client={client} openId={openSource} />;
+    body = <SourcesPage client={client} openId={openSource} go={go} />;
   else if (page === "replication") body = <ReplicationPage client={client} />;
   else if (page === "federation") body = <FederationPage client={client} />;
   else if (page === "identity") body = <Identity client={client} />;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Client } from "./api";
 import { useOptionalCall } from "./gaps";
 import type {
@@ -16,10 +16,12 @@ import {
   Input,
   Switch,
   Table,
+  Tabs,
   Textarea,
 } from "./ds/bundle";
 import {
   Card,
+  Digest,
   Failure,
   Loading,
   Mono,
@@ -131,9 +133,7 @@ export function ReportView({ report }: { report: TransferReport }) {
               {
                 key: "digest",
                 label: "Digest",
-                render: (f: { digest: string }) => (
-                  <Mono muted>{f.digest}</Mono>
-                ),
+                render: (f: { digest: string }) => <Digest value={f.digest} />,
               },
               { key: "reason", label: "Reason" },
             ]}
@@ -550,6 +550,14 @@ function MigrateCard({
 export function MigrationPage({ client }: { client: Client }) {
   const runs = useOptionalCall(client, "listTransferRuns");
   const [text, setText] = useState("");
+  const [tab, setTab] = useState("export");
+  const runList = runs.state === "ready" ? runs.data.items : [];
+  // Panels stay mounted (hidden) so dry-run reports and typed input survive tab switches.
+  const panel = (id: string, children: ReactNode) => (
+    <div className="stack" hidden={tab !== id} role="tabpanel">
+      {children}
+    </div>
+  );
   return (
     <>
       <PageHeading
@@ -557,18 +565,38 @@ export function MigrationPage({ client }: { client: Client }) {
         title="Import, export and migration"
         text="Move definitions between instances, or adopt Ant from another artifact manager and compare results before switching clients."
       />
-      <div className="stack">
+      <Tabs
+        value={tab}
+        onChange={setTab}
+        className="spaced-tabs"
+        items={[
+          { id: "export", label: "Export" },
+          { id: "import", label: "Import" },
+          { id: "nexus", label: "Migrate from Nexus" },
+          { id: "history", label: "History", count: runList.length },
+        ]}
+      />
+      {panel(
+        "export",
         <ExportCard
           client={client}
-          onDocument={(d) => setText(JSON.stringify(d, null, 2))}
-        />
+          onDocument={(d) => {
+            setText(JSON.stringify(d, null, 2));
+          }}
+        />,
+      )}
+      {panel(
+        "import",
         <ImportCard
           client={client}
           text={text}
           setText={setText}
           reloadRuns={runs.reload}
-        />
-        <MigrateCard client={client} reloadRuns={runs.reload} />
+        />,
+      )}
+      {panel("nexus", <MigrateCard client={client} reloadRuns={runs.reload} />)}
+      {panel(
+        "history",
         <Card title="History">
           {runs.state === "loading" && <Loading what="history" />}
           {runs.state === "unavailable" && (
@@ -604,8 +632,8 @@ export function MigrationPage({ client }: { client: Client }) {
             ) : (
               <p className="muted">No transfers yet.</p>
             ))}
-        </Card>
-      </div>
+        </Card>,
+      )}
     </>
   );
 }

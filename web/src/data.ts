@@ -90,3 +90,20 @@ export function useOpsMaps(client: Client) {
     },
   };
 }
+
+/** Resolves principal, feed and source IDs to readable names; unknown IDs fall back to the caller. */
+export function useNames(client: Client) {
+  const feeds = useAllFeeds(client);
+  const sources = useAllSources(client);
+  const principals = useResource(
+    () => client.call("listPrincipals", { query: { limit: "200" } }),
+    [client],
+  );
+  return useMemo(() => {
+    const m = new Map<string, string>();
+    for (const f of feeds.items) m.set(f.id, f.slug);
+    for (const x of sources.items) m.set(x.id, x.name);
+    for (const p of principals.value?.data.items ?? []) m.set(p.id, p.subject);
+    return m;
+  }, [feeds.items, sources.items, principals.value]);
+}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { requireETag, type Client } from "./api";
+import { useNames } from "./data";
 import { useResource } from "./ui";
 import { useOptionalCall } from "./gaps";
 import type { AuditEvent, AuditSink } from "./generated";
@@ -22,6 +23,7 @@ import {
   Mono,
   PageHeading,
   Pager,
+  shortId,
   Toolbar,
   Unavailable,
   useAction,
@@ -65,6 +67,7 @@ export function AuditPage({ client }: { client: Client }) {
       new Map((names.value?.data.items ?? []).map((p) => [p.id, p.subject])),
     [names.value],
   );
+  const resourceNames = useNames(client);
   const rows = r.state === "ready" ? r.data.items : [];
   const exporter = useAction();
   const toast = useToast();
@@ -138,11 +141,11 @@ export function AuditPage({ client }: { client: Client }) {
               icon="search"
               size="sm"
               aria-label="Principal ID"
-              placeholder="Principal ID"
+              placeholder="Filter by principal ID"
               mono
               value={principal}
               onChange={val(reset(setPrincipal))}
-              className="w260"
+              className="w200"
             />
             <Input
               size="sm"
@@ -151,7 +154,7 @@ export function AuditPage({ client }: { client: Client }) {
               mono
               value={action}
               onChange={val(reset(setAction))}
-              className="w260"
+              className="w200"
             />
             <SegmentedControl
               aria-label="Result"
@@ -164,20 +167,30 @@ export function AuditPage({ client }: { client: Client }) {
               value={result}
               onChange={reset(setResult)}
             />
-            <Input
-              size="sm"
-              type="date"
-              aria-label="From date"
-              value={from}
-              onChange={val(reset(setFrom))}
-            />
-            <Input
-              size="sm"
-              type="date"
-              aria-label="To date"
-              value={to}
-              onChange={val(reset(setTo))}
-            />
+            <label className="row tight">
+              <span className="muted small" aria-hidden="true">
+                From
+              </span>
+              <Input
+                size="sm"
+                type="date"
+                aria-label="From date"
+                value={from}
+                onChange={val(reset(setFrom))}
+              />
+            </label>
+            <label className="row tight">
+              <span className="muted small" aria-hidden="true">
+                To
+              </span>
+              <Input
+                size="sm"
+                type="date"
+                aria-label="To date"
+                value={to}
+                onChange={val(reset(setTo))}
+              />
+            </label>
           </Toolbar>
           {r.state === "loading" && <Loading what="audit events" />}
           {r.state === "error" && <Failure error={r.error} />}
@@ -189,7 +202,6 @@ export function AuditPage({ client }: { client: Client }) {
                     {
                       key: "created_at",
                       label: "Time",
-                      mono: true,
                       render: (a: AuditEvent) => when(a.created_at),
                     },
                     {
@@ -214,7 +226,17 @@ export function AuditPage({ client }: { client: Client }) {
                       key: "resource_id",
                       label: "Resource",
                       render: (a: AuditEvent) => (
-                        <Mono muted>{a.resource_id ?? "—"}</Mono>
+                        <span title={a.resource_id ?? undefined}>
+                          {a.resource_id ? (
+                            resourceNames.get(a.resource_id) ? (
+                              <Mono>{resourceNames.get(a.resource_id)}</Mono>
+                            ) : (
+                              <Mono muted>{shortId(a.resource_id)}</Mono>
+                            )
+                          ) : (
+                            "—"
+                          )}
+                        </span>
                       ),
                     },
                     {

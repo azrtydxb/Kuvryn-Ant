@@ -114,6 +114,7 @@ it("tests a remote source connection and shows the result", async () => {
   await signInWithToken();
   nav("Sources");
   fireEvent.click(await screen.findByRole("button", { name: /mirror/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Upstream" }));
   fireEvent.click(
     await screen.findByRole("button", { name: "Test connection" }),
   );
@@ -204,6 +205,7 @@ it("starts a retention dry run", async () => {
   await signInWithToken();
   nav("Settings");
   fireEvent.click(await screen.findByRole("button", { name: /Retention/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: "Runs" }));
   fireEvent.click(await screen.findByRole("button", { name: "Start run" }));
   const dialog = await screen.findByRole("dialog", {
     name: "Start retention run",

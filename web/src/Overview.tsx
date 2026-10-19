@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Client } from "./api";
 import type { Go } from "./App";
-import { useAllFeeds, useAllSources, useOpsMaps } from "./data";
+import { useAllFeeds, useAllSources, useNames, useOpsMaps } from "./data";
 import { useOptionalCall } from "./gaps";
 import {
   Alert,
@@ -31,6 +31,7 @@ import {
   bytes,
   count,
   useResource,
+  shortId,
   when,
 } from "./ui";
 
@@ -71,8 +72,9 @@ export function Overview({
   const status = useResource(() => client.call("getStatus"), [client]);
   const [checked, setChecked] = useState("");
   useEffect(() => {
-    if (status.value) setChecked(new Date().toLocaleTimeString());
+    if (status.value) setChecked(when(new Date().toISOString()));
   }, [status.value]);
+  const names = useNames(client);
   const feeds = useAllFeeds(client);
   const sources = useAllSources(client);
   const ops = useOpsMaps(client);
@@ -378,7 +380,14 @@ export function Overview({
                   render: (r: AuditEvent) => (
                     <>
                       <Mono>{r.action}</Mono>
-                      <small>{r.principal_id ?? "anonymous"}</small>
+                      <small>
+                        {r.principal_id
+                          ? (names.get(r.principal_id) ??
+                            shortId(r.principal_id))
+                          : "anonymous"}
+                        {" · "}
+                        {when(r.created_at)}
+                      </small>
                     </>
                   ),
                 },
@@ -399,12 +408,6 @@ export function Overview({
                       {r.result}
                     </Badge>
                   ),
-                },
-                {
-                  key: "created_at",
-                  label: "Time",
-                  align: "right",
-                  render: (r: AuditEvent) => when(r.created_at),
                 },
               ]}
               rows={audit.data.items.slice(0, 4)}
