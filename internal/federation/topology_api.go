@@ -289,7 +289,15 @@ func (s *Service) topologyStatus(ctx context.Context, st State) (*TopologyStatus
 			return nil, err
 		}
 		out.Feeds, out.Rules = len(topo.Feeds), len(topo.Rules)
-		self, _ := s.trust.Load().doc.Member(s.cfg.InstanceID)
+		// The in-memory trust state is only populated by Refresh (running
+		// server); the CLI never refreshes, so fall back to the stored document.
+		doc := s.trust.Load().doc
+		if doc == nil && st.FederationID != "" && st.AppliedGeneration > 0 {
+			if doc, err = loadDocument(ctx, s.cfg.DB, s.cfg.InstanceID, st.FederationID, st.AppliedGeneration); err != nil {
+				return nil, err
+			}
+		}
+		self, _ := doc.Member(s.cfg.InstanceID)
 		for _, f := range topo.Feeds {
 			if f.Home == s.cfg.InstanceID {
 				out.HomeFeeds++
