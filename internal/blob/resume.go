@@ -259,6 +259,14 @@ func (s *S3) StageResumable(ctx context.Context, id string) (ResumableUpload, er
 	}
 	u := plain.(*s3Upload)
 	u.stateID = id
+	// Resumable uploads need the remote upload ID in the saved state from the start.
+	u.mu.Lock()
+	err = u.ensureMultipart(ctx)
+	u.mu.Unlock()
+	if err != nil {
+		_ = u.Abort()
+		return nil, err
+	}
 	// Persist immediately so a crash before the first part still leaves a record
 	// that GC can use to find and abort the remote upload.
 	u.mu.Lock()

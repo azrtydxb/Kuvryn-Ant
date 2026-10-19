@@ -162,7 +162,7 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 				// Yank is the shared core's unlist (policy-gated, audited, replicated);
 				// unyank is relist. Yanked versions stay downloadable by exact
 				// version, as with crates.io, and the index marks them yanked.
-				t := artifact.Target{FeedID: feed, Coordinate: pub.Coordinate, Version: pub.Version}
+				t := artifact.Target{FeedID: feed, Coordinate: pub.Coordinate, Version: pub.Version, PublisherMayUnlist: true}
 				if a[2] == "yank" {
 					_, e = s.service.Unlist(r.Context(), p, t)
 				} else {

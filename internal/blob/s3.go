@@ -33,6 +33,9 @@ const s3MinimumPartSize = 5 << 20
 const s3DefaultPartSize = 64 << 20
 const s3MaximumParts = 10000
 
+// s3InitialBuffer is the first upload buffer; it grows fourfold up to the part size.
+const s3InitialBuffer = 1 << 20
+
 // S3Config accepts any compatible S3 endpoint. HTTPClient may supply private CA
 // roots and transport limits. Plain HTTP requires an explicit opt-in. Credentials
 // are injected; this package neither reads environment secrets nor requires AWS.
@@ -137,17 +140,47 @@ func (s *S3) Stage(ctx context.Context) (Upload, error) {
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	key := s.key("staging", rand.Text())
-	out, err := s.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(s.config.Bucket), Key: aws.String(key)})
+	// The staging multipart upload and the full part buffer are created lazily:
+	// an object smaller than the first buffer is published with one PutObject
+	// (Finalize), which is the common case for package metadata and small
+	// artifacts. Only an upload that outgrows the first buffer pays for the
+	// multipart staging object and the part-sized buffer.
+	initial := s.config.PartSize
+	if initial > s3InitialBuffer {
+		initial = s3InitialBuffer
+	}
+	return &s3Upload{store: s, ctx: ctx, key: s.key("staging", rand.Text()), buffer: make([]byte, initial), digest: sha256.New(), createdAt: s.now()}, nil
+}
+
+// ensureMultipart creates the staging multipart upload on first use.
+func (u *s3Upload) ensureMultipart(ctx context.Context) error {
+	if u.id != "" {
+		return nil
+	}
+	out, err := u.store.client.CreateMultipartUpload(ctx, &s3.CreateMultipartUploadInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(u.key)})
 	if err != nil {
-		<-s.slots
-		return nil, s3Error(err)
+		return s3Error(err)
 	}
 	if out == nil || aws.ToString(out.UploadId) == "" {
-		<-s.slots
-		return nil, &CapabilityError{"multipart upload ID"}
+		return &CapabilityError{"multipart upload ID"}
 	}
-	return &s3Upload{store: s, ctx: ctx, key: key, id: aws.ToString(out.UploadId), buffer: make([]byte, s.config.PartSize), digest: sha256.New(), createdAt: s.now()}, nil
+	u.id = aws.ToString(out.UploadId)
+	return nil
+}
+
+// grow enlarges the part buffer toward PartSize; it reports whether it did.
+func (u *s3Upload) grow() bool {
+	if int64(len(u.buffer)) >= u.store.config.PartSize {
+		return false
+	}
+	size := int64(len(u.buffer)) * 4
+	if size > u.store.config.PartSize {
+		size = u.store.config.PartSize
+	}
+	bigger := make([]byte, size)
+	copy(bigger, u.buffer[:u.used])
+	u.buffer = bigger
+	return true
 }
 
 func (s *S3) now() time.Time {
@@ -216,6 +249,9 @@ func (u *s3Upload) Write(p []byte) (int, error) {
 		written += n
 		p = p[n:]
 		if u.used == len(u.buffer) {
+			if u.grow() {
+				continue
+			}
 			if err := u.bufferFull(); err != nil {
 				u.failure = err
 				return written, err
@@ -227,6 +263,9 @@ func (u *s3Upload) Write(p []byte) (int, error) {
 func (u *s3Upload) flush(ctx context.Context) error {
 	if u.used == 0 {
 		return nil
+	}
+	if err := u.ensureMultipart(ctx); err != nil {
+		return err
 	}
 	part, err := u.uploadPart(ctx, u.buffer[:u.used], int32(len(u.parts)+1))
 	if err != nil {
@@ -277,6 +316,9 @@ func (u *s3Upload) bufferFull() error {
 	if err := u.drain(); err != nil {
 		return err
 	}
+	if err := u.ensureMultipart(u.ctx); err != nil {
+		return err
+	}
 	full, number := u.buffer[:u.used], int32(len(u.parts)+1)
 	u.buffer, u.spare = u.spare, u.buffer
 	u.used = 0
@@ -316,6 +358,7 @@ func (u *s3Upload) cleanup() error {
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(u.ctx), 30*time.Second)
 	defer cancel()
 	var failures []error
+	staged := u.id != "" // the staging object exists only once a multipart upload started
 	for _, pair := range [][2]string{{u.key, u.id}, {u.publicationKey, u.publicationID}} {
 		if pair[1] == "" {
 			continue
@@ -325,9 +368,10 @@ func (u *s3Upload) cleanup() error {
 			failures = append(failures, s3Error(err))
 		}
 	}
-	_, err := u.store.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(u.key)})
-	if err != nil {
-		failures = append(failures, s3Error(err))
+	if staged {
+		if _, err := u.store.client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(u.key)}); err != nil {
+			failures = append(failures, s3Error(err))
+		}
 	}
 	if u.stateID != "" && u.store.config.StateStore != nil {
 		if err := u.store.config.StateStore.Delete(ctx, u.stateID); err != nil {
@@ -370,8 +414,10 @@ func (u *s3Upload) Finalize(ctx context.Context, expected Info) (result Info, re
 		return Info{}, ErrIntegrity
 	}
 	key := u.store.key("objects", string(actual.Digest))
-	if actual.Size == 0 {
-		_, err := u.store.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(key), Body: bytes.NewReader(nil), ContentLength: aws.Int64(0), IfNoneMatch: aws.String("*"), Metadata: map[string]string{"sha256": string(actual.Digest)}})
+	if actual.Size == 0 || (u.id == "" && len(u.parts) == 0 && u.inflight == nil && int64(u.used) == actual.Size) {
+		// Empty, or small enough to still sit in the first buffer: one PutObject,
+		// no staging object, no server-side copy.
+		_, err := u.store.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(key), Body: bytes.NewReader(u.buffer[:u.used]), ContentLength: aws.Int64(int64(u.used)), IfNoneMatch: aws.String("*"), Metadata: map[string]string{"sha256": string(actual.Digest)}})
 		if err != nil {
 			if verifyErr := u.verifyExisting(ctx, actual); verifyErr != nil {
 				return Info{}, errors.Join(s3Error(err), verifyErr)
@@ -432,6 +478,8 @@ func (u *s3Upload) Finalize(ctx context.Context, expected Info) (result Info, re
 		if verifyErr := u.verifyExisting(ctx, actual); verifyErr != nil {
 			return Info{}, errors.Join(s3Error(err), verifyErr)
 		}
+	} else {
+		u.publicationID = "" // completed: nothing left to abort
 	}
 	return actual, nil
 }

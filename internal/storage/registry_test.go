@@ -178,21 +178,23 @@ func TestRegistryCredentialReloadAndS3DomainPrefix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := store.Stage(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	// An empty object is published with one PutObject (S3 uploads start lazily),
+	// which exercises the request signing and the domain prefix.
+	const empty = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	publish := func() {
+		t.Helper()
+		u, err := store.Stage(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer u.Abort()
+		if _, err = u.Finalize(context.Background(), blob.Info{Digest: empty}); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if err = u.Abort(); err != nil {
-		t.Fatal(err)
-	}
+	publish()
 	write("second-access")
-	u, err = store.Stage(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = u.Abort(); err != nil {
-		t.Fatal(err)
-	}
+	publish()
 	mu.Lock()
 	defer mu.Unlock()
 	first, second := false, false
@@ -207,7 +209,7 @@ func TestRegistryCredentialReloadAndS3DomainPrefix(t *testing.T) {
 		t.Fatal("credentials did not reload")
 	}
 	for _, path := range paths {
-		if !strings.Contains(path, "/tenant/"+domainA+"/staging/") {
+		if !strings.Contains(path, "/tenant/"+domainA+"/objects/") {
 			t.Fatal("S3 domain namespace missing")
 		}
 	}

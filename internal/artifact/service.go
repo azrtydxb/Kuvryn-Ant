@@ -327,7 +327,7 @@ func (s *Service) publishTx(ctx context.Context, p identity.Principal, r Publica
 	}
 	var feedID string
 	var currentRevision int64
-	err = tx.QueryRow(commitCtx, `SELECT f.id::text,f.revision FROM feeds f JOIN feed_sources fs ON fs.feed_id=f.id JOIN sources s ON s.id=fs.source_id WHERE f.instance_id=$1 AND f.id=$2 AND s.id=$3 AND s.instance_id=f.instance_id AND s.kind='local' AND s.format=f.format FOR UPDATE OF f,s,fs`, p.InstanceID, r.FeedID, source).Scan(&feedID, &currentRevision)
+	err = tx.QueryRow(commitCtx, `SELECT f.id::text,f.revision FROM feeds f JOIN feed_sources fs ON fs.feed_id=f.id JOIN sources s ON s.id=fs.source_id WHERE f.instance_id=$1 AND f.id=$2 AND s.id=$3 AND s.instance_id=f.instance_id AND s.kind='local' AND s.format=f.format FOR SHARE OF f,s,fs`, p.InstanceID, r.FeedID, source).Scan(&feedID, &currentRevision)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Record{}, ErrNotFound
 	}

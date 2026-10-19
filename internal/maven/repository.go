@@ -26,7 +26,6 @@ type Repository struct {
 	instance string
 	auth     http.Handler
 	uploads  chan struct{}
-	stage    staging
 }
 
 func New(db *pgxpool.Pool, service *artifact.Service) (*Repository, error) {

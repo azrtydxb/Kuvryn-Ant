@@ -271,6 +271,7 @@ func runNpm(c *Ctx) {
 	c.Step("same-endpoint write then read: publish 0.1.1 with default (latest) tag", n(install+"; "+rc(slug, "$TOKEN")+"; "+mk("0.1.1")+" && pnpm publish --no-git-checks"),
 		Limitation("internal/npmregistry README: initial publish tags immutable; a second version using latest conflicts"))
 	c.Step("same-endpoint write then read: publish 0.1.2 with --tag next, then pnpm add @next", n(install+"; "+rc(slug, "$TOKEN")+"; "+mk("0.1.2")+" && pnpm publish --no-git-checks --tag next && cd /work/cons && "+F(`pnpm add @p@@next && grep -q 0.1.2 package.json`, "p", pkg)))
+	c.Step("dist-tag: npm dist-tag add, ls and rm", n(install+"; "+rc(slug, "$TOKEN")+"; npm dist-tag add "+pkg+"@0.1.2 beta && npm dist-tag ls "+pkg+" | grep -q beta && npm dist-tag rm "+pkg+" beta && ! (npm dist-tag ls "+pkg+" | grep -q beta)"))
 	c.Step("delete/unlist: npm unpublish 0.1.2", n(install+"; "+rc(slug, "$TOKEN")+"; npm unpublish "+pkg+"@0.1.2 --force"))
 	c.Step("delete/unlist: management API delete 0.1.0", func() error { return c.MgmtVersion(slug, pkg, "0.1.0", "delete") })
 

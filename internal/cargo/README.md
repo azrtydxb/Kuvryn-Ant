@@ -26,7 +26,7 @@ Current explicit restrictions: crate names use lowercase ASCII letters, digits
 and hyphens, start with a letter and have at most 64 characters. Uppercase and
 underscore aliases are rejected to prevent ambiguous ownership. This restriction
 must be shown in client documentation; it is not full Cargo name compatibility.
-Yank/unyank return policy denial after shared publish authorization; owner/search
+Yank/unyank use the core unlist/relist: allowed for publishers of the crate (delete rights also suffice) unless the feed delete policy is `denied`; owner/search
 operations and Git index transport are unsupported. No remote fetch, replication
 certification or MinIO certification is claimed by this package. Index responses
 are bounded to 10,000 versions and 16 MiB of metadata.

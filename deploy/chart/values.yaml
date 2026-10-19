@@ -114,6 +114,17 @@ federation:
   enabled: false
   port: 8444
   publicURL: "" # https URL other members use, e.g. https://fed.ant.example:8444
+  # Routing abuse limits (ANT_FEDERATION_ROUTE_*). Empty/0 keeps the built-in
+  # defaults: 64 / 8 / 16 streams, 50 reads/s per principal, 16384 B/s minimum
+  # transfer rate after a 30s grace, 2h transfer deadline.
+  routing:
+    maxStreams: 0 # concurrent proxied streams per member
+    streamsPerPrincipal: 0
+    streamsPerClient: 0
+    principalRate: 0 # routed reads per second per principal
+    minTransferRate: 0 # bytes per second
+    transferGrace: "" # e.g. 30s
+    transferTimeout: "" # e.g. 2h
   service:
     type: LoadBalancer # LoadBalancer | NodePort | ClusterIP
     port: 8444

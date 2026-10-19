@@ -144,7 +144,7 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 		return nil, err
 	}
 	var current int64
-	err = tx.QueryRow(commitCtx, `SELECT f.revision FROM feeds f JOIN feed_sources fs ON fs.feed_id=f.id JOIN sources s ON s.id=fs.source_id WHERE f.instance_id=$1 AND f.id=$2 AND s.id=$3 AND s.instance_id=f.instance_id AND s.kind='local' AND s.format=f.format FOR UPDATE OF f,s,fs`, p.InstanceID, base.FeedID, source).Scan(&current)
+	err = tx.QueryRow(commitCtx, `SELECT f.revision FROM feeds f JOIN feed_sources fs ON fs.feed_id=f.id JOIN sources s ON s.id=fs.source_id WHERE f.instance_id=$1 AND f.id=$2 AND s.id=$3 AND s.instance_id=f.instance_id AND s.kind='local' AND s.format=f.format FOR SHARE OF f,s,fs`, p.InstanceID, base.FeedID, source).Scan(&current)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}

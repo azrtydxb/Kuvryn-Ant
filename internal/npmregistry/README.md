@@ -43,10 +43,7 @@ with a 15-second generation context. Network and archive reads use at most
 control-plane HTTP deadlines. Archive expansion is limited to 256 MiB, 1000:1
 compressed size and 10,000 entries, with cancellation checks per 64 KiB read.
 
-Mutable dist-tag PUT/DELETE and withdrawals/unpublish return **501**, pending
-shared audited CAS lifecycle support. Initial publish tags are immutable: a
-second version using `latest` conflicts; publish under a distinct tag until
-mutable tags are implemented. This is intentionally not full F14 conformance.
+`npm dist-tag add|rm` (PUT/DELETE `/-/package/{package}/dist-tags/{tag}`) moves or removes tag pointers through the core (audited, replicated); the authorization is the publish action. A publish whose initial tag already exists still conflicts. This is intentionally not full F14 conformance.
 Remote pull-through, replicas, search, audit advisories, provenance attachments,
 anonymous access, range requests, npm login and organization APIs are not
 implemented by this package. No upstream fallback occurs.

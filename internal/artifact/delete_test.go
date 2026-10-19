@@ -104,8 +104,21 @@ func TestDeleteAuthorizationDenied(t *testing.T) {
 	if _, err := f.service.Delete(context.Background(), f.principal, f.target("1.0", "")); !errors.Is(err, ErrDenied) {
 		t.Fatalf("got %v want ErrDenied", err)
 	}
+	// Unlist stands in for removal in some adapters, so it needs delete too...
 	if _, err := f.service.Unlist(context.Background(), f.principal, f.target("1.0", "")); !errors.Is(err, ErrDenied) {
 		t.Fatalf("unlist got %v want ErrDenied", err)
+	}
+	// ...except where the protocol defines a publisher-level yank (cargo).
+	yank := f.target("1.0", "")
+	yank.PublisherMayUnlist = true
+	if _, err := f.service.Unlist(context.Background(), f.principal, yank); err != nil {
+		t.Fatalf("publisher yank: %v", err)
+	}
+	if _, err := f.service.Relist(context.Background(), f.principal, yank); err != nil {
+		t.Fatalf("publisher unyank: %v", err)
+	}
+	if _, err := f.service.Delete(context.Background(), f.principal, yank); !errors.Is(err, ErrDenied) {
+		t.Fatalf("delete with yank flag got %v want ErrDenied", err)
 	}
 	if f.count(t, "SELECT count(*) FROM assets") != 1 || f.count(t, "SELECT count(*) FROM audit_events WHERE action LIKE 'artifact.delete'") != 0 {
 		t.Fatal("denied delete changed state")

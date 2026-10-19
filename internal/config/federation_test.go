@@ -26,3 +26,26 @@ func TestLoadFederation(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadFederationRouteLimits(t *testing.T) {
+	env := func(m map[string]string) func(string) string { return func(k string) string { return m[k] } }
+	f, err := loadFederation(env(map[string]string{
+		"ANT_FEDERATION_ROUTE_MAX_STREAMS": "128", "ANT_FEDERATION_ROUTE_STREAMS_PER_PRINCIPAL": "4", "ANT_FEDERATION_ROUTE_STREAMS_PER_CLIENT": "6",
+		"ANT_FEDERATION_ROUTE_PRINCIPAL_RATE": "20", "ANT_FEDERATION_ROUTE_MIN_TRANSFER_RATE": "32768",
+		"ANT_FEDERATION_ROUTE_TRANSFER_GRACE": "45s", "ANT_FEDERATION_ROUTE_TRANSFER_TIMEOUT": "30m"}))
+	if err != nil || f.RouteMaxStreams != 128 || f.RouteStreamsPerPrincipal != 4 || f.RouteStreamsPerClient != 6 || f.RoutePrincipalRate != 20 ||
+		f.RouteMinTransferRate != 32768 || f.RouteTransferGrace.Seconds() != 45 || f.RouteTransferTimeout.Minutes() != 30 {
+		t.Fatalf("route limits: %+v %v", f, err)
+	}
+	if f, err = loadFederation(env(nil)); err != nil || f.RouteMaxStreams != 0 || f.RouteTransferTimeout != 0 {
+		t.Fatalf("defaults must stay zero: %+v %v", f, err)
+	}
+	for _, bad := range []map[string]string{
+		{"ANT_FEDERATION_ROUTE_MAX_STREAMS": "-1"}, {"ANT_FEDERATION_ROUTE_PRINCIPAL_RATE": "fast"},
+		{"ANT_FEDERATION_ROUTE_TRANSFER_GRACE": "30"}, {"ANT_FEDERATION_ROUTE_TRANSFER_TIMEOUT": "-5s"},
+	} {
+		if _, err := loadFederation(env(bad)); err == nil {
+			t.Fatalf("accepted %v", bad)
+		}
+	}
+}

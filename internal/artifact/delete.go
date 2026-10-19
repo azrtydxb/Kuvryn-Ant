@@ -75,6 +75,10 @@ const (
 // version it points to and its bytes are untouched and Version must be empty.
 type Target struct {
 	FeedID, SourceID, Namespace, Coordinate, Version, AssetKey, Tag string
+	// PublisherMayUnlist lets a principal with the publish action (and no
+	// delete action) unlist or relist the version. Set only by adapters for
+	// protocol yank operations; the delete policy still applies.
+	PublisherMayUnlist bool
 }
 
 // Outcome reports what a mutation changed. Unchanged is set when an unlist or
@@ -247,7 +251,11 @@ func MutateTx(ctx context.Context, tx pgx.Tx, p identity.Principal, policy ident
 	if !policy.Authorize(p, res, identity.Read) {
 		return Outcome{}, ErrNotFound
 	}
-	if !policy.Authorize(p, res, identity.Delete) {
+	// A yank (cargo) is reversible and removes nothing, so an adapter whose
+	// protocol defines it as a publisher operation sets Target.PublisherMayUnlist
+	// and publishers may do it. Every other unlist/relist/delete needs delete
+	// (some adapters implement removal as an unlist).
+	if !policy.Authorize(p, res, identity.Delete) && !(t.PublisherMayUnlist && (action == ActionUnlist || action == ActionRelist) && policy.Authorize(p, res, identity.Publish)) {
 		return Outcome{}, ErrDenied
 	}
 	if kind != "local" {

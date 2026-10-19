@@ -48,8 +48,16 @@ func normalize(ctx context.Context, tx pgx.Tx, instance, owner string) (string, 
 // Evaluating expiry inside SELECT ... FOR UPDATE could evaluate the expression
 // before waiting on the lock, allowing a lease that expired during that wait.
 func locked(ctx context.Context, tx pgx.Tx, instance string) (Lease, bool, error) {
+	return lockedMode(ctx, tx, instance, "UPDATE")
+}
+
+// lockedMode reads the lease row under a row lock. Takeover and renewal need
+// UPDATE; Require only needs to keep them out until the caller's transaction
+// ends, so concurrent writers hold SHARE together instead of queueing on one
+// exclusive row lock for the whole length of every publish.
+func lockedMode(ctx context.Context, tx pgx.Tx, instance, mode string) (Lease, bool, error) {
 	var current Lease
-	err := tx.QueryRow(ctx, "SELECT instance_id::text,owner_id::text,epoch,expires_at FROM instance_writer_leases WHERE instance_id=$1 FOR UPDATE", instance).Scan(&current.InstanceID, &current.OwnerID, &current.Epoch, &current.ExpiresAt)
+	err := tx.QueryRow(ctx, "SELECT instance_id::text,owner_id::text,epoch,expires_at FROM instance_writer_leases WHERE instance_id=$1 FOR "+mode, instance).Scan(&current.InstanceID, &current.OwnerID, &current.Epoch, &current.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Lease{}, false, ErrLost
 	}
@@ -118,7 +126,7 @@ func Require(ctx context.Context, tx pgx.Tx, lease Lease) error {
 	if err != nil {
 		return err
 	}
-	current, alive, err := locked(ctx, tx, instance)
+	current, alive, err := lockedMode(ctx, tx, instance, "SHARE")
 	if err != nil {
 		return err
 	}
