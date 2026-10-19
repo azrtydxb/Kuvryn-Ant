@@ -90,7 +90,9 @@ type Config struct {
 	// Search tuning (zero means the section 7 defaults).
 	SearchConcurrency, SearchPeerRate, SearchPrincipalRate int
 	SearchMemberTimeout, SearchTimeout, SearchCacheTTL     time.Duration // negative TTL disables the cache
-	Logger                                                 *slog.Logger
+	// RouteMaxStreams bounds concurrent proxied reads (zero: DefaultRouteStreams).
+	RouteMaxStreams int
+	Logger          *slog.Logger
 }
 
 // Service is safe for concurrent use.
@@ -125,6 +127,11 @@ type Service struct {
 	peerRoutes    map[string]http.Handler
 	peerMu        sync.Mutex
 	topologyGauge atomic.Pointer[TopologyStatus]
+
+	// route is the placement-aware routing runtime (route_*.go); routeRT
+	// holds the serving hooks it needs (adapters, storage, lease).
+	route   routeState
+	routeRT atomic.Pointer[RouteRuntime]
 }
 
 type trust struct {

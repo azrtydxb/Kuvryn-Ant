@@ -69,6 +69,73 @@ type TopologyFeed struct {
 	Descriptor FeedDescriptor `json:"descriptor"`
 	Revision   int64          `json:"revision"`
 	Transfer   *FeedTransfer  `json:"transfer,omitempty"`
+	// Routing is the placement-aware read routing of the key (P2-M5); nil
+	// means the default: proxy through the entry member (D5).
+	Routing *FeedRouting `json:"routing,omitempty"`
+}
+
+// Routing mechanisms (docs/planning/phase-2-federation.md section 8.2, D5).
+const (
+	RouteProxy    = "proxy"
+	RouteRedirect = "redirect"
+	RouteOff      = "off"
+)
+
+// FeedRouting configures how members that miss content of a federated feed
+// reach a member that holds it. Writes are never routed (D6).
+type FeedRouting struct {
+	// Mode is proxy (default: the entry member streams the holder's answer),
+	// redirect (307 to the holder's public feed endpoint; the client must be
+	// able to authenticate there) or off (no routing; local answers only).
+	Mode string `json:"mode"`
+	// BlobURLs answers immutable blob reads in proxy mode with a 307 to a
+	// signed, short-lived URL on the holder's public listener instead of
+	// streaming through the entry member.
+	BlobURLs bool `json:"blob_urls"`
+	// Cache keeps immutable proxied responses on entry members that have a
+	// feed bound to the key, for CacheTTLSeconds (default 86400).
+	Cache           bool `json:"cache"`
+	CacheTTLSeconds int  `json:"cache_ttl_seconds,omitempty"`
+	// MaxLagSeconds skips replicas lagging more (0: the rule's lag budget).
+	MaxLagSeconds int `json:"max_lag_seconds,omitempty"`
+	// Prefer lists member label keys; candidates sharing the entry member's
+	// value for an earlier key are tried first.
+	Prefer []string `json:"prefer,omitempty"`
+}
+
+// EffectiveRouting returns the routing of a feed with defaults applied.
+func (f *TopologyFeed) EffectiveRouting() FeedRouting {
+	if f == nil || f.Routing == nil {
+		return FeedRouting{Mode: RouteProxy}
+	}
+	r := *f.Routing
+	if r.Mode == "" {
+		r.Mode = RouteProxy
+	}
+	return r
+}
+
+func validRouting(r *FeedRouting) bool {
+	if r == nil {
+		return true
+	}
+	if r.Mode != RouteProxy && r.Mode != RouteRedirect && r.Mode != RouteOff {
+		return false
+	}
+	if (r.BlobURLs || r.Cache) && r.Mode != RouteProxy {
+		return false
+	}
+	if r.CacheTTLSeconds < 0 || r.CacheTTLSeconds > 30*86400 || (r.CacheTTLSeconds > 0 && !r.Cache) || r.MaxLagSeconds < 0 || r.MaxLagSeconds > 31536000 || len(r.Prefer) > 8 {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, k := range r.Prefer {
+		if !labelPattern.MatchString(k) || seen[k] {
+			return false
+		}
+		seen[k] = true
+	}
+	return true
 }
 
 // RuleTargets selects target members by labels (all must match) or by
@@ -235,6 +302,9 @@ func ValidateTopology(federationName string, b *TopologyBody, membership *Member
 		}
 		if f.Revision < 1 {
 			return bad("feed %s: revision must be positive", f.Key)
+		}
+		if !validRouting(f.Routing) {
+			return bad("feed %s: routing mode must be proxy, redirect or off; blob_urls and cache need proxy; prefer lists up to 8 distinct label keys", f.Key)
 		}
 		if t := f.Transfer; t != nil {
 			if !uuidPattern.MatchString(t.ID) || !uuidPattern.MatchString(t.From) || !uuidPattern.MatchString(t.To) || t.From == t.To {

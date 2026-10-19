@@ -193,16 +193,21 @@ func validAction(a string) bool { return validActions[a] }
 // local federated principal. Replays are refused through the durable nonce
 // table, so a restart does not reopen the window. Every rejection is audited.
 func (s *Service) authenticateAssertion(r *http.Request, body []byte) (identity.Principal, peer.Assertion, string) {
-	caller, _ := peer.Caller(r)
-	a, err := peer.VerifyAssertion(r.Header.Get(peer.HeaderAssertion), caller, s.cfg.InstanceID, s.cfg.Now(), r.Method, r.URL.RequestURI(), body)
-	if err != nil {
-		return identity.Principal{}, a, peer.AssertionReason(err)
+	a, policy, fid, reason := s.verifyAssertion(r, body)
+	if reason != "" {
+		return identity.Principal{}, a, reason
+	}
+	return s.assertedPrincipal(r.Context(), a, policy, fid)
+}
+
+// verifyAssertion checks the assertion of a peer request (signature, binding,
+// lifetime, federation) and records its jti so it cannot be replayed.
+func (s *Service) verifyAssertion(r *http.Request, body []byte) (peer.Assertion, *PolicyDocument, string, string) {
+	a, policy, fid, reason := s.checkAssertion(r, body)
+	if reason != "" {
+		return a, nil, "", reason
 	}
 	ctx := r.Context()
-	policy, fid, err := s.currentPolicy(ctx, s.cfg.DB)
-	if err != nil || policy == nil || a.Federation != fid {
-		return identity.Principal{}, a, "assertion_federation_mismatch"
-	}
 	// The replay record is refused once the issuer holds MaxAssertionNonces
 	// unexpired records, so one member cannot grow the table without bound.
 	jti := a.Issuer + "/" + a.ID
@@ -210,18 +215,38 @@ func (s *Service) authenticateAssertion(r *http.Request, body []byte) (identity.
 SELECT $1,$2,$3,$4 WHERE (SELECT count(*) FROM (SELECT 1 FROM federation_assertion_nonces WHERE instance_id=$1 AND issuer=$3 AND expires_at>$5 LIMIT $6) n) < $6
 ON CONFLICT DO NOTHING`, s.cfg.InstanceID, jti, a.Issuer, time.Unix(a.Expires, 0).Add(peer.MaxSkew+time.Minute), s.cfg.Now(), MaxAssertionNonces)
 	if err != nil {
-		return identity.Principal{}, a, "unavailable"
+		return a, nil, "", "unavailable"
 	}
 	if tag.RowsAffected() != 1 {
 		var seen bool
 		if err := s.cfg.DB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM federation_assertion_nonces WHERE instance_id=$1 AND jti=$2)`, s.cfg.InstanceID, jti).Scan(&seen); err != nil {
-			return identity.Principal{}, a, "unavailable"
+			return a, nil, "", "unavailable"
 		}
 		if seen {
-			return identity.Principal{}, a, "assertion_replayed"
+			return a, nil, "", "assertion_replayed"
 		}
-		return identity.Principal{}, a, "rate_limited"
+		return a, nil, "", "rate_limited"
 	}
+	return a, policy, fid, ""
+}
+
+// checkAssertion verifies everything except replay.
+func (s *Service) checkAssertion(r *http.Request, body []byte) (peer.Assertion, *PolicyDocument, string, string) {
+	caller, _ := peer.Caller(r)
+	a, err := peer.VerifyAssertion(r.Header.Get(peer.HeaderAssertion), caller, s.cfg.InstanceID, s.cfg.Now(), r.Method, r.URL.RequestURI(), body)
+	if err != nil {
+		return a, nil, "", peer.AssertionReason(err)
+	}
+	policy, fid, err := s.currentPolicy(r.Context(), s.cfg.DB)
+	if err != nil || policy == nil || a.Federation != fid {
+		return a, nil, "", "assertion_federation_mismatch"
+	}
+	return a, policy, fid, ""
+}
+
+// assertedPrincipal maps a verified assertion to the local federated
+// principal, narrowed by the asserted token scopes.
+func (s *Service) assertedPrincipal(ctx context.Context, a peer.Assertion, policy *PolicyDocument, fid string) (identity.Principal, peer.Assertion, string) {
 	issuer := ""
 	if a.Domain == ServiceAccountDomain {
 		issuer = ServiceAccountIssuer(fid)
@@ -233,7 +258,7 @@ ON CONFLICT DO NOTHING`, s.cfg.InstanceID, jti, a.Issuer, time.Unix(a.Expires, 0
 	// The federated ID is derived here, never taken from the issuer's claim.
 	a.FederatedID = FederatedID(fid, issuer, a.Subject)
 	var id string
-	err = s.cfg.DB.QueryRow(ctx, `SELECT id::text FROM principals WHERE instance_id=$1 AND issuer=$2 AND subject=$3 AND origin='federation' AND NOT disabled`, s.cfg.InstanceID, issuer, a.Subject).Scan(&id)
+	err := s.cfg.DB.QueryRow(ctx, `SELECT id::text FROM principals WHERE instance_id=$1 AND issuer=$2 AND subject=$3 AND origin='federation' AND NOT disabled`, s.cfg.InstanceID, issuer, a.Subject).Scan(&id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return identity.Principal{}, a, "principal_unknown"
 	}

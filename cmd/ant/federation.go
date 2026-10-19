@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -135,4 +136,28 @@ func (f *federationRuntime) autoJoin(ctx context.Context) {
 		case <-time.After(30 * time.Second):
 		}
 	}
+}
+
+// attachRouting wires placement-aware routing (P2-M5): proxied reads and
+// signed blob URLs are answered by the unwrapped adapters (never routed
+// again), and the optional entry cache uses the artifact stores under the
+// writer lease.
+func (f *federationRuntime) attachRouting(r *artifactRuntime) {
+	if f == nil || r == nil {
+		return
+	}
+	feeds := http.NewServeMux()
+	r.Register(feeds)
+	f.svc.SetRouteRuntime(federation.RouteRuntime{Feeds: feeds, Storage: r.stores.Resolve, Lease: r.manager.Lease})
+}
+
+// registerRouted mounts the adapters with routing (when federation is
+// available) and the public signed blob URL endpoint.
+func (f *federationRuntime) registerRouted(mux *http.ServeMux, r *artifactRuntime) {
+	if f == nil {
+		r.Register(mux)
+		return
+	}
+	r.RegisterRouted(mux, f.svc.RouteFeeds)
+	mux.Handle("GET /federation/blob/{name}", f.svc.BlobHandler())
 }

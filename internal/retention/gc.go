@@ -55,7 +55,7 @@ func (s *Service) CollectGarbage(ctx context.Context, dryRun bool) (GCReport, er
 	}
 	var errs []error
 	if !dryRun {
-		tag, err := s.DB.Exec(ctx, `DELETE FROM gc_candidates c WHERE c.instance_id=$1 AND EXISTS (SELECT 1 FROM blobs b WHERE b.dedup_domain_id=c.dedup_domain_id AND b.digest=c.digest AND (c.kind='object' OR EXISTS (SELECT 1 FROM assets a WHERE a.blob_id=b.id)))`, s.InstanceID)
+		tag, err := s.DB.Exec(ctx, `DELETE FROM gc_candidates c WHERE c.instance_id=$1 AND EXISTS (SELECT 1 FROM blobs b WHERE b.dedup_domain_id=c.dedup_domain_id AND b.digest=c.digest AND (c.kind='object' OR EXISTS (SELECT 1 FROM assets a WHERE a.blob_id=b.id) OR EXISTS (SELECT 1 FROM federation_route_cache rc WHERE rc.blob_id=b.id)))`, s.InstanceID)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -161,7 +161,7 @@ func (s *Service) sweepOne(ctx context.Context, c BlobRef) (bool, error) {
 		return false, err
 	}
 	var referenced bool
-	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM assets WHERE blob_id=$1)`, id).Scan(&referenced); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM assets WHERE blob_id=$1) OR EXISTS(SELECT 1 FROM federation_route_cache WHERE blob_id=$1)`, id).Scan(&referenced); err != nil {
 		return false, err
 	}
 	if referenced {
@@ -190,7 +190,7 @@ func (s *Service) sweepOne(ctx context.Context, c BlobRef) (bool, error) {
 
 // markRows marks metadata rows with no asset reference older than the grace period.
 func (s *Service) markRows(ctx context.Context, dryRun bool, report *GCReport) error {
-	const eligible = `SELECT b.instance_id,b.dedup_domain_id,b.digest FROM blobs b WHERE b.instance_id=$1 AND b.created_at<clock_timestamp()-$2::interval AND NOT EXISTS(SELECT 1 FROM assets a WHERE a.blob_id=b.id) AND NOT EXISTS(SELECT 1 FROM gc_candidates c WHERE c.dedup_domain_id=b.dedup_domain_id AND c.digest=b.digest) ORDER BY b.created_at,b.id LIMIT $3`
+	const eligible = `SELECT b.instance_id,b.dedup_domain_id,b.digest FROM blobs b WHERE b.instance_id=$1 AND b.created_at<clock_timestamp()-$2::interval AND NOT EXISTS(SELECT 1 FROM assets a WHERE a.blob_id=b.id) AND NOT EXISTS(SELECT 1 FROM federation_route_cache rc WHERE rc.blob_id=b.id) AND NOT EXISTS(SELECT 1 FROM gc_candidates c WHERE c.dedup_domain_id=b.dedup_domain_id AND c.digest=b.digest) ORDER BY b.created_at,b.id LIMIT $3`
 	var rows pgx.Rows
 	var err error
 	if dryRun {

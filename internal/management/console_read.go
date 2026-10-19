@@ -17,6 +17,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/routing"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -308,6 +309,9 @@ type ResolveExplanation struct {
 	Sources       []ResolveSource `json:"sources"`
 	Cache         ResolveCache    `json:"cache"`
 	HiddenSources int             `json:"hidden_sources"`
+	// Federation is the placement-aware routing plan when the feed is bound
+	// to a federation feed key (instance readers only, P2-M5).
+	Federation *federation.RoutePlan `json:"federation,omitempty"`
 }
 
 func validCoordinate(c string) bool {
@@ -419,6 +423,11 @@ func (h consoleHandlers) resolveExplain(w http.ResponseWriter, r *http.Request) 
 		}
 	} else if o := attached[owner]; o.Kind == "remote" && out.Status != "namespace_mismatch" {
 		out.Cache = remoteCache(o, now)
+	}
+	if out.Federation = feedRoute(r.Context(), p, policy, feed); out.Federation != nil && out.Status == "not_found" &&
+		(out.Federation.Decision == federation.RouteProxy || out.Federation.Decision == federation.RouteRedirect) {
+		// A local miss is routed to the first eligible member holding the key.
+		out.Status = "federated"
 	}
 	JSON(w, 200, out)
 }

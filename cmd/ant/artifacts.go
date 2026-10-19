@@ -325,33 +325,43 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 	}
 	return &artifactRuntime{remote: remote, apk: apkRepository, apt: aptRepository, rpm: rpmRepository, terraform: terraformRepository, swift: swiftRepository, cocoapods: cocoapodsRepository, huggingface: huggingfaceRepository, p2: p2Repository, conan: conanRepository, conda: condaRepository, ansible: ansibleRepository, cran: cranRepository, rubygems: rubygemsRepository, gitlfs: gitlfsRepository, composer: composerRepository, pubrepo: pubrepoRepository, instanceID: instance, nuget: nugetRepository, maven: mavenRepository, pypi: pypiRepository, manager: manager, stores: stores, migrator: newMigrator(pool, cfg, instance, stores, router), registry: registry, goProxy: goProxy, service: service, cargo: cargoRegistry, helm: helmrepo.New(pool, service), raw: rawRepository, npm: npmRegistry}, nil
 }
-func (r *artifactRuntime) Register(mux *http.ServeMux) {
+func (r *artifactRuntime) Register(mux *http.ServeMux) { r.RegisterRouted(mux, nil) }
+
+// RegisterRouted mounts the adapters, each wrapped by route (federation
+// placement-aware routing of reads that miss locally) when it is non-nil.
+func (r *artifactRuntime) RegisterRouted(mux *http.ServeMux, route func(oci bool, next http.Handler) http.Handler) {
+	wrap := func(oci bool, h http.Handler) http.Handler {
+		if route == nil {
+			return h
+		}
+		return route(oci, h)
+	}
 	if r != nil {
-		mux.Handle("/v2/", r.registry)
-		mux.Handle("/feeds/{slug}/rubygems/", r.rubygems)
-		mux.Handle("/feeds/{slug}/git-lfs/", r.gitlfs)
-		mux.Handle("/feeds/{slug}/composer/", r.composer)
-		mux.Handle("/feeds/{slug}/pub/", r.pubrepo)
-		mux.Handle("/feeds/{slug}/conan/", r.conan)
-		mux.Handle("/feeds/{slug}/apk/", r.apk)
-		mux.Handle("/feeds/{slug}/apt/", r.apt)
-		mux.Handle("/feeds/{slug}/rpm/", r.rpm)
-		mux.Handle("/feeds/{slug}/terraform/", r.terraform)
-		mux.Handle("/feeds/{slug}/swift/", r.swift)
-		mux.Handle("/feeds/{slug}/cocoapods/", r.cocoapods)
-		mux.Handle("/feeds/{slug}/huggingface/", r.huggingface)
-		mux.Handle("/feeds/{slug}/p2/", r.p2)
-		mux.Handle("/feeds/{slug}/conda/", r.conda)
-		mux.Handle("/feeds/{slug}/ansible/", r.ansible)
-		mux.Handle("/feeds/{slug}/cran/", r.cran)
-		mux.Handle("/feeds/{slug}/nuget/", r.nuget)
-		mux.Handle("/feeds/{slug}/maven/", r.maven)
-		mux.Handle("/feeds/{slug}/pypi/", r.pypi)
-		mux.Handle("/feeds/{slug}/npm/", r.npm)
-		mux.Handle("/feeds/{slug}/go/", r.goProxy)
-		mux.Handle("/feeds/{slug}/helm/", r.helm)
-		mux.Handle("/feeds/{slug}/cargo/", r.cargo)
-		mux.Handle("/feeds/{slug}/raw/", r.raw)
+		mux.Handle("/v2/", wrap(true, r.registry))
+		mux.Handle("/feeds/{slug}/rubygems/", wrap(false, r.rubygems))
+		mux.Handle("/feeds/{slug}/git-lfs/", wrap(false, r.gitlfs))
+		mux.Handle("/feeds/{slug}/composer/", wrap(false, r.composer))
+		mux.Handle("/feeds/{slug}/pub/", wrap(false, r.pubrepo))
+		mux.Handle("/feeds/{slug}/conan/", wrap(false, r.conan))
+		mux.Handle("/feeds/{slug}/apk/", wrap(false, r.apk))
+		mux.Handle("/feeds/{slug}/apt/", wrap(false, r.apt))
+		mux.Handle("/feeds/{slug}/rpm/", wrap(false, r.rpm))
+		mux.Handle("/feeds/{slug}/terraform/", wrap(false, r.terraform))
+		mux.Handle("/feeds/{slug}/swift/", wrap(false, r.swift))
+		mux.Handle("/feeds/{slug}/cocoapods/", wrap(false, r.cocoapods))
+		mux.Handle("/feeds/{slug}/huggingface/", wrap(false, r.huggingface))
+		mux.Handle("/feeds/{slug}/p2/", wrap(false, r.p2))
+		mux.Handle("/feeds/{slug}/conda/", wrap(false, r.conda))
+		mux.Handle("/feeds/{slug}/ansible/", wrap(false, r.ansible))
+		mux.Handle("/feeds/{slug}/cran/", wrap(false, r.cran))
+		mux.Handle("/feeds/{slug}/nuget/", wrap(false, r.nuget))
+		mux.Handle("/feeds/{slug}/maven/", wrap(false, r.maven))
+		mux.Handle("/feeds/{slug}/pypi/", wrap(false, r.pypi))
+		mux.Handle("/feeds/{slug}/npm/", wrap(false, r.npm))
+		mux.Handle("/feeds/{slug}/go/", wrap(false, r.goProxy))
+		mux.Handle("/feeds/{slug}/helm/", wrap(false, r.helm))
+		mux.Handle("/feeds/{slug}/cargo/", wrap(false, r.cargo))
+		mux.Handle("/feeds/{slug}/raw/", wrap(false, r.raw))
 	}
 }
 func (r *artifactRuntime) Close() {

@@ -228,6 +228,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	}
 	// Coordinated replication rides on federation (export over mTLS, rules).
 	replicationRT.attachFederation(fed.service())
+	fed.attachRouting(artifacts)
 	workers.StartFederation(fed)
 	fed.serve(serveCtx)
 	logger.Info("service listening", "address", listener.Addr().String())
@@ -259,7 +260,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		}
 		management.RegisterTransfer(mux, management.TransferDeps{Pool: pool, Stores: transferStores})
 		replicationRT.Register(mux)
-		artifacts.Register(mux)
+		fed.registerRouted(mux, artifacts)
 		browser.Register(mux)
 		mcp.Register(mux, pool, logger)
 		mux.Handle("/console", console.Handler())

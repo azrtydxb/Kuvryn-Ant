@@ -59,7 +59,7 @@ export type CreateFeedBatch = { "slug": string; "format": "apk" | "ansible" | "a
 export type FeedBatchResult = { "feed": Feed; "sources": Array<SourceOrderItem>; "publish_policy"?: PublishPolicy };
 export type ResolveSource = { "source_id": string; "name": string; "kind": "local" | "remote" | "replica"; "priority": number; "role": "serving" | "shadowed" | "absent" | "pull_through_candidate"; "reason": string; "versions": number };
 export type ResolveCache = { "state": "not_applicable" | "not_cached" | "fresh" | "stale"; "last_cached_at"?: string; "last_accessed_at"?: string; "age_seconds"?: number; "metadata_ttl_seconds": number; "stale_if_error_seconds": number; "expires_at"?: string; "servable_stale_on_error": boolean };
-export type ResolveExplanation = { "feed_id": string; "coordinate": string; "namespace": string; "status": "served" | "pull_through" | "not_found" | "namespace_mismatch"; "serving"?: ResolveSource; "sources": Array<ResolveSource>; "cache": ResolveCache; "hidden_sources": number };
+export type ResolveExplanation = { "feed_id": string; "coordinate": string; "namespace": string; "status": "served" | "pull_through" | "not_found" | "namespace_mismatch" | "federated"; "serving"?: ResolveSource; "sources": Array<ResolveSource>; "cache": ResolveCache; "hidden_sources": number; "federation"?: FederationRoutePlan };
 export type PublishPolicyTestRequest = { "policy": PutPublishPolicy; "coordinate": string; "namespace"?: string; "path"?: string; "principal_id"?: string };
 export type PublishPolicyTestTrace = { "rule_id": string; "priority": number; "matched": boolean; "selected": boolean; "reason": string };
 export type PublishPolicyTestResult = { "allowed": boolean; "reason": string; "matched_rule_id"?: string; "target_source_id"?: string; "target_source_name"?: string; "denial"?: string; "principal_id": string; "principal_authorized"?: boolean; "trace": Array<PublishPolicyTestTrace> };
@@ -292,15 +292,18 @@ export type FederationAccessCheckResult = { "member_id": string; "allowed": bool
 export type EffectiveRole = { "name": string; "origin": "local" | "federation" };
 export type FederationFeedDescriptor = { "format": string; "anonymous_read": boolean };
 export type FederationFeedTransfer = { "id": string; "from": string; "to": string; "mode": "planned" | "forced"; "state": "freeze" | "drain" | "promote" | "complete" | "aborted"; "head": number; "checkpoint": number; "baseline": number; "started_at": string; "deadline"?: string; "updated_at": string; "reason"?: string };
+export type FederationFeedRouting = { "mode": "proxy" | "redirect" | "off"; "blob_urls": boolean; "cache": boolean; "cache_ttl_seconds"?: number; "max_lag_seconds"?: number; "prefer"?: Array<string> };
+export type FederationRouteCandidate = { "member_id": string; "name": string; "role": "home" | "replica"; "api_url": string; "replica_state"?: string; "lag_seconds"?: number; "circuit": "closed" | "open" | "half_open"; "consecutive_failures": number; "rtt_ms"?: number; "preference": number; "eligible": boolean; "order": number; "reason": string };
+export type FederationRoutePlan = { "feed_key": string; "format": string; "home": string; "local_role": "home" | "replica" | "unbound"; "local_feed_id"?: string; "routing": FederationFeedRouting; "decision": "local" | "proxy" | "redirect" | "off" | "no_candidates" | "unavailable"; "reason": string; "candidates": Array<FederationRouteCandidate> };
 export type FederationRuleTargets = { "labels"?: Record<string, string>; "members"?: Array<string> };
 export type FederationRuleFilters = { "namespaces"?: Array<string>; "packages"?: Array<string>; "version_prefixes"?: Array<string> };
 export type FederationReplicationRule = { "id": string; "feed_key": string; "targets": FederationRuleTargets; "mode": "continuous" | "scheduled" | "manual"; "interval_seconds": number; "include_cached": boolean; "filters": FederationRuleFilters; "deletion_policy": "ignore" | "propagate"; "destination_read_only": boolean; "create_destination_feed": boolean; "adopt_existing": boolean; "max_lag_seconds": number; "revision": number };
 export type FederationReplicationRuleList = { "items": Array<FederationReplicationRule> };
-export type FederationTopologyFeed = { "key": string; "home": string; "descriptor": FederationFeedDescriptor; "revision": number; "transfer"?: FederationFeedTransfer };
-export type FederationTopologyFeedView = { "key": string; "home": string; "descriptor": FederationFeedDescriptor; "revision": number; "transfer"?: FederationFeedTransfer; "home_name": string; "local_feed_id"?: string; "local_role": "home" | "replica" | "unbound"; "frozen": boolean };
+export type FederationTopologyFeed = { "key": string; "home": string; "descriptor": FederationFeedDescriptor; "revision": number; "transfer"?: FederationFeedTransfer; "routing"?: FederationFeedRouting };
+export type FederationTopologyFeedView = { "key": string; "home": string; "descriptor": FederationFeedDescriptor; "revision": number; "transfer"?: FederationFeedTransfer; "routing"?: FederationFeedRouting; "home_name": string; "local_feed_id"?: string; "local_role": "home" | "replica" | "unbound"; "frozen": boolean };
 export type FederationTopologyView = { "generation": number; "hash"?: string; "applied_at"?: string; "error"?: string; "authority": boolean; "feeds": Array<FederationTopologyFeedView>; "rules": Array<FederationReplicationRule> };
 export type FederationTopologyStatus = { "generation": number; "hash"?: string; "applied_at"?: string; "age_seconds": number; "error"?: string; "feeds": number; "rules": number; "home_feeds": number; "rules_targeting_self": number; "active_transfers": number; "unresolved_quarantines": number };
-export type CreateFederationFeed = { "feed_key": string; "home_member_id": string; "descriptor"?: FederationFeedDescriptor };
+export type CreateFederationFeed = { "feed_key": string; "home_member_id": string; "descriptor"?: FederationFeedDescriptor; "routing"?: FederationFeedRouting };
 export type CreateFederationRule = { "feed_key": string; "targets": FederationRuleTargets; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: FederationRuleFilters; "deletion_policy"?: "ignore" | "propagate"; "destination_read_only"?: boolean; "create_destination_feed"?: boolean; "adopt_existing"?: boolean; "max_lag_seconds"?: number };
 export type PatchFederationRule = { "revision"?: number; "targets"?: FederationRuleTargets; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: FederationRuleFilters; "deletion_policy"?: "ignore" | "propagate"; "destination_read_only"?: boolean; "create_destination_feed"?: boolean; "adopt_existing"?: boolean; "max_lag_seconds"?: number };
 export type StartFederationTransfer = { "to_member_id": string; "mode"?: "planned" | "forced"; "confirm": boolean; "accept_data_loss"?: boolean; "drain_timeout_seconds"?: number };
@@ -507,6 +510,8 @@ createFederationFeed: { body: CreateFederationFeed; response: FederationTopology
 deleteFederationFeed: { body: undefined; response: undefined };
 startFederationFeedTransfer: { body: StartFederationTransfer; response: FederationFeedTransfer };
 abortFederationFeedTransfer: { body: AbortFederationTransfer; response: FederationFeedTransfer };
+setFederationFeedRouting: { body: FederationFeedRouting; response: FederationTopologyFeed };
+explainFederationRoute: { body: undefined; response: FederationRoutePlan };
 listFederationReplicationRules: { body: undefined; response: FederationReplicationRuleList };
 createFederationReplicationRule: { body: CreateFederationRule; response: FederationReplicationRule };
 getFederationReplicationRule: { body: undefined; response: FederationReplicationRule };
@@ -1478,6 +1483,16 @@ export const routes = {
     "path": "/api/v1/federation/feeds/{fed}/{slug}/transfer/abort",
     "method": "POST",
     "idempotent": true
+  },
+  "setFederationFeedRouting": {
+    "path": "/api/v1/federation/feeds/{fed}/{slug}/routing",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "explainFederationRoute": {
+    "path": "/api/v1/federation/routes/{fed}/{slug}",
+    "method": "GET",
+    "idempotent": false
   },
   "listFederationReplicationRules": {
     "path": "/api/v1/federation/replication/rules",

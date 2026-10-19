@@ -31,6 +31,7 @@ import {
   val,
   when,
 } from "./ui";
+import { RouteModal, RoutingModal, routingSummary } from "./FederationRouting";
 
 const stateTone: Record<string, string> = {
   in_sync: "good",
@@ -86,6 +87,8 @@ export function FederationReplication({
   const [dialog, setDialog] = useState<"feed" | "rule" | undefined>();
   const [transfer, setTransfer] = useState<FederationTopologyFeedView>();
   const [compliance, setCompliance] = useState<string>();
+  const [route, setRoute] = useState<string>();
+  const [routing, setRouting] = useState<FederationTopologyFeedView>();
   const action = useAction();
   const toast = useToast();
   const view = topology.state === "ready" ? topology.data : undefined;
@@ -130,6 +133,31 @@ export function FederationReplication({
                       {f.local_role}
                     </Badge>
                     {f.frozen && <Badge tone="warn">frozen</Badge>}
+                  </span>
+                ),
+              },
+              {
+                key: "routing",
+                label: "Read routing",
+                render: (f: FederationTopologyFeedView) => (
+                  <span className="row tight">
+                    <span>{routingSummary(f.routing)}</span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setRoute(f.key)}
+                    >
+                      Explain
+                    </Button>
+                    {authority && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setRouting(f)}
+                      >
+                        Edit
+                      </Button>
+                    )}
                   </span>
                 ),
               },
@@ -319,6 +347,28 @@ export function FederationReplication({
           onClose={() => setTransfer(undefined)}
           done={() => {
             setTransfer(undefined);
+            reload();
+          }}
+        />
+      )}
+      {route && (
+        <RouteModal
+          client={client}
+          feedKey={route}
+          onClose={() => setRoute(undefined)}
+        />
+      )}
+      {routing && (
+        <RoutingModal
+          client={client}
+          feed={routing}
+          onClose={() => setRouting(undefined)}
+          done={() => {
+            setRouting(undefined);
+            toast(
+              "Routing published",
+              "Members apply it with the next topology generation.",
+            );
             reload();
           }}
         />

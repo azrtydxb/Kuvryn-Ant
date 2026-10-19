@@ -270,6 +270,7 @@ func (s *Service) Run(ctx context.Context) {
 		}
 		s.purgeNonces(step)
 		s.pruneLogged()
+		s.purgeRouteCache(step)
 		s.PingMembers(step)
 		if err := s.RenewIfDue(step); err != nil && ctx.Err() == nil {
 			s.logOnce("renew", "federation certificate renewal failed", "reason", err)
@@ -307,9 +308,13 @@ func (s *Service) PingMembers(ctx context.Context) {
 			start := s.cfg.Now()
 			raw, err := s.client.Do(ctx, id, m.FederationURL, "GET", "/federation/v1/status", nil, m.InstanceID)
 			if err != nil {
+				if ctx.Err() == nil {
+					s.observeMember(m.InstanceID, false, 0, "ping failed")
+				}
 				return
 			}
 			rtt := s.cfg.Now().Sub(start)
+			s.observeMember(m.InstanceID, true, rtt, "")
 			var ps peerStatus
 			if json.Unmarshal(raw, &ps) != nil {
 				return

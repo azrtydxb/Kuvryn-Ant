@@ -618,3 +618,112 @@ it("shows federated feeds, rule compliance and starts a planned home transfer", 
     accept_data_loss: false,
   });
 });
+
+it("explains read routing and publishes routing settings", async () => {
+  install((url, init) => {
+    if (url === "/api/v1/federation/status") return json(active);
+    if (url === "/api/v1/federation/members")
+      return json({
+        items: [
+          member(alpha, "alpha", { authority: true, self: true }),
+          member(beta, "beta"),
+        ],
+      });
+    if (url === "/api/v1/federation/invitations") return json({ items: [] });
+    if (url === "/api/v1/federation/topology")
+      return json({
+        generation: 5,
+        authority: true,
+        feeds: [
+          {
+            key: "lab/release",
+            home: beta,
+            home_name: "beta",
+            descriptor: { format: "npm", anonymous_read: false },
+            revision: 2,
+            routing: { mode: "proxy", blob_urls: true, cache: false },
+            local_role: "unbound",
+            frozen: false,
+          },
+        ],
+        rules: [],
+      });
+    if (url === "/api/v1/federation/replication/status")
+      return json({ items: [], quarantines: [] });
+    if (url === "/api/v1/federation/routes/lab/release")
+      return json({
+        feed_key: "lab/release",
+        format: "npm",
+        home: beta,
+        local_role: "unbound",
+        routing: { mode: "proxy", blob_urls: true, cache: false },
+        decision: "proxy",
+        reason: "a local miss is proxied",
+        candidates: [
+          {
+            member_id: beta,
+            name: "beta",
+            role: "home",
+            api_url: "https://beta.example",
+            circuit: "closed",
+            consecutive_failures: 0,
+            rtt_ms: 12.4,
+            preference: 0,
+            eligible: true,
+            order: 1,
+            reason: "home: authoritative holder, tried after replicas",
+          },
+        ],
+      });
+    if (
+      url === "/api/v1/federation/feeds/lab/release/routing" &&
+      init.method === "PUT"
+    )
+      return json({
+        key: "lab/release",
+        home: beta,
+        descriptor: { format: "npm", anonymous_read: false },
+        revision: 3,
+        routing: { mode: "redirect", blob_urls: false, cache: false },
+      });
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Federation");
+  await screen.findByText("proxy · blob URLs");
+  fireEvent.click(screen.getByRole("button", { name: "Explain" }));
+  const explain = await screen.findByRole("dialog", {
+    name: "Read routing of lab/release",
+  });
+  await within(explain).findByText("Proxied to another member");
+  expect(within(explain).getByText("12 ms")).toBeTruthy();
+  fireEvent.click(within(explain).getByRole("button", { name: "Done" }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  const edit = await screen.findByRole("dialog", {
+    name: "Routing of lab/release",
+  });
+  fireEvent.change(within(edit).getByLabelText("Mode"), {
+    target: { value: "redirect" },
+  });
+  fireEvent.click(
+    within(edit).getByRole("button", { name: "Publish routing" }),
+  );
+  await waitFor(() =>
+    expect(
+      calls.filter(
+        (c) =>
+          c.init.method === "PUT" &&
+          c.url === "/api/v1/federation/feeds/lab/release/routing",
+      ),
+    ).toHaveLength(1),
+  );
+  const put = calls.find(
+    (c) => c.url === "/api/v1/federation/feeds/lab/release/routing",
+  )!;
+  expect(JSON.parse(put.init.body as string)).toEqual({
+    mode: "redirect",
+    blob_urls: false,
+    cache: false,
+  });
+});

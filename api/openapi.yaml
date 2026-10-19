@@ -14699,6 +14699,164 @@
         ]
       }
     },
+    "/api/v1/federation/feeds/{fed}/{slug}/routing": {
+      "put": {
+        "operationId": "setFederationFeedRouting",
+        "description": "Sets the placement-aware read routing of a feed key and publishes the topology (the feed revision increases). Authority only; requires instance admin. Replay-safe with Idempotency-Key.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationTopologyFeed"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FederationFeedRouting"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/federation/routes/{fed}/{slug}": {
+      "get": {
+        "operationId": "explainFederationRoute",
+        "description": "Explains on this member where a read of the feed key goes when it misses locally: the routing mode and every member holding the key with its role, replica state, circuit, RTT and order. Requires read on the instance.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederationRoutePlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "parameters": [
+          {
+            "name": "fed",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
     "/api/v1/federation/replication/rules": {
       "get": {
         "operationId": "listFederationReplicationRules",
@@ -17322,7 +17480,8 @@
               "served",
               "pull_through",
               "not_found",
-              "namespace_mismatch"
+              "namespace_mismatch",
+              "federated"
             ]
           },
           "serving": {
@@ -17342,6 +17501,9 @@
             "type": "integer",
             "minimum": 0,
             "description": "Attached sources omitted because the caller cannot read them."
+          },
+          "federation": {
+            "$ref": "#/components/schemas/FederationRoutePlan"
           }
         }
       },
@@ -25466,6 +25628,191 @@
           "updated_at"
         ]
       },
+      "FederationFeedRouting": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Placement-aware read routing of a feed key (P2-M5). Writes are never routed (D6).",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "proxy",
+              "redirect",
+              "off"
+            ],
+            "description": "proxy (default, D5): the entry member streams the holder's answer over the federation listener with the caller's signed assertion. redirect: 307 to the holder's public feed endpoint (the client must authenticate there). off: local answers only."
+          },
+          "blob_urls": {
+            "type": "boolean",
+            "description": "Proxy mode only: immutable blob reads (OCI blobs, npm tarballs, ...) get a 307 to a signed URL on the holder's public listener, valid for five minutes."
+          },
+          "cache": {
+            "type": "boolean",
+            "description": "Proxy mode only: entry members with a feed bound to the key keep immutable proxied responses and serve them to callers who may read the whole local feed."
+          },
+          "cache_ttl_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2592000,
+            "description": "Entry cache lifetime (default 86400); requires cache."
+          },
+          "max_lag_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 31536000,
+            "description": "Replicas lagging more are skipped (0: each rule's lag budget)."
+          },
+          "prefer": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string"
+            },
+            "description": "Member label keys; candidates sharing the entry member's value for an earlier key are tried first."
+          }
+        },
+        "required": [
+          "mode",
+          "blob_urls",
+          "cache"
+        ]
+      },
+      "FederationRouteCandidate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "home",
+              "replica"
+            ]
+          },
+          "api_url": {
+            "type": "string"
+          },
+          "replica_state": {
+            "type": "string",
+            "description": "Replication state reported by the member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled) or unknown."
+          },
+          "lag_seconds": {
+            "type": "number"
+          },
+          "circuit": {
+            "type": "string",
+            "enum": [
+              "closed",
+              "open",
+              "half_open"
+            ]
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rtt_ms": {
+            "type": "number",
+            "description": "Round-trip time EWMA from status pings and proxied requests."
+          },
+          "preference": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of leading routing prefer label keys shared with this member."
+          },
+          "eligible": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Position in which eligible members are tried (1 first); 0 when excluded."
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "member_id",
+          "name",
+          "role",
+          "api_url",
+          "circuit",
+          "consecutive_failures",
+          "preference",
+          "eligible",
+          "order",
+          "reason"
+        ]
+      },
+      "FederationRoutePlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Where a read of a federated feed that misses on this member goes. Deterministic for identical inputs: eligible replicas by label preference, replica state and RTT, the home last; members with an open circuit, lagging or not in sync are excluded.",
+        "properties": {
+          "feed_key": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "home": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "local_role": {
+            "type": "string",
+            "enum": [
+              "home",
+              "replica",
+              "unbound"
+            ]
+          },
+          "local_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/FederationFeedRouting"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "local",
+              "proxy",
+              "redirect",
+              "off",
+              "no_candidates",
+              "unavailable"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FederationRouteCandidate"
+            }
+          }
+        },
+        "required": [
+          "feed_key",
+          "format",
+          "home",
+          "local_role",
+          "routing",
+          "decision",
+          "reason",
+          "candidates"
+        ]
+      },
       "FederationRuleTargets": {
         "type": "object",
         "additionalProperties": false,
@@ -25619,6 +25966,9 @@
           },
           "transfer": {
             "$ref": "#/components/schemas/FederationFeedTransfer"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/FederationFeedRouting"
           }
         },
         "required": [
@@ -25648,6 +25998,9 @@
           },
           "transfer": {
             "$ref": "#/components/schemas/FederationFeedTransfer"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/FederationFeedRouting"
           },
           "home_name": {
             "type": "string"
@@ -25790,6 +26143,9 @@
           },
           "descriptor": {
             "$ref": "#/components/schemas/FederationFeedDescriptor"
+          },
+          "routing": {
+            "$ref": "#/components/schemas/FederationFeedRouting"
           }
         },
         "required": [

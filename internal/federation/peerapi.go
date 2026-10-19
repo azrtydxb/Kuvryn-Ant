@@ -86,6 +86,10 @@ func (s *Service) PeerHandler() http.Handler {
 	mux.HandleFunc("GET /federation/v1/replication/feeds/{fed}/{slug}", s.peerHomeFeed)
 	mux.HandleFunc("GET /federation/v1/replication/transfer-state", s.peerTransferState)
 	mux.HandleFunc("GET /federation/v1/replication/status", s.peerReplicationStatus)
+	// Placement-aware routing (P2-M5): reads only; writes are never routed.
+	mux.HandleFunc("GET /federation/v1/routes/feeds/{fed}/{slug}", s.peerRouteInfo)
+	mux.HandleFunc("GET /federation/v1/proxy/feeds/{fed}/{slug}/{rest...}", s.peerProxy)
+	mux.HandleFunc("/federation/v1/proxy/", s.peerProxy)
 	s.peerMu.Lock()
 	for pattern, h := range s.peerRoutes {
 		mux.Handle(pattern, h)
