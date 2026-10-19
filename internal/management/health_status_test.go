@@ -22,6 +22,7 @@ func TestHealthStatusTable(t *testing.T) {
 		{"broken for 20m", SourceHealth{Requests: 50, Failures: 9, LastSuccessAt: ago(20 * time.Minute), LastErrorAt: ago(time.Minute)}, "failing"},
 		{"old success, error 1h ago", SourceHealth{Requests: 50, Failures: 9, LastSuccessAt: ago(3 * time.Hour), LastErrorAt: ago(time.Hour)}, "failing"},
 		{"idle after failure for days", SourceHealth{Requests: 50, Failures: 9, LastSuccessAt: ago(100 * time.Hour), LastErrorAt: ago(99 * time.Hour)}, "unknown"},
+		{"idle right after an isolated error", SourceHealth{Requests: 5278, Failures: 448, LastSuccessAt: ago(36*time.Minute + 12*time.Second), LastErrorAt: ago(36 * time.Minute)}, "degraded"},
 		{"recovered, error 5m ago", SourceHealth{Requests: 50, Failures: 1, LastSuccessAt: ago(time.Minute), LastErrorAt: ago(5 * time.Minute)}, "degraded"},
 		{"recovered, error 1h ago", SourceHealth{Requests: 50, Failures: 1, LastSuccessAt: ago(time.Minute), LastErrorAt: ago(time.Hour)}, "healthy"},
 	}

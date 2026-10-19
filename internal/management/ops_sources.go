@@ -126,8 +126,9 @@ const (
 //	never a success                    -> failing (unknown once the error is stale)
 //	last event a success, error <15m   -> degraded; older -> healthy
 //	last event an error:
-//	  success within failingAfter of it -> degraded (transient error amid successes)
-//	  otherwise                         -> failing, aging to unknown after staleAfter idle
+//	  success within failingAfter of it -> degraded, even if the source then went idle
+//	  otherwise                         -> failing
+//	  either ages to unknown after staleAfter without traffic
 func healthStatus(s SourceHealth) string { return healthStatusAt(s, time.Now()) }
 
 func healthStatusAt(s SourceHealth, now time.Time) string {
@@ -142,12 +143,10 @@ func healthStatusAt(s SourceHealth, now time.Time) string {
 		if now.Sub(errAt) > staleAfter {
 			return "unknown"
 		}
-		// Errors since the last success: failing only when the success is gone
-		// or the source has been broken for a meaningful period.
-		if s.LastSuccessAt != nil && errAt.Sub(*s.LastSuccessAt) <= failingAfter && now.Sub(errAt) <= degradedWindow {
-			return "degraded"
-		}
-		if s.LastSuccessAt != nil && now.Sub(*s.LastSuccessAt) <= failingAfter {
+		// Errors since the last success: failing only when they span a meaningful
+		// period. A source that went idle right after an isolated error carries no
+		// evidence of an outage, so it stays degraded until new traffic or staleness.
+		if s.LastSuccessAt != nil && errAt.Sub(*s.LastSuccessAt) <= failingAfter {
 			return "degraded"
 		}
 		return "failing"
