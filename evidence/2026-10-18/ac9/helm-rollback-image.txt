@@ -1,0 +1,3 @@
+level=WARN msg="upgrade failed" name=ant error="resource Deployment/ant-upg/ant-ant not ready. status: InProgress, message: Available: 0/1\ncontext deadline exceeded"
+Error: UPGRADE FAILED: resource Deployment/ant-upg/ant-ant not ready. status: InProgress, message: Available: 0/1
+context deadline exceeded

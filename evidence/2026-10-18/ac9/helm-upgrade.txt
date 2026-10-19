@@ -1,0 +1,8 @@
+Release "ant" has been upgraded. Happy Helming!
+NAME: ant
+LAST DEPLOYED: Mon Oct 19 03:20:28 2026
+NAMESPACE: ant-upg
+STATUS: deployed
+REVISION: 2
+DESCRIPTION: Upgrade complete
+TEST SUITE: None

@@ -1,0 +1,34 @@
+2026-10-18T23:18:27Z == scratch namespace, secrets copied from production (same root key, scratch DSN and S3 prefix)
+2026-10-18T23:18:29Z == install previous image 0.1.0-0cbc6e3
+2026-10-18T23:19:10Z install ok in 41s
+2026-10-18T23:19:10Z running image: 192.168.10.131/azrtydxb/kuvryn-ant:0.1.0-0cbc6e3
+2026-10-18T23:19:11Z migrations at previous image: {"applied_version":24,"binary_version":24,"pending":0,"database_newer_than_binary":false}
+2026-10-18T23:19:11Z == bootstrap admin and seed data through the previous image
+2026-10-18T23:19:11Z bootstrap credential fields: ["expires_at","instance_id","principal_id","token","token_id"] stderr: 
+2026-10-18T23:19:30Z port-forward health: 200 token length: 47
+seeded 30
+2026-10-18T23:20:13Z pushed OCI image upg-oci/demo:v1
+2026-10-18T23:20:13Z == pre-upgrade backup (procedure step 2) and verify
+2026-10-18T23:20:14Z pre-upgrade backup in 1s manifest_sha256=b1ac11a884783e64bffd334ef40c348990e236e358d00ee4255e2f9145706151
+2026-10-18T23:20:14Z backup verify OK
+2026-10-18T23:20:14Z == availability poller (in-cluster, 0.5 s) during the upgrade
+2026-10-18T23:20:21Z == helm upgrade 0.1.0-0cbc6e3 -> 0.1.0-50d26c0
+2026-10-18T23:20:38Z upgrade ok; helm --wait returned after 16s
+2026-10-18T23:20:44Z availability: 38 up samples, 17 down samples; first down 1792365630 last down 1792365638 => observed outage ~9s (Recreate strategy; single replica)
+2026-10-18T23:20:44Z running image after upgrade: 192.168.10.131/azrtydxb/kuvryn-ant:0.1.0-50d26c0
+2026-10-18T23:20:44Z migrations after upgrade: {"applied_version":26,"binary_version":26,"pending":0,"database_newer_than_binary":false}
+2026-10-18T23:20:44Z == post-upgrade verification
+2026-10-18T23:20:48Z port-forward health: 200 token length: 47
+2026-10-18T23:20:49Z seeded raw objects re-read after upgrade: checked 30, mismatches 0
+2026-10-18T23:20:49Z OCI image validates after upgrade
+2026-10-18T23:20:50Z publish after upgrade: http 201
+2026-10-18T23:20:50Z new-in-this-release endpoint (delete-policy, migration 025) answers: http 200
+2026-10-18T23:20:50Z == rollback rehearsal 1: previous image against the upgraded schema must refuse to start
+2026-10-18T23:22:32Z previous image did not become ready (expected)
+{"time":"2026-10-18T23:22:00.552325129Z","level":"ERROR","msg":"schema initialization failed","reason":"unsupported schema version or non-contiguous history"}
+2026-10-18T23:22:37Z == rollback rehearsal 2: documented path = restore the pre-upgrade backup into a fresh database, previous image
+2026-10-18T23:22:50Z restore of the pre-upgrade backup with 0.1.0-0cbc6e3 OK in 4s
+2026-10-18T23:22:58Z previous image serves the restored pre-upgrade state
+2026-10-18T23:23:03Z rollback copy: checked 30, mismatches 0; post-upgrade write read back: http 404 (404 = correctly absent)
+2026-10-18T23:23:03Z == cleanup
+2026-10-18T23:23:09Z done (scratch blob prefixes upg/ and upg-rb/ removed separately with s3poke rmprefix)

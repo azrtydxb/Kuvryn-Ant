@@ -1,0 +1,15 @@
+feeds 155e22c4-ea9d-4a10-8e88-72d996d1d565 7a75376d-278b-47de-9d85-5f4b8d89277a
+raw published 300 assets, 217087125 bytes in 161.0s
+crane copy alpine rc 0 56b20bf4946b5c8f43fc5b2ce46f39109914d9213a2832eb24cc01c76f27bbe: digest: sha256:856b20bf4946b5c8f43fc5b2ce46f39109914d9213a2832eb24cc01c76f27bbe size: 1022
+2026/10/18 22:58:37 ant.azrty.com/ev5-oci/alpine:v1: digest: sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc size: 9226
+
+crane copy busybox rc 0 a25235b35cf838a5060e286badfe8c35bfe64645145a7cadbe38d3d86bcbc0d: digest: sha256:aa25235b35cf838a5060e286badfe8c35bfe64645145a7cadbe38d3d86bcbc0d size: 610
+2026/10/18 22:59:00 ant.azrty.com/ev5-oci/busybox:v1: digest: sha256:73aaf090f3d85aa34ee199857f03fa3a95c8ede2ffd4cc2cdb5b94e566b11662 size: 9535
+
+crane copy hello rc 0 922fa9c800f2fc72cc6279c37c8a98369b460d7198dd6c3eccdd275b1d8b9583: digest: sha256:922fa9c800f2fc72cc6279c37c8a98369b460d7198dd6c3eccdd275b1d8b9583 size: 946
+2026/10/18 23:04:38 ant.azrty.com/ev5-oci/hello:v1: digest: sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa size: 11062
+
+crane copy nginx rc 0 697209b4a44cc8fd0718cc883e9b6b09dac91b7e777a00b26bf8b9e9a2048a0: digest: sha256:a697209b4a44cc8fd0718cc883e9b6b09dac91b7e777a00b26bf8b9e9a2048a0 size: 2495
+2026/10/18 23:07:31 ant.azrty.com/ev5-oci/nginx:v1: digest: sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 size: 10333
+
+setup done 2026-10-18T19:07:31Z

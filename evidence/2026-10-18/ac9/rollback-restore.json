@@ -1,0 +1,11 @@
+{
+  "restored": true,
+  "manifest_sha256": "b1ac11a884783e64bffd334ef40c348990e236e358d00ee4255e2f9145706151",
+  "schema_version": 24,
+  "tables": 44,
+  "rows": 282,
+  "blobs": 33,
+  "blob_bytes": 5439784,
+  "secrets_verified": 0,
+  "migrated_to_current_schema": true
+}

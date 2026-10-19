@@ -1,0 +1,2 @@
+{"time":"2026-10-18T22:24:25.916022672Z","level":"ERROR","msg":"backup verification failed","reason":"backup integrity verification failed: manifest digest does not match the expected value"}
+command terminated with exit code 1

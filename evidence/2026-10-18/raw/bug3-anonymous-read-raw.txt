@@ -1,0 +1,4 @@
+publish: 201
+feed anonymous_read: true
+GET with token: 200
+GET without credentials: 401
