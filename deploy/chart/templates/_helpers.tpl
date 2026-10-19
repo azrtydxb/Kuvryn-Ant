@@ -34,6 +34,7 @@ app.kubernetes.io/instance: {{ .Release.Name | quote }}
 {{- if .Values.federation.enabled -}}
 {{- if not (regexMatch "^https://[^/?#@]+$" .Values.federation.publicURL) }}{{ fail "federation.publicURL must be an https origin without a path" }}{{ end -}}
 {{- if not (has .Values.federation.service.type (list "LoadBalancer" "NodePort" "ClusterIP")) }}{{ fail "federation.service.type must be LoadBalancer, NodePort or ClusterIP" }}{{ end -}}
+{{- if and .Values.federation.tlsRoute.enabled (or (not .Values.federation.tlsRoute.hostname) (not .Values.federation.tlsRoute.parentRefs)) }}{{ fail "federation.tlsRoute.hostname and parentRefs are required" }}{{ end -}}
 {{- if and .Values.federation.ingressPassthrough.enabled (not .Values.federation.ingressPassthrough.host) }}{{ fail "federation.ingressPassthrough.host is required" }}{{ end -}}
 {{- if eq (int .Values.federation.port) (int .Values.service.port) }}{{ fail "federation.port must differ from the HTTP port" }}{{ end -}}
 {{- end -}}

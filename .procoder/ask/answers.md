@@ -63,3 +63,27 @@ Answer: Allowlist api/generated.go in .gitleaks.toml (owner, 2026-10-18). The fl
 Key: typescript-eslint cannot support TypeScript 7
 
 Answer: Exempt .tsx lint only, keep the gate blocking; tsc still type-checks (owner, 2026-10-18). Upstream: azrtydxb/procoder#324.
+
+## (no longer asked)
+
+Key: Edge load balancer bandwidth on OKE
+
+Answer: The shared OKE edge LB is raised to 100 Mbit/s (flexible shape, min 10, max 100) (owner, 2026-10-19).
+
+## (no longer asked)
+
+Key: Bandwidth for kw downloads from OKE
+
+Answer: Keep 100 Mbit/s for kw downloads (owner, 2026-10-19).
+
+## (no longer asked)
+
+Key: OKE load balancer type for the edge
+
+Answer: Keep the OKE flexible LB; do not switch to a Network Load Balancer (owner, 2026-10-19). The OCI LB does not preserve client IPs, so the federation source allowlist is enforced in the OCI security list for port 8444, not by Envoy.
+
+## (no longer asked)
+
+Key: Dedicated federation LoadBalancer on OKE
+
+Answer: Consolidate federation onto the shared Envoy Gateway edge (TLS Passthrough listener on 8444 plus a TLSRoute) and delete the dedicated federation LB (owner, 2026-10-19).

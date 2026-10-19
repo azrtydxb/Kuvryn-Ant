@@ -16,6 +16,10 @@ Federation keys (CA, authority signing key, member keys) are stored encrypted in
 
 Helm: set `federation.enabled`, `federation.publicURL` and `federation.service` (LoadBalancer, NodePort or ClusterIP). TLS must reach the pod unterminated: use the federation Service directly, or `federation.ingressPassthrough` with ingress-nginx `--enable-ssl-passthrough`. `federation.join.existingSecret` enables automatic join, and `federation.networkPolicyFrom` opens the port to the other members when `networkPolicy.enabled` is set. A member must be reachable by name from every member that initiates traffic to it (status pings, nudges, search and proxied reads, replication from a feed home): `hostAliases` (chart value) gives a pod the address of a member whose federation name only its own site resolves, and a ClusterIP federation Service needs a LAN-reachable companion (`deploy/examples/kw-federation-lan.yaml`). The examples in `deploy/examples/` contain commented federation sections.
 
+### Federation through a shared Gateway API gateway (OKE)
+
+Set `federation.tlsRoute.enabled`, `.hostname` and `.parentRefs` (gateway plus the TLS Passthrough listener `sectionName`) to publish the federation port through a shared Envoy Gateway instead of a dedicated LoadBalancer; the chart then renders a `TLSRoute` to the federation Service, and `federation.service.type` can be `ClusterIP`. The gateway listener must use protocol TLS, mode Passthrough, so mTLS still ends in the pod. The OCI load balancer does not preserve client IPs: restrict the source allowlist in the OCI security list for the listener port, not in Envoy. OKE runs this way: `ant-federation.azrty.com:8444` resolves to the edge IP, and rollback is to re-enable the LoadBalancer Service and point DNS back at its address.
+
 ## Procedures
 
 All operations are available in the console (Federation page) and the management API (`/api/v1/federation…`, see `api/openapi.yaml`). Reads need `read` on the instance; changes need instance `admin`. MCP exposes `get_federation_status` and `list_federation_members`.
