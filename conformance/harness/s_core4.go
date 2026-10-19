@@ -279,6 +279,8 @@ func runNpm(c *Ctx) {
 	rsrc := c.LastSource
 	ok := c.Step("remote pull-through miss: pnpm add left-pad@1.3.0 from registry.npmjs.org via feed", n(install+"; "+rc(rslug, "$TOKEN")+"; "+
 		`rm -rf rc && mkdir rc && cd rc && echo '{"name":"rc","version":"1.0.0"}' > package.json && pnpm add left-pad@1.3.0 && node -e 'console.log(require("left-pad")("x",3))' | grep -x "  x"`))
+	c.Step("audit: pnpm audit via remote feed (security/advisories/bulk forwarded upstream)", n(install+"; "+rc(rslug, "$TOKEN")+"; cd rc && pnpm audit --audit-level critical"), SkipUnless(ok))
+	c.Step("audit: npm audit via remote feed", n(install+"; "+rc(rslug, "$TOKEN")+"; "+`rm -rf au && mkdir au && cd au && echo '{"name":"au","version":"1.0.0"}' > package.json && npm install left-pad@1.3.0 --package-lock-only --no-audit && npm audit --audit-level critical`), SkipUnless(ok))
 	c.Step("remote pull-through hit: tarball served with upstream unreachable", func() error {
 		if err := c.SetRemoteOrigin(rsrc, Unreachable); err != nil {
 			return err

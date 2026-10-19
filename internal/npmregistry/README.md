@@ -83,3 +83,7 @@ References: [F14 contract](../../docs/planning/contracts/F14.md),
 Remote packuments are rewritten as a stream (one version in memory at a time), so
 the 16 MiB limit applies only to locally stored packuments. A remote packument
 above the metadata cache bound is streamed uncached from upstream on each request.
+
+## Audit
+
+`POST /feeds/{slug}/npm/-/npm/v1/security/{advisories/bulk,audits/quick,audits}` (used by `npm audit` and `pnpm audit`) is forwarded to the feed's remote npm source. The request body is capped at 1 MiB (gzip bodies are decoded within the same bound), upstream calls time out after 20 s and answers are cached in memory for 2 minutes. A feed with no remote source, or an upstream without the endpoint, answers 404 ("audit unavailable"); an unreachable upstream answers 502.

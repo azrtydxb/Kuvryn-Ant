@@ -1,12 +1,12 @@
 {
   "format": "npm",
   "target": "local",
-  "run_id": "46dad4",
-  "started": "2026-10-19T10:42:51Z",
+  "run_id": "4b321b",
+  "started": "2026-10-19T12:10:59Z",
   "ant": {
     "api_version": "v1",
-    "target_base_url": "http://127.0.0.1:31631",
-    "version": "git:037527d"
+    "target_base_url": "http://127.0.0.1:49923",
+    "version": "git:6f447fd"
   },
   "clients": {
     "node": {
@@ -19,98 +19,112 @@
     {
       "name": "client-version",
       "status": "pass",
-      "duration_ms": 3148,
+      "duration_ms": 3298,
       "detail": "",
       "output_tail": "npm notice\nnpm notice New major version of npm available! 11.19.1 -\u003e 12.2.0\nnpm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0\nnpm notice To update run: npm install -g npm@12.2.0\nnpm notice\npnpm 10.18.3 / node v24.22.0 / npm 11.19.1\n"
     },
     {
       "name": "publish: pnpm publish 0.1.0",
       "status": "pass",
-      "duration_ms": 803,
+      "duration_ms": 787,
       "detail": "",
-      "output_tail": "npm notice\nnpm notice package: @kcdemo/pkg-46dad4@0.1.0\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-46dad4\nnpm notice version: 0.1.0\nnpm notice filename: kcdemo-pkg-46dad4-0.1.0.tgz\nnpm notice package size: 239 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: 924544c24a93cbd2d55f0014b96440707d4846b9\nnpm notice integrity: sha512-jSbSzWTJ4BWJK[...]B3g3BHsJi3QHQ==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:31631/feeds/cf-npm-local-46dad4/npm/ with tag latest and default access\n+ @kcdemo/pkg-46dad4@0.1.0\n"
+      "output_tail": "npm notice\nnpm notice package: @kcdemo/pkg-4b321b@0.1.0\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-4b321b\nnpm notice version: 0.1.0\nnpm notice filename: kcdemo-pkg-4b321b-0.1.0.tgz\nnpm notice package size: 241 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: 71b902e34dca0ccd9d59090d030d7009f3a7e8f2\nnpm notice integrity: sha512-7d3RkROIwPZ/h[...]2mLHPmoaEmuGA==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:49923/feeds/cf-npm-local-4b321b/npm/ with tag latest and default access\n+ @kcdemo/pkg-4b321b@0.1.0\n"
     },
     {
       "name": "consume: pnpm add + require from the feed",
       "status": "pass",
-      "duration_ms": 602,
+      "duration_ms": 590,
       "detail": "",
-      "output_tail": "Progress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +1\n+\nProgress: resolved 1, reused 0, downloaded 1, added 1, done\n\ndependencies:\n+ @kcdemo/pkg-46dad4 0.1.0\n\nDone in 342ms using pnpm v10.18.3\n42\n"
+      "output_tail": "Progress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +1\n+\nProgress: resolved 1, reused 0, downloaded 1, added 1, done\n\ndependencies:\n+ @kcdemo/pkg-4b321b 0.1.0\n\nDone in 325ms using pnpm v10.18.3\n42\n"
     },
     {
       "name": "same-endpoint write then read: publish 0.1.1 with default (latest) tag",
       "status": "unsupported",
-      "duration_ms": 791,
-      "detail": "documented limitation (internal/npmregistry README: initial publish tags immutable; a second version using latest conflicts): exit status 1: npm notice\nnpm notice package: @kcdemo/pkg-46dad4@0.1.1\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-46dad4\nnpm notice version: 0.1.1\nnpm notice filename: kcdemo-pkg-46dad4-0.1.1.tgz\nnpm notice package size: 237 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: 305b4d591f82207c5284661a18f82f972bfe45c3\nnpm notice integrity: sha512-MGEtpVqramuVp[...]kQy7ht9/QN2bQ==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:31631/feeds/cf-npm-local-46dad4/npm/ with tag latest and default access\nnpm error code E409\nnpm error 409 Conflict - PUT http://127.0.0.1:31631/feeds/cf-npm-local-46dad4/npm/@kcdemo%2fpkg-46dad4 - Conflict\nnpm error A complete log of this run can be found in: /work/home/.npm/_logs/2026-10-19T10_42_56_619Z-debug-0.log\n",
-      "output_tail": "npm notice\nnpm notice package: @kcdemo/pkg-46dad4@0.1.1\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-46dad4\nnpm notice version: 0.1.1\nnpm notice filename: kcdemo-pkg-46dad4-0.1.1.tgz\nnpm notice package size: 237 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: 305b4d591f82207c5284661a18f82f972bfe45c3\nnpm notice integrity: sha512-MGEtpVqramuVp[...]kQy7ht9/QN2bQ==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:31631/feeds/cf-npm-local-46dad4/npm/ with tag latest and default access\nnpm error code E409\nnpm error 409 Conflict - PUT http://127.0.0.1:31631/feeds/cf-npm-local-46dad4/npm/@kcdemo%2fpkg-46dad4 - Conflict\nnpm error A complete log of this run can be found in: /work/home/.npm/_logs/2026-10-19T10_42_56_619Z-debug-0.log\n"
+      "duration_ms": 828,
+      "detail": "documented limitation (internal/npmregistry README: initial publish tags immutable; a second version using latest conflicts): exit status 1: npm notice\nnpm notice package: @kcdemo/pkg-4b321b@0.1.1\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-4b321b\nnpm notice version: 0.1.1\nnpm notice filename: kcdemo-pkg-4b321b-0.1.1.tgz\nnpm notice package size: 239 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: f1f83d7705d9d34aedd2b3a6dda8d907ea029e6d\nnpm notice integrity: sha512-+67QpAwp77SkD[...]xAg4muuiP0kiA==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:49923/feeds/cf-npm-local-4b321b/npm/ with tag latest and default access\nnpm error code E409\nnpm error 409 Conflict - PUT http://127.0.0.1:49923/feeds/cf-npm-local-4b321b/npm/@kcdemo%2fpkg-4b321b - Conflict\nnpm error A complete log of this run can be found in: /work/home/.npm/_logs/2026-10-19T12_11_04_362Z-debug-0.log\n",
+      "output_tail": "npm notice\nnpm notice package: @kcdemo/pkg-4b321b@0.1.1\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-4b321b\nnpm notice version: 0.1.1\nnpm notice filename: kcdemo-pkg-4b321b-0.1.1.tgz\nnpm notice package size: 239 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: f1f83d7705d9d34aedd2b3a6dda8d907ea029e6d\nnpm notice integrity: sha512-+67QpAwp77SkD[...]xAg4muuiP0kiA==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:49923/feeds/cf-npm-local-4b321b/npm/ with tag latest and default access\nnpm error code E409\nnpm error 409 Conflict - PUT http://127.0.0.1:49923/feeds/cf-npm-local-4b321b/npm/@kcdemo%2fpkg-4b321b - Conflict\nnpm error A complete log of this run can be found in: /work/home/.npm/_logs/2026-10-19T12_11_04_362Z-debug-0.log\n"
     },
     {
       "name": "same-endpoint write then read: publish 0.1.2 with --tag next, then pnpm add @next",
       "status": "pass",
-      "duration_ms": 1014,
+      "duration_ms": 1016,
       "detail": "",
-      "output_tail": "npm notice\nnpm notice package: @kcdemo/pkg-46dad4@0.1.2\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-46dad4\nnpm notice version: 0.1.2\nnpm notice filename: kcdemo-pkg-46dad4-0.1.2.tgz\nnpm notice package size: 236 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: dd35ec24a7e4bcbd76a82162ca6043870606ae4f\nnpm notice integrity: sha512-r7xVyqtP/9wEi[...]7Danjvzlfz+Cg==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:31631/feeds/cf-npm-local-46dad4/npm/ with tag next and default access\n+ @kcdemo/pkg-46dad4@0.1.2\nProgress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +1 -1\n+-\nProgress: resolved 1, reused 0, downloaded 1, added 1, done\n\ndependencies:\n- @kcdemo/pkg-46dad4 0.1.0\n+ @kcdemo/pkg-46dad4 0.1.2\n\nDone in 201ms using pnpm v10.18.3\n"
+      "output_tail": "npm notice\nnpm notice package: @kcdemo/pkg-4b321b@0.1.2\nnpm notice Tarball Contents\nnpm notice 33B index.js\nnpm notice 98B package.json\nnpm notice Tarball Details\nnpm notice name: @kcdemo/pkg-4b321b\nnpm notice version: 0.1.2\nnpm notice filename: kcdemo-pkg-4b321b-0.1.2.tgz\nnpm notice package size: 237 B\nnpm notice unpacked size: 131 B\nnpm notice shasum: 000cf6ce8013241307b76376c4244468ddea7593\nnpm notice integrity: sha512-c4IPuBDUB8pSo[...]ocO3hg+YpmSpA==\nnpm notice total files: 2\nnpm notice\nnpm notice Publishing to http://127.0.0.1:49923/feeds/cf-npm-local-4b321b/npm/ with tag next and default access\n+ @kcdemo/pkg-4b321b@0.1.2\nProgress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +1 -1\n+-\nProgress: resolved 1, reused 0, downloaded 1, added 1, done\n\ndependencies:\n- @kcdemo/pkg-4b321b 0.1.0\n+ @kcdemo/pkg-4b321b 0.1.2\n\nDone in 225ms using pnpm v10.18.3\n"
     },
     {
       "name": "dist-tag: npm dist-tag add, ls and rm",
       "status": "pass",
-      "duration_ms": 683,
+      "duration_ms": 717,
       "detail": "",
-      "output_tail": "+beta: @kcdemo/pkg-46dad4@0.1.2\n-beta: @kcdemo/pkg-46dad4@0.1.2\n"
+      "output_tail": "+beta: @kcdemo/pkg-4b321b@0.1.2\n-beta: @kcdemo/pkg-4b321b@0.1.2\n"
     },
     {
       "name": "delete/unlist: npm unpublish 0.1.2",
       "status": "pass",
-      "duration_ms": 1168,
+      "duration_ms": 663,
       "detail": "",
-      "output_tail": "npm warn using --force Recommended protections disabled.\n- @kcdemo/pkg-46dad4@0.1.2\n"
+      "output_tail": "npm warn using --force Recommended protections disabled.\n- @kcdemo/pkg-4b321b@0.1.2\n"
     },
     {
       "name": "delete/unlist: management API delete 0.1.0",
       "status": "pass",
-      "duration_ms": 8,
+      "duration_ms": 6,
       "detail": "",
       "output_tail": ""
     },
     {
       "name": "remote pull-through miss: pnpm add left-pad@1.3.0 from registry.npmjs.org via feed",
       "status": "pass",
-      "duration_ms": 2039,
+      "duration_ms": 1060,
       "detail": "",
-      "output_tail": "\n   ╭──────────────────────────────────────────╮\n   │                                          │\n   │   Update available! 10.18.3 → 12.14.0.   │\n   │   Changelog: https://pnpm.io/v/12.14.0   │\n   │     To update, run: pnpm add -g pnpm     │\n   │                                          │\n   ╰──────────────────────────────────────────╯\n\n WARN  deprecated left-pad@1.3.0: use String.prototype.padStart()\nProgress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +1\n+\nProgress: resolved 1, reused 0, downloaded 1, added 1, done\n\ndependencies:\n+ left-pad 1.3.0 deprecated\n\nDone in 746ms using pnpm v10.18.3\n  x\n"
+      "output_tail": "\n   ╭──────────────────────────────────────────╮\n   │                                          │\n   │   Update available! 10.18.3 → 12.14.0.   │\n   │   Changelog: https://pnpm.io/v/12.14.0   │\n   │     To update, run: pnpm add -g pnpm     │\n   │                                          │\n   ╰──────────────────────────────────────────╯\n\n WARN  deprecated left-pad@1.3.0: use String.prototype.padStart()\nProgress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +1\n+\nProgress: resolved 1, reused 0, downloaded 1, added 1, done\n\ndependencies:\n+ left-pad 1.3.0 deprecated\n\nDone in 763ms using pnpm v10.18.3\n  x\n"
+    },
+    {
+      "name": "audit: pnpm audit via remote feed (security/advisories/bulk forwarded upstream)",
+      "status": "pass",
+      "duration_ms": 1143,
+      "detail": "",
+      "output_tail": "No known vulnerabilities found\n"
+    },
+    {
+      "name": "audit: npm audit via remote feed",
+      "status": "pass",
+      "duration_ms": 1343,
+      "detail": "",
+      "output_tail": "\nup to date in 495ms\nfound 0 vulnerabilities\n"
     },
     {
       "name": "remote pull-through hit: tarball served with upstream unreachable",
       "status": "pass",
-      "duration_ms": 7,
+      "duration_ms": 6,
       "detail": "",
       "output_tail": "\u003c����}\u0001?��\u001e�8�o\u0015H�Q�E3�\u001e\"�lar\u0016�\r\u001d\u000f�\nm���e#�^w�^\u001c'\"nv�X\u0017\u0017n�æՎ�X��$-\u003e\u001f}=@���7\u0026\u001c�Q����M珛8f��NY?Q�����{�\u000f��^Ǿ��wQ������(\"��}U�f���\u001aI��-�nA�6t�-�\u000b\th�\u0010b�\u0010�(M.���L���\u0018y�����I\u0026�f���E��K����]�#�\u0006ӯ�cu?\nk��(�\u001e�l����x�U��q\u001f\u0003Ia���ƸC��`\u0001����,��dE�[ތ�ED-� j��\u001dه��\u001d�RzHb�\r�\u0026Ҷ-��PA����\u0019�5@�#:��y��[�\u0012�����z،��� \f}\u0001��\u001b�\u001b��Ҥ�j�Pgt��E�oJ�z;�\u0019�D�(Q�4C\u0014�\u0005!\u0002épԡ���ʘ����/��7��(a�\u0000�����bة��r\u0013��\u0002f�J��{�)�L�;E�8��D��qS�~\fR'G���\u000b��I���1��\u0010=�/)D��s��/cBga�*�KYNs�U���r��t�(�\u0015]aX\u0003�6�n23)�\u0012\u0005�\u0026$z%\u0012%\u001a7b�_�Q\u0010Abz\u0013*��^���Kʧ��X%�鲢�'J���6\u0000a�7�售��:���i�B;�^\\j�\u0013(\u0004���\u0014��w�\u0007j\u0018\u0015\u003e\u0002.k���_�IRCFi=%\u0014������A[�\b��\b|i�\"�e�\r\u003e�b\u000e\u0011�\t7�a-\u0001�é\u001a쑾-��\u0019U�\u0011X�ˉ|�=�L\u0011\u0016\u0013��\u000f��R�\u0011�f},\u0002։\u000e��B�k\n)��\nj�\u001b���\u0015+ e�b\u0012-U��\\�S)z׌-;J@�����Hw�\u0011R/؇+\u000e\u001a���\u0007bT\u001c�,q2@\u0005�\u001b���87��W23\u0015�\u001a���� c�u��p�����{�\b����\u0006�#ڏQy�\u000e\b�Y�\u0012G�۪������b\u0012%�_\u0016�\b\\%\u0000\n)�%\u0001J�~A\u0002ˇY���a���\u0004�Jh��\u001e5:\u003e�����\u0013\u0005�\u001a���BC��%h��\u001a���ϰ\u0010�\\4�\u0010�ޚ����ld_���5+\r��e�rM\u001fhii,\u0019N\u0010��\u003eei�ܧL7���`�`;��2�����#!W�1B�0����]z\u0011�^�k跻\u0013���O�m���^����\u001eXv�ӹ?����xf���u�\n\u003eT�����z���G��9�]\u003cv-�Ü��8�Oݲ�����Χ)\u000b��_\u000b��`\u0013x���l���~�B��~�պ��s7�Ϫ��\u001d\u0007P\\]����GA�W).J�����?�����o�n��e��:�����v���\u0017eQ�Ux�W\u003e{7�S0�C�\u003c@\\\u0004ɫ38'�\"���Pf��R���/1�\u0000��3s0��U\u003ep�jz�B�\u0005\u003e�|�m@\u0017\u0014\u000e\u0013O�\u001c\u0004�D�;\f�\u0006\u001d���0��r\b����\u0000 ��c���\u00021+X2\u0015)ec�\u0007t��\u003c\u0013��\u0006�u\u00139�6wƵ�(�\u003c:3?�h\"���=�\u0002�H\u0004@��ZOL:\u0015�ׂ��S^u�rQ/2\u0010M\u0010\t���\u001d_,$��\u001c����G��p�v\u0013K{$d=��I��� \u0017�]E�ء\u0003�X�\u0014��\u001a袖9�|)��1�mFݜ�i͠!\u0019������¼�\u0013��C�ԕ�V�\u001a\u0016����}�c�\nZ+\u0016�j��K\t���R�\u0016Ť׌է�V\u0014�-����D�\u000e\ni�t�tI\u001c\u001b�����ޜ=����j��Jz�\u0026\u0007jK�=�6��5��`\u0017\t�� E��ow����'�����f�e]K��?��}\rN��\u0011\u0018��\\b���\u0010���ܗϵ�\u000f�$Q�\u0000F\u0000\u0000"
     },
     {
       "name": "auth denial: invalid token rejected by pnpm view",
       "status": "pass",
-      "duration_ms": 572,
+      "duration_ms": 612,
       "detail": "",
-      "output_tail": "npm error code E401\nnpm error Unable to authenticate, your authentication token seems to be invalid.\nnpm error To correct this please try logging in again with:\nnpm error   npm login\nnpm error A complete log of this run can be found in: /work/home/.npm/_logs/2026-10-19T10_43_02_239Z-debug-0.log\n"
+      "output_tail": "npm error code E401\nnpm error Unable to authenticate, your authentication token seems to be invalid.\nnpm error To correct this please try logging in again with:\nnpm error   npm login\nnpm error A complete log of this run can be found in: /work/home/.npm/_logs/2026-10-19T12_11_11_064Z-debug-0.log\n"
     },
     {
       "name": "auth denial: unauthenticated packument returns 401",
       "status": "pass",
-      "duration_ms": 4,
+      "duration_ms": 1,
       "detail": "",
       "output_tail": "{\"error\":\"Unauthorized\",\"reason\":\"npm bearer token required\"}\n"
     }
   ],
-  "duration_ms": 75877,
+  "duration_ms": 77112,
   "summary": {
     "fail": 0,
-    "pass": 11,
+    "pass": 13,
     "skip": 0,
     "unsupported": 1
   },
   "result": "pass",
   "feed_cleanup": [
-    "3c6eae33:200",
-    "7081d929:200"
+    "f9f6ea25:200",
+    "3cfc0b76:200"
   ]
 }
