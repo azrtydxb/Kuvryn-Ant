@@ -28,6 +28,8 @@ read-only for the shared feeds (see "Authority").
 
 OKE is authoritative for these feeds (same slug on both sites):
 `oci-hosted npm go cargo pypi maven helm nuget sccache`.
+A feed converted to purpose `cache` (see `build-caches.md`) leaves this set: cache feeds are never replicated, so
+its rule, topology key, bindings and `oke-<slug>` job must be removed first.
 
 kw has one continuous job per feed (`oke-<slug>`, 30s poll, peer `oke-prod`):
 

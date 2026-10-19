@@ -3,6 +3,7 @@ package retention
 import (
 	"fmt"
 	"io"
+	"sort"
 	"sync"
 	"time"
 )
@@ -59,6 +60,7 @@ func WriteMetrics(w io.Writer) {
 	last, versions, bytes := m.lastRun, m.evictedVersions, m.evictedBytes
 	m.mu.Unlock()
 	if !seen {
+		writePurposeMetrics(w, 0, 0)
 		return
 	}
 	gauge := func(name, help string, v any) {
@@ -82,8 +84,85 @@ func WriteMetrics(w io.Writer) {
 	gauge("ant_storage_pressure_last_run_timestamp_seconds", "Unix time of the last storage-pressure check.", last.Unix())
 	counter("ant_storage_pressure_evicted_versions_total", "Versions evicted under storage pressure by this process.", versions)
 	counter("ant_storage_pressure_evicted_bytes_total", "Bytes made reclaimable by pressure eviction in this process.", bytes)
+	writePurposeMetrics(w, versions, bytes)
 	fmt.Fprintln(w, "# HELP ant_storage_pressure_state Current storage-pressure state (one-hot).\n# TYPE ant_storage_pressure_state gauge")
 	for _, s := range pressureStates {
 		fmt.Fprintf(w, "ant_storage_pressure_state{state=%q} %d\n", s, flag(s == state))
+	}
+}
+
+// cacheMetrics holds process counters for evictions by feed purpose and reason,
+// and the last measured bytes of each cache feed.
+type cacheMetrics struct {
+	mu        sync.Mutex
+	evictions map[string]*cacheEvictions
+	usage     map[string]CacheUsage
+}
+
+type cacheEvictions struct{ versions, bytes uint64 }
+
+var cacheMetricsState = &cacheMetrics{evictions: map[string]*cacheEvictions{}, usage: map[string]CacheUsage{}}
+
+func (m *cacheMetrics) observeEviction(reason string, versions int, bytes int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e := m.evictions[reason]
+	if e == nil {
+		e = &cacheEvictions{}
+		m.evictions[reason] = e
+	}
+	e.versions += uint64(versions)
+	e.bytes += uint64(max(0, bytes))
+}
+
+func (m *cacheMetrics) observeUsage(usage []CacheUsage) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.usage = map[string]CacheUsage{}
+	for _, u := range usage {
+		m.usage[u.Slug] = u
+	}
+}
+
+// writePurposeMetrics emits eviction counters and cache usage labelled by feed
+// purpose. Cache feeds report reasons cache_idle, cache_max_bytes and
+// pressure_lru; ordinary (artifacts) feeds report the pressure counters of
+// WriteMetrics under purpose "artifacts".
+func writePurposeMetrics(w io.Writer, artifactsVersions, artifactsBytes uint64) {
+	m := cacheMetricsState
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// The pressure totals include cache evictions; report those under purpose cache only.
+	if e := m.evictions[cacheReasonPress]; e != nil {
+		artifactsVersions -= min(artifactsVersions, e.versions)
+		artifactsBytes -= min(artifactsBytes, e.bytes)
+	}
+	fmt.Fprintln(w, "# HELP ant_storage_evicted_versions_total Versions evicted by this process, by feed purpose and reason.\n# TYPE ant_storage_evicted_versions_total counter")
+	fmt.Fprintf(w, "ant_storage_evicted_versions_total{purpose=\"artifacts\",reason=\"pressure_lru\"} %d\n", artifactsVersions)
+	reasons := make([]string, 0, len(m.evictions))
+	for r := range m.evictions {
+		reasons = append(reasons, r)
+	}
+	sort.Strings(reasons)
+	for _, r := range reasons {
+		fmt.Fprintf(w, "ant_storage_evicted_versions_total{purpose=\"cache\",reason=%q} %d\n", r, m.evictions[r].versions)
+	}
+	fmt.Fprintln(w, "# HELP ant_storage_evicted_bytes_total Bytes made reclaimable by eviction in this process, by feed purpose and reason.\n# TYPE ant_storage_evicted_bytes_total counter")
+	fmt.Fprintf(w, "ant_storage_evicted_bytes_total{purpose=\"artifacts\",reason=\"pressure_lru\"} %d\n", artifactsBytes)
+	for _, r := range reasons {
+		fmt.Fprintf(w, "ant_storage_evicted_bytes_total{purpose=\"cache\",reason=%q} %d\n", r, m.evictions[r].bytes)
+	}
+	slugs := make([]string, 0, len(m.usage))
+	for s := range m.usage {
+		slugs = append(slugs, s)
+	}
+	sort.Strings(slugs)
+	fmt.Fprintln(w, "# HELP ant_feed_used_bytes Distinct blob bytes referenced by a cache feed, at its last measurement.\n# TYPE ant_feed_used_bytes gauge")
+	for _, s := range slugs {
+		fmt.Fprintf(w, "ant_feed_used_bytes{purpose=\"cache\",feed=%q} %d\n", s, m.usage[s].Bytes)
+	}
+	fmt.Fprintln(w, "# HELP ant_feed_max_bytes Configured size limit of a cache feed, 0 when unlimited.\n# TYPE ant_feed_max_bytes gauge")
+	for _, s := range slugs {
+		fmt.Fprintf(w, "ant_feed_max_bytes{purpose=\"cache\",feed=%q} %d\n", s, m.usage[s].MaxBytes)
 	}
 }

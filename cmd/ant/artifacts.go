@@ -121,7 +121,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 		return nil, err
 	}
 	policies := artifact.Policies{DB: pool, InstanceID: instance}
-	service := &artifact.Service{DB: pool, Lease: manager.Lease, Router: policies.Load, Storage: stores.Resolve}
+	service := &artifact.Service{DB: pool, Lease: manager.Lease, Router: policies.Load, Storage: stores.Resolve, CacheSweepGrace: cfg.Retention.PressureSweepGrace, GCGrace: cfg.Retention.Grace}
 	registry, err := oci.New(pool, service, filepath.Join(cfg.Storage.Directory, "uploads"))
 	if err != nil {
 		stores.Close()

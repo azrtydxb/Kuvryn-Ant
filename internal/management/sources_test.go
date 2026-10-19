@@ -60,6 +60,7 @@ func newSourceHTTPFixture(t *testing.T) *sourceHTTPFixture {
 	codec := NewCursorCodec(make([]byte, 32))
 	RegisterFeeds(mux, pool, codec)
 	RegisterSources(mux, pool, codec)
+	RegisterConsole(mux, pool, codec)
 	RegisterPublishPolicies(mux, pool)
 	doc, err := api.GetSpec()
 	if err != nil {

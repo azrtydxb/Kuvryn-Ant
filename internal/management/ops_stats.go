@@ -175,9 +175,11 @@ type StorageUsage struct {
 	ReclaimableBytes *int64                    `json:"reclaimable_bytes,omitempty"`
 	InGraceBytes     *int64                    `json:"in_grace_bytes,omitempty"`
 	Pressure         *retention.PressureStatus `json:"pressure,omitempty"`
-	StagingBytes     *int64                    `json:"staging_bytes,omitempty"`
-	Domains          []DomainUsage             `json:"domains"`
-	MeasuredAt       time.Time                 `json:"measured_at"`
+	// CacheFeeds lists the cache feeds with the bytes each holds.
+	CacheFeeds   []CacheFeedUsage `json:"cache_feeds"`
+	StagingBytes *int64           `json:"staging_bytes,omitempty"`
+	Domains      []DomainUsage    `json:"domains"`
+	MeasuredAt   time.Time        `json:"measured_at"`
 }
 
 func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
@@ -187,7 +189,7 @@ func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := h.ctx(r)
 	defer cancel()
-	out := StorageUsage{Backend: h.d.StorageBackend, Domains: []DomainUsage{}, MeasuredAt: time.Now().UTC()}
+	out := StorageUsage{Backend: h.d.StorageBackend, Domains: []DomainUsage{}, CacheFeeds: []CacheFeedUsage{}, MeasuredAt: time.Now().UTC()}
 	err := h.db.QueryRow(ctx, `SELECT count(*),COALESCE(sum(size_bytes),0)::bigint,
  COALESCE((SELECT sum(b.size_bytes) FROM assets a JOIN blobs b ON b.id=a.blob_id WHERE a.instance_id=$1),0)::bigint,
  COALESCE(sum(size_bytes) FILTER (WHERE NOT EXISTS(SELECT 1 FROM assets a WHERE a.blob_id=blobs.id)),0)::bigint,
@@ -228,6 +230,27 @@ func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
 			grace := max(0, out.UnreferencedBytes-st.ReclaimableBytes)
 			out.ReclaimableBytes, out.InGraceBytes, out.Pressure = &st.ReclaimableBytes, &grace, &st
 		}
+	}
+	crows, cerr := h.db.Query(ctx, `SELECT f.id::text,f.slug,f.format,f.cache_max_idle_seconds,f.cache_max_bytes,
+ COALESCE((SELECT sum(b.size_bytes) FROM blobs b WHERE b.id IN (SELECT a.blob_id FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id)),0)::bigint AS bytes,
+ (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id) AS versions
+ FROM feeds f WHERE f.instance_id=$1 AND f.purpose='cache' ORDER BY bytes DESC,f.slug LIMIT 100`, p.InstanceID)
+	if cerr != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "storage usage unavailable")
+		return
+	}
+	defer crows.Close()
+	for crows.Next() {
+		var u CacheFeedUsage
+		if cerr = crows.Scan(&u.FeedID, &u.Slug, &u.Format, &u.MaxIdleSeconds, &u.MaxBytes, &u.Bytes, &u.Versions); cerr != nil {
+			Error(w, r, 503, api.ErrorCodeUnavailable, "storage usage unavailable")
+			return
+		}
+		out.CacheFeeds = append(out.CacheFeeds, u)
+	}
+	if crows.Err() != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "storage usage unavailable")
+		return
 	}
 	if h.d.StagingBytes != nil {
 		if n, ok := h.d.StagingBytes(ctx); ok {

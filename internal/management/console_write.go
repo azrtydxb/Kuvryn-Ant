@@ -205,17 +205,25 @@ type BatchFeedResult struct {
 
 func (h consoleHandlers) batchCreateFeed(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Slug          string          `json:"slug"`
-		Format        string          `json:"format"`
-		AnonymousRead bool            `json:"anonymous_read"`
-		SourceIDs     []string        `json:"source_ids"`
-		PublishPolicy json.RawMessage `json:"publish_policy"`
+		Slug          string            `json:"slug"`
+		Format        string            `json:"format"`
+		AnonymousRead bool              `json:"anonymous_read"`
+		SourceIDs     []string          `json:"source_ids"`
+		PublishPolicy json.RawMessage   `json:"publish_policy"`
+		Purpose       string            `json:"purpose"`
+		CachePolicy   *CachePolicyInput `json:"cache_policy"`
 	}
-	if !sourceJSON(w, r, &body, "slug", "format", "anonymous_read", "source_ids", "publish_policy") {
+	if !sourceJSON(w, r, &body, "slug", "format", "anonymous_read", "source_ids", "publish_policy", "purpose", "cache_policy") {
 		return
 	}
 	if !slugPattern.MatchString(body.Slug) || !formats[body.Format] {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid feed configuration")
+		return
+	}
+	if body.Purpose == "" {
+		body.Purpose = PurposeArtifacts
+	}
+	if rejectCacheInput(w, r, validateCacheInput(body.Purpose, body.Format, body.CachePolicy)) {
 		return
 	}
 	var ids []string
@@ -266,17 +274,20 @@ func (h consoleHandlers) batchCreateFeed(w http.ResponseWriter, r *http.Request)
 		Anonymous    bool
 		IDs          []string
 		Policy       *PublishPolicyInput
+		Purpose      string
+		Cache        *CachePolicyInput
 	}{body.Slug, body.Format, body.AnonymousRead, ids, func() *PublishPolicyInput {
 		if hasPolicy {
 			return &input
 		}
 		return nil
-	}()})
+	}(), body.Purpose, body.CachePolicy})
 	var pr *problem
 	var applyErr error
 	result, err := database.ExecuteMutation(r.Context(), h.db, database.MutationRequest{InstanceID: p.InstanceID, PrincipalID: p.PrincipalID, Operation: "feed.create.batch", Resource: "feeds", Key: key, Fingerprint: sha256.Sum256(canonical), NonSecretResult: true}, func(ctx context.Context, tx pgx.Tx) (json.RawMessage, error) {
 		out := BatchFeedResult{Sources: []SourceOrderItem{}}
-		err := tx.QueryRow(ctx, `INSERT INTO feeds(instance_id,slug,format,anonymous_read) VALUES($1,$2,$3,$4) RETURNING id,slug,format,revision,anonymous_read`, p.InstanceID, body.Slug, body.Format, body.AnonymousRead).Scan(&out.Feed.ID, &out.Feed.Slug, &out.Feed.Format, &out.Feed.Revision, &out.Feed.AnonymousRead)
+		idle, maxBytes := cachePolicyValues(body.CachePolicy, DefaultCacheMaxIdleSeconds, nil)
+		err := scanFeed(tx.QueryRow(ctx, `INSERT INTO feeds(instance_id,slug,format,anonymous_read,purpose,cache_max_idle_seconds,cache_max_bytes) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING `+feedColumns, p.InstanceID, body.Slug, body.Format, body.AnonymousRead, body.Purpose, idle, maxBytes), &out.Feed)
 		if err != nil {
 			pr = &problem{409, api.ErrorCodeConflict, "a feed with this slug already exists"}
 			if feedConflict(err) == database.ErrConflict {
@@ -290,6 +301,11 @@ func (h consoleHandlers) batchCreateFeed(w http.ResponseWriter, r *http.Request)
 		if err = feedEvent(ctx, tx, p, out.Feed, "feed.create"); err != nil {
 			return nil, err
 		}
+		if out.Feed.Purpose == PurposeCache {
+			if err = feedPurposeAudit(ctx, tx, p, out.Feed, ""); err != nil {
+				return nil, err
+			}
+		}
 		for i, id := range ids {
 			var format string
 			err = tx.QueryRow(ctx, `SELECT format FROM sources WHERE instance_id=$1 AND id=$2 FOR SHARE`, p.InstanceID, id).Scan(&format)
@@ -302,6 +318,12 @@ func (h consoleHandlers) batchCreateFeed(w http.ResponseWriter, r *http.Request)
 			}
 			if format != body.Format {
 				pr = &problem{409, api.ErrorCodeConflict, "source format does not match the feed format"}
+				return nil, database.ErrConflict
+			}
+			if reason, e := checkCacheSourcePlacement(ctx, tx, p.InstanceID, out.Feed.ID, out.Feed.Purpose, id); e != nil {
+				return nil, e
+			} else if reason != "" {
+				pr = &problem{409, api.ErrorCodeConflict, reason}
 				return nil, database.ErrConflict
 			}
 			if _, err = tx.Exec(ctx, `INSERT INTO feed_sources(instance_id,feed_id,source_id,priority) VALUES($1,$2,$3,$4)`, p.InstanceID, out.Feed.ID, id, i); err != nil {

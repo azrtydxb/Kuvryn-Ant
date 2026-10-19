@@ -153,11 +153,16 @@ const searchPackagesSQL = `WITH perms AS (
 ) `
 
 func (h consoleHandlers) searchPackages(w http.ResponseWriter, r *http.Request) {
-	if !singleParams(w, r, "q", "feed", "format", "origin", "limit", "cursor") {
+	if !singleParams(w, r, "q", "feed", "format", "origin", "limit", "cursor", "purpose") {
 		return
 	}
 	values := r.URL.Query()
 	q, feed, format, origin := values.Get("q"), values.Get("feed"), values.Get("format"), values.Get("origin")
+	purpose := values.Get("purpose")
+	if purpose != "" && purpose != "all" && !validPurpose(purpose) {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "purpose must be artifacts, cache or all")
+		return
+	}
 	if len(q) > 256 || !validText(q, 256) || (format != "" && !formats[format]) || (origin != "" && !validSourceKind(origin)) || len(values.Get("cursor")) > 2048 {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid package search")
 		return
@@ -169,6 +174,18 @@ func (h consoleHandlers) searchPackages(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
+	// Cache feeds are build caches, not a package catalogue: hidden from search
+	// unless asked for (purpose=cache or all) or addressed by feed.
+	if purpose == "" {
+		purpose = PurposeArtifacts
+		if feed != "" {
+			purpose = "all"
+		}
+	}
+	filterPurpose := purpose
+	if purpose == "all" {
+		filterPurpose = ""
+	}
 	limit, ok := pageLimit(w, r)
 	if !ok {
 		return
@@ -177,7 +194,7 @@ func (h consoleHandlers) searchPackages(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	scope := scopeHash("package-search", p.InstanceID, p.PrincipalID, p.TokenID, q, feed, format, origin)
+	scope := scopeHash("package-search", p.InstanceID, p.PrincipalID, p.TokenID, q, feed, format, origin, purpose)
 	afterFeed, afterID := "", ""
 	if c := values.Get("cursor"); c != "" {
 		after, err := h.codec.Decode(scope, c)
@@ -195,7 +212,7 @@ func (h consoleHandlers) searchPackages(w http.ResponseWriter, r *http.Request) 
 	// Candidate feeds are authorization-filtered below; a feed the caller cannot
 	// read at all contributes no permission rows and so no packages or counts.
 	frows, err := h.db.Query(ctx, `SELECT f.id::text,fs.source_id::text FROM feeds f LEFT JOIN feed_sources fs ON fs.instance_id=f.instance_id AND fs.feed_id=f.id
- WHERE f.instance_id=$1 AND ($2='' OR f.id=NULLIF($2,'')::uuid) AND ($3='' OR f.format=$3) ORDER BY f.id,fs.priority`, p.InstanceID, feed, format)
+ WHERE f.instance_id=$1 AND ($2='' OR f.id=NULLIF($2,'')::uuid) AND ($3='' OR f.format=$3) AND ($4='' OR f.purpose=$4) ORDER BY f.id,fs.priority`, p.InstanceID, feed, format, filterPurpose)
 	if err != nil {
 		packageError(w, r, err)
 		return

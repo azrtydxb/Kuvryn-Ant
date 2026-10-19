@@ -353,9 +353,12 @@ func (s *Service) reconcileRule(ctx context.Context, fed *federation.Service, m 
 	if err != nil {
 		return s.ruleStatus(ctx, r.ID, r.FeedKey, "pending", "home feed not resolvable: "+err.Error(), "", "")
 	}
-	var format string
-	if err := s.cfg.DB.QueryRow(ctx, `SELECT format FROM feeds WHERE instance_id=$1 AND id=$2`, s.cfg.InstanceID, local).Scan(&format); err != nil {
+	var format, purpose string
+	if err := s.cfg.DB.QueryRow(ctx, `SELECT format,purpose FROM feeds WHERE instance_id=$1 AND id=$2`, s.cfg.InstanceID, local).Scan(&format, &purpose); err != nil {
 		return err
+	}
+	if purpose == "cache" {
+		return s.ruleStatus(ctx, r.ID, r.FeedKey, "conflict", "local feed is a cache feed (purpose cache); cache feeds are never replicated", "", hf.FeedID)
 	}
 	if format != hf.Format {
 		return s.ruleStatus(ctx, r.ID, r.FeedKey, "conflict", fmt.Sprintf("local feed format %q does not match home format %q", format, hf.Format), "", hf.FeedID)

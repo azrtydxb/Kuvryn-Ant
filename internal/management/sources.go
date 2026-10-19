@@ -499,9 +499,9 @@ func (s sourceHandlers) changeAttachment(w http.ResponseWriter, r *http.Request)
 	}{revision, body.Priority})
 	var applyErr error
 	result, err := database.ExecuteMutation(r.Context(), s.db, database.MutationRequest{InstanceID: p.InstanceID, PrincipalID: p.PrincipalID, Operation: operation, Resource: feed + "/" + source, Key: key, Fingerprint: sha256.Sum256(canonical), NonSecretResult: true}, func(ctx context.Context, tx pgx.Tx) (json.RawMessage, error) {
-		var feedFormat string
+		var feedFormat, feedPurpose string
 		var current int64
-		err := tx.QueryRow(ctx, `SELECT format,revision FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, feed).Scan(&feedFormat, &current)
+		err := tx.QueryRow(ctx, `SELECT format,revision,purpose FROM feeds WHERE instance_id=$1 AND id=$2 FOR UPDATE`, p.InstanceID, feed).Scan(&feedFormat, &current, &feedPurpose)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, database.ErrNotFound
 		}
@@ -522,6 +522,12 @@ func (s sourceHandlers) changeAttachment(w http.ResponseWriter, r *http.Request)
 		if r.Method == http.MethodPut {
 			if feedFormat != sourceFormat {
 				return nil, database.ErrConflict
+			}
+			if reason, e := checkCacheSourcePlacement(ctx, tx, p.InstanceID, feed, feedPurpose, source); e != nil {
+				return nil, e
+			} else if reason != "" {
+				applyErr = conflictConfig(reason)
+				return nil, applyErr
 			}
 			_, err = tx.Exec(ctx, `INSERT INTO feed_sources(instance_id,feed_id,source_id,priority) VALUES($1,$2,$3,$4) ON CONFLICT(feed_id,source_id) DO UPDATE SET priority=EXCLUDED.priority`, p.InstanceID, feed, source, *body.Priority)
 		} else {

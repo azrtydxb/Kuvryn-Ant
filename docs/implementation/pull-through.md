@@ -183,6 +183,8 @@ rejects a PROPFIND response without `getlastmodified`. `internal/rawrepo/webdav.
 writes, warm compile hits, zero cache errors; test `TestSccacheWebDAV`, skipped without
 sccache). Cache entries are immutable raw files: a PUT with different bytes for an existing key
 is a 409, which sccache only logs. The S3 backend is not covered by this adapter.
+For CI, make the feed a cache feed (`purpose: cache`): its entries are then evicted by idle time
+and size and are never replicated; see `docs/operations/build-caches.md`.
 
 ## Format notes (apk, git-lfs, p2, swift)
 

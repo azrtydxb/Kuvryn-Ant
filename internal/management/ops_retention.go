@@ -132,6 +132,18 @@ func (h opsHandlers) createRetentionPolicy(w http.ResponseWriter, r *http.Reques
 		identityInput(w, r)
 		return
 	}
+	var cache bool
+	qctx, qcancel := h.ctx(r)
+	err := h.db.QueryRow(qctx, `SELECT EXISTS(SELECT 1 FROM feeds WHERE instance_id=$1 AND id=NULLIF($2,'')::uuid AND purpose='cache') OR EXISTS(SELECT 1 FROM feed_sources fs JOIN feeds f ON f.instance_id=fs.instance_id AND f.id=fs.feed_id WHERE fs.instance_id=$1 AND fs.source_id=NULLIF($3,'')::uuid AND f.purpose='cache')`, p.InstanceID, in.FeedID, in.SourceID).Scan(&cache)
+	qcancel()
+	if err != nil {
+		identityError(w, r, err)
+		return
+	}
+	if cache {
+		Error(w, r, 409, api.ErrorCodeConflict, "cache feeds follow their own cache policy (cache_policy on the feed); retention policies do not apply to them")
+		return
+	}
 	minKeep, enabled := int32(1), true
 	if in.MinKeep != nil {
 		minKeep = *in.MinKeep
