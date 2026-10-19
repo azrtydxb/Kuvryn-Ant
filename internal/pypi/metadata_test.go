@@ -105,3 +105,12 @@ func TestWheelRecordIntegrity(t *testing.T) {
 		t.Fatal("accepted mismatched RECORD digest")
 	}
 }
+
+func TestMetadataWithoutBlankLineTerminator(t *testing.T) {
+	for _, in := range []string{"Metadata-Version: 2.4\nName: demo\nVersion: 1.0", "Metadata-Version: 2.4\nName: demo\nVersion: 1.0\n", "Metadata-Version: 2.4\nName: demo\nVersion: 1.0\n\nbody"} {
+		h, e := parseHeaders([]byte(in))
+		if e != nil || h.Get("Name") != "demo" || h.Get("Version") != "1.0" {
+			t.Fatalf("%q: %v %v", in, h, e)
+		}
+	}
+}

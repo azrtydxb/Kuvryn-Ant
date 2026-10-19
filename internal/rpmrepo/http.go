@@ -49,7 +49,7 @@ func (p *progressBody) Read(b []byte) (int, error) {
 	if len(b) > 64<<10 {
 		b = b[:64<<10]
 	}
-	_ = p.c.SetReadDeadline(time.Now().Add(30 * time.Second))
+	_ = p.c.SetReadDeadline(time.Now().Add(ioWindow))
 	return p.ReadCloser.Read(b)
 }
 
@@ -59,7 +59,7 @@ type progressWriter struct {
 }
 
 func (p *progressWriter) WriteHeader(n int) {
-	_ = p.c.SetWriteDeadline(time.Now().Add(30 * time.Second))
+	_ = p.c.SetWriteDeadline(time.Now().Add(ioWindow))
 	p.ResponseWriter.WriteHeader(n)
 }
 func (p *progressWriter) Write(b []byte) (int, error) {
@@ -69,7 +69,7 @@ func (p *progressWriter) Write(b []byte) (int, error) {
 		if len(chunk) > 64<<10 {
 			chunk = chunk[:64<<10]
 		}
-		_ = p.c.SetWriteDeadline(time.Now().Add(30 * time.Second))
+		_ = p.c.SetWriteDeadline(time.Now().Add(ioWindow))
 		n, e := p.ResponseWriter.Write(chunk)
 		total += n
 		b = b[n:]
@@ -91,3 +91,18 @@ func (w *challengeWriter) WriteHeader(status int) {
 	}
 	w.ResponseWriter.WriteHeader(status)
 }
+
+func (p *progressWriter) Unwrap() http.ResponseWriter  { return p.ResponseWriter }
+func (w *challengeWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+// awaitUpstream lifts the per-write deadline for a response that first has to
+// be fetched from the remote origin. Without it the 30 second deadline set when
+// the request arrived expires while the fetch is still running, and an HTTP/2
+// server then resets the stream with INTERNAL_ERROR before the first byte is
+// written. Every subsequent write re-arms the short deadline.
+func awaitUpstream(w http.ResponseWriter, d time.Duration) {
+	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(d))
+}
+
+// ioWindow is how long a single read or write of a client connection may stall.
+var ioWindow = 30 * time.Second

@@ -217,9 +217,9 @@ func (s *Repository) providerDownload(w http.ResponseWriter, r *http.Request, p 
 		"os":                    osName,
 		"arch":                  arch,
 		"filename":              pl.Filename,
-		"download_url":          files + pl.Filename,
-		"shasums_url":           files + sumsName(typ, pub.Version),
-		"shasums_signature_url": files + sumsName(typ, pub.Version) + ".sig",
+		"download_url":          s.signFileURL(p, files+pl.Filename),
+		"shasums_url":           s.signFileURL(p, files+sumsName(typ, pub.Version)),
+		"shasums_signature_url": s.signFileURL(p, files+sumsName(typ, pub.Version)+".sig"),
 		"shasum":                pl.Shasum,
 		"signing_keys": map[string]any{"gpg_public_keys": []map[string]string{
 			{"key_id": key.keyID, "ascii_armor": key.armored},

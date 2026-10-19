@@ -91,7 +91,7 @@ func runApt(c *Ctx) {
 		return fmt.Sprintf("/feeds/%s/apt/pool/main/k/%s/%s_%s_all.deb", slug, pkg, pkg, v)
 	}
 	build := func(v string) string {
-		return F(`rm -rf /work/deb && mkdir -p /work/deb/DEBIAN /work/deb/usr/share/@p@ && echo 42 > /work/deb/usr/share/@p@/answer && printf 'Package: @p@\nVersion: @v@\nArchitecture: all\nMaintainer: Kuvryn <ops@example.invalid>\nDescription: conformance fixture\n' > /work/deb/DEBIAN/control && dpkg-deb -Zgzip --build /work/deb /work/@p@_@v@_all.deb >/dev/null && dpkg-deb --build /work/deb /work/@p@_@v@_default_all.deb >/dev/null`, "p", pkg, "v", v)
+		return F(`rm -rf /work/deb && mkdir -p /work/deb/DEBIAN /work/deb/usr/share/@p@ && echo 42 > /work/deb/usr/share/@p@/answer && printf 'Package: @p@\nVersion: @v@\nArchitecture: all\nMaintainer: Kuvryn <ops@example.invalid>\nDescription: conformance fixture\n' > /work/deb/DEBIAN/control && dpkg-deb -Zgzip --build /work/deb /work/@p@_@v@_all.deb >/dev/null; rm -rf /work/debz && cp -r /work/deb /work/debz && sed -i "s/^Package: .*/Package: @p@z/" /work/debz/DEBIAN/control && dpkg-deb --build /work/debz /work/@p@z_@v@_all.deb >/dev/null`, "p", pkg, "v", v)
 	}
 	ingest := func(v string) error {
 		data, err := c.ReadFile(pkg + "_" + v + "_all.deb")
@@ -110,11 +110,11 @@ func runApt(c *Ctx) {
 	c.Step("client-version", func() error { return c.Version("debian", "apt-get --version | head -1") })
 	c.Step("publish: dpkg-deb build, then PUT pool/main/k/{pkg}/{file}.deb?distribution=stable (admin ingestion)", Seq(ap(build("1.0")), func() error { return ingest("1.0") }))
 	c.Step("edge: package built with the dpkg-deb default compression (zstd on trixie) is accepted", func() error {
-		data, err := c.ReadFile(pkg + "_1.0_default_all.deb")
+		data, err := c.ReadFile(pkg + "z_1.0_all.deb")
 		if err != nil {
 			return err
 		}
-		_, _, _, err = c.Do(Req{Method: "PUT", Path: fmt.Sprintf("/feeds/%s/apt/pool/main/k/%s/%s_1.0_all.deb?distribution=edge", slug, pkg, pkg), Body: data, Auth: Basic, Want: []int{200, 201, 204}})
+		_, _, _, err = c.Do(Req{Method: "PUT", Path: fmt.Sprintf("/feeds/%s/apt/pool/main/k/%sz/%sz_1.0_all.deb?distribution=edge", slug, pkg, pkg), Body: data, Auth: Basic, Want: []int{200, 201, 204}})
 		return err
 	})
 	c.Step("consume: apt-get update (signed Release, by-hash) + apt-get install", Seq(

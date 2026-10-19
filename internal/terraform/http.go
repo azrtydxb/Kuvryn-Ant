@@ -75,6 +75,9 @@ func (s *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.discovery(w, r, slug)
 		return
 	}
+	if s.serveSigned(w, r) {
+		return
+	}
 	// Explicitly replace any browser principal. Only machine credentials enter.
 	r = r.WithContext(identity.WithAuthenticatedPrincipal(r.Context(), identity.Principal{}))
 	if len(r.Header.Values("Authorization")) == 1 {

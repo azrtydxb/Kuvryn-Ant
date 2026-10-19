@@ -130,6 +130,13 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		s.remove(w, r, p, pub)
 	default:
+		// apk fetches a noarch package from the arch (or noarch) path of the
+		// repository it asked, not necessarily the one it was published under.
+		if _, e := s.service.Lookup(r.Context(), p, pub); errors.Is(e, artifact.ErrNotFound) {
+			if alt, ok := s.noarchChannel(r.Context(), p, feed, branch, repo, stem); ok {
+				pub.Namespace, pub.Coordinate = alt, alt
+			}
+		}
 		s.download(w, r, p, pub)
 	}
 }
@@ -431,4 +438,36 @@ func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Pr
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("ETag", `"`+string(info(data).Digest)+`"`)
 	http.ServeContent(w, r, "APKINDEX.tar.gz", time.Time{}, bytes.NewReader(data))
+}
+
+// noarchChannel finds the channel of branch/repo that holds stem as a noarch
+// package. Authorization is enforced by the reads it performs on the entry.
+func (s *Repository) noarchChannel(ctx context.Context, p identity.Principal, feed, branch, repo, stem string) (string, bool) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	prefix := branch + "/" + repo + "/"
+	rows, e := s.db.Query(ctx, `SELECT DISTINCT c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id JOIN versions v ON v.component_id=c.id JOIN assets a ON a.version_id=v.id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND left(c.coordinate,length($3))=$3 AND c.coordinate=c.namespace AND v.version=$4 AND a.asset_key='APKINDEX-entry' ORDER BY c.namespace LIMIT 16`, p.InstanceID, feed, prefix, stem)
+	if e != nil {
+		return "", false
+	}
+	var candidates []string
+	for rows.Next() {
+		var ns string
+		if rows.Scan(&ns) == nil {
+			candidates = append(candidates, ns)
+		}
+	}
+	rows.Close()
+	for _, ns := range candidates {
+		_, body, e := s.service.Open(ctx, p, artifact.Publication{FeedID: feed, Namespace: ns, Coordinate: ns, Version: stem, AssetKey: "APKINDEX-entry"}, 0, -1)
+		if e != nil {
+			continue
+		}
+		data, e := io.ReadAll(io.LimitReader(body, 64<<10+1))
+		body.Close()
+		if e == nil && len(data) <= 64<<10 && entryFields(string(data))["A"] == "noarch" {
+			return ns, true
+		}
+	}
+	return "", false
 }

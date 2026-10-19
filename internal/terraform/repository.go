@@ -48,6 +48,7 @@ type Repository struct {
 	auth      *identity.Bearer
 	instance  string
 	base      atomic.Value
+	sigKey    []byte
 	transfers chan struct{}
 }
 

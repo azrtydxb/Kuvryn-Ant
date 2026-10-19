@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -153,5 +154,56 @@ func TestRPMPullThrough(t *testing.T) {
 	}
 	if status, body, _ := f.Get(base + "repodata/repomd.xml"); status != 200 || body != repomd {
 		t.Fatalf("stale repomd: %d", status)
+	}
+}
+
+// A repodata file that takes longer to fetch from upstream than the per-write
+// deadline must still be delivered; over HTTP/2 an expired deadline resets the
+// stream with INTERNAL_ERROR (observed on a slow upstream behind a TLS listener).
+func TestRPMSlowUpstreamOutlivesWriteDeadline(t *testing.T) {
+	old := ioWindow
+	ioWindow = 300 * time.Millisecond
+	t.Cleanup(func() { ioWindow = old })
+	f := remotetest.New(t)
+	primary := gz([]byte(`<?xml version="1.0"?><metadata xmlns="http://linux.duke.edu/metadata/common" packages="0"></metadata>`))
+	href := "repodata/" + hexSum(primary) + "-primary.xml.gz"
+	repomd := fmt.Sprintf(`<?xml version="1.0"?><repomd xmlns="http://linux.duke.edu/metadata/repo"><data type="primary"><checksum type="sha256">%s</checksum><location href="%s"/><size>%d</size></data></repomd>`, hexSum(primary), href, len(primary))
+	up := f.Upstream(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/os/repodata/repomd.xml":
+			_, _ = w.Write([]byte(repomd))
+		case "/os/" + href:
+			time.Sleep(time.Second)
+			_, _ = w.Write(primary)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	feed := f.AddFeed("slow", "rpm")
+	local := f.AddLocal(feed, "rpm", "local", 0)
+	router, err := routing.Compile(routing.Config{Sources: []routing.Source{{ID: local, Kind: routing.Local}}, DefaultTarget: local})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.Service.Router = func(context.Context, string) (*routing.Router, error) { return router, nil }
+	f.AddRemote(feed, "rpm", "slow", 1, up.URL+"/os", remotetest.RemoteOptions{})
+	repo, err := New(f.Pool, f.Service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewUnstartedServer(repo)
+	srv.EnableHTTP2 = true
+	srv.StartTLS()
+	defer srv.Close()
+	req, _ := http.NewRequest("GET", srv.URL+"/feeds/slow/rpm/"+href, nil)
+	req.Header.Set("Authorization", "Bearer "+f.Token)
+	res, err := srv.Client().Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil || res.ProtoMajor != 2 || res.StatusCode != 200 || !bytes.Equal(body, primary) {
+		t.Fatalf("proto %d status %d err %v len %d", res.ProtoMajor, res.StatusCode, err, len(body))
 	}
 }

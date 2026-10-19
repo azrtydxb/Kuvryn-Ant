@@ -65,7 +65,7 @@ func runCocoapods(c *Ctx) {
 	})
 	c.Step("delete/unlist: management API relist then delete 1.0.0", Seq(func() error { return c.MgmtVersion(slug, pod, "", "unlist") }, func() error { return c.MgmtVersion(slug, pod, "", "relist") }))
 
-	rslug := c.MustFeed("cocoapods", "remote", &Remote{Origin: "https://cdn.cocoapods.org"})
+	rslug := c.MustFeed("cocoapods", "remote", &Remote{Origin: "https://cdn.cocoapods.org", Redirect: []string{"https://cdn.jsdelivr.net"}})
 	rsrc := c.LastSource
 	rsrcURL := c.UserCred("/feeds/" + rslug + "/cocoapods/")
 	sum := md5.Sum([]byte("AFNetworking"))
@@ -193,7 +193,7 @@ func runAnsible(c *Ctx) {
 	})
 	c.Step("delete/unlist: management API delete 1.0.0", func() error { return c.MgmtVersion(slug, name, "", "delete") })
 
-	rslug := c.MustFeed("ansible", "remote", &Remote{Origin: "https://galaxy.ansible.com/api/", Redirect: []string{"https://galaxy.ansible.com", "https://storage.googleapis.com"}})
+	rslug := c.MustFeed("ansible", "remote", &Remote{Origin: "https://galaxy.ansible.com/api/", Redirect: []string{"https://galaxy.ansible.com", "https://ansible-galaxy-ng.s3.dualstack.us-east-1.amazonaws.com"}})
 	rsrc := c.LastSource
 	rserver := c.Env.ClientBase + "/feeds/" + rslug + "/ansible/"
 	ok := c.Step("remote pull-through miss: ansible-galaxy install ansible.posix:1.5.4 from galaxy.ansible.com via feed", an(F(`rm -rf /work/rinst && ansible-galaxy collection install ansible.posix:1.5.4 --server @s@ --token $TOKEN -p /work/rinst && test -f /work/rinst/ansible_collections/ansible/posix/MANIFEST.json`, "s", rserver)))

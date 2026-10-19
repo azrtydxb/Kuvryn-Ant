@@ -30,16 +30,23 @@ curl --fail --user "service:$ANT_TOKEN" \
 
 Up to four input assets become at most sixteen shared-artifact assets after
 checksum generation. Optional per-part `X-Checksum-Sha256`, `X-Checksum-Sha1`,
-and `X-Checksum-Md5` headers must match. Uploading checksum files separately is
-unsupported. Legacy checksums provide client compatibility, not additional trust.
+and `X-Checksum-Md5` headers must match. Checksum files sent with a bundle are not accepted; with native PUT deploy they are verified and ignored. Legacy checksums provide client compatibility, not additional trust.
 The service atomically commits the entire version, checksums, audit and outbox
 records. Identical retries return 204; new bundles return 201; changed or expanded
 existing versions return 409. Interrupted, malformed and incomplete bundles do
 not advertise a version. Source routing is pinned before reading each asset and
 rechecked by the shared service at commit.
 
-Native Maven deploy / Gradle maven-publish multi-PUT uploads return 405. There is
-no implicit “last file wins” completion heuristic. Timestamped snapshots and
+Native `mvn deploy` works (Gradle maven-publish sends the same sequence but has not been run): each file is PUT separately
+(jar, pom, their `.sha1`/`.md5`/`.sha256`/`.sha512` files, then the artifact level
+`maven-metadata.xml`). PUT files are staged privately (validated like bundle parts,
+checksum files verified, 15 minute TTL, at most 4 files per version and 16 versions
+in flight) and the PUT of `{group}/{artifact}/maven-metadata.xml` is the completion
+signal that publishes the version atomically; the uploaded metadata document is
+discarded because the service generates its own. A deploy without the POM (or without
+the jar for jar packaging) is rejected with 400 and never advertised, a changed
+re-deploy of an existing version is 409, an identical one 204. Staging is local to the
+process: send all PUTs of one deployment to the same replica. Timestamped snapshots and
 SNAPSHOT metadata return 501; mutable snapshot generation support is not claimed.
 Only releases are supported. Inherited/interpolated POM coordinates, packaging
 other than jar/pom, group plugin-prefix metadata, signatures and remote proxy

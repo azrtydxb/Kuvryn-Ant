@@ -216,6 +216,7 @@ func (s *Service) HasRemote(ctx context.Context, p identity.Principal, r Publica
 // RemoteMetadata proxies a mutable upstream document through the runtime's
 // metadata cache. Only Namespace, Coordinate and FeedID of r are used.
 func (s *Service) RemoteMetadata(ctx context.Context, p identity.Principal, r Publication, o Origin) (Document, error) {
+	awaitUpstream(ctx)
 	plan, err := s.plan(ctx, p, r, o.SourceID)
 	if err != nil {
 		return Document{}, err
@@ -281,6 +282,7 @@ func (s *Service) Materialize(ctx context.Context, p identity.Principal, r Publi
 	if s == nil || s.Lease == nil || s.Storage == nil || !bounded(r.Version, 256) || !bounded(r.AssetKey, 2048) {
 		return nil, ErrInput
 	}
+	awaitUpstream(ctx)
 	plan, err := s.plan(ctx, p, r, o.SourceID)
 	if err != nil {
 		return nil, err
@@ -804,4 +806,21 @@ func (s *Service) RemoteStream(ctx context.Context, p identity.Principal, r Publ
 		}
 	}
 	return nil, ErrNotFound
+}
+
+type deadlineKey struct{}
+
+// WithWriteDeadlineExtender lets the remote fetch paths ask the HTTP server to
+// move the response write deadline while they wait for an upstream. The listener
+// sets a short per-write deadline when the request arrives; over HTTP/2 an
+// expired deadline resets the stream with INTERNAL_ERROR, so a pull-through that
+// takes longer than that window would otherwise never reach the client.
+func WithWriteDeadlineExtender(ctx context.Context, extend func(time.Duration)) context.Context {
+	return context.WithValue(ctx, deadlineKey{}, extend)
+}
+
+func awaitUpstream(ctx context.Context) {
+	if f, ok := ctx.Value(deadlineKey{}).(func(time.Duration)); ok && f != nil {
+		f(10 * time.Minute)
+	}
 }

@@ -76,8 +76,8 @@ func (s *Repository) feedLock(feed string) *sync.Mutex {
 
 func (s *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := http.NewResponseController(w)
-	_ = c.SetReadDeadline(time.Now().Add(30 * time.Second))
-	_ = c.SetWriteDeadline(time.Now().Add(30 * time.Second))
+	_ = c.SetReadDeadline(time.Now().Add(ioWindow))
+	_ = c.SetWriteDeadline(time.Now().Add(ioWindow))
 	r = r.Clone(r.Context())
 	r.Body = &progressBody{r.Body, c}
 	w = &progressWriter{w, c}

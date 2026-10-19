@@ -234,7 +234,7 @@ func (s *Repository) remoteProviderDownload(ctx context.Context, p identity.Prin
 		return remoteDownload{}, doc, err
 	}
 	var d remoteDownload
-	if json.Unmarshal(doc.Body, &d) != nil || d.OS != osName || d.Arch != arch || d.Filename != zipName(typ, pub.Version, osName, arch) || !hexSum.MatchString(d.Shasum) || d.DownloadURL == "" || urlBase(d.ShasumsURL) != sumsName(typ, pub.Version) || urlBase(d.SigURL) != sumsName(typ, pub.Version)+".sig" {
+	if json.Unmarshal(doc.Body, &d) != nil || d.OS != osName || d.Arch != arch || d.Filename != zipName(typ, pub.Version, osName, arch) || !hexSum.MatchString(d.Shasum) || d.DownloadURL == "" || urlBase(d.ShasumsURL) != sumsName(typ, pub.Version) || !sigBase(urlBase(d.SigURL), sumsName(typ, pub.Version)) {
 		return d, doc, artifact.ErrUnavailable
 	}
 	return d, doc, nil
@@ -331,9 +331,9 @@ func (s *Repository) serveRemoteProviderDownload(w http.ResponseWriter, r *http.
 		"os":                    osName,
 		"arch":                  arch,
 		"filename":              d.Filename,
-		"download_url":          files + d.Filename,
-		"shasums_url":           files + sumsName(typ, pub.Version),
-		"shasums_signature_url": files + sumsName(typ, pub.Version) + ".sig",
+		"download_url":          s.signFileURL(p, files+d.Filename),
+		"shasums_url":           s.signFileURL(p, files+sumsName(typ, pub.Version)),
+		"shasums_signature_url": s.signFileURL(p, files+sumsName(typ, pub.Version)+".sig"),
 		"shasum":                d.Shasum,
 	}
 	if len(d.SigningKeys) > 0 {
@@ -365,7 +365,7 @@ func signatureVerify(sums []byte, keys json.RawMessage) func(io.ReadSeeker) erro
 				continue
 			}
 			parsed = true
-			if _, e = verifySignature(key, sums, sig); e == nil {
+			if _, e = verifySignatureAt(key, sums, sig, true); e == nil {
 				return nil
 			}
 		}
@@ -454,4 +454,15 @@ func (s *Repository) fillProviderFile(ctx context.Context, p identity.Principal,
 	}
 	drain(stream)
 	return nil
+}
+
+// sigBase reports whether name is the detached signature of sums. HashiCorp
+// publishes SHA256SUMS.<keyid>.sig (for example SHA256SUMS.72D7468F.sig); the
+// feed re-serves it under the stable name SHA256SUMS.sig.
+func sigBase(name, sums string) bool {
+	if name == sums+".sig" {
+		return true
+	}
+	mid, ok := strings.CutSuffix(strings.TrimPrefix(name, sums+"."), ".sig")
+	return strings.HasPrefix(name, sums+".") && ok && regexp.MustCompile(`^[0-9A-Za-z]{1,64}$`).MatchString(mid)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
@@ -94,7 +95,12 @@ func (s *Repository) publish(w http.ResponseWriter, r *http.Request, p identity.
 				return
 			}
 			hash := sha256.New()
-			n, err := io.CopyBuffer(io.MultiWriter(f, hash), io.LimitReader(contextReader{ctx, part}, maxArchive+1), make([]byte, 64<<10))
+			var body io.Reader = contextReader{ctx, part}
+			// ansible-galaxy sends the archive base64 encoded (Content-Transfer-Encoding: base64).
+			if strings.EqualFold(strings.TrimSpace(part.Header.Get("Content-Transfer-Encoding")), "base64") {
+				body = base64.NewDecoder(base64.StdEncoding, body)
+			}
+			n, err := io.CopyBuffer(io.MultiWriter(f, hash), io.LimitReader(body, maxArchive+1), make([]byte, 64<<10))
 			if err != nil || n > maxArchive {
 				failure(w, errInvalid)
 				return

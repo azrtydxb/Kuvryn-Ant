@@ -83,6 +83,8 @@ type metadata struct {
 
 func parseManifest(data []byte) (metadata, error) {
 	var m metadata
+	// dotnet pack writes the nuspec with a UTF-8 byte-order mark.
+	data = bytes.TrimPrefix(data, []byte{0xEF, 0xBB, 0xBF})
 	d := xml.NewDecoder(bytes.NewReader(data))
 	depth := 0
 	roots := 0

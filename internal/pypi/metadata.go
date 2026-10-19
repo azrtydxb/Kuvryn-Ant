@@ -226,7 +226,7 @@ func inspect(ctx context.Context, f *os.File, file string) (metadata, []byte, er
 	if len(core) == 0 {
 		return m, nil, errInvalid
 	}
-	headers, e := textproto.NewReader(bufio.NewReader(bytes.NewReader(core))).ReadMIMEHeader()
+	headers, e := parseHeaders(core)
 	if e != nil {
 		return m, nil, errInvalid
 	}
@@ -365,4 +365,12 @@ func validWheel(data []byte, file string) bool {
 		}
 	}
 	return expected == len(tags)
+}
+
+// parseHeaders reads the RFC 822 header block of a METADATA file. The body
+// (long description) and the blank-line terminator are optional: setuptools
+// writes neither when a project has no long description.
+func parseHeaders(core []byte) (textproto.MIMEHeader, error) {
+	b := append(append([]byte{}, core...), '\n', '\n')
+	return textproto.NewReader(bufio.NewReader(bytes.NewReader(b))).ReadMIMEHeader()
 }

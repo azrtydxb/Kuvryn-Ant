@@ -89,3 +89,11 @@ func TestPublicURL(t *testing.T) {
 		t.Fatal("HEAD body")
 	}
 }
+
+func TestManifestWithUTF8BOM(t *testing.T) {
+	spec := "\xEF\xBB\xBF<?xml version=\"1.0\" encoding=\"utf-8\"?><package><metadata><id>Kc.Demo</id><version>1.0.0</version><authors>a</authors><description>d</description></metadata></package>"
+	m, e := parseManifest([]byte(spec))
+	if e != nil || m.ID != "kc.demo" || m.Version != "1.0.0" {
+		t.Fatalf("%+v %v", m, e)
+	}
+}

@@ -13,6 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact/remotetest"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/routing"
@@ -278,4 +281,56 @@ func derivedProvider(t *testing.T, base providerFixture, typ, ver string) provid
 	p.sums = sumLine(name, p.zips[name])
 	p.sign(t, base.entity)
 	return p
+}
+
+func TestSigBase(t *testing.T) {
+	sums := "terraform-provider-random_3.6.3_SHA256SUMS"
+	for name, want := range map[string]bool{
+		sums + ".sig":          true,
+		sums + ".72D7468F.sig": true,
+		sums:                   false,
+		sums + ".evil/../.sig": false,
+		"other_SHA256SUMS.sig": false,
+		sums + "..sig":         false,
+	} {
+		if got := sigBase(name, sums); got != want {
+			t.Errorf("sigBase(%q) = %v", name, got)
+		}
+	}
+}
+
+// A release signed by a key that has since expired still verifies for the
+// pass-through cache (the client applies its own policy); the strict check used
+// for local publishing keeps rejecting it.
+func TestExpiredKeySignatureOnlyAcceptedForPullThrough(t *testing.T) {
+	past := time.Now().Add(-48 * time.Hour)
+	cfg := &packet.Config{Time: func() time.Time { return past }, KeyLifetimeSecs: 3600}
+	e, err := openpgp.NewEntity("Release", "", "release@example.com", cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pub bytes.Buffer
+	aw, _ := armor.Encode(&pub, openpgp.PublicKeyType, nil)
+	if err = e.Serialize(aw); err != nil {
+		t.Fatal(err)
+	}
+	aw.Close()
+	sums := []byte("abc  terraform-provider-x_1.0.0_linux_amd64.zip\n")
+	var sig bytes.Buffer
+	if err = openpgp.DetachSign(&sig, e, bytes.NewReader(sums), cfg); err != nil {
+		t.Fatal(err)
+	}
+	key, err := parseKey(pub.Bytes())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = verifySignature(key, sums, sig.Bytes()); err == nil {
+		t.Fatal("strict verification accepted an expired key")
+	}
+	if _, err = verifySignatureAt(key, sums, sig.Bytes(), true); err != nil {
+		t.Fatalf("pull-through verification rejected a valid signature by an expired key: %v", err)
+	}
+	if _, err = verifySignatureAt(key, append(sums, 'x'), sig.Bytes(), true); err == nil {
+		t.Fatal("tampered sums accepted")
+	}
 }

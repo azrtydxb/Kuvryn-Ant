@@ -7,10 +7,12 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"mime/multipart"
 	"net/http/httptest"
+	"net/textproto"
 	"os"
 	"path/filepath"
 	"strings"
@@ -341,5 +343,38 @@ func TestGalaxyPostgresRejectionAndIsolation(t *testing.T) {
 	var errors int
 	if err := f.pool.QueryRow(ctx, `SELECT count(*) FROM versions WHERE version IN ('1.0.0')`).Scan(&errors); err != nil || errors != 0 {
 		t.Fatal("rejected collection published", errors, err)
+	}
+}
+
+// ansible-galaxy sends the archive base64 encoded with Content-Transfer-Encoding: base64.
+func TestGalaxyPostgresBase64EncodedFilePart(t *testing.T) {
+	f := galaxySetup(t)
+	archive, digest := collectionBytes(t, "community", "b64", "1.0.0")
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	_ = mw.WriteField("sha256", digest)
+	h := textproto.MIMEHeader{}
+	h.Set("Content-Disposition", `form-data; name="file"; filename="community-b64-1.0.0.tar.gz"`)
+	h.Set("Content-Type", "application/octet-stream")
+	h.Set("Content-Transfer-Encoding", "base64")
+	part, err := mw.CreatePart(h)
+	if err != nil {
+		t.Fatal(err)
+	}
+	enc := base64.StdEncoding.EncodeToString(archive)
+	for len(enc) > 76 {
+		_, _ = part.Write([]byte(enc[:76] + "\r\n"))
+		enc = enc[76:]
+	}
+	_, _ = part.Write([]byte(enc))
+	if err = mw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	response := galaxyRequest(t, f, "POST", "/feeds/collections/ansible/v3/artifacts/collections", body.Bytes(), mw.FormDataContentType())
+	galaxyStatus(t, response, 202)
+	response = galaxyRequest(t, f, "GET", "/feeds/collections/ansible/downloads/community/b64/1.0.0/collection.tar.gz", nil, "")
+	galaxyStatus(t, response, 200)
+	if !bytes.Equal(response.Body.Bytes(), archive) {
+		t.Fatal("archive mismatch")
 	}
 }

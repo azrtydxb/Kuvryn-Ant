@@ -89,3 +89,10 @@ generation pruning yet.
   implemented. No HTTP Range support. At most 10,000 packages per feed.
 - Package (rpm) signatures are retained, not verified against a trust root.
 - Signing uses `golang.org/x/crypto/openpgp` (frozen, RSA only).
+
+## Remote repodata
+
+Primary indexes compressed with gzip, xz, bzip2 or zstd (Fedora) are read to verify package
+checksums. A repodata file that must first be fetched from a slow upstream can take longer
+than the 30 second per-write deadline; the deadline is lifted for the duration of the fetch
+(otherwise an HTTP/2 listener resets the stream with `INTERNAL_ERROR` before the first byte).

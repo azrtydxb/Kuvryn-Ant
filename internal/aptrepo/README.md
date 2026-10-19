@@ -63,8 +63,8 @@ and fail-closed signing.
 
 ## Known limitations
 
-- `control.tar.xz`/`.zst` are rejected (no decoder in this build); build with
-  `dpkg-deb -Zgzip`.
+- `control.tar` is accepted plain or compressed with gzip, xz or zstd (the `dpkg-deb`
+  default since dpkg 1.21.18); `data.tar.*` of any compression is stored untouched.
 - Deletion unlists only: bytes stay in the core (no dereference API yet), so a
   pool URL remains downloadable and old by-hash generations stay reachable.
 - Valid-Until is not refreshed automatically; the next publish re-signs.
