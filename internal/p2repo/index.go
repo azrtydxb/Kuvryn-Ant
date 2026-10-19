@@ -183,11 +183,21 @@ func xzOf(data []byte) []byte {
 const p2Index = "version=1\nmetadata.repository.factory.order=content.xml.xz,content.jar,content.xml,!\nartifact.repository.factory.order=artifacts.xml.xz,artifacts.jar,artifacts.xml,!\n"
 
 func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, slug, file string) {
+	degraded := false
+	if done, e := s.serveRemoteIndex(w, r, p, feed, file); done {
+		return
+	} else if e != nil {
+		degraded = true // upstream outage: only a locally held snapshot can answer
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	st, e := s.load(ctx, p, feed)
 	if e != nil {
 		failure(w, e)
+		return
+	}
+	if degraded && len(st.units) == 0 && len(st.arts) == 0 {
+		failure(w, artifact.ErrUnavailable)
 		return
 	}
 	var data []byte

@@ -155,3 +155,16 @@ object from backup or a replica. A dry run reports the current state, so a
 cascade (for example a component that becomes empty only after its last
 assetless version is removed) can show up only in the apply report. Take a
 backup first and run during low traffic.
+
+## Prewarm metrics
+
+Process-local counters from the prewarm service (`internal/prewarm`), labels from closed sets only:
+
+| Metric | Type | Meaning |
+| --- | --- | --- |
+| `ant_prewarm_items_total{result}` | counter | Items finished: `warmed` (fetched from an upstream), `cached` (already present), `failed`, `skipped` |
+| `ant_prewarm_bytes_total` | counter | Bytes read from feeds while prewarming |
+| `ant_prewarm_runs_total{state}` | counter | Runs finished: `succeeded`, `partial`, `failed`, `canceled` |
+| `ant_prewarm_active_runs` | gauge | Runs executing in this process |
+
+Per-job and per-item detail (including failure codes) is in the API and the console, not in labels.

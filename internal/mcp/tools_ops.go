@@ -158,6 +158,120 @@ func opsCatalog() []*tool {
 			[]param{{name: "scope", typ: "string", desc: "instance, feed or source.", enum: []string{"instance", "feed", "source"}}, {name: "ref", typ: "uuid", desc: "Feed or source ID for that scope."},
 				{name: "from", typ: "string", desc: "RFC 3339 start."}, {name: "to", typ: "string", desc: "RFC 3339 end."}, {name: "step", typ: "string", desc: "5m, 1h or 1d.", enum: []string{"5m", "1h", "1d"}}},
 			"scope", "ref", "from", "to", "step"),
+		simple("list_prewarm_formats", "Prewarm formats", "Feed formats that can be prewarmed and the inputs each accepts (package lists, lockfile types, image lists, another feed).", "/api/v1/prewarm/formats", nil),
+		simple("list_prewarm_jobs", "List prewarm jobs", "List prewarm jobs (warm a feed's remote cache from a package list, lockfile, image list or another feed, now or on a schedule). Give feed_id, or be an instance administrator.", "/api/v1/prewarm/jobs",
+			[]param{{name: "feed_id", typ: "uuid", desc: "Only the jobs of this feed."}, after, lim}, "feed_id", "after", "limit"),
+		byID("get_prewarm_job", "Get prewarm job", "Get one prewarm job with its latest run.", "job_id", "Prewarm job ID.", "/api/v1/prewarm/jobs/", ""),
+		{name: "preview_prewarm", title: "Preview prewarm source", desc: "Expand a prewarm source the way a job would and report what would be warmed and what is ignored. Creates nothing.", readOnly: true,
+			params: []param{id("feed_id", "Feed to warm."), {name: "source", typ: "object", required: true, desc: "{kind: packages|lockfile|images|feed, packages: [{name, version}], lockfile: {type, content}, images: [string], feed_id}."}},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("feed_id")
+				return c.api(http.MethodPost, "/api/v1/prewarm/preview", nil, map[string]any{"feed_id": c.args["feed_id"], "source": c.args["source"]}, nil).result()
+			}},
+		{name: "create_prewarm_job", title: "Create prewarm job", desc: "Create a job that warms the remote cache of a feed from a package list, a lockfile (package-lock.json, pnpm-lock.yaml, go.sum, Cargo.lock, requirements.txt, poetry.lock), a list of images or everything another feed references. Optionally recurring (interval_seconds) and started at once (run_now). Warming is done through the feed's own routes as the calling principal.", idempotent: true,
+			params: []param{id("feed_id", "Feed to warm (needs a remote source)."), {name: "name", typ: "string", required: true, desc: "Job name."},
+				{name: "source", typ: "object", required: true, desc: "{kind: packages|lockfile|images|feed, packages: [{name, version}], lockfile: {type, content}, images: [string], feed_id}."},
+				{name: "options", typ: "object", desc: "{platforms: [os/arch], file_filters: [string]}."},
+				{name: "concurrency", typ: "integer", desc: "Parallel items, 1-32 (default 4)."}, {name: "rate_per_second", typ: "integer", desc: "Items started per second, 0 unlimited (default 10)."},
+				{name: "interval_seconds", typ: "integer", desc: "Run on this schedule, 60 to 2678400."}, {name: "enabled", typ: "boolean", desc: "A disabled job keeps its schedule paused."}, {name: "run_now", typ: "boolean", desc: "Queue the first run immediately."}},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("feed_id")
+				body := map[string]any{}
+				for _, k := range []string{"feed_id", "name", "source", "options", "concurrency", "rate_per_second", "interval_seconds", "enabled", "run_now"} {
+					if v, ok := c.args[k]; ok {
+						body[k] = v
+					}
+				}
+				return c.api(http.MethodPost, "/api/v1/prewarm/jobs", nil, body, key(c)).result()
+			}},
+		{name: "update_prewarm_job", title: "Update prewarm job", desc: "Change a prewarm job's name, enabled flag, schedule, concurrency, rate or options. clear_schedule removes the schedule. The source cannot change: create a new job.", idempotent: true,
+			params: []param{id("job_id", "Prewarm job ID."), {name: "name", typ: "string", desc: "New name."}, {name: "enabled", typ: "boolean", desc: "Enable or pause the schedule."},
+				{name: "concurrency", typ: "integer", desc: "Parallel items, 1-32."}, {name: "rate_per_second", typ: "integer", desc: "Items per second, 0 unlimited."},
+				{name: "interval_seconds", typ: "integer", desc: "New schedule, 60 to 2678400."}, {name: "clear_schedule", typ: "boolean", desc: "Remove the schedule."},
+				{name: "options", typ: "object", desc: "{platforms, file_filters}."}, {name: "revision", typ: "integer", desc: "Job revision; the current revision is used when omitted."}},
+			run: func(c *call) *toolResult {
+				job := c.str("job_id")
+				c.resourceID = job
+				rev, bad := c.revision("revision", func() (int64, *toolResult) {
+					resp := c.api(http.MethodGet, "/api/v1/prewarm/jobs/"+job, nil, nil, nil)
+					if resp.status >= 400 {
+						return 0, resp.result()
+					}
+					var j struct {
+						Revision int64 `json:"revision"`
+					}
+					if json.Unmarshal(resp.body, &j) != nil || j.Revision < 1 {
+						return 0, errResult("cannot determine revision")
+					}
+					return j.Revision, nil
+				})
+				if bad != nil {
+					return bad
+				}
+				body := map[string]any{}
+				for _, k := range []string{"name", "enabled", "concurrency", "rate_per_second", "interval_seconds", "options"} {
+					if v, ok := c.args[k]; ok {
+						body[k] = v
+					}
+				}
+				if c.args["clear_schedule"] == true {
+					body["interval_seconds"] = nil
+				}
+				return c.api(http.MethodPatch, "/api/v1/prewarm/jobs/"+job, nil, body, map[string]string{"Idempotency-Key": c.idempotencyKey(), "If-Match": etag(rev)}).result()
+			}},
+		{name: "delete_prewarm_job", title: "Delete prewarm job", desc: "DESTRUCTIVE: delete a prewarm job with its run history; a run in progress stops. Already cached content stays. Requires confirm: true.", destructive: true, idempotent: true,
+			params: []param{id("job_id", "Prewarm job ID."), {name: "revision", typ: "integer", desc: "Job revision; the current revision is used when omitted."}},
+			run: func(c *call) *toolResult {
+				job := c.str("job_id")
+				c.resourceID = job
+				rev, bad := c.revision("revision", func() (int64, *toolResult) {
+					resp := c.api(http.MethodGet, "/api/v1/prewarm/jobs/"+job, nil, nil, nil)
+					if resp.status >= 400 {
+						return 0, resp.result()
+					}
+					var j struct {
+						Revision int64 `json:"revision"`
+					}
+					if json.Unmarshal(resp.body, &j) != nil || j.Revision < 1 {
+						return 0, errResult("cannot determine revision")
+					}
+					return j.Revision, nil
+				})
+				if bad != nil {
+					return bad
+				}
+				return c.api(http.MethodDelete, "/api/v1/prewarm/jobs/"+job, nil, nil, map[string]string{"Idempotency-Key": c.idempotencyKey(), "If-Match": etag(rev)}).result()
+			}},
+		{name: "run_prewarm_job", title: "Run prewarm job", desc: "Queue a run of a prewarm job now. Poll get_prewarm_run for progress.", idempotent: true,
+			params: []param{id("job_id", "Prewarm job ID.")},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("job_id")
+				return c.api(http.MethodPost, "/api/v1/prewarm/jobs/"+c.str("job_id")+"/runs", nil, map[string]any{}, key(c)).result()
+			}},
+		simple("list_prewarm_runs", "List prewarm runs", "List prewarm runs newest first, filtered by job_id or feed_id (or all, for instance administrators).", "/api/v1/prewarm/runs",
+			[]param{{name: "job_id", typ: "uuid", desc: "Only the runs of this job."}, {name: "feed_id", typ: "uuid", desc: "Only the runs of this feed."},
+				{name: "state", typ: "string", desc: "queued, running, succeeded, partial, failed or canceled.", enum: []string{"queued", "running", "succeeded", "partial", "failed", "canceled"}}, after, lim},
+			"job_id", "feed_id", "state", "after", "limit"),
+		byID("get_prewarm_run", "Get prewarm run", "Progress and outcome of one prewarm run: totals, warmed (fetched from upstream), cached (already present), failed, skipped and bytes.", "run_id", "Prewarm run ID.", "/api/v1/prewarm/runs/", ""),
+		{name: "list_prewarm_run_items", title: "List prewarm run items", desc: "Per-item status of a prewarm run, including the failure code of failed items.", readOnly: true,
+			params: []param{id("run_id", "Prewarm run ID."), {name: "state", typ: "string", desc: "Only items in this state.", enum: []string{"pending", "warmed", "cached", "failed", "skipped"}},
+				{name: "after", typ: "integer", desc: "Return items after this sequence number (next_after of the previous page)."}, {name: "limit", typ: "integer", desc: "Page size, 1-500 (default 100)."}},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("run_id")
+				return c.get("/api/v1/prewarm/runs/"+c.str("run_id")+"/items", c.page(nil, "state", "after", "limit"))
+			}},
+		{name: "cancel_prewarm_run", title: "Cancel prewarm run", desc: "Cancel a queued prewarm run at once, or ask a running one to stop; unfinished items are marked skipped.", idempotent: true,
+			params: []param{id("run_id", "Prewarm run ID.")},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("run_id")
+				return c.api(http.MethodPost, "/api/v1/prewarm/runs/"+c.str("run_id")+"/cancel", nil, nil, key(c)).result()
+			}},
+		{name: "retry_prewarm_run", title: "Retry prewarm run", desc: "Queue a new run of the items of a finished prewarm run that failed, were canceled or never ran.", idempotent: true,
+			params: []param{id("run_id", "Prewarm run ID.")},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("run_id")
+				return c.api(http.MethodPost, "/api/v1/prewarm/runs/"+c.str("run_id")+"/retry", nil, nil, key(c)).result()
+			}},
 		simple("get_settings", "Get settings", "Read instance settings and their revision.", "/api/v1/settings", nil),
 		simple("get_diagnostics", "Diagnostics", "Instance diagnostics (admin only).", "/api/v1/diagnostics", nil),
 		byID("get_delete_policy", "Get delete policy", "Get a feed's package delete policy.", "feed_id", "Feed ID.", "/api/v1/feeds/", "/delete-policy"),

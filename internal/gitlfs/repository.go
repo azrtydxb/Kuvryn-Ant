@@ -42,6 +42,9 @@ type grant struct {
 	token, principal, feed, oid, operation, source string
 	size                                           int64
 	expires                                        time.Time
+	// remote marks a download of an object that is not stored yet but that an
+	// upstream LFS server holds; it is fetched, verified and cached on use.
+	remote bool
 }
 
 func New(db *pgxpool.Pool, s *artifact.Service) (*Repository, error) {
@@ -188,6 +191,10 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(200)
 	case "download":
+		if g.remote {
+			s.downloadRemote(w, r, p, pub)
+			return
+		}
 		s.download(w, r, p, pub, g.source)
 	}
 }
@@ -280,6 +287,7 @@ func (s *Repository) batch(w http.ResponseWriter, r *http.Request, p identity.Pr
 		} else {
 			pub := publication(feed, obj.OID, result.Size)
 			var source string
+			remote := false
 			if req.Operation == "upload" {
 				source, err = s.service.Prepare(ctx, p, feed, pub.Namespace, pub.Coordinate, pub.AssetKey)
 			}
@@ -292,6 +300,14 @@ func (s *Repository) batch(w http.ResponseWriter, r *http.Request, p identity.Pr
 					err = e
 					if err == nil {
 						source = rec.SourceID
+					} else if errors.Is(e, artifact.ErrNotFound) {
+						// Not stored: ask the upstream LFS server of a remote source.
+						switch re := s.remoteKnown(ctx, p, feed, obj.OID, result.Size); {
+						case re == nil:
+							err, remote = nil, true
+						case !errors.Is(re, artifact.ErrNotFound):
+							err = re
+						}
 					}
 				} else if e == nil {
 					// Only an authorized, visible object permits existence advertisement.
@@ -307,7 +323,7 @@ func (s *Repository) batch(w http.ResponseWriter, r *http.Request, p identity.Pr
 					}
 					result.Actions = make(map[string]action)
 					for _, op := range operations {
-						g := grant{token: p.TokenID, principal: p.PrincipalID, feed: feed, oid: obj.OID, size: result.Size, source: source, operation: op, expires: time.Now().Add(actionTTL)}
+						g := grant{token: p.TokenID, principal: p.PrincipalID, feed: feed, oid: obj.OID, size: result.Size, source: source, operation: op, expires: time.Now().Add(actionTTL), remote: remote}
 						key, e := s.issue(g)
 						if e != nil {
 							err = e

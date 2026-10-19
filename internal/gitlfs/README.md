@@ -63,7 +63,7 @@ ANT_REQUIRE_INTEGRATION=1 makes its absence fatal. The native test skips if
 `git-lfs` is absent. No global Git settings or environment changes are made.
 
 Remaining release gates: integration into the main server/API/UI; remote
-pull-through and freshness; authoritative replica seed/incremental/offline
+freshness; authoritative replica seed/incremental/offline
 closure; namespace binding semantics supplied by core; shared cleanup, search,
 explain/health/metrics integration; MinIO and compatible AWS storage evidence;
 large-production-object throughput and fault testing. OKE + MinIO remains the
@@ -74,3 +74,25 @@ resumable uploads, multipart ranges and Git-ref-specific ACLs are not implemente
 
 Protocol references: [v3.8.0 batch API](https://github.com/git-lfs/git-lfs/blob/v3.8.0/docs/api/batch.md)
 and [basic transfers](https://github.com/git-lfs/git-lfs/blob/v3.8.0/docs/api/basic-transfers.md).
+
+## Remote sources (pull-through to an upstream LFS server)
+
+A remote source's origin is the upstream LFS endpoint, the URL a client would use as `lfs.url` (for example
+`https://lfs.example.com/org/repo.git/info/lfs`; the batch API is `<origin>/objects/batch`). The oid is the SHA-256 of the content, so
+every byte is verified against the id the client asked for.
+
+- **Batch (download).** An object that is not stored is looked up with the upstream batch API (`POST objects/batch`, operation
+  `download`, basic transfer, sha256). If the upstream has it with the declared size, the client receives Ant's own download action;
+  an upstream "not found" is a per-object 404, a different size a per-object 422, an upstream failure a 503. This is the only
+  non-GET request ever sent upstream: a bounded, same-origin JSON query (`upstream.Fetcher.Post`, `artifact.Service.RemoteQuery`);
+  uploads, verify and every other operation never go upstream.
+- **Download.** On first use Ant asks the upstream batch API again for a fresh action (they expire), fetches the object from the
+  action href and caches it under the remote source. A plain GET streams to the client while it is staged and the digest is checked
+  at the end (a mismatch aborts the transfer and caches nothing); a Range request on a miss first fills the cache completely and is
+  then answered from the store, so resumed transfers hit it. HEAD on a miss answers from the grant without fetching.
+- **Ownership.** Objects are owned per oid within a feed: an oid held by a local source is never answered from upstream.
+
+Limits: only the `basic` transfer; the upstream action's `header` map is not forwarded (the source credential is sent only to the source
+origin), so upstreams that need per-action headers, or an Authorization on another host, cannot be proxied; an action href on a host
+other than the source origin must be https and a configured redirect origin; the batch response is limited to the metadata limit; LFS
+locks, custom transfer adapters and refs are not proxied.

@@ -120,5 +120,16 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		failure(w, artifact.ErrNotFound)
 		return
 	}
-	s.download(w, r, p, artifact.Publication{FeedID: feed, Namespace: namespace, Coordinate: "artifact/" + classifier + "/" + m[1], Version: m[2], AssetKey: "jar", MediaType: "application/java-archive"})
+	pub := artifact.Publication{FeedID: feed, Namespace: namespace, Coordinate: "artifact/" + classifier + "/" + m[1], Version: m[2], AssetKey: "jar", MediaType: "application/java-archive"}
+	if _, e := s.service.Lookup(r.Context(), p, pub); errors.Is(e, artifact.ErrNotFound) {
+		_, served, e := s.pullArtifact(w, r, p, pub, classifier, m[1], m[2])
+		if served {
+			return
+		}
+		if e != nil {
+			failure(w, e)
+			return
+		}
+	}
+	s.download(w, r, p, pub)
 }

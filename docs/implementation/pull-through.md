@@ -2,8 +2,8 @@
 
 Pull-through is implemented once, in `internal/artifact` (`remote.go`), on top of
 `internal/remoteruntime`. Adapters add a small hook to their existing read path.
-Enabled today: raw, npm, pypi, maven, go, rubygems, conda, conan, composer, terraform, oci (blobs and manifests by digest, tags,
-tag lists), helm, cargo, nuget, apt, rpm, pub, cocoapods, cran, ansible, huggingface (see "Format notes"). `cmd/ant/artifacts.go` builds the `remoteruntime.Manager` from the
+Enabled today: all 26 formats: raw, npm, pypi, maven, go, rubygems, conda, conan, composer, terraform, oci (blobs and manifests by digest, tags,
+tag lists), helm, cargo, nuget, apt, rpm, pub, cocoapods, cran, ansible, huggingface, apk, git-lfs, p2, swift (see "Format notes"). `cmd/ant/artifacts.go` builds the `remoteruntime.Manager` from the
 secret keyring and `ANT_UPSTREAM_CA_MAP_FILE` and sets `artifact.Service.Remote`;
 without a keyring pull-through is off and feeds serve local content only.
 
@@ -39,7 +39,8 @@ without a keyring pull-through is off and feeds serve local content only.
   (for example a PyPI file CDN) must be the source origin or a configured redirect
   origin, and never receive the credential. Credentials are never returned or logged.
   CA references are operator IDs resolved from the operator map. Only GET is ever sent
-  upstream, and `Publish`/`Prepare` accept only local sources.
+  upstream, with one narrow exception: the Git LFS batch query (a bounded, same-origin JSON POST, operation `download` only, see
+  below); `Publish`/`Prepare` accept only local sources.
 
 ## Enabling another adapter
 
@@ -182,6 +183,23 @@ rejects a PROPFIND response without `getlastmodified`. `internal/rawrepo/webdav.
 writes, warm compile hits, zero cache errors; test `TestSccacheWebDAV`, skipped without
 sccache). Cache entries are immutable raw files: a PUT with different bytes for an existing key
 is a 409, which sccache only logs. The S3 backend is not covered by this adapter.
+
+## Format notes (apk, git-lfs, p2, swift)
+
+The last four formats; per-adapter details are in each `internal/<format>/README.md`.
+
+- **APK** (`internal/apkrepo`). Origin is the repository root (`https://dl-cdn.alpinelinux.org/alpine`). `APKINDEX.tar.gz` is served verbatim
+  from upstream, so `apk` verifies the upstream signature; a package is served only if the upstream index lists it and its control
+  segment matches the index checksum (`C:Q1` SHA-1) and size, checked before the first byte.
+- **Git LFS** (`internal/gitlfs`). Origin is the upstream LFS endpoint (`lfs.url`). The upstream batch API (`artifact.Service.RemoteQuery`,
+  `upstream.Fetcher.Post`: JSON POST, same origin, bounded, `download` only) decides whether an object exists; the bytes come from the
+  action href on first download and are verified against the oid. Limits: basic transfer only, upstream action headers are not
+  forwarded, hrefs on other hosts need a redirect origin.
+- **p2** (`internal/p2repo`). Origin is the repository root. Indexes verbatim; bundles/features/binaries only if the artifacts index lists
+  them, verified against `download.checksum.sha-256` (or md5 + size). No composite repositories or Pack200.
+- **Swift** (`internal/swiftrepo`). Origin is the registry root. Release list and release resource are validated and re-rendered; the
+  archive is verified against the release resource's SHA-256, upstream signing data is preserved. Only the default `Package.swift` is
+  proxied.
 
 ## Limitations
 

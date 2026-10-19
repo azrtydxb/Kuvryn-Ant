@@ -58,6 +58,12 @@ type RemoteBackend interface {
 	Fetch(context.Context, remoteruntime.Request) (*remoteruntime.Response, error)
 }
 
+// RemoteQuerier is implemented by backends that can send a read-only JSON
+// query (see RemoteQuery). *remoteruntime.Manager implements it.
+type RemoteQuerier interface {
+	Query(ctx context.Context, r remoteruntime.Request, contentType string, body []byte) (cache.Value, error)
+}
+
 // Origin names one upstream resource. Exactly one of Path (relative to the
 // source origin, no leading slash, no query) or URL (absolute https on the
 // source origin or a configured redirect origin) must be set. Adapters build
@@ -237,6 +243,39 @@ func (s *Service) RemoteMetadata(ctx context.Context, p identity.Principal, r Pu
 	return Document{}, ErrNotFound
 }
 
+// RemoteQuery sends a read-only JSON query (POST) to the remote sources of the
+// feed, with the same package-owner and read-authorization rules as
+// RemoteMetadata, and returns the answer of the first source that has one. It
+// exists for protocols whose read API is a query rather than a GET (the Git LFS
+// batch API with operation "download"). The answer is never cached, since such
+// documents carry expiring links. Only Path (relative to the source origin) of o
+// is used; callers must never send a mutating operation through it.
+func (s *Service) RemoteQuery(ctx context.Context, p identity.Principal, r Publication, o Origin, contentType string, body []byte) (Document, error) {
+	querier, ok := s.Remote.(RemoteQuerier)
+	if !ok || o.Path == "" || o.URL != "" {
+		return Document{}, ErrNotFound
+	}
+	awaitUpstream(ctx)
+	plan, err := s.plan(ctx, p, r, o.SourceID)
+	if err != nil {
+		return Document{}, err
+	}
+	for _, id := range plan.sources {
+		value, err := querier.Query(ctx, remoteruntime.Request{SourceID: id, AuthorizationDomain: plan.domain, Path: o.Path, Representation: o.Representation}, contentType, body)
+		if err != nil {
+			return Document{}, mapRemoteError(err)
+		}
+		switch {
+		case value.Status == 200:
+			return Document{Body: value.Body, MediaType: value.MediaType, SourceID: id}, nil
+		case value.Status == 404 || value.Status == 410:
+		default:
+			return Document{}, ErrUnavailable
+		}
+	}
+	return Document{}, ErrNotFound
+}
+
 type flight struct{ done chan struct{} }
 
 var errDigestMismatch = fmt.Errorf("%w: upstream content does not match the requested digest", ErrUnavailable)
@@ -340,6 +379,7 @@ func (s *Service) lead(ctx context.Context, p identity.Principal, r Publication,
 			response.Body.Close()
 			return nil, ErrUnavailable
 		}
+		NoteFill(ctx, declaredSize(response.Header))
 		return s.cacheStream(ctx, p, r, o, id, response, release)
 	}
 	return nil, ErrNotFound
@@ -806,6 +846,27 @@ func (s *Service) RemoteStream(ctx context.Context, p identity.Principal, r Publ
 		}
 	}
 	return nil, ErrNotFound
+}
+
+type fillKey struct{}
+
+// FillObserver is told when a pull-through read had to fetch an artifact from an
+// upstream (a cache miss that started a fill) rather than find it in the store.
+// size is the declared length, or -1. Prewarm uses it to tell warmed objects from
+// objects that were already cached.
+type FillObserver interface{ ObserveFill(size int64) }
+
+// WithFillObserver returns a context whose reads report their fills to o.
+func WithFillObserver(ctx context.Context, o FillObserver) context.Context {
+	return context.WithValue(ctx, fillKey{}, o)
+}
+
+// NoteFill reports one fill to the observer in ctx, if any (the seam calls it
+// when a miss starts an upstream transfer).
+func NoteFill(ctx context.Context, size int64) {
+	if o, ok := ctx.Value(fillKey{}).(FillObserver); ok && o != nil {
+		o.ObserveFill(size)
+	}
 }
 
 type deadlineKey struct{}

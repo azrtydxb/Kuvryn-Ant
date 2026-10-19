@@ -368,7 +368,7 @@ func runGitLFS(c *Ctx) {
 		return Contains(string(out), `"code":404`)
 	})
 	c.Step("delete/unlist: management API delete of the second object", func() error { return c.MgmtVersion(slug, "", "", "delete") })
-	c.Step("remote pull-through: git-lfs adapter has no remote source support", func() error { return nil }, Skip("not supported: internal/gitlfs README lists remote pull-through as a remaining gate"))
+	c.Step("remote pull-through: git-lfs (real upstream pending)", func() error { return nil }, Skip("pending: git-lfs remote (upstream LFS batch API) is implemented (httptest-covered); not yet run against a real LFS server, see #288"))
 	c.Step("auth denial: git lfs pull with invalid credentials rejected", gl(F(`rm -rf /work/lfs-c4 && git clone -q -c lfs.url="@u@" -c lfs.locksverify=false /work/lfs-origin.git /work/lfs-c4 && cd /work/lfs-c4 && git config lfs.url "@u@" && git lfs pull`, "u", strings.Replace(lfs, "$TOKEN", "$BADTOKEN", 1)), RunOpt{Env: map[string]string{"BADTOKEN": "invalid-token"}, ExpectFail: true, ExpectRe: authOrFail}))
 	c.Step("auth denial: unauthenticated batch request returns 401", func() error {
 		_, _, _, err := c.Do(Req{Method: "POST", Path: "/feeds/" + slug + "/git-lfs/objects/batch", Body: []byte(`{"operation":"download","objects":[]}`), Hdr: map[string]string{"Content-Type": "application/vnd.git-lfs+json"}, Auth: NoAuth, Want: []int{401, 403}})
@@ -412,7 +412,7 @@ func runP2(c *Ctx) {
 		}
 		return nil
 	})
-	c.Step("remote pull-through: p2 adapter has no remote source support", func() error { return nil }, Skip("not supported: internal/p2repo README: no remote/composite import"))
+	c.Step("remote pull-through: p2 (real upstream pending)", func() error { return nil }, Skip("pending: p2 remote pull-through is implemented (httptest-covered); not yet run against a real p2 repository, see #288"))
 	c.Step("auth denial: invalid token rejected by curl", cu(F(`curl -fsS -H "Authorization: Bearer $BADTOKEN" @b@/content.xml`, "b", base), RunOpt{Env: map[string]string{"BADTOKEN": "invalid-token"}, ExpectFail: true}))
 	c.Step("auth denial: unauthenticated content.xml returns 401", func() error {
 		return c.Expect("GET", "/feeds/"+slug+"/p2/content.xml", NoAuth, 401, 403)

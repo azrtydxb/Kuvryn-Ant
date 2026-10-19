@@ -21,6 +21,7 @@ import (
 type opsFixture struct {
 	*sourceHTTPFixture
 	deps    OpsDeps
+	prewarm *notifyCounter
 	limited string // token of a principal without any role
 	limitID string
 }
@@ -38,7 +39,8 @@ func newOpsFixture(t *testing.T) *opsFixture {
 		t.Fatal(err)
 	}
 	codec := NewCursorCodec(make([]byte, 32))
-	deps := OpsDeps{Pool: f.db, Codec: codec, Keys: keys, Background: context.Background(), Health: remoteruntime.NewHealth(), StorageBackend: "disk",
+	counter := &notifyCounter{}
+	deps := OpsDeps{Prewarm: counter, Pool: f.db, Codec: codec, Keys: keys, Background: context.Background(), Health: remoteruntime.NewHealth(), StorageBackend: "disk",
 		Env: []EnvSetting{{Key: "public_url", Value: "https://ant.example.test", Description: "env"}},
 		Readiness: func(context.Context) ReadinessDetail {
 			return ReadinessDetail{Ready: true, Database: ComponentStatus{Status: "ok"}, BlobStorage: ComponentStatus{Status: "ok"}, WriterLease: WriterLeaseStatus{State: "held"}, CheckedAt: time.Now().UTC()}
@@ -53,7 +55,7 @@ func newOpsFixture(t *testing.T) *opsFixture {
 	EnableStatusDetail(f.db, deps.Readiness)
 	t.Cleanup(func() { statusDetail.Store(nil) })
 	f.handler = WithRequestID(mux)
-	o := &opsFixture{sourceHTTPFixture: f, deps: deps}
+	o := &opsFixture{sourceHTTPFixture: f, deps: deps, prewarm: counter}
 	p := createIdentityPrincipal(f, "limited", "service")
 	lt, err := (identity.Tokens{DB: f.db}).Issue(context.Background(), f.instance, f.principal, p.ID, []identity.Scope{{Actions: all}}, time.Now().Add(time.Hour))
 	if err != nil {

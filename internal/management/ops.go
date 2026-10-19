@@ -76,6 +76,8 @@ type OpsDeps struct {
 	Diagnostics func(ctx context.Context, w io.Writer) error
 	// Limits is reloaded after limits are changed so they apply immediately.
 	Limits *limits.Limiter
+	// Prewarm is the running prewarm service, or nil when this instance is not serving.
+	Prewarm PrewarmBackend
 }
 
 type opsHandlers struct {
@@ -155,6 +157,19 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"GET /api/v1/feeds/{id}/policy-templates":       h.getBinding,
 		"PUT /api/v1/feeds/{id}/policy-templates":       h.putBinding,
 		"GET /api/v1/feeds/{id}/effective-policy":       h.effectivePolicy,
+		"GET /api/v1/prewarm/formats":                   h.listPrewarmFormats,
+		"POST /api/v1/prewarm/preview":                  h.previewPrewarm,
+		"GET /api/v1/prewarm/jobs":                      h.listPrewarmJobs,
+		"POST /api/v1/prewarm/jobs":                     h.createPrewarmJob,
+		"GET /api/v1/prewarm/jobs/{id}":                 h.getPrewarmJob,
+		"PATCH /api/v1/prewarm/jobs/{id}":               h.patchPrewarmJob,
+		"DELETE /api/v1/prewarm/jobs/{id}":              h.deletePrewarmJob,
+		"POST /api/v1/prewarm/jobs/{id}/runs":           h.startPrewarmRun,
+		"GET /api/v1/prewarm/runs":                      h.listPrewarmRuns,
+		"GET /api/v1/prewarm/runs/{id}":                 h.getPrewarmRun,
+		"GET /api/v1/prewarm/runs/{id}/items":           h.listPrewarmItems,
+		"POST /api/v1/prewarm/runs/{id}/cancel":         h.cancelPrewarmRun,
+		"POST /api/v1/prewarm/runs/{id}/retry":          h.retryPrewarmRun,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}

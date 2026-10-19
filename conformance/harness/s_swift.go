@@ -66,7 +66,7 @@ func runSwift(c *Ctx) {
 	c.Step("delete: DELETE {scope}/{name}/{version}", func() error {
 		return c.Expect("DELETE", "/feeds/"+slug+"/swift/"+scope+"/"+name+"/1.0.1", Basic, 200, 204)
 	})
-	c.Step("remote pull-through: swift registry adapter has no remote source support", func() error { return nil }, Skip("not supported: internal/swiftrepo has no PullThrough hook (docs/implementation/pull-through.md lists no swift)"))
+	c.Step("remote pull-through: swift (real upstream pending)", func() error { return nil }, Skip("pending: swift registry remote pull-through is implemented (httptest-covered); not yet run against a real registry, see #288"))
 	c.Step("auth denial: package resolve with invalid credentials rejected", sw(login("$BADTOKEN")+`cd /work/cons && swift package resolve`, RunOpt{Env: map[string]string{"BADTOKEN": "invalid-token"}, ExpectFail: true, ExpectRe: authOrFail}), Skip(httpSkip))
 	c.Step("auth denial: unauthenticated release list returns 401", func() error {
 		return c.Expect("GET", "/feeds/"+slug+"/swift/"+scope+"/"+name, NoAuth, 400, 401, 403)

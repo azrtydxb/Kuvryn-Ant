@@ -15,6 +15,7 @@ import {
 } from "./ds/bundle";
 import { LimitsPane } from "./Limits";
 import { AccessPane, PersonalTokensPane } from "./ClientAuth";
+import { PrewarmPane } from "./Prewarm";
 import { RetentionPane } from "./Retention";
 import { StorageMigrationSection } from "./StorageMigration";
 import { TemplatesPane } from "./Templates";
@@ -52,6 +53,7 @@ const nav = [
     icon: "trash-2",
     group: "Content",
   },
+  { id: "prewarm", label: "Cache prewarm", icon: "zap", group: "Content" },
   { id: "tokens", label: "Tokens", icon: "key-round", group: "Profile" },
   { id: "about", label: "About", icon: "info", group: "System" },
 ];
@@ -88,6 +90,8 @@ export function SettingsPage({
             <PersonalTokensPane client={client} />
           ) : tab === "retention" ? (
             <RetentionPane client={client} />
+          ) : tab === "prewarm" ? (
+            <PrewarmPane client={client} />
           ) : (
             <About client={client} notes={notes} setNotes={setNotes} />
           )
