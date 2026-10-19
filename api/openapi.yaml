@@ -26168,11 +26168,15 @@
           },
           "blob_urls": {
             "type": "boolean",
-            "description": "Proxy mode only: immutable blob reads (OCI blobs, npm tarballs, ...) get a 307 to a signed URL on the holder's public listener, valid for five minutes."
+            "description": "Proxy mode only: digest-addressed reads (OCI blobs and manifests by digest) get a 307 to a signed URL on the holder's public listener, valid for five minutes; the holder serves only bytes with that digest. Other paths are always proxied."
+          },
+          "blob_url_bind_client": {
+            "type": "boolean",
+            "description": "Requires blob_urls: each signed blob URL is bound to the client address the entry member saw and refused from any other address. Both members must resolve the same client address (direct clients, or trusted proxies on both)."
           },
           "cache": {
             "type": "boolean",
-            "description": "Proxy mode only: entry members with a feed bound to the key keep immutable proxied responses and serve them to callers who may read the whole local feed."
+            "description": "Proxy mode only: entry members with a feed bound to the key keep immutable proxied responses and serve them to callers who may read the whole local feed. Digest-addressed responses are served as cached; any other cached response is revalidated with a holder (If-None-Match) on every hit, and deletes and metadata changes replicated from the home invalidate entries."
           },
           "cache_ttl_seconds": {
             "type": "integer",

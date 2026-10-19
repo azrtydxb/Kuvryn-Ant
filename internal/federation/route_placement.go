@@ -84,14 +84,19 @@ type routeState struct {
 	info       map[string]routeInfoEntry
 	slugs      map[string]slugEntry
 	clients    map[string]*routeClient
-	jtis       map[string]time.Time // proxied-read assertion replay cache
+	jtis       map[string]*issuerJTIs // proxied-read assertion replay cache per issuer
 	streams    chan struct{}
 	streamsCap int
+	// per-principal and per-client shares of the transfer budget
+	byPrincipal, byClient map[string]int
+	limitMu               sync.Mutex
+	buckets               map[string]*bucket // per-principal routed-read rate
 
 	// counters (metrics)
 	outcomes                                       sync.Map // "mechanism|outcome" → *atomic.Int64
 	proxyBytes, servedRequests, servedBytes        atomic.Int64
 	writesNotRouted, cacheHits, cacheStores        atomic.Int64
+	cacheDrops                                     atomic.Int64
 	ticketsIssued, ticketsAccepted, ticketsRefused atomic.Int64
 	active                                         atomic.Int64
 }
@@ -662,6 +667,7 @@ func (s *Service) writeRouteMetrics(w io.Writer) {
 	fmt.Fprintln(w, "# HELP ant_federation_route_cache_total Entry-cache events of proxied immutable reads.\n# TYPE ant_federation_route_cache_total counter")
 	fmt.Fprintf(w, "ant_federation_route_cache_total{event=\"hit\"} %d\n", rs.cacheHits.Load())
 	fmt.Fprintf(w, "ant_federation_route_cache_total{event=\"store\"} %d\n", rs.cacheStores.Load())
+	fmt.Fprintf(w, "ant_federation_route_cache_total{event=\"drop\"} %d\n", rs.cacheDrops.Load())
 	fmt.Fprintln(w, "# HELP ant_federation_blob_urls_total Signed blob URLs issued by this member and verified on this member.\n# TYPE ant_federation_blob_urls_total counter")
 	fmt.Fprintf(w, "ant_federation_blob_urls_total{event=\"issued\"} %d\n", rs.ticketsIssued.Load())
 	fmt.Fprintf(w, "ant_federation_blob_urls_total{event=\"accepted\"} %d\n", rs.ticketsAccepted.Load())

@@ -92,7 +92,14 @@ type Config struct {
 	SearchMemberTimeout, SearchTimeout, SearchCacheTTL     time.Duration // negative TTL disables the cache
 	// RouteMaxStreams bounds concurrent proxied reads (zero: DefaultRouteStreams).
 	RouteMaxStreams int
-	Logger          *slog.Logger
+	// Routing abuse limits (zero: the route_limits.go defaults): proxied
+	// streams per principal and per client address, routed reads per second
+	// per principal, and the minimum average rate (bytes per second, after
+	// RouteTransferGrace) and total deadline of a proxied body transfer.
+	RouteMaxStreamsPerPrincipal, RouteMaxStreamsPerClient, RoutePrincipalRate int
+	RouteMinTransferRate                                                      int64
+	RouteTransferGrace, RouteTransferTimeout                                  time.Duration
+	Logger                                                                    *slog.Logger
 }
 
 // Service is safe for concurrent use.

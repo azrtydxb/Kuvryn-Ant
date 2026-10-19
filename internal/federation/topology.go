@@ -92,6 +92,10 @@ type FeedRouting struct {
 	// signed, short-lived URL on the holder's public listener instead of
 	// streaming through the entry member.
 	BlobURLs bool `json:"blob_urls"`
+	// BlobURLBindClient binds each signed blob URL to the client address the
+	// entry member saw; the holder refuses it from any other address. Both
+	// members must resolve the same client address (trusted proxies).
+	BlobURLBindClient bool `json:"blob_url_bind_client,omitempty"`
 	// Cache keeps immutable proxied responses on entry members that have a
 	// feed bound to the key, for CacheTTLSeconds (default 86400).
 	Cache           bool `json:"cache"`
@@ -122,7 +126,7 @@ func validRouting(r *FeedRouting) bool {
 	if r.Mode != RouteProxy && r.Mode != RouteRedirect && r.Mode != RouteOff {
 		return false
 	}
-	if (r.BlobURLs || r.Cache) && r.Mode != RouteProxy {
+	if (r.BlobURLs || r.Cache) && r.Mode != RouteProxy || r.BlobURLBindClient && !r.BlobURLs {
 		return false
 	}
 	if r.CacheTTLSeconds < 0 || r.CacheTTLSeconds > 30*86400 || (r.CacheTTLSeconds > 0 && !r.Cache) || r.MaxLagSeconds < 0 || r.MaxLagSeconds > 31536000 || len(r.Prefer) > 8 {

@@ -184,8 +184,8 @@ func (s *Service) ResolveHomeFeed(ctx context.Context, member, key string) (Home
 // AuthorizeReplication decides whether a member may read a local feed through
 // the federation export API: the feed must be bound to a key this instance is
 // home of, and the caller a target of a rule for that key, or the other side
-// of its transfer. The applied topology is signed by the authority, so the
-// decision needs no bearer token.
+// of its active transfer. The applied topology is signed by the authority, so
+// the decision needs no bearer token.
 func (s *Service) AuthorizeReplication(ctx context.Context, caller, feed string) bool {
 	topo, err := s.appliedTopology(ctx)
 	if err != nil || topo == nil {
@@ -195,14 +195,28 @@ func (s *Service) AuthorizeReplication(ctx context.Context, caller, feed string)
 	if err := s.cfg.DB.QueryRow(ctx, `SELECT feed_key FROM federated_feed_bindings WHERE instance_id=$1 AND feed_id=$2`, s.cfg.InstanceID, feed).Scan(&key); err != nil {
 		return false
 	}
+	return exportAllowed(&topo.TopologyBody, s.trust.Load().doc, s.cfg.InstanceID, caller, key)
+}
+
+// exportAllowed is the export decision for a feed key on member self. A
+// transfer grants its two sides access only while it is active; an aborted
+// transfer still recorded in topology grants nothing. The one exception is
+// the former home of a completed transfer to this member: it demotes into a
+// replica that follows this member (section 9.5) and held the content
+// anyway.
+func exportAllowed(topo *TopologyBody, doc *Membership, self, caller, key string) bool {
 	f, ok := topo.Feed(key)
-	if !ok || f.Home != s.cfg.InstanceID {
+	if !ok || f.Home != self {
 		return false
 	}
-	if t := f.Transfer; t != nil && (t.To == caller || t.From == caller) {
-		return true
+	if t := f.Transfer; t != nil {
+		switch {
+		case t.Active() && (t.To == caller || t.From == caller):
+			return true
+		case t.State == TransferComplete && t.From == caller && t.To == self:
+			return true
+		}
 	}
-	doc := s.trust.Load().doc
 	if doc == nil {
 		return false
 	}
@@ -1171,7 +1185,7 @@ func (s *Service) SetFeedRoutingTx(ctx context.Context, tx pgx.Tx, actor, key st
 		in.Mode = RouteProxy
 	}
 	if !validRouting(&in) {
-		return nil, out, invalid("routing mode must be proxy, redirect or off; blob_urls and cache need proxy; cache_ttl_seconds needs cache (at most 30 days); prefer lists up to 8 distinct label keys")
+		return nil, out, invalid("routing mode must be proxy, redirect or off; blob_urls and cache need proxy; blob_url_bind_client needs blob_urls; cache_ttl_seconds needs cache (at most 30 days); prefer lists up to 8 distinct label keys")
 	}
 	doc, err := s.publishTopologyTx(ctx, tx, actor, func(b *TopologyBody, _ *Membership) error {
 		f, ok := b.Feed(key)
@@ -1189,5 +1203,5 @@ func (s *Service) SetFeedRoutingTx(ctx context.Context, tx pgx.Tx, actor, key st
 		return nil, out, err
 	}
 	return doc, out, audit(ctx, tx, s.cfg.InstanceID, actor, "federation.feed.routing_updated", "", "success",
-		map[string]any{"feed_key": key, "mode": in.Mode, "blob_urls": in.BlobURLs, "cache": in.Cache, "generation": doc.Generation})
+		map[string]any{"feed_key": key, "mode": in.Mode, "blob_urls": in.BlobURLs, "blob_url_bind_client": in.BlobURLBindClient, "cache": in.Cache, "generation": doc.Generation})
 }

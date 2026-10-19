@@ -30,12 +30,16 @@ import (
 //   - proxy (default, D5): the request is sent over the mTLS federation
 //     listener with the caller's signed principal assertion; the holder
 //     authorizes it under its own policy and the answer is streamed back with
-//     bounded memory (32 KiB buffer, global stream budget), feed URLs in
-//     textual metadata rebased onto this member, Range and conditional
-//     headers passed through and client cancellation propagated;
+//     bounded memory (32 KiB buffer, global stream budget partitioned per
+//     principal and client address, minimum transfer rate and total
+//     deadline: route_limits.go), feed URLs in textual metadata rebased onto
+//     this member, Range and conditional headers passed through, client
+//     cancellation propagated and the holder's browser policy replaced by
+//     nosniff and a sandbox CSP;
 //   - redirect (opt-in): 307 to the holder's public feed endpoint;
-//   - blob URLs (opt-in in proxy mode): immutable blob reads get a 307 to a
-//     signed, five-minute URL on the holder's public listener.
+//   - blob URLs (opt-in in proxy mode): digest-addressed reads (OCI blobs
+//     and manifests by digest) get a 307 to a signed, five-minute URL on the
+//     holder's public listener, optionally bound to the client address.
 //
 // Writes are never routed (D6): every non-read request is answered locally,
 // with Ant-Feed-Home naming the home's feed endpoint.
@@ -209,20 +213,27 @@ func (s *Service) RouteFeeds(oci bool, next http.Handler) http.Handler {
 			}
 		}
 		var fallback func()
+		var reval *cacheEntry
 		if target.localFeed != "" {
 			ic := &interceptor{w: w, header: http.Header{}}
 			next.ServeHTTP(ic, local)
 			if !ic.missed {
 				return
 			}
-			if s.serveCached(w, r, target, rest, c) {
-				return
+			if e, ok := s.lookupCached(r, target, rest, c); ok {
+				if e.addressed {
+					// Digest-addressed: the bytes cannot change behind the path.
+					s.writeCached(w, r, target, e, "cache")
+					return
+				}
+				// Anything else is revalidated with a holder on every hit.
+				reval = &e
 			}
 			fallback = func() { ic.replay() }
 		} else {
 			fallback = func() { next.ServeHTTP(w, local) }
 		}
-		s.routeRead(w, r, target, slug, rest, oci, c, fallback)
+		s.routeRead(w, r, target, slug, rest, oci, c, fallback, reval)
 	})
 }
 
@@ -350,6 +361,37 @@ func immutableRead(format, rest string) bool {
 	return false
 }
 
+// contentAddressed returns the sha256 hex digest of a read whose path names
+// its content by digest (OCI blobs and manifests by digest), or "". Only
+// such reads may be answered by a signed blob URL or served from the entry
+// cache without asking the holder: the bytes cannot change behind the path.
+func contentAddressed(format, rest string) string {
+	if format != "oci" || strings.ContainsAny(rest, "?#") {
+		return ""
+	}
+	dir, last, ok := cutLast(rest)
+	if !ok {
+		return ""
+	}
+	repo, kind, ok := cutLast(dir)
+	if !ok || repo == "" || (kind != "blobs" && kind != "manifests") {
+		return ""
+	}
+	d, ok := strings.CutPrefix(last, "sha256:")
+	if !ok || len(d) != 64 || strings.ToLower(d) != d || !isHex(d) {
+		return ""
+	}
+	return d
+}
+
+func cutLast(p string) (string, string, bool) {
+	i := strings.LastIndexByte(p, '/')
+	if i < 0 {
+		return "", "", false
+	}
+	return p[:i], p[i+1:], true
+}
+
 // assertFor builds the assertion of the caller for a request to a member.
 func (s *Service) assertFor(ctx context.Context, c caller, member, method, requestURI string) (string, error) {
 	if c.anonymous && c.principal.PrincipalID == "" || c.principal.Anonymous {
@@ -371,7 +413,7 @@ func (s *Service) anonymousAllowed(ctx context.Context) bool {
 	return err == nil && p.Allows(identity.MethodAnonymous) && len(p.AnonymousNetworkGroupIDs) == 0
 }
 
-func (s *Service) routeRead(w http.ResponseWriter, r *http.Request, target routeTarget, slug, rest string, oci bool, c caller, fallback func()) {
+func (s *Service) routeRead(w http.ResponseWriter, r *http.Request, target routeTarget, slug, rest string, oci bool, c caller, fallback func(), reval *cacheEntry) {
 	ctx := r.Context()
 	topo, err := s.appliedTopology(ctx)
 	if err != nil || topo == nil {
@@ -406,6 +448,11 @@ func (s *Service) routeRead(w http.ResponseWriter, r *http.Request, target route
 			break
 		}
 	}
+	if !s.routeAllow("entry:"+principalKey(c, r), s.routeLimits().rate) {
+		s.route.count(routing.Mode, "rate_limited")
+		routeError(w, http.StatusTooManyRequests, "route_rate_limited", "too many routed reads for this caller; retry shortly")
+		return
+	}
 	query := ""
 	if r.URL.RawQuery != "" {
 		query = "?" + r.URL.RawQuery
@@ -417,12 +464,12 @@ func (s *Service) routeRead(w http.ResponseWriter, r *http.Request, target route
 		// proxies its misses instead, so redirects never chain or loop.
 		s.redirectRead(w, r, target, rest+query, oci, eligible, fallback)
 		return
-	case routing.BlobURLs && r.Method == http.MethodGet && immutableRead(target.format, rest):
-		if s.blobURL(w, r, target, rest+query, c, eligible) {
+	case routing.BlobURLs && r.Method == http.MethodGet && reval == nil && contentAddressed(target.format, rest+query) != "":
+		if s.blobURL(w, r, target, rest+query, c, eligible, routing) {
 			return
 		}
 	}
-	s.proxyRead(w, r, target, slug, rest+query, oci, c, eligible, routing, fallback)
+	s.proxyRead(w, r, target, slug, rest+query, oci, c, eligible, routing, fallback, reval)
 }
 
 // redirectRead answers 307 with the first reachable candidate's public feed
@@ -458,12 +505,18 @@ func (s *Service) redirectRead(w http.ResponseWriter, r *http.Request, target ro
 // blobURL answers an immutable blob read with a 307 to a signed, short-lived
 // URL on the first candidate's public listener. It returns false when no
 // ticket can be issued (the read is then proxied).
-func (s *Service) blobURL(w http.ResponseWriter, r *http.Request, target routeTarget, rest string, c caller, eligible []Member) bool {
+func (s *Service) blobURL(w http.ResponseWriter, r *http.Request, target routeTarget, rest string, c caller, eligible []Member, routing FeedRouting) bool {
+	client := ""
+	if routing.BlobURLBindClient {
+		if client = clientKey(r); client == "unknown" {
+			return false
+		}
+	}
 	for _, m := range eligible {
 		if m.APIURL == "" {
 			continue
 		}
-		loc, err := s.issueBlobURL(r.Context(), c, m, target.key, target.format, rest)
+		loc, err := s.issueBlobURL(r.Context(), c, m, target.key, target.format, rest, client)
 		if err != nil {
 			return false
 		}
@@ -472,6 +525,7 @@ func (s *Service) blobURL(w http.ResponseWriter, r *http.Request, target routeTa
 		w.Header().Set("Location", loc)
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set(headerRoute, "blob_url; member="+m.Name)
+		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.WriteHeader(http.StatusTemporaryRedirect)
 		return true
 	}
@@ -482,9 +536,18 @@ func (s *Service) blobURL(w http.ResponseWriter, r *http.Request, target routeTa
 // cookies, client addresses) stays on the entry member.
 var requestHeaders = []string{"Accept", "Range", "If-Range", "If-None-Match", "If-Modified-Since", "If-Match", "If-Unmodified-Since", "User-Agent", "Docker-Distribution-Api-Version"}
 
-// dropResponseHeaders never reach the client from a holder.
-var dropResponseHeaders = map[string]bool{"Set-Cookie": true, "Www-Authenticate": true, "Strict-Transport-Security": true, "Connection": true, "Keep-Alive": true,
-	"Transfer-Encoding": true, "Trailer": true, "Upgrade": true, "Proxy-Authenticate": true, "Alt-Svc": true, "X-Request-Id": true}
+// conditionalHeaders are replaced by the entry cache's own validator when it
+// revalidates an entry with a holder.
+var conditionalHeaders = map[string]bool{"Range": true, "If-Range": true, "If-None-Match": true, "If-Modified-Since": true, "If-Match": true, "If-Unmodified-Since": true}
+
+// dropResponseHeaders never reach the client from a holder: hop-by-hop
+// headers, credentials and cookies, and response headers that would set
+// browser policy for the entry origin (the entry member sets its own).
+var dropResponseHeaders = map[string]bool{"Set-Cookie": true, "Set-Cookie2": true, "Www-Authenticate": true, "Proxy-Authenticate": true, "Authentication-Info": true, "Proxy-Authentication-Info": true,
+	"Connection": true, "Keep-Alive": true, "Proxy-Connection": true, "Te": true, "Transfer-Encoding": true, "Trailer": true, "Upgrade": true, "Alt-Svc": true, "X-Request-Id": true,
+	"Strict-Transport-Security": true, "Content-Security-Policy": true, "Content-Security-Policy-Report-Only": true, "X-Content-Type-Options": true, "X-Frame-Options": true,
+	"X-Xss-Protection": true, "Clear-Site-Data": true, "Refresh": true, "Report-To": true, "Reporting-Endpoints": true, "Nel": true, "Permissions-Policy": true,
+	"Service-Worker-Allowed": true, "Origin-Agent-Cluster": true, "Public-Key-Pins": true, "Expect-Ct": true}
 
 type attemptResult int
 
@@ -498,24 +561,37 @@ const (
 	attemptNotFound                      // the holder answered 404/410
 )
 
-func (s *Service) proxyRead(w http.ResponseWriter, r *http.Request, target routeTarget, slug, rest string, oci bool, c caller, eligible []Member, routing FeedRouting, fallback func()) {
-	streams := s.routeStreams()
-	select {
-	case streams <- struct{}{}:
-		defer func() { <-streams }()
-	default:
+func (s *Service) proxyRead(w http.ResponseWriter, r *http.Request, target routeTarget, slug, rest string, oci bool, c caller, eligible []Member, routing FeedRouting, fallback func(), reval *cacheEntry) {
+	release, refused := s.acquireStream(principalKey(c, r), clientKey(r))
+	switch refused {
+	case "":
+		defer release()
+	case streamBusy:
 		s.route.count(RouteProxy, "busy")
 		routeError(w, http.StatusServiceUnavailable, "route_busy", "the federation proxy transfer budget is exhausted; retry shortly")
 		return
+	default:
+		// One caller (or client address) may hold only a share of the budget.
+		s.route.count(RouteProxy, refused)
+		routeError(w, http.StatusTooManyRequests, "route_busy", "too many concurrent proxied reads for this caller; retry when one completes")
+		return
 	}
 	// Waiting for the holder must not trip the public write timeout; the
-	// stream extends the deadline per chunk afterwards.
+	// stream's transfer guard sets the deadlines afterwards.
 	_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(90 * time.Second))
 	s.route.active.Add(1)
 	defer s.route.active.Add(-1)
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 	var failed, limited, notFound bool
 	for _, m := range eligible {
-		res := s.proxyOnce(w, r, target, slug, rest, oci, c, m, routing)
+		res := s.proxyOnce(ctx, cancel, w, r, target, slug, rest, oci, c, m, routing, reval)
+		if res == attemptNotFound && reval != nil && m.InstanceID == target.feed.Home {
+			// The home no longer has the content: the entry goes. (A replica
+			// that answers 404 may only lag; the next holder is asked.)
+			s.dropCached(target, *reval)
+			reval = nil
+		}
 		switch res {
 		case attemptDone:
 			s.route.count(RouteProxy, "ok")
@@ -558,7 +634,7 @@ func (s *Service) proxyRead(w http.ResponseWriter, r *http.Request, target route
 
 // proxyOnce sends the read to one member and, when it answers with content,
 // streams it to the client.
-func (s *Service) proxyOnce(w http.ResponseWriter, r *http.Request, target routeTarget, slug, rest string, oci bool, c caller, m Member, routing FeedRouting) attemptResult {
+func (s *Service) proxyOnce(ctx context.Context, cancel context.CancelFunc, w http.ResponseWriter, r *http.Request, target routeTarget, slug, rest string, oci bool, c caller, m Member, routing FeedRouting, reval *cacheEntry) attemptResult {
 	id, _, err := s.identity()
 	if err != nil {
 		return attemptFailed
@@ -573,7 +649,6 @@ func (s *Service) proxyOnce(w http.ResponseWriter, r *http.Request, target route
 	if err != nil {
 		return attemptFailed
 	}
-	ctx := r.Context()
 	req, err := http.NewRequestWithContext(ctx, r.Method, full, nil)
 	if err != nil {
 		return attemptFailed
@@ -588,9 +663,15 @@ func (s *Service) proxyOnce(w http.ResponseWriter, r *http.Request, target route
 		return attemptFailed
 	}
 	for _, h := range requestHeaders {
+		if reval != nil && conditionalHeaders[h] {
+			continue // the revalidation asks about the cached entry only
+		}
 		for _, v := range r.Header.Values(h) {
 			req.Header.Add(h, v)
 		}
+	}
+	if reval != nil {
+		req.Header.Set("If-None-Match", reval.etag)
 	}
 	req.Header.Set(peer.HeaderAssertion, assertion)
 	peer.SignRequest(req, id, nil, s.cfg.Now())
@@ -643,7 +724,12 @@ func (s *Service) proxyOnce(w http.ResponseWriter, r *http.Request, target route
 		return attemptFailed
 	}
 	s.observeMember(m.InstanceID, true, rtt, "")
-	s.streamAnswer(w, r, resp, target, slug, m, routing, rest)
+	if reval != nil && resp.StatusCode == http.StatusNotModified {
+		// The holder confirmed the cached entry is still its answer.
+		s.writeCached(w, r, target, *reval, "cache; revalidated; member="+m.Name)
+		return attemptDone
+	}
+	s.streamAnswer(w, r, resp, target, slug, m, routing, rest, cancel)
 	return attemptDone
 }
 
@@ -698,18 +784,47 @@ func applyRewrites(v string, rules [][2]string) string {
 	return v
 }
 
-// streamAnswer copies the holder's answer to the client with bounded memory.
-func (s *Service) streamAnswer(w http.ResponseWriter, r *http.Request, resp *http.Response, target routeTarget, slug string, m Member, routing FeedRouting, rest string) {
-	oci := target.format == "oci"
-	rules := s.rebase(m, resp.Header.Get(headerFeedSlug), slug, target.format, oci)
-	rewrite := len(rules) > 0 && rewritable(resp.Header, resp.StatusCode)
-	dst := w.Header()
-	for k, v := range resp.Header {
-		if dropResponseHeaders[k] || strings.HasPrefix(k, "X-Ant-Fed-") {
+// copyProxiedHeaders copies a holder's response headers for the client:
+// hop-by-hop headers (including those the holder names in Connection),
+// credentials, cookies, CORS grants and browser security policy of the
+// holder never reach the entry origin; the entry member sets its own.
+func copyProxiedHeaders(dst, src http.Header) {
+	hop := map[string]bool{}
+	for _, v := range src.Values("Connection") {
+		for _, f := range strings.Split(v, ",") {
+			if f = strings.TrimSpace(f); f != "" {
+				hop[http.CanonicalHeaderKey(f)] = true
+			}
+		}
+	}
+	for k, v := range src {
+		if dropResponseHeaders[k] || hop[k] || strings.HasPrefix(k, "X-Ant-Fed-") || strings.HasPrefix(k, "Access-Control-") || strings.HasPrefix(k, "Cross-Origin-") {
 			continue
 		}
 		dst[k] = v
 	}
+	hardenProxied(dst)
+}
+
+// hardenProxied marks content served on the entry origin on behalf of
+// another member: browsers must not sniff it into an active type, and if it
+// is rendered at all it runs in a sandbox (no scripts, unique origin), so a
+// package uploaded elsewhere can never act as this origin.
+func hardenProxied(h http.Header) {
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("Content-Security-Policy", "sandbox")
+}
+
+// streamAnswer copies the holder's answer to the client with bounded memory
+// under a transfer guard: after the grace period the average rate must stay
+// above the minimum, and the whole body must finish within the total
+// deadline. cancel aborts the upstream request when the guard trips.
+func (s *Service) streamAnswer(w http.ResponseWriter, r *http.Request, resp *http.Response, target routeTarget, slug string, m Member, routing FeedRouting, rest string, cancel context.CancelFunc) {
+	oci := target.format == "oci"
+	rules := s.rebase(m, resp.Header.Get(headerFeedSlug), slug, target.format, oci)
+	rewrite := len(rules) > 0 && rewritable(resp.Header, resp.StatusCode)
+	dst := w.Header()
+	copyProxiedHeaders(dst, resp.Header)
 	for _, k := range []string{"Location", "Link", "Content-Location"} {
 		if v := dst.Values(k); len(v) > 0 {
 			out := make([]string, len(v))
@@ -730,6 +845,14 @@ func (s *Service) streamAnswer(w http.ResponseWriter, r *http.Request, resp *htt
 		r.Header.Get("Range") == "" && resp.Header.Get("Content-Range") == "" && immutableRead(target.format, rest) && resp.ContentLength > 0 {
 		cache = s.newCacheWriter(r.Context(), target, rest, m, resp)
 	}
+	guard := s.newTransferGuard()
+	if cancel == nil {
+		cancel = func() {}
+	}
+	wd := guard.watch(cancel)
+	defer wd.stop()
+	rc := http.NewResponseController(w)
+	_ = rc.SetWriteDeadline(guard.deadline(0))
 	w.WriteHeader(resp.StatusCode)
 	if r.Method == http.MethodHead {
 		return
@@ -743,21 +866,24 @@ func (s *Service) streamAnswer(w http.ResponseWriter, r *http.Request, resp *htt
 	if cache != nil {
 		src = io.TeeReader(src, cache)
 	}
-	rc := http.NewResponseController(w)
 	buf := make([]byte, 32<<10)
 	var n int64
 	for {
 		k, err := src.Read(buf)
 		if k > 0 {
-			_ = rc.SetWriteDeadline(time.Now().Add(60 * time.Second))
+			// The client must take this chunk by the time the minimum
+			// average rate requires it: a reader that stalls loses the slot.
+			_ = rc.SetWriteDeadline(guard.deadline(n + int64(k)))
 			if _, werr := w.Write(buf[:k]); werr != nil {
 				if cache != nil {
 					cache.abort()
 				}
 				s.route.proxyBytes.Add(n)
+				cancel()
 				return
 			}
 			n += int64(k)
+			wd.progress(n)
 		}
 		if errors.Is(err, io.EOF) {
 			break
