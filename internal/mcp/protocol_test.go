@@ -101,7 +101,7 @@ func TestInitializeAndListing(t *testing.T) {
 	}
 	for n, m := range names {
 		ann := m["annotations"].(map[string]any)
-		destructive := map[string]bool{"detach_source": true, "disable_webhook": true, "delete_package_version": true, "start_retention_run": true, "start_storage_job": true, "revoke_service_token": true, "purge_source_cache": true, "publish_federation_policy": true, "start_feed_transfer": true, "handover_federation_authority": true}[n]
+		destructive := map[string]bool{"detach_source": true, "disable_webhook": true, "delete_package_version": true, "start_retention_run": true, "start_storage_job": true, "revoke_service_token": true, "purge_source_cache": true, "delete_source": true, "publish_federation_policy": true, "start_feed_transfer": true, "handover_federation_authority": true}[n]
 		if got, _ := ann["destructiveHint"].(bool); got != destructive && !ann["readOnlyHint"].(bool) {
 			t.Fatalf("%s destructiveHint=%v", n, got)
 		}

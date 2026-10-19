@@ -181,6 +181,19 @@ func TestSeedIncrementalLagAndSourceOutage(t *testing.T) {
 		t.Fatalf("recovery not reported: %+v", st)
 	}
 
+	// A burst that was applied late leaves nothing behind, but its lateness must
+	// not read as a caught-up 0.
+	head := src.head()
+	src.publish(src.publisher, src.feed, "team", "team/lib", "3.0.0", "lib.bin", "", data("lib-late"))
+	src.exec(`UPDATE replication_changes SET created_at=created_at-interval '17 seconds' WHERE seq>$1`, head)
+	if err := svc.RunNow(ctx, job.ID); err != nil {
+		t.Fatal(err)
+	}
+	st = status(t, svc, dst, job.ID)
+	if st.ChangesBehind == nil || *st.ChangesBehind != 0 || st.LagSeconds == nil || *st.LagSeconds < 16 || *st.LagSeconds > 60 {
+		t.Fatalf("late burst reported as caught up: %+v", st)
+	}
+
 	// Source outage: a fully seeded destination serves independently.
 	srv.Close()
 	if err := svc.RunNow(ctx, job.ID); err == nil {

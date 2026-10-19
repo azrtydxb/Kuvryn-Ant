@@ -355,3 +355,49 @@ func TestSnapshotExcludesConcurrentWrites(t *testing.T) {
 		}
 	}
 }
+
+// A backup of an instance with attached sources and replication history must
+// restore: loading feed_sources and assets must not fire the replication
+// triggers (they would duplicate the restored replication_changes rows).
+func TestRestoreWithFeedSourcesAndReplicationRows(t *testing.T) {
+	src := populate(t)
+	ctx := context.Background()
+	inst := src.owner.InstanceID
+	var feed, source, comp, version, blobID string
+	must := func(err error) {
+		t.Helper()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	must(src.pool.QueryRow(ctx, "INSERT INTO feeds(instance_id,slug,format) VALUES($1,'rt','raw') RETURNING id::text", inst).Scan(&feed))
+	must(src.pool.QueryRow(ctx, "INSERT INTO sources(instance_id,name,kind,format) VALUES($1,'rt-local','local','raw') RETURNING id::text", inst).Scan(&source))
+	must(src.pool.QueryRow(ctx, "INSERT INTO components(instance_id,source_id,coordinate) VALUES($1,$2,'a/b') RETURNING id::text", inst, source).Scan(&comp))
+	must(src.pool.QueryRow(ctx, "INSERT INTO versions(instance_id,component_id,version) VALUES($1,$2,'1') RETURNING id::text", inst, comp).Scan(&version))
+	must(src.pool.QueryRow(ctx, "SELECT id::text FROM blobs WHERE instance_id=$1 LIMIT 1", inst).Scan(&blobID))
+	_, err := src.pool.Exec(ctx, "INSERT INTO assets(instance_id,version_id,asset_key,blob_id) VALUES($1,$2,'f',$3)", inst, version, blobID)
+	must(err)
+	_, err = src.pool.Exec(ctx, "INSERT INTO feed_sources(instance_id,feed_id,source_id,priority) VALUES($1,$2,$3,0)", inst, feed, source)
+	must(err)
+	if count(t, src.pool, "replication_changes") < 2 {
+		t.Fatalf("fixture produced %d replication changes", count(t, src.pool, "replication_changes"))
+	}
+	dir := filepath.Join(t.TempDir(), "bk")
+	res, err := Create(ctx, src.pool, src.stores, dir, Options{})
+	must(err)
+	dst := freshDatabase(t, false)
+	_, err = Restore(ctx, dst, newStores(t), dir, RestoreOptions{Keys: keyring(t, rootKeyBytes), ExpectManifestSHA256: res.ManifestSHA256})
+	must(err)
+	for _, table := range []string{"feed_sources", "replication_changes", "assets"} {
+		if a, b := count(t, src.pool, table), count(t, dst, table); a != b {
+			t.Errorf("%s: source %d restored %d", table, a, b)
+		}
+	}
+	// Triggers are active again after the load.
+	before := count(t, dst, "replication_changes")
+	_, err = dst.Exec(ctx, "INSERT INTO assets(instance_id,version_id,asset_key,blob_id) VALUES($1,$2,'g',$3)", inst, version, blobID)
+	must(err)
+	if count(t, dst, "replication_changes") != before+1 {
+		t.Fatal("replication triggers stayed disabled after restore")
+	}
+}

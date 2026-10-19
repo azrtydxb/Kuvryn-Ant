@@ -231,6 +231,15 @@ func (c *ClientAuth) Middleware(next http.Handler) http.Handler {
 				return
 			}
 		}
+		// Adapters rewrite Basic credentials into bearer tokens before the shared
+		// failure budget sees them; record the username first so one client with
+		// a wrong password does not exhaust the budget of valid users behind the
+		// same address.
+		if values := r.Header.Values("Authorization"); len(values) == 1 && len(values[0]) <= 1024 {
+			if user := usernameHint(r, values); user != "" {
+				r = r.WithContext(WithUsernameHint(r.Context(), user))
+			}
+		}
 		c.handle(w, r, next, oci, slug)
 	})
 }

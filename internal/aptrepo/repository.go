@@ -36,7 +36,7 @@ func New(db *pgxpool.Pool, s *artifact.Service) (*Repository, error) {
 	if db == nil || s == nil || s.Lease == nil || s.Lease().InstanceID == "" {
 		return nil, errors.New("invalid APT configuration")
 	}
-	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: make(chan struct{}, 4), now: time.Now, validity: 30 * 24 * time.Hour}, nil
+	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: artifact.NewUploadSlots(), now: time.Now, validity: 30 * 24 * time.Hour}, nil
 }
 
 // SetValidity changes the Valid-Until horizon for newly signed Release files.

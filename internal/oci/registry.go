@@ -64,10 +64,8 @@ func New(db *pgxpool.Pool, service *artifact.Service, uploadRoot string) (*Regis
 		return nil, ErrConfiguration
 	}
 	rootHash := sha256.Sum256([]byte(absolute))
-	budget := int(db.Config().MaxConns / 4)
-	if budget > 4 {
-		budget = 4
-	}
+	// Uploads hold database connections: leave three quarters of the pool for the rest.
+	budget := min(int(db.Config().MaxConns/4), artifact.UploadSlots())
 	return &Registry{db: db, service: service, root: root, auth: identity.NewBearer(identity.Tokens{DB: db}), transfers: make(chan struct{}, budget), instance: service.Lease().InstanceID, rootID: hex.EncodeToString(rootHash[:])}, nil
 }
 func (r *Registry) Close() error { return r.root.Close() }

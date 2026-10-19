@@ -77,8 +77,18 @@ spec:
               value: {{ .Values.instanceID | quote }}
             - name: ANT_SHUTDOWN_TIMEOUT
               value: {{ printf "%ds" (int .Values.shutdownSeconds) | quote }}
+            {{- if .Values.maxRequests }}
             - name: ANT_MAX_REQUESTS
               value: {{ .Values.maxRequests | quote }}
+            {{- end }}
+            {{- if .Values.dbMaxConns }}
+            - name: ANT_DB_MAX_CONNS
+              value: {{ .Values.dbMaxConns | quote }}
+            {{- end }}
+            {{- if .Values.uploadSlots }}
+            - name: ANT_UPLOAD_SLOTS
+              value: {{ .Values.uploadSlots | quote }}
+            {{- end }}
             - name: ANT_STORAGE_BACKEND
               value: {{ .Values.storage.backend | quote }}
             {{- if eq .Values.storage.backend "s3" }}

@@ -222,3 +222,7 @@ under the instance lease context; `main.go` mounts both route sets.
   Publish policy, grants, identities and endpoints are deliberately excluded,
   and remote sources are never created from a template.
 - Unreferenced replicated blobs after a delete are left to retention/GC.
+- Deleting a job keeps the replicated content attached and served, but renames
+  its `replica:<name>` source to `replica-retired:<name>-<id>` so the job name
+  can be reused. Remove the retired source with `DELETE /api/v1/sources/{id}`
+  (`force=true` detaches it and removes its content).

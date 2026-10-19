@@ -440,6 +440,8 @@ type jobRow struct {
 	backfillsPending   int64
 	reseeding          bool
 	ruleRevision       int64
+	applyLag           float64
+	applyLagAt         *time.Time
 }
 
 const jobColumns = `j.id::text,j.name,j.peer_id::text,j.remote_feed_id::text,j.dest_feed_id::text,j.replica_source_id::text,j.mode,j.interval_seconds,j.include_cached,j.filters,j.deletion_policy,j.enabled,j.revision,j.created_at,
@@ -447,7 +449,8 @@ const jobColumns = `j.id::text,j.name,j.peer_id::text,j.remote_feed_id::text,j.d
  j.last_attempt_at,j.last_success_at,COALESCE(j.last_error,''),j.consecutive_failures,j.assets_applied,j.blobs_transferred,j.blobs_deduplicated,j.bytes_transferred,j.deletions_applied,j.conflicts,
  (SELECT count(*) FROM replication_held_deletions h WHERE h.job_id=j.id),clock_timestamp(),
  j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id),j.destination_read_only,
- j.origin,COALESCE(j.federation_rule_id::text,''),COALESCE(j.federation_feed_key,''),j.adopted_at,COALESCE(j.federation_rule_revision,0)`
+ j.origin,COALESCE(j.federation_rule_id::text,''),COALESCE(j.federation_feed_key,''),j.adopted_at,COALESCE(j.federation_rule_revision,0),
+ j.last_apply_lag_seconds,j.last_apply_lag_at`
 
 func scanJob(row pgx.Row) (jobRow, error) {
 	var j jobRow
@@ -459,7 +462,7 @@ func scanJob(row pgx.Row) (jobRow, error) {
 		&st.LastAttemptAt, &st.LastSuccessAt, &st.LastError, &st.ConsecutiveFailures, &st.AssetsApplied, &st.BlobsTransferred, &st.BlobsDeduplicated, &st.BytesTransferred, &st.DeletionsApplied, &st.Conflicts,
 		&j.held, &now,
 		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending, &j.DestinationReadOnly,
-		&j.Origin, &j.FederationRuleID, &j.FederationFeedKey, &j.AdoptedAt, &j.ruleRevision)
+		&j.Origin, &j.FederationRuleID, &j.FederationFeedKey, &j.AdoptedAt, &j.ruleRevision, &j.applyLag, &j.applyLagAt)
 	if err != nil {
 		return jobRow{}, err
 	}
@@ -489,6 +492,14 @@ func scanJob(row pgx.Row) (jobRow, error) {
 					lag = 0
 				}
 			}
+			st.LagSeconds = &lag
+		}
+	}
+	// A burst that is already applied leaves nothing behind, yet its changes
+	// were late; keep that lateness visible for a while after the apply.
+	if st.Phase == "incremental" && j.applyLagAt != nil && j.applyLag >= 1 && now.Sub(*j.applyLagAt) < applyLagWindow {
+		if st.LagSeconds == nil || j.applyLag > *st.LagSeconds {
+			lag := j.applyLag
 			st.LagSeconds = &lag
 		}
 	}
@@ -720,14 +731,16 @@ func (s *Service) UpdateJob(ctx context.Context, instance, actor, id string, in 
 	})
 }
 
-// DeleteJob removes the job only. Replicated content and the replica source stay
-// in place so the destination keeps serving it; remove them separately.
+// DeleteJob removes the job. Replicated content and the replica source stay
+// attached so the destination keeps serving it, but the source is renamed
+// (replica-retired:<name>-<id>) so the job name can be reused; remove the
+// source separately.
 // DeleteJobTx deletes a job inside the caller's transaction.
 func (s *Service) DeleteJobTx(ctx context.Context, tx pgx.Tx, instance, actor, id string) error {
 	var err error
 	var running bool
-	var origin string
-	err = tx.QueryRow(ctx, `SELECT COALESCE(lease_until>clock_timestamp(),false),origin FROM replication_jobs WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&running, &origin)
+	var replica, origin string
+	err = tx.QueryRow(ctx, `SELECT COALESCE(lease_until>clock_timestamp(),false),origin,replica_source_id::text FROM replication_jobs WHERE instance_id=$1 AND id=$2 FOR UPDATE`, instance, id).Scan(&running, &origin, &replica)
 	if err != nil {
 		return dbError(err)
 	}
@@ -738,6 +751,12 @@ func (s *Service) DeleteJobTx(ctx context.Context, tx pgx.Tx, instance, actor, i
 		return ErrConflict
 	}
 	if _, err = tx.Exec(ctx, `DELETE FROM replication_jobs WHERE instance_id=$1 AND id=$2`, instance, id); err != nil {
+		return dbError(err)
+	}
+	// The replicated content stays attached and served, but the replica source
+	// gives up its name so a new job can reuse it. The retired source can be
+	// removed with DELETE /api/v1/sources/{id}.
+	if _, err = tx.Exec(ctx, `UPDATE sources SET name='replica-retired:'||substr(name,9)||'-'||substr(id::text,1,8),revision=revision+1 WHERE instance_id=$1 AND id=$2 AND kind='replica' AND name LIKE 'replica:%'`, instance, replica); err != nil {
 		return dbError(err)
 	}
 	if err = audit(ctx, tx, instance, actor, "replication.job.delete", id, map[string]any{}); err != nil {
@@ -778,3 +797,7 @@ func (s *Service) Trigger(ctx context.Context, instance, actor, id string) error
 	}
 	return nil
 }
+
+// applyLagWindow is how long the lateness of the last applied changes keeps
+// showing in the status lag after they were applied.
+const applyLagWindow = 5 * time.Minute

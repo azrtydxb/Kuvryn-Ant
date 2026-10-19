@@ -35,7 +35,7 @@ func New(db *pgxpool.Pool, service *artifact.Service) *Repository {
 	if service != nil && service.Lease != nil {
 		instance = service.Lease().InstanceID
 	}
-	return &Repository{instance: instance, db: db, service: service, auth: identity.NewBearer(identity.Tokens{DB: db}), Limits: DefaultLimits(), uploads: make(chan struct{}, 4)}
+	return &Repository{instance: instance, db: db, service: service, auth: identity.NewBearer(identity.Tokens{DB: db}), Limits: DefaultLimits(), uploads: artifact.NewUploadSlots()}
 }
 func (h *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-cache")

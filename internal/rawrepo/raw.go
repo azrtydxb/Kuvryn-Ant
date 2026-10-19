@@ -30,13 +30,19 @@ type Repository struct {
 	instance  string
 	auth      http.Handler
 	transfers chan struct{}
+	// spoolDir holds uploads whose digest is unknown until the body was read. It
+	// must be on the data volume: the container temp directory is small.
+	spoolDir string
 }
+
+// SetSpoolDir sets where digest-less uploads are spooled (default: TMPDIR).
+func (r *Repository) SetSpoolDir(dir string) { r.spoolDir = dir }
 
 func New(db *pgxpool.Pool, service *artifact.Service) (*Repository, error) {
 	if db == nil || service == nil || service.Lease == nil || service.Lease().InstanceID == "" {
 		return nil, ErrConfiguration
 	}
-	r := &Repository{db: db, service: service, instance: service.Lease().InstanceID, transfers: make(chan struct{}, 4)}
+	r := &Repository{db: db, service: service, instance: service.Lease().InstanceID, transfers: artifact.NewUploadSlots()}
 	r.auth = identity.NewBearer(identity.Tokens{DB: db}).Wrap(http.HandlerFunc(r.serve))
 	return r, nil
 }
@@ -156,7 +162,10 @@ func (r *Repository) put(w http.ResponseWriter, req *http.Request, p identity.Pr
 	pub.Info = blob.Info{Digest: blob.Digest(digest), Size: req.ContentLength}
 	var body io.Reader = req.Body
 	if digest == "" || req.ContentLength < 0 {
-		file, err := os.CreateTemp("", "ant-raw-*")
+		if r.spoolDir != "" {
+			_ = os.MkdirAll(r.spoolDir, 0o700)
+		}
+		file, err := os.CreateTemp(r.spoolDir, "ant-raw-*")
 		if err != nil {
 			fail(w, err)
 			return

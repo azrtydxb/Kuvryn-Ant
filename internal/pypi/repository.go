@@ -37,7 +37,7 @@ func New(db *pgxpool.Pool, s *artifact.Service) (*Repository, error) {
 	if db == nil || s == nil || s.Lease == nil || s.Lease().InstanceID == "" {
 		return nil, errors.New("invalid PyPI configuration")
 	}
-	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: make(chan struct{}, 4)}, nil
+	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: artifact.NewUploadSlots()}, nil
 }
 func failure(w http.ResponseWriter, status int) {
 	w.Header().Set("Cache-Control", "no-store")

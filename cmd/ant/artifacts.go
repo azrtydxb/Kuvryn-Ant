@@ -156,6 +156,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 		manager.Close()
 		return nil, err
 	}
+	rawRepository.SetSpoolDir(spoolDir(cfg.Storage.Directory))
 	npmRegistry, err := npmregistry.New(pool, service)
 	if err != nil {
 		registry.Close()

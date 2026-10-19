@@ -3,6 +3,7 @@ package replication
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -204,10 +205,12 @@ func (s *Service) incrementalPage(ctx context.Context, rt *run) (bool, error) {
 			}
 		}
 		var at any
+		applyLag := 0.0
 		if n := len(page.Changes); n > 0 {
 			at = page.Changes[n-1].At
+			applyLag = time.Since(oldestChange(page.Changes)).Seconds()
 		}
-		_, err := tx.Exec(ctx, `UPDATE replication_jobs SET checkpoint=$2,checkpoint_change_at=COALESCE($3,checkpoint_change_at,clock_timestamp()),remote_head=$4,remote_head_at=COALESCE($5,remote_head_at),source_low_water=$6 WHERE id=$1`, rt.job.ID, page.Next, at, page.Head, page.HeadAt, page.LowWater)
+		_, err := tx.Exec(ctx, `UPDATE replication_jobs SET last_apply_lag_seconds=CASE WHEN $7::float8>0 THEN $7::float8 ELSE last_apply_lag_seconds END,last_apply_lag_at=CASE WHEN $7::float8>0 THEN clock_timestamp() ELSE last_apply_lag_at END,checkpoint=$2,checkpoint_change_at=COALESCE($3,checkpoint_change_at,clock_timestamp()),remote_head=$4,remote_head_at=COALESCE($5,remote_head_at),source_low_water=$6 WHERE id=$1`, rt.job.ID, page.Next, at, page.Head, page.HeadAt, page.LowWater, applyLag)
 		return err
 	})
 	if err != nil {
@@ -215,4 +218,15 @@ func (s *Service) incrementalPage(ctx context.Context, rt *run) (bool, error) {
 	}
 	rt.job.Status.Checkpoint = page.Next
 	return !page.More, nil
+}
+
+// oldestChange is the creation time of the oldest change in a page.
+func oldestChange(changes []Change) time.Time {
+	oldest := changes[0].At
+	for _, c := range changes[1:] {
+		if c.At.Before(oldest) {
+			oldest = c.At
+		}
+	}
+	return oldest
 }

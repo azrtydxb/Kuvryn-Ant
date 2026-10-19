@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -34,6 +35,8 @@ type s3Fixture struct {
 	sequence, partCalls, copyCalls, conditionalCalls int
 	failPart, failCopy, failConditional, failDelete  bool
 	ignoreRange, allowPublishedDelete                bool
+	partDelay                                        time.Duration
+	activeParts                                      atomic.Int32
 	now                                              func() time.Time
 }
 
@@ -92,6 +95,11 @@ func (f *s3Fixture) CreateMultipartUpload(ctx context.Context, in *s3.CreateMult
 	return &s3.CreateMultipartUploadOutput{UploadId: aws.String(id)}, nil
 }
 func (f *s3Fixture) UploadPart(ctx context.Context, in *s3.UploadPartInput, _ ...func(*s3.Options)) (*s3.UploadPartOutput, error) {
+	f.activeParts.Add(1)
+	defer f.activeParts.Add(-1)
+	if f.partDelay > 0 {
+		time.Sleep(f.partDelay)
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	if err := ctx.Err(); err != nil {
@@ -560,5 +568,47 @@ func TestS3CredentialProviderErrorIsSanitized(t *testing.T) {
 	}
 	if len(store.slots) != 0 {
 		t.Fatal("failed credential retrieval retained buffer reservation")
+	}
+}
+
+// A full part is sent in the background: the writer is released as soon as the
+// buffer is handed over and can fill the next part while the previous uploads.
+func TestS3PartUploadOverlapsWithWriting(t *testing.T) {
+	s, f := fixture(t)
+	f.partDelay = 300 * time.Millisecond
+	ctx := context.Background()
+	data := bytes.Repeat([]byte("overlap"), (3*s3MinimumPartSize+99)/7+1)
+	want := content(data)
+	upload, err := s.Stage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	if _, err := upload.Write(data[:s3MinimumPartSize]); err != nil {
+		t.Fatal(err)
+	}
+	if time.Since(start) > 200*time.Millisecond {
+		t.Fatalf("first full part was uploaded synchronously (%v)", time.Since(start))
+	}
+	if _, err := upload.Write(data[s3MinimumPartSize:]); err != nil {
+		t.Fatal(err)
+	}
+	got, err := upload.Finalize(ctx, want)
+	if err != nil || got != want {
+		t.Fatalf("finalize %+v %v", got, err)
+	}
+	f.assertClean(t, 1)
+	reader, err := s.OpenRange(ctx, want.Digest, 0, want.Size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, _ := io.ReadAll(reader)
+	reader.Close()
+	if !bytes.Equal(back, data) {
+		t.Fatal("overlapped upload corrupted the object")
+	}
+	// All budget slots, including the second buffer, are released.
+	if len(s.slots) != 0 {
+		t.Fatalf("%d slots still held", len(s.slots))
 	}
 }

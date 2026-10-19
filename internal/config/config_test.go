@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -20,6 +21,8 @@ func TestLoad(t *testing.T) {
 		{"unreadable key", "ANT_ROOT_KEY_FILE", "/nonexistent/sensitive"},
 		{"invalid port", "ANT_LISTEN", "localhost:99999"},
 		{"unbounded requests", "ANT_MAX_REQUESTS", "0"},
+		{"tiny db pool", "ANT_DB_MAX_CONNS", "1"},
+		{"no upload slots", "ANT_UPLOAD_SLOTS", "0"},
 		{"invalid duration", "ANT_SHUTDOWN_TIMEOUT", "0s"},
 		{"invalid trusted proxy", "ANT_TRUSTED_PROXIES", "10.0.0.0/8,sensitive"},
 	}
@@ -43,7 +46,7 @@ func TestLoad(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.RootKey) != 32 || c.Database.MaxConns != 16 {
+	if len(c.RootKey) != 32 || int(c.Database.MaxConns) != DefaultDBMaxConns(runtime.GOMAXPROCS(0)) {
 		t.Fatal("invalid config")
 	}
 	if len(c.TrustedProxies) != 0 {
@@ -100,5 +103,29 @@ func TestProjectedRootKeyAndInvalidFiles(t *testing.T) {
 	}
 	if _, err := load(link); err == nil {
 		t.Fatal("accepted oversized key")
+	}
+}
+
+func TestResourceLimitsScaleWithCPUAndAreConfigurable(t *testing.T) {
+	if DefaultDBMaxConns(1) != 16 || DefaultDBMaxConns(4) != 32 || DefaultDBMaxConns(64) != 64 {
+		t.Fatalf("db pool scaling: %d %d %d", DefaultDBMaxConns(1), DefaultDBMaxConns(4), DefaultDBMaxConns(64))
+	}
+	if DefaultMaxRequests(1) != 128 || DefaultMaxRequests(16) != 512 || DefaultMaxRequests(1000) != 1024 {
+		t.Fatal("request limit scaling")
+	}
+	if DefaultUploadSlots(1) != 4 || DefaultUploadSlots(8) != 16 || DefaultUploadSlots(100) != 32 {
+		t.Fatal("upload slot scaling")
+	}
+	key := filepath.Join(t.TempDir(), "key")
+	if err := os.WriteFile(key, make([]byte, 32), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	env := map[string]string{"ANT_DATABASE_URL": "postgres://ant:secret@localhost/ant", "ANT_ROOT_KEY_FILE": key, "ANT_DB_MAX_CONNS": "48", "ANT_UPLOAD_SLOTS": "12", "ANT_MAX_REQUESTS": "300"}
+	c, err := Load(func(k string) string { return env[k] })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Database.MaxConns != 48 || c.UploadSlots != 12 || c.MaxRequests != 300 {
+		t.Fatalf("overrides ignored: %d %d %d", c.Database.MaxConns, c.UploadSlots, c.MaxRequests)
 	}
 }

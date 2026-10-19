@@ -38,7 +38,7 @@ func New(db *pgxpool.Pool, service *artifact.Service) (*Proxy, error) {
 	if db == nil || service == nil || service.Lease == nil || service.Lease().InstanceID == "" {
 		return nil, ErrConfiguration
 	}
-	return &Proxy{db: db, service: service, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: service.Lease().InstanceID, transfers: make(chan struct{}, 4)}, nil
+	return &Proxy{db: db, service: service, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: service.Lease().InstanceID, transfers: artifact.NewUploadSlots()}, nil
 }
 func (s *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")

@@ -46,6 +46,20 @@ extraEnv:
 #   service:
 #     type: LoadBalancer
 #     loadBalancerSourceRanges: [] # restrict to the other members
+# Concurrency (see values.yaml). The shared OKE instance served 503s under load with
+# 16 database connections and 4 upload slots per format; connections and slots
+# are sized for the 4 CPU limit, and the S3 uploads overlap part transfer with
+# the client stream. Keep dbMaxConns below the PostgreSQL max_connections.
+resources:
+  requests:
+    cpu: "2"
+    memory: 2Gi
+  limits:
+    cpu: "4"
+    memory: 8Gi
+maxRequests: 256
+dbMaxConns: 48
+uploadSlots: 12
 trustedProxies:
   - 10.244.0.0/16 # OKE pod network (Envoy Gateway proxies)
 # kw's federation endpoint (https://ant-federation.kw.watteel.lab:8444) is a LAN

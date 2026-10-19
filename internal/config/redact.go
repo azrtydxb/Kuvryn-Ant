@@ -57,6 +57,7 @@ func (c Config) Redacted() map[string]any {
 		"root_key":         RedactedMarker,
 		"shutdown_timeout": c.ShutdownTimeout.String(),
 		"max_requests":     c.MaxRequests,
+		"upload_slots":     c.UploadSlots,
 		"upstream_cas":     cas,
 		"oci_mirror_feed":  c.OCIMirror.DefaultFeed,
 		"retention": map[string]any{

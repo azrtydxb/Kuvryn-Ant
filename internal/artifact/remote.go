@@ -484,6 +484,13 @@ func (t *teeReader) Read(p []byte) (int, error) {
 			}
 		}
 	}
+	// With a declared length the object is complete as soon as that many bytes
+	// were read. Commit now rather than on a later end-of-body read: a client
+	// that has the full length may hang up (cancelling the upstream read), or
+	// the upstream may go away, before that read, which would drop the entry.
+	if err == nil && t.expected >= 0 && t.n == t.expected {
+		err = io.EOF
+	}
 	switch {
 	case err == io.EOF:
 		if t.expected >= 0 && t.n != t.expected {

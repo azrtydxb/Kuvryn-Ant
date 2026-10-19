@@ -19,7 +19,13 @@ terminationGracePeriodSeconds: 45
 stagingDir: /var/lib/ant/tmp
 tmp:
   sizeLimit: 256Mi # Scratch only; large writes use stagingDir.
-maxRequests: 128
+# Concurrency limits. 0 scales with the CPUs available to the pod:
+# maxRequests 32 per CPU (128 to 1024), dbMaxConns 8 per CPU (16 to 64),
+# uploadSlots 2 per CPU per package format (4 to 32). Keep dbMaxConns below the
+# PostgreSQL max_connections.
+maxRequests: 0
+dbMaxConns: 0
+uploadSlots: 0
 postgres:
   existingSecret: ant-postgres
   dsnKey: dsn

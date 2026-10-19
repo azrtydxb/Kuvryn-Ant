@@ -48,7 +48,7 @@ func New(db *pgxpool.Pool, s *artifact.Service) (*Repository, error) {
 	if db == nil || s == nil || s.Lease == nil || s.Lease().InstanceID == "" {
 		return nil, errors.New("invalid Git LFS configuration")
 	}
-	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, grants: make(map[string]grant), transfers: make(chan struct{}, 4)}, nil
+	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, grants: make(map[string]grant), transfers: artifact.NewUploadSlots()}, nil
 }
 
 // SetPublicURL sets a trusted external origin; request Host and proxy headers
