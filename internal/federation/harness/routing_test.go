@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/oci"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/rawrepo"
 )
 
@@ -29,10 +31,17 @@ func (in *instance) enableRouting() {
 	if err != nil {
 		in.t.Fatal(err)
 	}
+	registry, err := oci.New(in.pool, in.repl.publisher, filepath.Join(in.t.TempDir(), "uploads"))
+	if err != nil {
+		in.t.Fatal(err)
+	}
+	in.t.Cleanup(func() { _ = registry.Close() })
 	feeds := http.NewServeMux()
 	feeds.Handle("/feeds/{slug}/raw/", raw)
+	feeds.Handle("/v2/", registry)
 	in.svc.SetRouteRuntime(federation.RouteRuntime{Feeds: feeds, Storage: in.repl.stores.Resolve, Lease: in.repl.mgr.Lease})
 	in.mux.Handle("/feeds/{slug}/raw/", in.svc.RouteFeeds(false, raw))
+	in.mux.Handle("/v2/", in.svc.RouteFeeds(true, registry))
 	in.mux.Handle("GET /federation/blob/{name}", in.svc.BlobHandler())
 	management.RegisterConsole(in.mux, in.pool, management.NewCursorCodec(make([]byte, 32)))
 }
@@ -121,6 +130,8 @@ func routingPolicy() map[string]any {
 			map[string]any{"key": "fed:readers", "revision": 1, "grants": []any{
 				map[string]any{"kind": "feed", "effect": "allow", "feed_key": "lab/pkgs", "actions": []string{"read"}},
 				map[string]any{"kind": "artifact", "effect": "allow", "feed_key": "lab/pkgs", "actions": []string{"read", "publish"}},
+				map[string]any{"kind": "feed", "effect": "allow", "feed_key": "lab/images", "actions": []string{"read"}},
+				map[string]any{"kind": "artifact", "effect": "allow", "feed_key": "lab/images", "actions": []string{"read"}},
 			}},
 			map[string]any{"key": "fed:other", "revision": 1, "grants": []any{
 				map[string]any{"kind": "artifact", "effect": "allow", "feed_key": "lab/other", "actions": []string{"read"}},
@@ -167,6 +178,12 @@ func TestFederationRoutingScenarios(t *testing.T) {
 	alpha.bind("lab/pkgs", pkgs)
 	if code := alpha.call("POST", "/api/v1/federation/feeds", map[string]any{"feed_key": "lab/pkgs", "home_member_id": alpha.id}, nil); code != 201 {
 		t.Fatalf("feed key: %d", code)
+	}
+	// An OCI feed on alpha for digest-addressed reads (blob URLs).
+	images, layer := alpha.ociFeed("images", "layer bytes from the home")
+	alpha.bind("lab/images", images)
+	if code := alpha.call("POST", "/api/v1/federation/feeds", map[string]any{"feed_key": "lab/images", "home_member_id": alpha.id}, nil); code != 201 {
+		t.Fatalf("images feed key: %d", code)
 	}
 	if code := alpha.call("PUT", "/api/v1/federation/policy/draft", map[string]any{"policy": routingPolicy()}, nil); code != 200 {
 		t.Fatalf("draft: %d", code)
@@ -378,80 +395,190 @@ func TestFederationRoutingScenarios(t *testing.T) {
 		}
 	})
 
-	t.Run("signed blob URLs", func(t *testing.T) {
+	setImagesRouting := func(r map[string]any) {
+		t.Helper()
+		var f federation.TopologyFeed
+		if code := alpha.call("PUT", "/api/v1/federation/feeds/lab/images/routing", r, &f); code != 200 || f.Routing == nil {
+			t.Fatalf("set images routing: %d %+v", code, f)
+		}
+		syncAll()
+	}
+
+	t.Run("signed blob URLs only for digest-addressed reads", func(t *testing.T) {
 		setRouting(map[string]any{"mode": "proxy", "blob_urls": true, "cache": false})
+		setImagesRouting(map[string]any{"mode": "proxy", "blob_urls": true, "cache": false})
+		// A raw path names mutable content: never a path-scoped ticket, the
+		// read is proxied (and the holder authorizes the bytes it streams).
 		got := gamma.fetch("GET", asset, ci["gamma"], nil)
+		if got.status != 200 || got.body != "app bytes from the home" || !strings.HasPrefix(got.header.Get("X-Kuvryn-Route"), "proxy;") {
+			t.Fatalf("raw read with blob URLs on: %d %q route=%q", got.status, got.body, got.header.Get("X-Kuvryn-Route"))
+		}
+		if code, ec := alpha.errorCode("PUT", "/api/v1/federation/feeds/lab/images/routing", map[string]any{"mode": "proxy", "blob_urls": false, "blob_url_bind_client": true, "cache": false}); code != 400 {
+			t.Fatalf("client binding without blob URLs: %d %s", code, ec)
+		}
+
+		blobPath := "/v2/images/app/blobs/sha256:" + layer
+		got = gamma.fetch("GET", blobPath, ci["gamma"], nil)
 		loc := got.header.Get("Location")
-		if got.status != 307 || !strings.Contains(loc, "/federation/blob/app.tgz?") {
-			t.Fatalf("blob url: %d %q", got.status, loc)
+		if got.status != 307 || !strings.HasPrefix(loc, alpha.api.URL+"/federation/blob/") || got.header.Get("Referrer-Policy") != "no-referrer" {
+			t.Fatalf("blob url: %d %q %v", got.status, loc, got.header)
 		}
-		holder := delta
-		if strings.HasPrefix(loc, beta.api.URL) {
-			holder = beta
-		}
-		// No credentials needed: the URL carries the signed, re-authorized caller.
-		if follow := holder.fetch("GET", loc, "", nil); follow.status != 200 || follow.body != "app bytes from the home" {
-			t.Fatalf("follow blob url: %d %q", follow.status, follow.body)
+		// No credentials needed: the URL carries the signed, re-authorized
+		// caller, and the holder serves only bytes with the digest in the path.
+		follow := alpha.fetch("GET", loc, "", nil)
+		if follow.status != 200 || follow.body != "layer bytes from the home" || follow.header.Get("Docker-Content-Digest") != "sha256:"+layer {
+			t.Fatalf("follow blob url: %d %q %v", follow.status, follow.body, follow.header)
 		}
 		u, _ := url.Parse(loc)
 		q := u.Query()
 		tampered := *u
-		q2 := url.Values{"k": q["k"], "p": {"raw/tools/fresh.tgz"}, "t": q["t"]}
-		tampered.RawQuery = q2.Encode()
-		if got := holder.fetch("GET", tampered.String(), "", nil); got.status != 403 {
-			t.Fatalf("ticket for another path: %d", got.status)
+		other := strings.Repeat("0", 64)
+		tampered.RawQuery = url.Values{"k": q["k"], "p": {"oci/app/blobs/sha256:" + other}, "t": q["t"]}.Encode()
+		tampered.Path = "/federation/blob/sha256:" + other
+		if got := alpha.fetch("GET", tampered.String(), "", nil); got.status != 403 {
+			t.Fatalf("ticket for another digest: %d", got.status)
+		}
+		// A ticket can never be re-pointed at a mutable path.
+		mutable := *u
+		mutable.RawQuery = url.Values{"k": {"lab/pkgs"}, "p": {"raw/tools/app.tgz"}, "t": q["t"]}.Encode()
+		mutable.Path = "/federation/blob/app.tgz"
+		if got := alpha.fetch("GET", mutable.String(), "", nil); got.status != 403 || strings.Contains(got.body, "app bytes") {
+			t.Fatalf("ticket on a mutable path: %d %q", got.status, got.body)
 		}
 		// Other members cannot use a URL issued for this holder.
-		other := beta
-		if holder == beta {
-			other = delta
-		}
-		if got := other.fetch("GET", other.api.URL+u.RequestURI(), "", nil); got.status != 403 {
+		if got := beta.fetch("GET", beta.api.URL+u.RequestURI(), "", nil); got.status != 403 {
 			t.Fatalf("wrong audience: %d", got.status)
 		}
-		holder.clock.Advance(7 * time.Minute)
-		if got := holder.fetch("GET", loc, "", nil); got.status != 403 {
+		alpha.clock.Advance(7 * time.Minute)
+		if got := alpha.fetch("GET", loc, "", nil); got.status != 403 {
 			t.Fatalf("expired blob url: %d", got.status)
 		}
-		holder.clock.Reset()
+		alpha.clock.Reset()
 		// A caller without a grant gets a URL the holder refuses to serve.
-		g := gamma.fetch("GET", asset, guest, nil)
-		if g.status == 307 {
-			if follow := holder.fetch("GET", g.header.Get("Location"), "", nil); follow.status == 200 {
+		if g := gamma.fetch("GET", blobPath, guest, nil); g.status == 307 {
+			if follow := alpha.fetch("GET", g.header.Get("Location"), "", nil); follow.status == 200 {
 				t.Fatalf("guest blob url served: %q", follow.body)
 			}
+		} else if g.status == 200 {
+			t.Fatalf("guest read served: %q", g.body)
 		}
-		// Metadata-like (non-immutable) paths are still proxied.
-		alpha.rawPublish(pkgs, "tools/index.json", `{"ok":true}`)
-		if got := gamma.fetch("GET", "/feeds/pkgs/raw/tools/index.json", ci["gamma"], nil); got.status != 200 || got.body != `{"ok":true}` {
-			t.Fatalf("proxied metadata: %d %q", got.status, got.body)
+
+		// Optional client binding: the URL is valid only from the client
+		// address the entry member saw, and the binding cannot be stripped.
+		setImagesRouting(map[string]any{"mode": "proxy", "blob_urls": true, "blob_url_bind_client": true, "cache": false})
+		got = gamma.fetch("GET", blobPath, ci["gamma"], nil)
+		loc = got.header.Get("Location")
+		if got.status != 307 || !strings.Contains(loc, "b=ip") {
+			t.Fatalf("bound blob url: %d %q", got.status, loc)
 		}
+		if follow := alpha.fetch("GET", loc, "", nil); follow.status != 200 || follow.body != "layer bytes from the home" {
+			t.Fatalf("bound blob url from its client: %d %q", follow.status, follow.body)
+		}
+		u, _ = url.Parse(loc)
+		stripped := *u
+		sq := u.Query()
+		sq.Del("b")
+		stripped.RawQuery = sq.Encode()
+		if got := alpha.fetch("GET", stripped.String(), "", nil); got.status != 403 {
+			t.Fatalf("binding stripped: %d", got.status)
+		}
+		setImagesRouting(map[string]any{"mode": "proxy", "blob_urls": false, "cache": false})
 	})
 
-	t.Run("entry cache on a member with a bound feed", func(t *testing.T) {
+	t.Run("entry cache: digest-addressed only, revalidated otherwise, invalidated by home deletes", func(t *testing.T) {
 		setRouting(map[string]any{"mode": "proxy", "blob_urls": false, "cache": true, "cache_ttl_seconds": 600})
+		cacheRows := func(in *instance) int {
+			var n int
+			_ = in.pool.QueryRow(ctx, `SELECT count(*) FROM federation_route_cache WHERE instance_id=$1`, in.id).Scan(&n)
+			return n
+		}
 		alpha.rawPublish(pkgs, "tools/cached.tgz", "cache me")
 		got := beta.fetch("GET", "/feeds/pkgs/raw/tools/cached.tgz", ci["beta"], nil)
 		if got.status != 200 || got.body != "cache me" {
 			t.Fatalf("first read: %d %q", got.status, got.body)
 		}
-		eventually(t, "cache entry", func() bool {
-			var n int
-			_ = beta.pool.QueryRow(ctx, `SELECT count(*) FROM federation_route_cache WHERE instance_id=$1`, beta.id).Scan(&n)
-			return n == 1
-		})
+		eventually(t, "cache entry", func() bool { return cacheRows(beta) == 1 })
+		// A raw path is not digest-addressed: with every holder down the
+		// cached copy is not served unrevalidated.
 		alpha.proxy.set(faultDrop)
 		delta.proxy.set(faultDrop)
-		defer alpha.proxy.set(faultPass)
-		defer delta.proxy.set(faultPass)
+		down := beta.fetch("GET", "/feeds/pkgs/raw/tools/cached.tgz", ci["beta"], nil)
+		alpha.proxy.set(faultPass)
+		delta.proxy.set(faultPass)
+		if down.status == 200 || strings.Contains(down.body, "cache me") {
+			t.Fatalf("unrevalidated cache answer for a mutable path: %d %q %v", down.status, down.body, down.header)
+		}
 		hit := beta.fetch("GET", "/feeds/pkgs/raw/tools/cached.tgz", ci["beta"], nil)
-		if hit.status != 200 || hit.body != "cache me" || hit.header.Get("X-Kuvryn-Route") != "cache" {
-			t.Fatalf("cache hit: %d %q %v", hit.status, hit.body, hit.header)
+		if hit.status != 200 || hit.body != "cache me" || !strings.HasPrefix(hit.header.Get("X-Kuvryn-Route"), "cache; revalidated") ||
+			hit.header.Get("X-Content-Type-Options") != "nosniff" || hit.header.Get("Content-Security-Policy") != "sandbox" {
+			t.Fatalf("revalidated cache hit: %d %q %v", hit.status, hit.body, hit.header)
 		}
 		// The cache never answers callers this member does not let read the feed.
 		guestBeta := beta.tokenFor(beta.principal("guest").ID)
 		if got := beta.fetch("GET", "/feeds/pkgs/raw/tools/cached.tgz", guestBeta, nil); got.status == 200 {
 			t.Fatalf("guest served from cache: %q", got.body)
 		}
+		// Overwritten at the home: the revalidation returns the new bytes.
+		req, _ := http.NewRequest("DELETE", alpha.api.URL+"/feeds/pkgs/raw/tools/cached.tgz", nil)
+		req.Header.Set("Authorization", "Bearer "+alpha.token)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != 204 {
+			t.Fatalf("home delete: %d", resp.StatusCode)
+		}
+		if got := beta.fetch("GET", "/feeds/pkgs/raw/tools/cached.tgz", ci["beta"], nil); got.status != 404 || strings.Contains(got.body, "cache me") {
+			t.Fatalf("deleted at the home but served: %d %q", got.status, got.body)
+		}
+		if n := cacheRows(beta); n != 0 {
+			t.Fatalf("home 404 did not drop the entry: %d rows", n)
+		}
+		alpha.rawPublish(pkgs, "tools/cached.tgz", "cache me again, changed")
+		if got := beta.fetch("GET", "/feeds/pkgs/raw/tools/cached.tgz", ci["beta"], nil); got.status != 200 || got.body != "cache me again, changed" {
+			t.Fatalf("changed at the home: %d %q", got.status, got.body)
+		}
+		eventually(t, "cache entry again", func() bool { return cacheRows(beta) == 1 })
+		// A delete replicated from the home invalidates the feed's entries.
+		req, _ = http.NewRequest("DELETE", alpha.api.URL+"/feeds/pkgs/raw/tools/cached.tgz", nil)
+		req.Header.Set("Authorization", "Bearer "+alpha.token)
+		if resp, err = http.DefaultClient.Do(req); err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		beta.mustRun(beta.jobFor("lab/pkgs").ID)
+		if n := cacheRows(beta); n != 0 {
+			t.Fatalf("replicated home delete left %d cache rows", n)
+		}
 	})
+}
+
+// ociFeed creates an OCI feed with one local source (default publish target)
+// and stores one blob in repository app; it returns the feed and the blob
+// digest (hex).
+func (in *instance) ociFeed(slug, content string) (feed, digest string) {
+	in.t.Helper()
+	ctx := context.Background()
+	must := func(err error) {
+		in.t.Helper()
+		if err != nil {
+			in.t.Fatal(err)
+		}
+	}
+	var source string
+	must(in.pool.QueryRow(ctx, `INSERT INTO feeds(instance_id,slug,format) VALUES($1,$2,'oci') RETURNING id::text`, in.id, slug).Scan(&feed))
+	must(in.pool.QueryRow(ctx, `INSERT INTO sources(instance_id,name,kind,format) VALUES($1,$2,'local','oci') RETURNING id::text`, in.id, slug+"-local").Scan(&source))
+	_, err := in.pool.Exec(ctx, `INSERT INTO dedup_domains(instance_id,name) VALUES($1,$2)`, in.id, "source:"+source)
+	must(err)
+	_, err = in.pool.Exec(ctx, `INSERT INTO feed_sources(instance_id,feed_id,source_id,priority) VALUES($1,$2,$3,0)`, in.id, feed, source)
+	must(err)
+	_, err = in.pool.Exec(ctx, `INSERT INTO publish_policies(instance_id,feed_id,default_source_id) VALUES($1,$2,$3)`, in.id, feed, source)
+	must(err)
+	sum := sha256.Sum256([]byte(content))
+	digest = hex.EncodeToString(sum[:])
+	_, err = in.repl.publisher.Publish(ctx, in.repl.admin, artifact.Publication{FeedID: feed, Coordinate: "app", Version: digest, AssetKey: "blob",
+		MediaType: "application/octet-stream", Info: blob.Info{Digest: blob.Digest(digest), Size: int64(len(content))}}, bytes.NewReader([]byte(content)))
+	must(err)
+	return feed, digest
 }

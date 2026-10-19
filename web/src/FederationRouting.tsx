@@ -168,6 +168,9 @@ export function RoutingModal({
   const r = feed.routing;
   const [mode, setMode] = useState<string>(r?.mode ?? "proxy");
   const [blobURLs, setBlobURLs] = useState(r?.blob_urls ?? false);
+  const [bindClient, setBindClient] = useState(
+    r?.blob_url_bind_client ?? false,
+  );
   const [cache, setCache] = useState(r?.cache ?? false);
   const [ttl, setTTL] = useState(
     r?.cache_ttl_seconds ? String(r.cache_ttl_seconds) : "",
@@ -196,6 +199,9 @@ export function RoutingModal({
               const body: FederationFeedRouting = {
                 mode: mode as FederationFeedRouting["mode"],
                 blob_urls: proxy && blobURLs,
+                ...(proxy && blobURLs && bindClient
+                  ? { blob_url_bind_client: true }
+                  : {}),
                 cache: proxy && cache,
               };
               if (proxy && cache && ttl) body.cache_ttl_seconds = Number(ttl);
@@ -243,13 +249,21 @@ export function RoutingModal({
         <>
           <Checkbox
             label="Signed blob URLs"
-            description="Immutable blob reads get a 307 to a signed, five-minute URL on the holder's public listener instead of streaming through the entry member."
+            description="Digest-addressed reads (OCI blobs and manifests by digest) get a 307 to a signed, five-minute URL on the holder's public listener instead of streaming through the entry member. Other paths are always proxied."
             checked={blobURLs}
             onChange={chk(setBlobURLs)}
           />
+          {blobURLs && (
+            <Checkbox
+              label="Bind blob URLs to the client address"
+              description="The holder refuses a signed URL from any address other than the one the entry member saw. Both members must see the same client address."
+              checked={bindClient}
+              onChange={chk(setBindClient)}
+            />
+          )}
           <Checkbox
             label="Cache on entry members"
-            description="Members with a feed bound to this key keep immutable proxied responses for callers who may read their whole feed."
+            description="Members with a feed bound to this key keep immutable proxied responses for callers who may read their whole feed. Only digest-addressed responses are served without asking a holder; others are revalidated on every hit."
             checked={cache}
             onChange={chk(setCache)}
           />

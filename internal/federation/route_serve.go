@@ -24,43 +24,66 @@ import (
 // (local overrides, token scopes) and never trusts the entry member's
 // authorization decision. Writes are refused with 405 writes_not_routed.
 // Proxied reads share the listener's per-member budget of signed requests
-// (peer.DefaultMemberRate); an entry member over it gets 429 and tries the
-// next candidate.
+// (peer.DefaultMemberRate) and a per-(issuer, principal) rate; an entry
+// member over either gets 429 and tries the next candidate. Blob URLs serve
+// digest-addressed reads only: the holder checks the feed holds an asset
+// with the digest in the path and refuses any answer naming another digest.
 
 // AnonymousDomain is the assertion domain of an anonymous caller. It is
 // accepted only for proxied reads and blob URLs, where the holder serves it
 // as its own anonymous reader (feeds with anonymous_read only).
 const AnonymousDomain = "anonymous"
 
-// maxRouteAssertions bounds the in-memory replay cache of proxied reads.
-const maxRouteAssertions = 1 << 18
+// maxRouteAssertionsPerIssuer bounds the in-memory replay cache of proxied
+// reads per issuing member. A record lives for the assertion lifetime plus
+// skew (about three minutes), so the quota is far above what the listener's
+// per-member request budget (peer.DefaultMemberRate) can produce; a member
+// that exhausts it is refused with 429 alone and never affects the reads
+// other members proxy. The cache is bounded overall by the membership size.
+const maxRouteAssertionsPerIssuer = 1 << 16
+
+// issuerJTIs is one issuer's share of the proxied-read replay cache.
+type issuerJTIs struct {
+	seen  map[string]time.Time // jti → until
+	swept time.Time            // last expiry sweep of a full quota
+}
 
 // rememberAssertion records the jti of a proxied-read assertion until it
 // expires: "" when new, assertion_replayed when seen, rate_limited when the
-// cache is full of unexpired records.
+// issuer's quota is full of unexpired records. A full quota is swept for
+// expired records at most once per second, so an issuer at its quota cannot
+// make every request scan its records.
 func (s *Service) rememberAssertion(a peer.Assertion) string {
 	rs := &s.route
 	now := s.cfg.Now()
-	key := a.Issuer + "/" + a.ID
 	rs.mu.Lock()
 	defer rs.mu.Unlock()
 	if rs.jtis == nil {
-		rs.jtis = map[string]time.Time{}
+		rs.jtis = map[string]*issuerJTIs{}
 	}
-	if until, ok := rs.jtis[key]; ok && now.Before(until) {
+	q := rs.jtis[a.Issuer]
+	if q == nil {
+		q = &issuerJTIs{seen: map[string]time.Time{}}
+		rs.jtis[a.Issuer] = q
+	}
+	if until, ok := q.seen[a.ID]; ok && now.Before(until) {
 		return "assertion_replayed"
 	}
-	if len(rs.jtis) >= maxRouteAssertions {
-		for k, until := range rs.jtis {
+	if len(q.seen) >= maxRouteAssertionsPerIssuer {
+		if now.Sub(q.swept) < time.Second {
+			return "rate_limited"
+		}
+		q.swept = now
+		for k, until := range q.seen {
 			if !now.Before(until) {
-				delete(rs.jtis, k)
+				delete(q.seen, k)
 			}
 		}
-		if len(rs.jtis) >= maxRouteAssertions {
+		if len(q.seen) >= maxRouteAssertionsPerIssuer {
 			return "rate_limited"
 		}
 	}
-	rs.jtis[key] = time.Unix(a.Expires, 0).Add(peer.MaxSkew + time.Minute)
+	q.seen[a.ID] = time.Unix(a.Expires, 0).Add(peer.MaxSkew + time.Minute)
 	return ""
 }
 
@@ -113,11 +136,14 @@ func (s *Service) peerProxy(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	// Proxied reads are idempotent GETs that only the issuing member can
-	// send (mTLS caller = issuer, request signature with its own nonce), so
-	// their assertion replay record is kept in a bounded in-memory cache
-	// rather than the durable table: the issuer could mint a new assertion
-	// anyway, and a read must not cost a database write.
+	// Proxied reads are idempotent GETs and HEADs that only the issuing
+	// member can send (mTLS caller = issuer, request signature with its own
+	// nonce), so their assertion replay record is kept in an in-memory cache
+	// with a per-issuer quota rather than the durable nonce table (which
+	// mutations and other assertions use): the issuer could mint a new
+	// assertion anyway, a read must not cost a database write, and a restart
+	// that forgets the records cannot replay a write because writes are never
+	// routed (D6).
 	a, policy, fid, reason := s.checkAssertion(r, body)
 	if reason == "" {
 		reason = s.rememberAssertion(a)
@@ -134,6 +160,12 @@ func (s *Service) peerProxy(w http.ResponseWriter, r *http.Request) {
 	p, reason := s.principalFor(r.Context(), a, policy, fid)
 	if reason != "" {
 		s.assertionFailed(w, r, a, reason)
+		return
+	}
+	// Per asserted principal (and issuer): one busy caller of a member cannot
+	// use up the member's whole request budget on this listener.
+	if !p.Anonymous && !s.routeAllow("proxy:"+a.Issuer+"/"+p.PrincipalID, s.routeLimits().rate) {
+		peerFail(w, http.StatusTooManyRequests, "rate_limited")
 		return
 	}
 	s.assertionAccepted(r.Context(), p, a, r.URL.Path)
@@ -292,15 +324,28 @@ func (p *proxiedWriter) Unwrap() http.ResponseWriter { return p.w }
 
 // --- signed blob URLs ---
 
-func ticketBinding(key, target string) string {
-	sum := sha256.Sum256([]byte("kuvryn-ant-blob-url-v1\n" + key + "\n" + target))
+// Client binding of a blob URL (b= parameter): the ticket is valid only for
+// the client address the entry member saw. Both members must resolve the
+// same address (direct clients, or trusted proxies configured on both).
+const ticketBindIP = "ip"
+
+func ticketBinding(key, target, client string) string {
+	sum := sha256.Sum256([]byte("kuvryn-ant-blob-url-v2\n" + key + "\n" + target + "\n" + client))
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
+// errTicketScope refuses a blob URL for a path that is not content-addressed.
+var errTicketScope = errors.New("federation: blob URLs are issued only for digest-addressed reads")
+
 // issueBlobURL returns a signed, five-minute URL on member m's public
-// listener for one immutable read of a feed key. The ticket is signed by
-// this member and carries the caller as an assertion; m re-authorizes it.
-func (s *Service) issueBlobURL(ctx context.Context, c caller, m Member, key, format, rest string) (string, error) {
+// listener for one digest-addressed read of a feed key. The ticket is signed
+// by this member and carries the caller as an assertion; m re-authorizes it
+// and serves only bytes whose digest is the one in the path. With bind the
+// ticket is also bound to the client address.
+func (s *Service) issueBlobURL(ctx context.Context, c caller, m Member, key, format, rest, client string) (string, error) {
+	if contentAddressed(format, rest) == "" {
+		return "", errTicketScope
+	}
 	var header string
 	var err error
 	if c.anonymous && c.principal.PrincipalID == "" || c.principal.Anonymous {
@@ -324,22 +369,30 @@ func (s *Service) issueBlobURL(ctx context.Context, c caller, m Member, key, for
 	target := format + "/" + rest
 	now := s.cfg.Now()
 	a.IssuedAt, a.Expires = now.Unix(), now.Add(routeTicketLifetime).Unix()
-	a.Request = ticketBinding(key, target)
+	bound := ""
+	if client != "" {
+		bound = ticketBindIP + ":" + client
+	}
+	a.Request = ticketBinding(key, target, bound)
 	ticket, err := peer.SignAssertion(a, t.signer)
 	if err != nil {
 		return "", err
 	}
-	return m.APIURL + "/federation/blob/" + url.PathEscape(blobName(rest)) + "?k=" + url.QueryEscape(key) + "&p=" + url.QueryEscape(target) + "&t=" + url.QueryEscape(ticket), nil
+	q := "?k=" + url.QueryEscape(key) + "&p=" + url.QueryEscape(target)
+	if client != "" {
+		q += "&b=" + ticketBindIP
+	}
+	return m.APIURL + "/federation/blob/" + url.PathEscape(blobName(rest)) + q + "&t=" + url.QueryEscape(ticket), nil
 }
 
 var errTicket = errors.New("federation: blob URL invalid")
 
 // verifyTicket checks a blob URL ticket: signed by an active member, for
-// this member, unexpired (five minutes at most) and bound to the key and
-// target in the URL. Tickets may be used repeatedly within their lifetime
-// (clients retry and resume); they grant only what this member's own policy
-// grants the asserted caller.
-func (s *Service) verifyTicket(raw, key, target string) (peer.Assertion, error) {
+// this member, unexpired (five minutes at most) and bound to the key, target
+// and (when bound) client address in the URL. Tickets may be used
+// repeatedly within their lifetime (clients retry and resume); they grant
+// only what this member's own policy grants the asserted caller.
+func (s *Service) verifyTicket(raw, key, target, bound string) (peer.Assertion, error) {
 	a, payload, sig, err := peer.ParseAssertion(raw)
 	if err != nil {
 		return a, errTicket
@@ -352,7 +405,7 @@ func (s *Service) verifyTicket(raw, key, target string) (peer.Assertion, error) 
 	if !ok || m.Status != "active" || !ed25519.Verify(m.SigningKey, payload, sig) {
 		return a, errTicket
 	}
-	if a.Audience != s.cfg.InstanceID || a.Request != ticketBinding(key, target) {
+	if a.Audience != s.cfg.InstanceID || a.Request != ticketBinding(key, target, bound) {
 		return a, errTicket
 	}
 	now := s.cfg.Now()
@@ -376,16 +429,86 @@ func blobName(rest string) string {
 	return name
 }
 
+// redactTicketURL removes the blob URL parameters (the ticket is a bearer
+// capability) from the request in place, so that nothing downstream of the
+// handler, including middleware that logs or traces the request after it
+// returns, ever sees them.
+func redactTicketURL(r *http.Request) {
+	if r.URL != nil {
+		r.URL.RawQuery, r.URL.ForceQuery = "", false
+	}
+	r.RequestURI = r.URL.EscapedPath()
+	r.Form, r.PostForm = nil, nil
+}
+
+// heldDigest reports whether a feed holds an asset with the blob digest.
+func (s *Service) heldDigest(ctx context.Context, feedID, digest string) bool {
+	var ok bool
+	err := s.cfg.DB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM blobs b JOIN assets a ON a.blob_id=b.id JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id
+JOIN feed_sources fs ON fs.source_id=c.source_id WHERE b.instance_id=$1 AND b.digest=$2 AND fs.instance_id=$1 AND fs.feed_id=$3)`, s.cfg.InstanceID, digest, feedID).Scan(&ok)
+	return err == nil && ok
+}
+
+// digestWriter passes an adapter answer through only when a successful
+// answer names the expected content digest; anything else becomes a refusal,
+// so a ticket can never carry bytes other than the digest it was issued for.
+type digestWriter struct {
+	w       http.ResponseWriter
+	want    string
+	wrote   bool
+	refused bool
+}
+
+func (d *digestWriter) Header() http.Header { return d.w.Header() }
+func (d *digestWriter) WriteHeader(status int) {
+	if d.wrote {
+		return
+	}
+	d.wrote = true
+	if status >= 200 && status < 300 && d.w.Header().Get("Docker-Content-Digest") != "sha256:"+d.want {
+		d.refused = true
+		h := d.w.Header()
+		for k := range h {
+			delete(h, k)
+		}
+		routeError(d.w, http.StatusForbidden, "blob_url_invalid", "the blob URL is invalid or expired")
+		return
+	}
+	d.w.WriteHeader(status)
+}
+func (d *digestWriter) Write(b []byte) (int, error) {
+	if !d.wrote {
+		d.WriteHeader(http.StatusOK)
+	}
+	if d.refused {
+		return len(b), nil
+	}
+	return d.w.Write(b)
+}
+func (d *digestWriter) Flush() {
+	if d.wrote && !d.refused {
+		_ = http.NewResponseController(d.w).Flush()
+	}
+}
+func (d *digestWriter) Unwrap() http.ResponseWriter {
+	if d.refused {
+		return nil
+	}
+	return d.w
+}
+
 // BlobHandler serves signed blob URLs on the public listener.
 func (s *Service) BlobHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		redactTicketURL(r)
+		w.Header().Set("Referrer-Policy", "no-referrer")
 		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			w.Header().Set("Allow", "GET, HEAD")
 			routeError(w, http.StatusMethodNotAllowed, "writes_not_routed", "signed blob URLs serve reads only")
 			return
 		}
-		q := r.URL.Query()
-		if len(q["k"]) != 1 || len(q["p"]) != 1 || len(q["t"]) != 1 {
+		if len(q["k"]) != 1 || len(q["p"]) != 1 || len(q["t"]) != 1 || len(q["b"]) > 1 || (len(q["b"]) == 1 && q.Get("b") != ticketBindIP) {
 			routeError(w, http.StatusBadRequest, "invalid_request", "invalid blob URL")
 			return
 		}
@@ -394,7 +517,20 @@ func (s *Service) BlobHandler() http.Handler {
 			routeError(w, http.StatusBadRequest, "invalid_request", "invalid blob URL")
 			return
 		}
-		a, err := s.verifyTicket(raw, key, target)
+		format, rest, _ := strings.Cut(target, "/")
+		digest := contentAddressed(format, rest)
+		if digest == "" {
+			// Path-scoped tickets would let mutable content (raw, Maven,
+			// archives under a stable name) change behind a capability.
+			s.route.ticketsRefused.Add(1)
+			routeError(w, http.StatusForbidden, "blob_url_not_immutable", "signed blob URLs serve digest-addressed content only")
+			return
+		}
+		bound := ""
+		if q.Get("b") == ticketBindIP {
+			bound = ticketBindIP + ":" + clientKey(r)
+		}
+		a, err := s.verifyTicket(raw, key, target, bound)
 		if err != nil {
 			s.route.ticketsRefused.Add(1)
 			routeError(w, http.StatusForbidden, "blob_url_invalid", "the blob URL is invalid or expired")
@@ -412,12 +548,21 @@ func (s *Service) BlobHandler() http.Handler {
 			routeError(w, http.StatusForbidden, "blob_url_invalid", "the blob URL is invalid or expired")
 			return
 		}
-		format, rest, _ := strings.Cut(target, "/")
 		if blobName(rest) != r.PathValue("name") {
 			routeError(w, http.StatusBadRequest, "invalid_request", "invalid blob URL")
 			return
 		}
+		if !p.Anonymous && !s.routeAllow("ticket:"+a.Issuer+"/"+p.PrincipalID, s.routeLimits().rate) {
+			routeError(w, http.StatusTooManyRequests, "rate_limited", "too many blob URL reads for this caller; retry shortly")
+			return
+		}
+		feedID, _, _, err := s.heldFeed(r.Context(), key)
+		if err == nil && !s.heldDigest(r.Context(), feedID, digest) {
+			s.route.ticketsRefused.Add(1)
+			routeError(w, http.StatusNotFound, "not_found", "no asset of this feed has the digest")
+			return
+		}
 		s.route.ticketsAccepted.Add(1)
-		s.dispatchHeld(w, r, p, key, format, rest, false)
+		s.dispatchHeld(&digestWriter{w: w, want: digest}, r, p, key, format, rest, false)
 	})
 }

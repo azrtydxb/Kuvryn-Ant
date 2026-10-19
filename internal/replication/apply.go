@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/routing"
 	"github.com/jackc/pgx/v5"
 )
@@ -202,6 +203,11 @@ func (s *Service) applyChange(ctx context.Context, tx pgx.Tx, rt *run, c Change,
 		}
 	case c.Op == "put" && c.Kind == "component":
 		if c.Component != nil && s.wanted(rt, c.Component.Origin, c.Component.Namespace, c.Component.Coordinate, "") {
+			// Package metadata changed at the home (a yank, a deprecation): routed
+			// entry-cache answers that are not digest-addressed are dropped.
+			if err := federation.InvalidateRouteCacheTx(ctx, tx, s.cfg.InstanceID, rt.job.ReplicaSourceID, false); err != nil {
+				return err
+			}
 			// Package-level state is only updated for packages already present;
 			// it never creates an empty package from a bare metadata change.
 			var exists bool
@@ -223,6 +229,11 @@ func (s *Service) applyChange(ctx context.Context, tx pgx.Tx, rt *run, c Change,
 			return err
 		}
 	case c.Op == "delete":
+		// The home deleted content: every routed entry-cache answer of the feed
+		// is dropped, whatever the local deletion policy keeps.
+		if err := federation.InvalidateRouteCacheTx(ctx, tx, s.cfg.InstanceID, rt.job.ReplicaSourceID, true); err != nil {
+			return err
+		}
 		key := heldKey(c.Kind, c.Version)
 		if rt.job.DeletionPolicy == "propagate" {
 			res, err := s.performDelete(ctx, tx, rt, c.Kind, c.Coordinate, c.Version, c.Key)
