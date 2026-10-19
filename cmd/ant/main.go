@@ -21,6 +21,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/denyaudit"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/diskusage"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
@@ -262,6 +263,8 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 	// rejected at configuration time (feed resolution loops).
 	feedgraph.SetSelfOrigins(publicURL, "http://"+listener.Addr().String())
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
+	// Free space of the data directory's filesystem, for disk-full alerts.
+	observability.RegisterCollector("datadir", diskusage.Collector(cfg.Storage.Directory))
 	// Loopback development: let the login runtime learn its own origin.
 	browser.SetDefaultOrigin(serveCtx, publicURL)
 	clientAuth, githubOIDC := newClientAuth(pool, artifacts, browser)
@@ -310,6 +313,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		mcp.Register(mux, pool, logger)
 		mux.Handle("/console", console.Handler())
 		mux.Handle("/console/", console.Handler())
+		mux.Handle("GET /{$}", rootRedirect())
 	})
 	// Installed inside the browser-session middleware so session principals
 	// are visible to per-principal limits.
@@ -356,3 +360,8 @@ func main() {
 
 // bootstrapPoll is how often a server without an instance looks for one.
 var bootstrapPoll = 2 * time.Second
+
+// rootRedirect sends exactly "/" to the console; "/{$}" matches no other path.
+func rootRedirect() http.Handler {
+	return http.RedirectHandler("/console/", http.StatusFound)
+}

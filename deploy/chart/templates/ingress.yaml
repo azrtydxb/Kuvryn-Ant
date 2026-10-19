@@ -20,6 +20,13 @@ spec:
     - host: {{ .Values.ingress.host | quote }}
       http:
         paths:
+          - path: /
+            pathType: Exact # the app redirects GET / to /console/
+            backend:
+              service:
+                name: {{ include "ant.name" $ }}
+                port:
+                  name: http
           {{- range list "/console" "/api" "/auth" "/v2" "/feeds" }}
           - path: {{ . }}
             pathType: Prefix

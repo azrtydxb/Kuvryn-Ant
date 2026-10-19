@@ -13,13 +13,13 @@ package backup
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"regexp"
 	"time"
 )
@@ -74,7 +74,29 @@ type Manifest struct {
 	Tables        []Table     `json:"tables"`
 	Skipped       []string    `json:"skipped_ephemeral_tables"`
 	Blobs         []Blob      `json:"blobs"`
-	Notice        string      `json:"notice"`
+	// BlobMode is "copy" (blob bytes are in the backup; the default and the only
+	// mode older backups have) or "reference" (the backup holds metadata and the
+	// blob list only; the blobs stay in the durable object store).
+	BlobMode string `json:"blob_mode,omitempty"`
+	Notice   string `json:"notice"`
+}
+
+const (
+	BlobsCopy      = "copy"
+	BlobsReference = "reference"
+)
+
+const referenceNotice = "Blob bytes are not part of this backup; it references objects in the durable blob store. Restore needs those objects to still exist (same bucket and prefix): keep blob garbage collection from sweeping them, or use object-store versioning."
+
+// referenced reports whether blob bytes live outside the backup.
+func (m Manifest) referenced() bool { return m.BlobMode == BlobsReference }
+
+// Mode is the effective blob mode (copy for backups that predate the field).
+func (m Manifest) Mode() string {
+	if m.referenced() {
+		return BlobsReference
+	}
+	return BlobsCopy
 }
 
 const notice = "Root keys are not part of this backup. Restore requires the same external keyring that protected the source deployment."
@@ -97,6 +119,9 @@ func (m Manifest) validate() error {
 		if x.Version != i+1 || x.Name == "" || !digestPattern.MatchString(x.Checksum) {
 			return ErrManifest
 		}
+	}
+	if m.BlobMode != "" && m.BlobMode != BlobsCopy && m.BlobMode != BlobsReference {
+		return ErrManifest
 	}
 	seen := map[string]bool{}
 	for _, t := range m.Tables {
@@ -131,9 +156,9 @@ func (m Manifest) validate() error {
 // readManifest returns the parsed manifest and the SHA-256 of its exact bytes.
 // Operators can record that value out of band and pass it back as the expected
 // manifest digest to detect replacement of the whole backup.
-func readManifest(root *os.Root) (Manifest, string, error) {
-	f, err := root.Open(manifestName)
-	if err != nil {
+func readManifest(ctx context.Context, t Tree) (Manifest, string, error) {
+	f, size, err := t.Open(ctx, manifestName)
+	if err != nil || size > maxManifestSize {
 		return Manifest{}, "", fmt.Errorf("%w: cannot open manifest", ErrManifest)
 	}
 	defer f.Close()

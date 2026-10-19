@@ -9,12 +9,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"path"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/diskusage"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,6 +26,13 @@ type Stores interface {
 type Options struct {
 	// Concurrency bounds simultaneous blob transfers. Default 4.
 	Concurrency int
+	// Blobs selects BlobsCopy (default) or BlobsReference. Reference mode records
+	// the blob list in the manifest and verifies each blob exists with the right
+	// size, but copies no blob bytes.
+	Blobs string
+	// MaxDiskPercent, when positive, refuses to write a backup into a local
+	// directory whose filesystem is, or would become, fuller than this.
+	MaxDiskPercent int
 }
 
 // Result summarizes a created backup. ManifestSHA256 should be recorded outside
@@ -35,7 +42,22 @@ type Result struct {
 	ManifestSHA256 string
 }
 
+// ErrDiskFull is returned (wrapping ErrTarget) when a local backup would push
+// its filesystem over Options.MaxDiskPercent.
+var ErrDiskFull = fmt.Errorf("%w: not enough free space", ErrTarget)
+
 // Create writes a consistent backup into dir, which must be absent or empty.
+func Create(ctx context.Context, pool *pgxpool.Pool, stores Stores, dir string, opts Options) (Result, error) {
+	t, err := OpenDirTree(dir, true)
+	if err != nil {
+		return Result{}, err
+	}
+	defer t.Close()
+	return CreateTree(ctx, pool, stores, t, opts)
+}
+
+// CreateTree writes a consistent backup into an empty tree (a directory or an
+// object-storage prefix).
 //
 // Consistency: every table is read inside one REPEATABLE READ, read-only
 // transaction (a single PostgreSQL snapshot), and the blob list is taken from
@@ -43,65 +65,111 @@ type Result struct {
 // content-addressed, so copying them after the snapshot is safe as long as
 // nothing deletes them; blobs not referenced by the snapshot are not copied.
 // Every blob is hashed while it is copied and must match its recorded digest
-// and size. On any failure the partial output is removed.
-func Create(ctx context.Context, pool *pgxpool.Pool, stores Stores, dir string, opts Options) (res Result, err error) {
+// and size. In reference mode every blob is instead checked to exist with the
+// recorded size, and the backup stays valid only while those objects are kept.
+// On any failure the partial output is removed.
+func CreateTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tree, opts Options) (res Result, err error) {
 	if opts.Concurrency == 0 {
 		opts.Concurrency = 4
 	}
-	root, err := prepareTarget(dir)
-	if err != nil {
+	if opts.Blobs == "" {
+		opts.Blobs = BlobsCopy
+	}
+	if opts.Blobs != BlobsCopy && opts.Blobs != BlobsReference {
+		return Result{}, fmt.Errorf("%w: unknown blob mode %q", ErrTarget, opts.Blobs)
+	}
+	if err = emptyTree(ctx, root); err != nil {
 		return Result{}, err
 	}
-	defer root.Close()
+	if err = checkDisk(root, opts.MaxDiskPercent, 0); err != nil {
+		return Result{}, err
+	}
 	defer func() {
 		if err != nil {
-			_ = root.RemoveAll("tables")
-			_ = root.RemoveAll("blobs")
-			_ = root.Remove(manifestName + ".tmp")
+			clean := context.WithoutCancel(ctx)
+			for _, n := range []string{"tables", "blobs", manifestName, manifestName + ".tmp"} {
+				_ = root.RemoveAll(clean, n)
+			}
 		}
 	}()
 	m, err := snapshotTables(ctx, pool, root)
 	if err != nil {
 		return Result{}, err
 	}
-	if err = copyBlobs(ctx, stores, root, m.Blobs, opts.Concurrency); err != nil {
+	m.BlobMode = opts.Blobs
+	if opts.Blobs == BlobsReference {
+		err = checkBlobs(ctx, stores, m.Blobs, opts.Concurrency)
+	} else {
+		if err = checkDisk(root, opts.MaxDiskPercent, m.BlobBytes()); err == nil {
+			err = copyBlobs(ctx, stores, root, m.Blobs, opts.Concurrency)
+		}
+	}
+	if err != nil {
 		return Result{}, err
 	}
 	m.CreatedAt = time.Now().UTC()
 	m.Notice = notice
+	if m.referenced() {
+		m.Notice = notice + " " + referenceNotice
+	}
 	data, err := json.MarshalIndent(m, "", " ")
 	if err != nil {
 		return Result{}, err
 	}
-	if err = writeAtomic(root, manifestName, data); err != nil {
+	if err = root.PutAtomic(ctx, manifestName, data); err != nil {
 		return Result{}, err
 	}
 	sum := sha256.Sum256(data)
 	return Result{m, hex.EncodeToString(sum[:])}, nil
 }
 
-func prepareTarget(dir string) (*os.Root, error) {
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return nil, fmt.Errorf("%w: cannot create directory", ErrTarget)
+// checkDisk refuses to write into a local directory that is, or after adding
+// extra more bytes would be, over maxPercent full. Object storage is unchecked.
+func checkDisk(t Tree, maxPercent int, extra int64) error {
+	d, ok := t.(*DirTree)
+	if !ok || maxPercent <= 0 {
+		return nil
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil || len(entries) != 0 {
-		return nil, fmt.Errorf("%w: backup directory must be empty", ErrTarget)
+	u, err := diskusage.Of(d.Dir())
+	if err != nil || u.Total == 0 {
+		return nil // cannot inspect (unsupported platform): do not block backups
 	}
-	root, err := os.OpenRoot(dir)
-	if err != nil {
-		return nil, fmt.Errorf("%w: cannot open directory", ErrTarget)
+	used := u.Total - u.Free
+	limit := u.Total / 100 * uint64(maxPercent) // no overflow for any real capacity
+	if add := uint64(max(extra, 0)); add > limit || used > limit-add {
+		projected := 100.0 * (float64(used) + float64(add)) / float64(u.Total)
+		return fmt.Errorf("%w: the backup would raise filesystem usage to %.0f%% (limit %d%%); write to object storage (s3://...) or another volume, use --blobs=reference, or raise --max-disk-percent", ErrDiskFull, projected, maxPercent)
 	}
-	for _, d := range []string{"tables", "blobs"} {
-		if err := root.Mkdir(d, 0o700); err != nil {
-			root.Close()
-			return nil, err
-		}
-	}
-	return root, nil
+	return nil
 }
 
-func snapshotTables(ctx context.Context, pool *pgxpool.Pool, root *os.Root) (Manifest, error) {
+// checkBlobs confirms each referenced blob exists with the recorded size.
+func checkBlobs(ctx context.Context, stores Stores, blobs []Blob, workers int) error {
+	made := map[string]blob.Store{}
+	for _, b := range blobs {
+		if made[b.Domain] != nil {
+			continue
+		}
+		store, err := stores.Resolve(ctx, b.Domain)
+		if err != nil {
+			return fmt.Errorf("cannot resolve blob store for domain %s", b.Domain)
+		}
+		made[b.Domain] = store
+	}
+	return forEach(ctx, len(blobs), workers, func(ctx context.Context, i int) error {
+		b := blobs[i]
+		info, err := made[b.Domain].Stat(ctx, blob.Digest(b.Digest))
+		if err != nil {
+			return fmt.Errorf("blob %s (domain %s): %w", b.Digest, b.Domain, err)
+		}
+		if info.Size != b.Size {
+			return fmt.Errorf("blob %s (domain %s): %w", b.Digest, b.Domain, blob.ErrIntegrity)
+		}
+		return nil
+	})
+}
+
+func snapshotTables(ctx context.Context, pool *pgxpool.Pool, root Tree) (Manifest, error) {
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return Manifest{}, errors.New("cannot acquire database connection")
@@ -193,23 +261,21 @@ func snapshotTables(ctx context.Context, pool *pgxpool.Pool, root *os.Root) (Man
 	return m, nil
 }
 
-func dumpTable(ctx context.Context, tx pgx.Tx, root *os.Root, table string, cols []string) (rows, size int64, sum string, err error) {
-	f, err := root.OpenFile(tablePath(table), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		return 0, 0, "", err
-	}
-	defer f.Close()
+func dumpTable(ctx context.Context, tx pgx.Tx, root Tree, table string, cols []string) (rows, size int64, sum string, err error) {
 	h := sha256.New()
-	buffered := bufio.NewWriterSize(f, 256<<10)
-	counter := &countWriter{w: io.MultiWriter(buffered, h)}
-	tag, err := tx.Conn().PgConn().CopyTo(ctx, counter, "COPY "+quote(table)+" ("+quoteList(cols)+") TO STDOUT")
+	var counter *countWriter
+	var tag pgconn.CommandTag
+	err = copyOut(ctx, root, tablePath(table), func(w io.Writer) error {
+		buffered := bufio.NewWriterSize(w, 256<<10)
+		counter = &countWriter{w: io.MultiWriter(buffered, h)}
+		var cerr error
+		tag, cerr = tx.Conn().PgConn().CopyTo(ctx, counter, "COPY "+quote(table)+" ("+quoteList(cols)+") TO STDOUT")
+		if cerr != nil {
+			return cerr
+		}
+		return buffered.Flush()
+	})
 	if err != nil {
-		return 0, 0, "", err
-	}
-	if err = buffered.Flush(); err != nil {
-		return 0, 0, "", err
-	}
-	if err = f.Sync(); err != nil {
 		return 0, 0, "", err
 	}
 	return tag.RowsAffected(), counter.n, hex.EncodeToString(h.Sum(nil)), nil
@@ -226,7 +292,7 @@ func (c *countWriter) Write(p []byte) (int, error) {
 	return n, err
 }
 
-func copyBlobs(ctx context.Context, stores Stores, root *os.Root, blobs []Blob, workers int) error {
+func copyBlobs(ctx context.Context, stores Stores, root Tree, blobs []Blob, workers int) error {
 	made := map[string]blob.Store{}
 	for _, b := range blobs {
 		if made[b.Domain] != nil {
@@ -237,9 +303,6 @@ func copyBlobs(ctx context.Context, stores Stores, root *os.Root, blobs []Blob, 
 			return fmt.Errorf("cannot resolve blob store for domain %s", b.Domain)
 		}
 		made[b.Domain] = store
-		if err := root.Mkdir(path.Join("blobs", b.Domain), 0o700); err != nil {
-			return err
-		}
 	}
 	return forEach(ctx, len(blobs), workers, func(ctx context.Context, i int) error {
 		b := blobs[i]
@@ -250,42 +313,21 @@ func copyBlobs(ctx context.Context, stores Stores, root *os.Root, blobs []Blob, 
 	})
 }
 
-func copyBlobOut(ctx context.Context, store blob.Store, root *os.Root, b Blob) error {
+func copyBlobOut(ctx context.Context, store blob.Store, root Tree, b Blob) error {
 	src, err := store.OpenRange(ctx, blob.Digest(b.Digest), 0, -1)
 	if err != nil {
 		return err // blob.ErrNotFound means metadata references a missing object
 	}
 	defer src.Close()
-	f, err := root.OpenFile(blobPath(b), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	h := sha256.New()
-	n, err := io.CopyBuffer(io.MultiWriter(f, h), ctxReader{ctx, src}, make([]byte, blob.TransferBufferSize))
-	if err != nil {
-		return err
-	}
-	if n != b.Size || hex.EncodeToString(h.Sum(nil)) != b.Digest {
-		return blob.ErrIntegrity
-	}
-	return f.Sync()
-}
-
-func writeAtomic(root *os.Root, name string, data []byte) error {
-	tmp := name + ".tmp"
-	f, err := root.OpenFile(tmp, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
-	if err != nil {
-		return err
-	}
-	if _, err = f.Write(data); err == nil {
-		err = f.Sync()
-	}
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		return err
-	}
-	return root.Rename(tmp, name)
+	return copyOut(ctx, root, blobPath(b), func(w io.Writer) error {
+		h := sha256.New()
+		n, err := io.CopyBuffer(io.MultiWriter(w, h), ctxReader{ctx, src}, make([]byte, blob.TransferBufferSize))
+		if err != nil {
+			return err
+		}
+		if n != b.Size || hex.EncodeToString(h.Sum(nil)) != b.Digest {
+			return blob.ErrIntegrity
+		}
+		return nil
+	})
 }

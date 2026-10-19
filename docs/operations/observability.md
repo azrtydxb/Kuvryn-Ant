@@ -18,10 +18,15 @@ metrics Service and restrict it with NetworkPolicy.
 | `ant_http_active_requests` | gauge | none |
 | `ant_http_saturation_total` | counter | none (requests shed by `ANT_MAX_REQUESTS`) |
 | `ant_database_readiness_failures_total` | counter | none |
+| `ant_data_dir_bytes_free` | gauge | none (bytes available on the filesystem holding `ANT_DATA_DIR`) |
+| `ant_data_dir_bytes_total` | gauge | none (capacity of that filesystem) |
 
 `route` is a registered route pattern or `unmatched`, so cardinality is bounded.
 Suggested alerts: sustained 5xx ratio, `ant_http_saturation_total` increasing,
 `ant_database_readiness_failures_total` increasing, and p95 duration by route.
+For the data volume alert on low free space, for example
+`ant_data_dir_bytes_free / ant_data_dir_bytes_total < 0.2` for 10 minutes
+(warning) and `< 0.1` (page).
 
 Health endpoints: `GET /health/live` (process), `GET /health/ready`
 (PostgreSQL reachable, not stopping). Administrators get dependency detail

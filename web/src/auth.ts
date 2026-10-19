@@ -14,17 +14,30 @@ export type Providers = {
   // Administrator-chosen display names of the active providers, by protocol.
   labels?: Partial<Record<"oidc" | "saml" | "ldap", string>>;
 };
+// A request that never settles (stalled gateway/pod) must not leave the
+// console on "Checking your browser session…" forever.
+export const AUTH_TIMEOUT_MS = 10_000;
 export async function authRequest(path: string, options: RequestInit = {}) {
   let response: Response;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AUTH_TIMEOUT_MS);
+  const parent = options.signal;
+  const onParent = () => controller.abort();
+  if (parent?.aborted) controller.abort();
+  else parent?.addEventListener("abort", onParent, { once: true });
   try {
     response = await fetch(path, {
       ...options,
+      signal: controller.signal,
       credentials: "same-origin",
       cache: "no-store",
       redirect: "error",
     });
   } catch {
     throw Error("Authentication service could not be reached. Try again.");
+  } finally {
+    clearTimeout(timer);
+    parent?.removeEventListener("abort", onParent);
   }
   return response;
 }
