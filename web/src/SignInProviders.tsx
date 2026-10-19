@@ -216,6 +216,13 @@ function parseGroupRoles(s: string) {
   });
 }
 
+function parseClaimRoles(s: string) {
+  return parseGroupRoles(s).map(({ group_id, role_ids }) => ({
+    value: group_id,
+    role_ids,
+  }));
+}
+
 export function ProviderEditor({
   client,
   kind,
@@ -241,6 +248,13 @@ export function ProviderEditor({
     (c.allowed_endpoints ?? []).join("\n"),
   );
   const [groupsClaim, setGroupsClaim] = useState(c.groups_claim ?? "");
+  const [rolesClaim, setRolesClaim] = useState(c.roles_claim ?? "");
+  const [scopes, setScopes] = useState((c.scopes ?? []).join(" "));
+  const [claimRoles, setClaimRoles] = useState(
+    (c.claim_roles ?? [])
+      .map((m) => `${m.value}=${m.role_ids.join(",")}`)
+      .join("\n"),
+  );
   const [entityId, setEntityId] = useState(
     c.entity_id ?? (origin ? `${origin}/auth/saml/metadata` : ""),
   );
@@ -284,6 +298,11 @@ export function ProviderEditor({
           client_id: clientId,
           allowed_endpoints: lines(endpoints),
           ...(groupsClaim ? { groups_claim: groupsClaim } : {}),
+          ...(rolesClaim ? { roles_claim: rolesClaim } : {}),
+          ...(lines(claimRoles).length
+            ? { claim_roles: parseClaimRoles(claimRoles) }
+            : {}),
+          ...(scopes.trim() ? { scopes: scopes.trim().split(/\s+/) } : {}),
         }
       : kind === "saml"
         ? {
@@ -439,6 +458,28 @@ export function ProviderEditor({
               value={groupsClaim}
               onChange={val(setGroupsClaim)}
               hint="Default: groups"
+            />
+            <Input
+              label="Roles claim"
+              mono
+              value={rolesClaim}
+              onChange={val(setRolesClaim)}
+              hint="ID-token claim to map to roles, e.g. groups or urn:zitadel:iam:org:project:<id>:roles."
+            />
+            <Textarea
+              label="Claim to role mapping"
+              mono
+              rows={3}
+              value={claimRoles}
+              onChange={val(setClaimRoles)}
+              hint="One per line: claim value=role ID[,role ID]. Users with no explicit binding are created at first login; explicit bindings always win."
+            />
+            <Input
+              label="Extra scopes"
+              mono
+              value={scopes}
+              onChange={val(setScopes)}
+              hint="Space separated, besides openid."
             />
           </>
         )}

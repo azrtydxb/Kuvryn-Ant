@@ -3,8 +3,10 @@ package oci
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync/atomic"
@@ -125,5 +127,28 @@ func TestOCIPullThroughNeverServesBytesThatMissDigest(t *testing.T) {
 	status, body, _ := f.Get(srv.URL + "/v2/oci2/lib/app/blobs/sha256:" + sha(want))
 	if status == 200 || strings.Contains(body, "evil") || f.CachedAssets(remote) != 0 {
 		t.Fatalf("digest mismatch must fail closed: %d %q cached=%d", status, body, f.CachedAssets(remote))
+	}
+}
+
+// Regression: a Kubernetes fsGroup makes the uploads volume group-writable
+// (setgid, the pod's own group). That crash-looped startup with "invalid OCI
+// registry configuration"; world access must still be rejected.
+func TestNewAcceptsFsGroupWritableUploadsDir(t *testing.T) {
+	f := remotetest.New(t)
+	dir := filepath.Join(t.TempDir(), "uploads")
+	if err := os.Mkdir(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o770|os.ModeSetgid); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(f.Pool, f.Service, dir); err != nil {
+		t.Fatalf("group-writable uploads dir rejected: %v", err)
+	}
+	if err := os.Chmod(dir, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := New(f.Pool, f.Service, dir); !errors.Is(err, ErrConfiguration) {
+		t.Fatalf("world-writable uploads dir accepted: %v", err)
 	}
 }

@@ -286,3 +286,26 @@ func TestFinalizeObservesStageCancellationDuringDedup(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// A Kubernetes fsGroup makes the volume root group-writable (setgid, group =
+// the pod's own gid); startup must accept that but still reject world access.
+func TestNewDiskAcceptsFsGroupWritableRoot(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "data")
+	if err := os.Mkdir(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(root, 0o770|os.ModeSetgid); err != nil {
+		t.Fatal(err)
+	}
+	d, err := NewDisk(root, 0)
+	if err != nil {
+		t.Fatalf("group-writable root rejected: %v", err)
+	}
+	d.Close()
+	if err := os.Chmod(root, 0o777); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewDisk(root, 0); !errors.Is(err, ErrUnsafePath) {
+		t.Fatalf("world-writable root accepted: %v", err)
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -55,7 +56,61 @@ type OIDCConfig struct {
 	ClientID         string   `json:"client_id"`
 	AllowedEndpoints []string `json:"allowed_endpoints"`
 	GroupsClaim      string   `json:"groups_claim,omitempty"`
+	// RolesClaim names the ID-token claim whose values ClaimRoles map to local
+	// roles at login (array of strings, a string, or an object whose keys are
+	// the values, as Zitadel's project roles claim). Scopes are extra scopes
+	// requested besides openid.
+	RolesClaim string      `json:"roles_claim,omitempty"`
+	ClaimRoles []ClaimRole `json:"claim_roles,omitempty"`
+	Scopes     []string    `json:"scopes,omitempty"`
 }
+
+// ClaimRole maps one claim value to local role IDs.
+type ClaimRole struct {
+	Value   string   `json:"value"`
+	RoleIDs []string `json:"role_ids"`
+}
+
+func validClaimMapping(c OIDCConfig) bool {
+	if len(c.RolesClaim) > 256 || len(c.ClaimRoles) > 200 || len(c.Scopes) > 16 {
+		return false
+	}
+	if (len(c.ClaimRoles) > 0) != (c.RolesClaim != "") {
+		return false
+	}
+	for _, r := range c.RolesClaim {
+		if r < 0x21 || r > 0x7e {
+			return false
+		}
+	}
+	seen := map[string]bool{}
+	for _, m := range c.ClaimRoles {
+		if m.Value == "" || len(m.Value) > 256 || seen[m.Value] || len(m.RoleIDs) == 0 || len(m.RoleIDs) > 32 {
+			return false
+		}
+		seen[m.Value] = true
+		ids := map[string]bool{}
+		for _, id := range m.RoleIDs {
+			if !uuidRE.MatchString(id) || ids[id] {
+				return false
+			}
+			ids[id] = true
+		}
+	}
+	for _, s := range c.Scopes {
+		if s == "" || len(s) > 256 || s == "openid" {
+			return false
+		}
+		for _, r := range s {
+			if r < 0x21 || r > 0x7e || r == '"' || r == '\\' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+var uuidRE = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 type SAMLConfig struct {
 	EntityID         string `json:"entity_id"`
@@ -106,7 +161,7 @@ func Validate(kind Kind, config json.RawMessage) error {
 	switch kind {
 	case OIDC:
 		var c OIDCConfig
-		if strict(config, &c) != nil || !httpsURL(c.Issuer) || strings.Contains(c.Issuer, "?") || c.ClientID == "" || len(c.ClientID) > 256 || len(c.GroupsClaim) > 64 {
+		if strict(config, &c) != nil || !httpsURL(c.Issuer) || strings.Contains(c.Issuer, "?") || c.ClientID == "" || len(c.ClientID) > 256 || len(c.GroupsClaim) > 64 || !validClaimMapping(c) {
 			return ErrInvalid
 		}
 		if len(c.AllowedEndpoints) == 0 || len(c.AllowedEndpoints) > 32 {

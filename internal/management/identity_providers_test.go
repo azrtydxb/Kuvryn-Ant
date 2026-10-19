@@ -354,3 +354,35 @@ func TestIdentityAdminMutationsAreIdempotent(t *testing.T) {
 	// Authorization is rechecked on replay.
 	expectSourceStatus(t, f.requestAs("DELETE", "/api/v1/identity-providers/"+p.ID, "", "idp-del", cur, f.limited), 403)
 }
+
+func TestIdentityProviderOIDCClaimRoleMapping(t *testing.T) {
+	f := newIDPFixture(t)
+	issuer := f.oidc.URL
+	allowed := fmt.Sprintf(`["%s/authorize","%s/token","%s/jwks"]`, issuer, issuer, issuer)
+	var role string
+	if err := f.db.QueryRow(context.Background(), `INSERT INTO roles(instance_id,name) VALUES($1,'ant-reader') RETURNING id::text`, f.instance).Scan(&role); err != nil {
+		t.Fatal(err)
+	}
+	cfg := func(claim, mapping string) string {
+		return fmt.Sprintf(`{"kind":"oidc","name":"sso","enabled":false,"secret":"client-secret-xyz","config":{"issuer":%q,"client_id":"ant","allowed_endpoints":%s%s%s}}`, issuer, allowed, claim, mapping)
+	}
+	claim := `,"roles_claim":"urn:zitadel:iam:org:project:1:roles","scopes":["urn:zitadel:iam:org:projects:roles"]`
+	// Unknown role, malformed id, mapping without a claim, and duplicate values are refused.
+	for _, bad := range []string{
+		cfg(claim, `,"claim_roles":[{"value":"ant-user","role_ids":["00000000-0000-4000-8000-000000000000"]}]`),
+		cfg(claim, `,"claim_roles":[{"value":"ant-user","role_ids":["reader"]}]`),
+		cfg("", `,"claim_roles":[{"value":"ant-user","role_ids":["`+role+`"]}]`),
+		cfg(claim, `,"claim_roles":[{"value":"a","role_ids":["`+role+`"]},{"value":"a","role_ids":["`+role+`"]}]`),
+		cfg(claim+`,"scopes":["openid"]`, ""),
+	} {
+		if w := f.request("POST", "/api/v1/identity-providers", bad, "", ""); w.Code < 400 || w.Code >= 500 {
+			t.Fatalf("accepted %s: %d %s", bad, w.Code, w.Body.String())
+		}
+	}
+	w := f.request("POST", "/api/v1/identity-providers", cfg(claim, `,"claim_roles":[{"value":"ant-user","role_ids":["`+role+`"]}]`), "", "")
+	expectSourceStatus(t, w, 201)
+	got := decodeJSON[IdentityProvider](t, w).Config
+	if str(got.RolesClaim) != "urn:zitadel:iam:org:project:1:roles" || len(got.ClaimRoles) != 1 || got.ClaimRoles[0].Value != "ant-user" || got.ClaimRoles[0].RoleIDs[0] != role || len(got.Scopes) != 1 {
+		t.Fatalf("mapping not round-tripped: %+v", got)
+	}
+}

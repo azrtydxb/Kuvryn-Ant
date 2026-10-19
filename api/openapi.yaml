@@ -22433,6 +22433,26 @@
           }
         }
       },
+      "ClaimRoleMapping": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "value",
+          "role_ids"
+        ],
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "role_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "Maps one value of an OIDC ID-token claim to existing local role IDs. Applied at login to users with no explicit identity binding (just-in-time provisioning) and to users previously provisioned this way."
+      },
       "GroupRoleMapping": {
         "type": "object",
         "additionalProperties": false,
@@ -22466,6 +22486,23 @@
           },
           "groups_claim": {
             "type": "string"
+          },
+          "roles_claim": {
+            "type": "string",
+            "description": "OIDC ID-token claim whose values claim_roles map to roles (array of strings, a string, or an object whose keys are the values, e.g. urn:zitadel:iam:org:project:<id>:roles)."
+          },
+          "claim_roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClaimRoleMapping"
+            }
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra OIDC scopes requested besides openid."
           },
           "entity_id": {
             "type": "string"
