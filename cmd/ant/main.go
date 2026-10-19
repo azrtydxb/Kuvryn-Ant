@@ -29,6 +29,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/oidclogin"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/prewarm"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/transfer"
@@ -263,6 +264,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 	// rejected at configuration time (feed resolution loops).
 	feedgraph.SetSelfOrigins(publicURL, "http://"+listener.Addr().String())
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
+	observability.RegisterCollector("prewarm", prewarm.WriteMetrics)
 	// Free space of the data directory's filesystem, for disk-full alerts.
 	observability.RegisterCollector("datadir", diskusage.Collector(cfg.Storage.Directory))
 	// Loopback development: let the login runtime learn its own origin.

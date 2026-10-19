@@ -5880,6 +5880,1064 @@
         }
       }
     },
+    "/api/v1/prewarm/formats": {
+      "get": {
+        "operationId": "listPrewarmFormats",
+        "description": "Feed formats that can be prewarmed and the inputs each accepts: package lists, lockfile types, image lists, or the contents of another feed.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmFormatList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/preview": {
+      "post": {
+        "operationId": "previewPrewarm",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Expands a source (package list, lockfile, images or another feed) the way a job would and reports what would be warmed and what was ignored, without creating anything. Idempotency-Key is not required.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewPrewarm"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/jobs": {
+      "get": {
+        "operationId": "listPrewarmJobs",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Without feed_id only instance administrators may list; with feed_id the caller needs read access to the feed.",
+        "parameters": [
+          {
+            "name": "feed_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmJobPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createPrewarmJob",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Creates a job that warms the remote cache of a feed from a package list, a supported lockfile (package-lock.json, pnpm-lock.yaml, go.sum, Cargo.lock, requirements.txt, poetry.lock), an image list or everything another feed references. The feed must have a remote source. interval_seconds schedules recurring runs; run_now queues the first run immediately. Lockfiles are parsed at creation and stored as items; entries that cannot come from a registry are ignored.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePrewarmJob"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/jobs/{id}": {
+      "get": {
+        "operationId": "getPrewarmJob",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). One job with its latest run.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchPrewarmJob",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Changes a job's name, enabled flag, schedule (interval_seconds, null removes it), concurrency, rate or options. The source is immutable: create a new job to change it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmJob"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchPrewarmJob"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deletePrewarmJob",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Deletes a job with its runs. A run in progress stops.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/jobs/{id}/runs": {
+      "post": {
+        "operationId": "startPrewarmRun",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Queues a run of the job now (202). Poll the run for progress. A job has at most one active run (409 otherwise).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Run queued",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartPrewarmRun"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/runs": {
+      "get": {
+        "operationId": "listPrewarmRuns",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Runs newest first. Filter by job_id or feed_id (read access required); without a filter only instance administrators may list. At most 20 finished runs are kept per job.",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "feed_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "running",
+                "succeeded",
+                "partial",
+                "failed",
+                "canceled"
+              ]
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmRunPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/runs/{id}": {
+      "get": {
+        "operationId": "getPrewarmRun",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Progress and outcome of one run. warmed counts objects fetched from an upstream, cached those already present, failed and skipped the rest; a run with failures but some successes is partial.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/runs/{id}/items": {
+      "get": {
+        "operationId": "listPrewarmRunItems",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Per-item status of a run in input order, including the failure code of failed items (not_found, upstream_unavailable, integrity_mismatch, denied, timeout, internal) and why items were skipped.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "warmed",
+                "cached",
+                "failed",
+                "skipped"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmRunItemPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/runs/{id}/cancel": {
+      "post": {
+        "operationId": "cancelPrewarmRun",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Cancels a queued run at once or asks a running run to stop; unfinished items are marked skipped (canceled). A finished run answers 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/prewarm/runs/{id}/retry": {
+      "post": {
+        "operationId": "retryPrewarmRun",
+        "description": "Reads require read access to the feed; changes require permission to configure it (instance administrators may do both everywhere). Queues a new run (202) of the items of a finished run that failed, were canceled or never ran. The new run records retry_of.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Run queued",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrewarmRun"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/retention/runs": {
       "get": {
         "operationId": "listRetentionRuns",
@@ -19962,6 +21020,675 @@
           }
         },
         "description": "Counters are exact. Lists hold at most 500 entries (truncated tells whether any was cut). For a dry run, the lists show exactly what a real run started then would do."
+      },
+      "PrewarmPackage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "version": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 256
+          }
+        },
+        "description": "A package to warm. Meaning by feed format: npm, cargo, go and pypi name the package and version; maven names group:artifact[:packaging[:classifier]]; raw names a path."
+      },
+      "PrewarmLockfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "content"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "package-lock.json",
+              "pnpm-lock.yaml",
+              "go.sum",
+              "Cargo.lock",
+              "requirements.txt",
+              "poetry.lock"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8388608
+          }
+        }
+      },
+      "PrewarmSource": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "packages",
+              "lockfile",
+              "images",
+              "feed"
+            ]
+          },
+          "packages": {
+            "type": "array",
+            "maxItems": 20000,
+            "items": {
+              "$ref": "#/components/schemas/PrewarmPackage"
+            }
+          },
+          "lockfile": {
+            "$ref": "#/components/schemas/PrewarmLockfile"
+          },
+          "images": {
+            "type": "array",
+            "maxItems": 20000,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "description": "OCI feeds: repository[:tag] or repository@sha256:digest, relative to the feed."
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Warm every package version this feed references (same format) through the target feed."
+          }
+        },
+        "description": "Exactly the field matching kind may be set."
+      },
+      "PrewarmOptions": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "platforms": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "description": "OCI feeds: platforms to pull from multi-platform images, as os/arch[/variant] or \"all\". Default linux/amd64."
+          },
+          "file_filters": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "PyPI feeds: warm only files whose name contains one of these. Default: pure-Python wheels and source distributions. Pinned hashes from a lockfile always win."
+          }
+        }
+      },
+      "CreatePrewarmJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "name",
+          "source"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "source": {
+            "$ref": "#/components/schemas/PrewarmSource"
+          },
+          "options": {
+            "$ref": "#/components/schemas/PrewarmOptions"
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32,
+            "default": 4
+          },
+          "rate_per_second": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "default": 10,
+            "description": "Items started per second; 0 is unlimited."
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 2678400,
+            "description": "Run on this schedule; omitted means run only on request."
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "A disabled job keeps its schedule paused; it can still be run on request."
+          },
+          "run_now": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "PatchPrewarmJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32
+          },
+          "rate_per_second": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 60,
+            "maximum": 2678400
+          },
+          "options": {
+            "$ref": "#/components/schemas/PrewarmOptions"
+          }
+        }
+      },
+      "PreviewPrewarm": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "feed_id",
+          "source"
+        ],
+        "properties": {
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source": {
+            "$ref": "#/components/schemas/PrewarmSource"
+          }
+        }
+      },
+      "PrewarmItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "version": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 512
+          },
+          "integrity": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "aux": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        }
+      },
+      "PrewarmIgnored": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "reason"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "PrewarmPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "total",
+          "items",
+          "ignored",
+          "ignored_count"
+        ],
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrewarmItem"
+            },
+            "description": "The first 100 items; empty for a feed source."
+          },
+          "ignored": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrewarmIgnored"
+            },
+            "description": "The first 100 ignored entries."
+          },
+          "ignored_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "PrewarmRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "job_id",
+          "feed_id",
+          "trigger",
+          "state",
+          "cancel_requested",
+          "principal_id",
+          "total",
+          "warmed",
+          "cached",
+          "failed",
+          "skipped",
+          "bytes",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "schedule",
+              "retry"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "succeeded",
+              "partial",
+              "failed",
+              "canceled"
+            ]
+          },
+          "cancel_requested": {
+            "type": "boolean"
+          },
+          "principal_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The principal the run acts as; its permissions apply to every request."
+          },
+          "retry_of": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "warmed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cached": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PrewarmJob": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "feed_id",
+          "name",
+          "source_kind",
+          "item_count",
+          "options",
+          "concurrency",
+          "rate_per_second",
+          "enabled",
+          "revision",
+          "created_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "packages",
+              "lockfile",
+              "images",
+              "feed"
+            ]
+          },
+          "lockfile_type": {
+            "type": "string",
+            "enum": [
+              "package-lock.json",
+              "pnpm-lock.yaml",
+              "go.sum",
+              "Cargo.lock",
+              "requirements.txt",
+              "poetry.lock"
+            ]
+          },
+          "source_feed_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "item_count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Stored items; 0 for a feed source, which is resolved at each run."
+          },
+          "options": {
+            "$ref": "#/components/schemas/PrewarmOptions"
+          },
+          "concurrency": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 32
+          },
+          "rate_per_second": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "interval_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 2678400
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "next_run_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_run": {
+            "$ref": "#/components/schemas/PrewarmRun"
+          }
+        }
+      },
+      "PrewarmRunItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "seq",
+          "name",
+          "state",
+          "bytes",
+          "attempts"
+        ],
+        "properties": {
+          "seq": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "warmed",
+              "cached",
+              "failed",
+              "skipped"
+            ]
+          },
+          "bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PrewarmJobPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrewarmJob"
+            }
+          },
+          "next_after": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PrewarmRunPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrewarmRun"
+            }
+          },
+          "next_after": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PrewarmRunItemPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrewarmRunItem"
+            }
+          },
+          "next_after": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "PrewarmFormat": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format",
+          "packages",
+          "images",
+          "feed",
+          "lockfiles"
+        ],
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "packages": {
+            "type": "boolean"
+          },
+          "images": {
+            "type": "boolean"
+          },
+          "feed": {
+            "type": "boolean"
+          },
+          "lockfiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PrewarmFormatList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrewarmFormat"
+            }
+          }
+        }
+      },
+      "StartPrewarmRun": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {}
       },
       "RetentionRun": {
         "type": "object",

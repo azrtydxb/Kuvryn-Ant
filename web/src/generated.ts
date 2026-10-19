@@ -102,6 +102,25 @@ export type RunDeletion = { "source_id": string; "coordinate": string; "version"
 export type RunBlob = { "domain_id": string; "digest": string; "kind": "row" | "object" };
 export type RunFinding = { "domain_id": string; "digest": string; "kind": "missing" | "size" | "digest" };
 export type RunReport = { "versions_deleted": number; "protected_release": number; "protected_tagged": number; "blobs_marked": number; "blobs_swept": number; "blobs_unmarked": number; "skipped_referenced": number; "gc_failed": number; "integrity_checked": number; "integrity_bytes": number; "integrity_errors": number; "integrity_mismatches": number; "integrity_wrapped": boolean; "deleted"?: Array<RunDeletion>; "marked"?: Array<RunBlob>; "swept"?: Array<RunBlob>; "mismatches"?: Array<RunFinding>; "errors"?: Array<string>; "truncated": boolean };
+export type PrewarmPackage = { "name": string; "version"?: string };
+export type PrewarmLockfile = { "type": "package-lock.json" | "pnpm-lock.yaml" | "go.sum" | "Cargo.lock" | "requirements.txt" | "poetry.lock"; "content": string };
+export type PrewarmSource = { "kind": "packages" | "lockfile" | "images" | "feed"; "packages"?: Array<PrewarmPackage>; "lockfile"?: PrewarmLockfile; "images"?: Array<string>; "feed_id"?: string };
+export type PrewarmOptions = { "platforms"?: Array<string>; "file_filters"?: Array<string> };
+export type CreatePrewarmJob = { "feed_id": string; "name": string; "source": PrewarmSource; "options"?: PrewarmOptions; "concurrency"?: number; "rate_per_second"?: number; "interval_seconds"?: number; "enabled"?: boolean; "run_now"?: boolean };
+export type PatchPrewarmJob = { "name"?: string; "enabled"?: boolean; "concurrency"?: number; "rate_per_second"?: number; "interval_seconds"?: number; "options"?: PrewarmOptions };
+export type PreviewPrewarm = { "feed_id": string; "source": PrewarmSource };
+export type PrewarmItem = { "name": string; "version"?: string; "integrity"?: string; "aux"?: string };
+export type PrewarmIgnored = { "name": string; "reason": string };
+export type PrewarmPreview = { "total": number; "items": Array<PrewarmItem>; "ignored": Array<PrewarmIgnored>; "ignored_count": number };
+export type PrewarmRun = { "id": string; "job_id": string; "feed_id": string; "trigger": "manual" | "schedule" | "retry"; "state": "queued" | "running" | "succeeded" | "partial" | "failed" | "canceled"; "cancel_requested": boolean; "principal_id": string; "retry_of"?: string; "total": number; "warmed": number; "cached": number; "failed": number; "skipped": number; "bytes": number; "error"?: string; "created_at": string; "started_at"?: string; "finished_at"?: string };
+export type PrewarmJob = { "id": string; "feed_id": string; "name": string; "source_kind": "packages" | "lockfile" | "images" | "feed"; "lockfile_type"?: "package-lock.json" | "pnpm-lock.yaml" | "go.sum" | "Cargo.lock" | "requirements.txt" | "poetry.lock"; "source_feed_id"?: string; "item_count": number; "options": PrewarmOptions; "concurrency": number; "rate_per_second": number; "interval_seconds"?: number; "enabled": boolean; "next_run_at"?: string; "revision": number; "created_by": string; "created_at": string; "updated_at": string; "last_run"?: PrewarmRun };
+export type PrewarmRunItem = { "seq": number; "name": string; "version"?: string; "state": "pending" | "warmed" | "cached" | "failed" | "skipped"; "bytes": number; "attempts": number; "error"?: string; "finished_at"?: string };
+export type PrewarmJobPage = { "items": Array<PrewarmJob>; "next_after"?: string };
+export type PrewarmRunPage = { "items": Array<PrewarmRun>; "next_after"?: string };
+export type PrewarmRunItemPage = { "items": Array<PrewarmRunItem>; "next_after"?: number };
+export type PrewarmFormat = { "format": string; "packages": boolean; "images": boolean; "feed": boolean; "lockfiles": Array<string> };
+export type PrewarmFormatList = { "items": Array<PrewarmFormat> };
+export type StartPrewarmRun = {  };
 export type RetentionRun = { "id": string; "trigger": "manual" | "scheduled"; "dry_run": boolean; "state": "running" | "succeeded" | "failed"; "requested_by"?: string; "started_at": string; "finished_at"?: string; "report"?: RunReport };
 export type RetentionRunPage = { "items": Array<RetentionRun>; "next_after"?: string };
 export type StartRetentionRun = { "dry_run": boolean };
@@ -404,6 +423,19 @@ listRetentionPolicies: { body: undefined; response: RetentionPolicyPage };
 createRetentionPolicy: { body: CreateRetentionPolicy; response: RetentionPolicy };
 putRetentionPolicy: { body: PutRetentionPolicy; response: RetentionPolicy };
 deleteRetentionPolicy: { body: undefined; response: RetentionPolicy };
+listPrewarmFormats: { body: undefined; response: PrewarmFormatList };
+previewPrewarm: { body: PreviewPrewarm; response: PrewarmPreview };
+listPrewarmJobs: { body: undefined; response: PrewarmJobPage };
+createPrewarmJob: { body: CreatePrewarmJob; response: PrewarmJob };
+getPrewarmJob: { body: undefined; response: PrewarmJob };
+patchPrewarmJob: { body: PatchPrewarmJob; response: PrewarmJob };
+deletePrewarmJob: { body: undefined; response: undefined };
+startPrewarmRun: { body: StartPrewarmRun; response: PrewarmRun };
+listPrewarmRuns: { body: undefined; response: PrewarmRunPage };
+getPrewarmRun: { body: undefined; response: PrewarmRun };
+listPrewarmRunItems: { body: undefined; response: PrewarmRunItemPage };
+cancelPrewarmRun: { body: undefined; response: PrewarmRun };
+retryPrewarmRun: { body: undefined; response: PrewarmRun };
 listRetentionRuns: { body: undefined; response: RetentionRunPage };
 startRetentionRun: { body: StartRetentionRun; response: RetentionRun };
 getRetentionRun: { body: undefined; response: RetentionRun };
@@ -885,6 +917,71 @@ export const routes = {
   "deleteRetentionPolicy": {
     "path": "/api/v1/retention/policies/{id}",
     "method": "DELETE",
+    "idempotent": true
+  },
+  "listPrewarmFormats": {
+    "path": "/api/v1/prewarm/formats",
+    "method": "GET",
+    "idempotent": false
+  },
+  "previewPrewarm": {
+    "path": "/api/v1/prewarm/preview",
+    "method": "POST",
+    "idempotent": false
+  },
+  "listPrewarmJobs": {
+    "path": "/api/v1/prewarm/jobs",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createPrewarmJob": {
+    "path": "/api/v1/prewarm/jobs",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getPrewarmJob": {
+    "path": "/api/v1/prewarm/jobs/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "patchPrewarmJob": {
+    "path": "/api/v1/prewarm/jobs/{id}",
+    "method": "PATCH",
+    "idempotent": true
+  },
+  "deletePrewarmJob": {
+    "path": "/api/v1/prewarm/jobs/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "startPrewarmRun": {
+    "path": "/api/v1/prewarm/jobs/{id}/runs",
+    "method": "POST",
+    "idempotent": true
+  },
+  "listPrewarmRuns": {
+    "path": "/api/v1/prewarm/runs",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getPrewarmRun": {
+    "path": "/api/v1/prewarm/runs/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listPrewarmRunItems": {
+    "path": "/api/v1/prewarm/runs/{id}/items",
+    "method": "GET",
+    "idempotent": false
+  },
+  "cancelPrewarmRun": {
+    "path": "/api/v1/prewarm/runs/{id}/cancel",
+    "method": "POST",
+    "idempotent": true
+  },
+  "retryPrewarmRun": {
+    "path": "/api/v1/prewarm/runs/{id}/retry",
+    "method": "POST",
     "idempotent": true
   },
   "listRetentionRuns": {

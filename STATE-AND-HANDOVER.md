@@ -9,10 +9,12 @@ partly finished ones are open with the `partial` label and a list of what remain
 
 **Phase 1 platform** (PRs #223 to #267, fixes #271, #279, #280, #282 to #287)
 
-- Go service on PostgreSQL (migrations up to 040), disk and S3 blob storage with multipart resume, disk/S3 migration,
+- Go service on PostgreSQL (migrations up to 043), disk and S3 blob storage with multipart resume, disk/S3 migration,
   writer lease, and two-phase GC, retention and integrity scans.
 - All 26 format adapters mounted under `/feeds/{slug}/<format>/` (OCI under `/v2/` too). Remote pull-through works for
-  22 of them; apk, git-lfs, p2 and swift serve local content only.
+  all 26 (apk, git-lfs, p2 and swift added after the 2026-10-19 snapshot; see `docs/implementation/pull-through.md`).
+- Cache prewarming (#43): durable jobs, runs and schedules that warm a feed's remote cache from a package list, lockfile, image
+  list or another feed (`docs/operations/prewarm.md`); API, console (Settings, Cache prewarm), MCP and metrics.
 - Feed read policies with explain (`GET /feeds/{id}/resolve`), publish policies, policy-gated delete and unlist,
   rate limits, quotas and policy templates.
 - Management API `/api/v1` (OpenAPI, generated Go and TS clients, idempotency keys, `If-Match`, transactional audit and
@@ -64,7 +66,7 @@ authority handover and recovery, federated audit, runbooks. Design and per-miles
 | AC                                              | State                | Evidence                                                                                                                                      | Gap                                                                                                                                                                |
 | ----------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 1 Conformance per ecosystem                     | Partial              | `conformance/results/{local,oke,kw}/2026-10-19` (harness #273): 16 formats pass on all three targets                                          | Failures in 10 formats fixed in #280 but not re-run (#288)                                                                                                         |
-| 2 Local/remote/routing/same-endpoint            | Partial              | Same runs: publish, consume, same-endpoint, remote miss and upstream-down hit per format                                                      | apk, git-lfs, p2, swift have no remote; pending re-run                                                                                                             |
+| 2 Local/remote/routing/same-endpoint            | Partial              | Same runs: publish, consume, same-endpoint, remote miss and upstream-down hit per format                                                      | apk, git-lfs, p2, swift remote is covered by httptest upstreams only; pending a real-upstream re-run                                                                                                             |
 | 3 Identity (Zitadel + generic OIDC, SAML, LDAP) | Partial              | Unit/integration tests in `internal/{oidclogin,samllogin,directory}`; Zitadel used in production                                              | No recorded real-provider evidence (procedure: `docs/operations/identity.md`); SAML SLO and LDAP/SAML role mapping routed and tested against fixtures (#46 to #50) |
 | 4 UI/API/MCP authz + audit parity               | Partial              | `internal/mcp/parity_test.go`, management deny/audit tests                                                                                    | MCP lacks identity-admin tools; no UI parity tests (#65)                                                                                                           |
 | 5 Two-instance replication                      | Pass with follow-ups | `evidence/2026-10-18` AC5 (seed, interrupt/resume, digests, lag, corruption, outage); federation adoption in `evidence/2026-10-19/federation` | Re-run with large blobs after #271/#279; disk-to-S3 pair (#68)                                                                                                     |
@@ -81,9 +83,9 @@ throughput), 13 (no upstream/cache metrics; data-plane route labels are now `<fo
 ## 4. Known gaps
 
 - Fresh 26-format conformance run after #280 (#288); swift native client aborts on the https targets (#204).
-- Remote sources for apk, git-lfs, p2 and swift (#120, #155, #180, #205); npm mutable dist-tags (#169).
+- apk, git-lfs, p2 and swift remote sources (#120, #155, #180, #205) have no real-client/real-upstream conformance run yet; npm mutable dist-tags (#169).
 - Per-format replica integrity checks: only raw and OCI were verified by AC5 (all `-T4` issues).
-- Prewarm jobs and schedules do not exist (#43); cache effectiveness reporting is incomplete (#44).
+- Prewarm covers npm, cargo, go, pypi, maven, raw and OCI (#43); other formats and cache effectiveness reporting (#44) remain.
 - Observability: upstream/cache metrics (#22); failure drills (#23).
 - Identity: real-provider evidence for Zitadel, a second OIDC provider, SAML and LDAP (procedure in
   `docs/operations/identity.md`); group management (#46 to #50, #61).
@@ -129,8 +131,8 @@ All under `~/.kuvryn-ant/` on the operator workstation, never committed: `azrty-
 3. Re-run restore, upgrade and rollback on kw without workarounds; write RTO/RPO (#76, #77).
 4. Real-provider identity evidence (Zitadel plus one more OIDC provider, SAML, LDAP) (the SAML SLO and LDAP/SAML role mapping
    gaps are closed in code; #45 to #50).
-5. Remote support for apk, git-lfs, p2, swift and npm mutable dist-tags.
-6. Prewarm (#43) and cache/upstream metrics (#22, #44).
+5. Real-upstream evidence for the apk, git-lfs, p2 and swift remotes.
+6. Cache/upstream metrics (#22, #44); prewarm for more formats.
 7. Nexus migration and decommissioning (#290); kw-owned feeds (#291); owner decision on #292.
 
 Delivery rules are unchanged: branch, verify locally (build, vet, touched tests, `scripts/check-generated.sh`), PR,

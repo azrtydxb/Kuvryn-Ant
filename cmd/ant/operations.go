@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -20,6 +21,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/prewarm"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -45,6 +47,8 @@ type operations struct {
 	staging stagingCache
 	// background is cancelled on shutdown and writer-lease loss.
 	background context.Context
+	// prewarm warms remote caches through the feed routes; nil without pull-through.
+	prewarm *prewarm.Service
 }
 
 func newOperations(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) *operations {
@@ -54,6 +58,12 @@ func newOperations(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) *o
 		r.service.Downloads = ops.traffic
 		if r.remote != nil {
 			r.remote.SetCacheObserver(ops.traffic.Cache)
+			// Prewarm requests go to the adapters directly (no listener middleware),
+			// as the principal that owns the run, so every adapter applies its own
+			// authorization, ownership and integrity rules.
+			feeds := http.NewServeMux()
+			r.Register(feeds)
+			ops.prewarm = &prewarm.Service{DB: pool, InstanceID: r.instanceID, Warmer: &prewarm.Warmer{Feeds: feeds}, Logger: slog.Default()}
 		}
 	}
 	return ops
@@ -81,6 +91,9 @@ func (o *operations) start(w *backgroundWorkers) {
 	}
 	if o.artifacts.remote != nil {
 		run(func() { o.artifacts.remote.Health().Run(w.workCtx, o.pool, instance, healthFlushInterval) })
+	}
+	if o.prewarm != nil {
+		run(func() { o.prewarm.Run(w.workCtx) })
 	}
 	if o.cfg.SecretKeys != nil {
 		f := &auditsink.Forwarder{DB: o.pool, InstanceID: instance, Keys: o.cfg.SecretKeys, Hostname: hostname()}
@@ -128,6 +141,9 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 		if r.remote != nil {
 			d.Health = r.remote.Health()
 			d.Prober = r.remote.Probe
+		}
+		if o.prewarm != nil {
+			d.Prewarm = o.prewarm
 		}
 		d.StorageMigrator = func(instance string) *storage.Migrator {
 			if instance != r.instanceID {
