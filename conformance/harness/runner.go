@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -67,6 +68,7 @@ func Run(cfg Config) error {
 	formats := cfg.Formats
 	if len(formats) == 0 {
 		formats = Available()
+		formats = defaultFormats(cfg.Target, formats)
 	}
 	for _, f := range formats {
 		if _, ok := registry[f]; !ok {
@@ -290,4 +292,19 @@ func WriteSummary(dir string) error {
 	p := filepath.Join(dir, "SUMMARY.md")
 	fmt.Println("wrote", p)
 	return os.WriteFile(p, []byte(strings.Join(out, "\n")+"\n"), 0o644)
+}
+
+// skipByDefault lists formats that are not run for a target unless named
+// explicitly: OKE has no GPUs, so Hugging Face is not configured there.
+var skipByDefault = map[string][]string{"oke": {"huggingface"}}
+
+func defaultFormats(target string, all []string) []string {
+	skip := skipByDefault[target]
+	out := make([]string, 0, len(all))
+	for _, f := range all {
+		if !slices.Contains(skip, f) {
+			out = append(out, f)
+		}
+	}
+	return out
 }

@@ -108,19 +108,54 @@ func (h opsHandlers) permittedIDs(ctx context.Context, p identity.Principal, pg 
 	return ids, more, rows.Err()
 }
 
-func healthStatus(s SourceHealth) string {
-	switch {
-	case s.Requests == 0 || s.LastSuccessAt == nil && s.LastErrorAt == nil:
+const (
+	// failingAfter is how long errors must have gone without any later success
+	// before a source is "failing": shorter gaps are transient noise.
+	failingAfter = 5 * time.Minute
+	// degradedWindow is how long a source stays "degraded" after its last error.
+	degradedWindow = 15 * time.Minute
+	// staleAfter is how long a source whose last event was an error may sit
+	// idle before its status ages to "unknown" (nothing recent proves either way).
+	staleAfter = 24 * time.Hour
+)
+
+// healthStatus derives the console status from persisted/live counters.
+//
+//	no traffic                         -> unknown
+//	never an error                     -> healthy
+//	never a success                    -> failing (unknown once the error is stale)
+//	last event a success, error <15m   -> degraded; older -> healthy
+//	last event an error:
+//	  success within failingAfter of it -> degraded (transient error amid successes)
+//	  otherwise                         -> failing, aging to unknown after staleAfter idle
+func healthStatus(s SourceHealth) string { return healthStatusAt(s, time.Now()) }
+
+func healthStatusAt(s SourceHealth, now time.Time) string {
+	if s.Requests == 0 || s.LastSuccessAt == nil && s.LastErrorAt == nil {
 		return "unknown"
-	case s.LastErrorAt == nil:
-		return "healthy"
-	case s.LastSuccessAt == nil || s.LastErrorAt.After(*s.LastSuccessAt):
-		return "failing"
-	case time.Since(*s.LastErrorAt) < 15*time.Minute:
-		return "degraded"
-	default:
+	}
+	if s.LastErrorAt == nil {
 		return "healthy"
 	}
+	errAt := *s.LastErrorAt
+	if s.LastSuccessAt == nil || errAt.After(*s.LastSuccessAt) {
+		if now.Sub(errAt) > staleAfter {
+			return "unknown"
+		}
+		// Errors since the last success: failing only when the success is gone
+		// or the source has been broken for a meaningful period.
+		if s.LastSuccessAt != nil && errAt.Sub(*s.LastSuccessAt) <= failingAfter && now.Sub(errAt) <= degradedWindow {
+			return "degraded"
+		}
+		if s.LastSuccessAt != nil && now.Sub(*s.LastSuccessAt) <= failingAfter {
+			return "degraded"
+		}
+		return "failing"
+	}
+	if now.Sub(errAt) < degradedWindow {
+		return "degraded"
+	}
+	return "healthy"
 }
 
 // loadHealth merges persisted rows with the live in-memory view.
@@ -251,9 +286,9 @@ func (h opsHandlers) sourceAction(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	var kind string
+	var kind, format string
 	var configured bool
-	err := h.db.QueryRow(ctx, `SELECT kind,EXISTS(SELECT 1 FROM remote_source_configs c WHERE c.instance_id=s.instance_id AND c.source_id=s.id) FROM sources s WHERE s.instance_id=$1 AND s.id=$2`, p.InstanceID, id).Scan(&kind, &configured)
+	err := h.db.QueryRow(ctx, `SELECT kind,EXISTS(SELECT 1 FROM remote_source_configs c WHERE c.instance_id=s.instance_id AND c.source_id=s.id),COALESCE((SELECT f.format FROM feed_sources fs JOIN feeds f ON f.instance_id=fs.instance_id AND f.id=fs.feed_id WHERE fs.instance_id=s.instance_id AND fs.source_id=s.id ORDER BY f.slug LIMIT 1),'') FROM sources s WHERE s.instance_id=$1 AND s.id=$2`, p.InstanceID, id).Scan(&kind, &configured, &format)
 	if errors.Is(err, pgx.ErrNoRows) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "source not found")
 		return
@@ -270,7 +305,7 @@ func (h opsHandlers) sourceAction(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 409, api.ErrorCodeConflict, "remote source is not configured")
 		return
 	}
-	result, err := h.d.Prober(ctx, id)
+	result, err := h.d.Prober(ctx, id, format)
 	if err != nil {
 		switch {
 		case errors.Is(err, remoteruntime.ErrInput), errors.Is(err, remoteruntime.ErrPolicy):

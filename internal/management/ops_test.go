@@ -448,7 +448,7 @@ func TestSourceHealthAndConnectionTest(t *testing.T) {
 	o.deps.Health.Record(remote.ID, 200, 40*time.Millisecond, nil)
 	o.deps.Health.Record(remote.ID, 503, 900*time.Millisecond, nil)
 	h := decodeJSON[SourceHealth](t, o.get("/api/v1/sources/"+remote.ID+"/health"))
-	if h.Status != "failing" || h.LastStatus == nil || *h.LastStatus != 503 || h.P95LatencyMS == nil || *h.P95LatencyMS != 900 || h.Requests != 2 || h.Failures != 1 || h.LastError != "upstream_error" {
+	if h.Status != "degraded" || h.LastStatus == nil || *h.LastStatus != 503 || h.P95LatencyMS == nil || *h.P95LatencyMS != 900 || h.Requests != 2 || h.Failures != 1 || h.LastError != "upstream_error" {
 		t.Fatalf("health %+v", h)
 	}
 	if decodeJSON[SourceHealth](t, o.get("/api/v1/sources/"+local.ID+"/health")).Status != "not_applicable" {
@@ -466,7 +466,7 @@ func TestSourceHealthAndConnectionTest(t *testing.T) {
 	}
 	// Connection test: unconfigured -> 409; local -> 409; configured -> prober result and audit.
 	expectSourceStatus(t, o.rawRequest("POST", "/api/v1/sources/"+remote.ID+":test", "", o.credential), 503) // no prober installed yet
-	o.deps.Prober = func(_ context.Context, id string) (remoteruntime.ProbeResult, error) {
+	o.deps.Prober = func(_ context.Context, id, format string) (remoteruntime.ProbeResult, error) {
 		return remoteruntime.ProbeResult{Reachable: true, Authenticated: true, StatusCode: 200, LatencyMS: 12}, nil
 	}
 	mux := http.NewServeMux()
