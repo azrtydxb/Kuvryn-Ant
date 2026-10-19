@@ -1,12 +1,12 @@
 {
   "format": "docker",
   "target": "local",
-  "run_id": "6724f8",
-  "started": "2026-10-18T21:43:13Z",
+  "run_id": "573df5",
+  "started": "2026-10-19T01:23:42Z",
   "ant": {
     "api_version": "v1",
     "target_base_url": "http://127.0.0.1:56011",
-    "version": "git:06c3f70"
+    "version": "git:7dd9c8a"
   },
   "clients": {
     "crane": {
@@ -19,109 +19,109 @@
     {
       "name": "client-version",
       "status": "pass",
-      "duration_ms": 160792,
+      "duration_ms": 23437,
       "detail": "",
       "output_tail": "8a72a424fdecb4caa14f2d525e5d2503331442b5\n"
     },
     {
       "name": "publish: crane append (login + push image)",
       "status": "pass",
-      "duration_ms": 60184,
+      "duration_ms": 1364,
       "detail": "",
-      "output_tail": "\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/18 21:45:57 logged in via /work/home/.docker/config.json\n2026/10/18 21:45:57 base unspecified, using empty image\n2026/10/18 21:45:58 pushed blob: sha256:40de7bfa151918fb40b1a96c0d7debe43e85215c10ec4326d6fd11a56aa7a6e7\n2026/10/18 21:45:58 pushed blob: sha256:d4e53cb36727ff1aa6d341953dbf943359d6fdf6f90e811b91946ec660b1a4c2\n2026/10/18 21:45:58 127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8:v1: digest: sha256:20813d23d23ecb831d61f2674df7247d0dc413ba5869919bf1d40ecdaa4e3cd2 size: 401\n127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8@sha256:20813d23d23ecb831d61f2674df7247d0dc413ba5869919bf1d40ecdaa4e3cd2\n"
+      "output_tail": "\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/19 01:24:07 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:07 base unspecified, using empty image\n2026/10/19 01:24:07 pushed blob: sha256:6426428c70e36cc0460aea90702ee95be2cd8fb9e1cb4f1664de29f93c0b26ef\n2026/10/19 01:24:07 pushed blob: sha256:37ec70960814d16fba75c18511ff5d67ba71c78ac530613aa10c48f0ea8bc524\n2026/10/19 01:24:07 127.0.0.1:56011/cf-docker-local-573df5/demo-573df5:v1: digest: sha256:a417c2249c186c9aab81c72783d104ffe4517fbd4fe161b147360cea80a1c822 size: 401\n127.0.0.1:56011/cf-docker-local-573df5/demo-573df5@sha256:a417c2249c186c9aab81c72783d104ffe4517fbd4fe161b147360cea80a1c822\n"
     },
     {
       "name": "consume: crane digest/manifest/pull/ls same endpoint",
       "status": "pass",
-      "duration_ms": 92719,
+      "duration_ms": 1569,
       "detail": "",
-      "output_tail": "2026/10/18 21:46:56 logged in via /work/home/.docker/config.json\nsha256:20813d23d23ecb831d61f2674df7247d0dc413ba5869919bf1d40ecdaa4e3cd2\nsha256:40de7bfa151918fb40b1a96c0d7debe43e85215c10ec4326d6fd11a56aa7a6e7\nd4e53cb36727ff1aa6d341953dbf943359d6fdf6f90e811b91946ec660b1a4c2.tar.gz\nmanifest.json\nv1\n"
+      "output_tail": "2026/10/19 01:24:08 logged in via /work/home/.docker/config.json\nsha256:a417c2249c186c9aab81c72783d104ffe4517fbd4fe161b147360cea80a1c822\nsha256:6426428c70e36cc0460aea90702ee95be2cd8fb9e1cb4f1664de29f93c0b26ef\n37ec70960814d16fba75c18511ff5d67ba71c78ac530613aa10c48f0ea8bc524.tar.gz\nmanifest.json\nv1\n"
     },
     {
       "name": "same-endpoint write then read: retag, platform mutate, multi-arch index",
       "status": "pass",
-      "duration_ms": 14449,
+      "duration_ms": 1812,
       "detail": "",
-      "output_tail": "2026/10/18 21:48:37 logged in via /work/home/.docker/config.json\n2026/10/18 21:48:37 127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8:v2: digest: sha256:20813d23d23ecb831d61f2674df7247d0dc413ba5869919bf1d40ecdaa4e3cd2 size: 401\n2026/10/18 21:48:37 existing blob: sha256:d4e53cb36727ff1aa6d341953dbf943359d6fdf6f90e811b91946ec660b1a4c2\n2026/10/18 21:48:37 pushed blob: sha256:ba28b210cc39f931165087e168675260a0f5aecf983995b273b668e4ec16b595\n2026/10/18 21:48:37 127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8:arm: digest: sha256:c3a702c430b10c319618357b38f6d532e0b8e3c94bb0bb4891c2428a6c4e472a size: 401\n127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8@sha256:c3a702c430b10c319618357b38f6d532e0b8e3c94bb0bb4891c2428a6c4e472a\n2026/10/18 21:48:37 base unspecified, using empty index\n2026/10/18 21:48:37 existing manifest: sha256:c3a702c430b10c319618357b38f6d532e0b8e3c94bb0bb4891c2428a6c4e472a\n2026/10/18 21:48:37 existing manifest: sha256:20813d23d23ecb831d61f2674df7247d0dc413ba5869919bf1d40ecdaa4e3cd2\n127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8@sha256:74c529c760c111131d9e367b4fef43a68fd895bc7765c5fb229fd6565ac32919\n2026/10/18 21:48:37 127.0.0.1:56011/cf-docker-local-6724f8/demo-6724f8:multi: digest: sha256:74c529c760c111131d9e367b4fef43a68fd895bc7765c5fb229fd6565ac32919 size: 558\n"
+      "output_tail": "2026/10/19 01:24:10 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:10 127.0.0.1:56011/cf-docker-local-573df5/demo-573df5:v2: digest: sha256:a417c2249c186c9aab81c72783d104ffe4517fbd4fe161b147360cea80a1c822 size: 401\n2026/10/19 01:24:10 existing blob: sha256:37ec70960814d16fba75c18511ff5d67ba71c78ac530613aa10c48f0ea8bc524\n2026/10/19 01:24:10 pushed blob: sha256:e652e68ba72296dc89cd2df8b77565cb00b984ad2f43fbc71f34e458379bac87\n2026/10/19 01:24:10 127.0.0.1:56011/cf-docker-local-573df5/demo-573df5:arm: digest: sha256:47b018d57afb5abcce7d6ca839e34dc2fd05ec6c7b91f9bec6780924d70f6280 size: 401\n127.0.0.1:56011/cf-docker-local-573df5/demo-573df5@sha256:47b018d57afb5abcce7d6ca839e34dc2fd05ec6c7b91f9bec6780924d70f6280\n2026/10/19 01:24:10 base unspecified, using empty index\n2026/10/19 01:24:10 existing manifest: sha256:47b018d57afb5abcce7d6ca839e34dc2fd05ec6c7b91f9bec6780924d70f6280\n2026/10/19 01:24:10 existing manifest: sha256:a417c2249c186c9aab81c72783d104ffe4517fbd4fe161b147360cea80a1c822\n2026/10/19 01:24:10 127.0.0.1:56011/cf-docker-local-573df5/demo-573df5:multi: digest: sha256:1232c38da3f120b224d7ee10af4c64ab52d7fc325500a4de79d40098990507ae size: 558\n127.0.0.1:56011/cf-docker-local-573df5/demo-573df5@sha256:1232c38da3f120b224d7ee10af4c64ab52d7fc325500a4de79d40098990507ae\n"
     },
     {
       "name": "delete: crane delete manifest by tag, tag no longer resolves",
       "status": "pass",
-      "duration_ms": 2642,
+      "duration_ms": 415,
       "detail": "",
-      "output_tail": "2026/10/18 21:48:43 logged in via /work/home/.docker/config.json\n2026/10/18 21:48:43 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:56011/v2/cf-docker-local-6724f8/demo-6724f8/manifests/v2: unexpected status code 404 Not Found (HEAD responses have no body, use GET for details)\nError: GET http://127.0.0.1:56011/v2/cf-docker-local-6724f8/demo-6724f8/manifests/v2: MANIFEST_UNKNOWN: manifest not found\n"
+      "output_tail": "2026/10/19 01:24:11 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:11 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:56011/v2/cf-docker-local-573df5/demo-573df5/manifests/v2: unexpected status code 404 Not Found (HEAD responses have no body, use GET for details)\nError: GET http://127.0.0.1:56011/v2/cf-docker-local-573df5/demo-573df5/manifests/v2: MANIFEST_UNKNOWN: manifest not found\n"
     },
     {
       "name": "delete/unlist: management API unlist then relist",
       "status": "pass",
-      "duration_ms": 18,
+      "duration_ms": 8,
       "detail": "",
       "output_tail": ""
     },
     {
       "name": "remote pull-through miss via mirror.gcr.io: crane digest+pull of library/hello-world",
       "status": "pass",
-      "duration_ms": 7697,
+      "duration_ms": 2798,
       "detail": "",
-      "output_tail": "2026/10/18 21:48:50 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+      "output_tail": "2026/10/19 01:24:13 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "remote pull-through hit via mirror.gcr.io: pull by digest with upstream unreachable",
       "status": "pass",
-      "duration_ms": 1027,
+      "duration_ms": 550,
       "detail": "",
-      "output_tail": "2026/10/18 21:48:53 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+      "output_tail": "2026/10/19 01:24:14 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world",
-      "status": "fail",
-      "duration_ms": 43883,
-      "detail": "exit status 1: 2026/10/18 21:48:54 logged in via /work/home/.docker/config.json\n2026/10/18 21:48:54 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:56 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:59 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:59 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:59 retrying GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:00 retrying GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:04 retrying GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n",
-      "output_tail": "2026/10/18 21:48:54 logged in via /work/home/.docker/config.json\n2026/10/18 21:48:54 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:56 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:59 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:59 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:48:59 retrying GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:00 retrying GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:04 retrying GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n"
+      "status": "pass",
+      "duration_ms": 3180,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:16 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "remote pull-through hit via registry-1.docker.io: pull by digest with upstream unreachable",
-      "status": "skip",
-      "duration_ms": 0,
-      "detail": "prerequisite step failed",
-      "output_tail": ""
+      "status": "pass",
+      "duration_ms": 325,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:18 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "auth denial: invalid token rejected by crane",
       "status": "pass",
-      "duration_ms": 3166,
+      "duration_ms": 350,
       "detail": "",
-      "output_tail": "2026/10/18 21:49:40 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:56011/v2/cf-docker-local-6724f8/demo-6724f8/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET http://127.0.0.1:56011/v2/cf-docker-local-6724f8/demo-6724f8/manifests/v1: UNAUTHORIZED: registry authentication required\n"
+      "output_tail": "2026/10/19 01:24:18 HEAD request failed, falling back on GET: HEAD http://127.0.0.1:56011/v2/cf-docker-local-573df5/demo-573df5/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET http://127.0.0.1:56011/v2/cf-docker-local-573df5/demo-573df5/manifests/v1: UNAUTHORIZED: registry authentication required\n"
     },
     {
-      "name": "auth denial: /v2/ without or with bad token returns 401",
+      "name": "auth denial: bad token and anonymous private-feed reads return 401 (anonymous /v2/ may be 200 for the dockerd handshake)",
       "status": "pass",
-      "duration_ms": 0,
-      "detail": "",
-      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
-    },
-    {
-      "name": "auth denial on cf-docker-remote-6724f8: no credentials rejected",
-      "status": "pass",
-      "duration_ms": 1,
+      "duration_ms": 4,
       "detail": "",
       "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
     },
     {
-      "name": "auth denial on cf-docker-hub-6724f8: no credentials rejected",
+      "name": "auth denial on cf-docker-remote-573df5: no credentials rejected",
       "status": "pass",
-      "duration_ms": 0,
+      "duration_ms": 4,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial on cf-docker-hub-573df5: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 5,
       "detail": "",
       "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
     }
   ],
-  "duration_ms": 386663,
+  "duration_ms": 230866,
   "summary": {
-    "fail": 1,
-    "pass": 12,
-    "skip": 1,
+    "fail": 0,
+    "pass": 14,
+    "skip": 0,
     "unsupported": 0
   },
-  "result": "fail",
-  "feed_cleanup": ["5d08407f:200", "2df11e1b:200", "212d2e55:200"]
+  "result": "pass",
+  "feed_cleanup": ["cb66bcb1:200", "62d69b27:200", "f6a76a69:200"]
 }

@@ -71,8 +71,8 @@ func runOras(c *Ctx) {
 	}, SkipUnless(ok))
 
 	bad := RunOpt{Env: map[string]string{"BADTOKEN": "invalid-token"}, ExpectFail: true}
-	c.Step("auth denial: oras login with invalid credentials rejected", func() error {
-		return c.Sh("oras", orasSetup+`echo "$BADTOKEN" | oras login $HOST -u service --password-stdin`+flags, bad)
+	c.Step("auth denial: oras pull with invalid credentials rejected (login only pings /v2/, which may be anonymous)", func() error {
+		return c.Sh("oras", orasSetup+`echo "$BADTOKEN" | oras login $HOST -u service --password-stdin`+flags+`; oras pull `+ref+`:v1 -o /work/badpull`+flags, bad)
 	})
 	c.Step("auth denial: unauthenticated manifest fetch returns 401", func() error {
 		return c.Expect("GET", "/v2/"+slug+"/art"+c.RunID+"/manifests/v1", NoAuth, 401)

@@ -47,7 +47,7 @@ func runDocker(c *Ctx) {
 	var slugs []string
 	for _, u := range []up{
 		{"remote", "mirror.gcr.io", &Remote{Origin: "https://mirror.gcr.io"}},
-		{"hub", "registry-1.docker.io", &Remote{Origin: "https://registry-1.docker.io", Redirect: []string{"https://production.cloudflare.docker.com"}}},
+		{"hub", "registry-1.docker.io", &Remote{Origin: "https://registry-1.docker.io", Redirect: []string{"https://auth.docker.io", "https://production.cloudflare.docker.com", "https://production.cloudfront.docker.com"}}},
 	} {
 		rslug := c.MustFeed("oci", u.tag, u.r)
 		rsrc := c.LastSource
@@ -72,11 +72,14 @@ func runDocker(c *Ctx) {
 	// Denial steps last: failed authentication attempts are rate limited per client address.
 	c.Step("auth denial: invalid token rejected by crane", sh(
 		`mkdir -p /work/bad; printf '{"auths":{"%s":{"auth":"%s"}}}' "$HOST" "$(printf service:invalid-token | base64)" > /work/bad/config.json; DOCKER_CONFIG=/work/bad crane digest `+ref+`:v1 $INSEC`, fail))
-	c.Step("auth denial: /v2/ without or with bad token returns 401", func() error {
-		if err := c.Expect("GET", "/v2/", NoAuth, 401); err != nil {
+	c.Step("auth denial: bad token and anonymous private-feed reads return 401 (anonymous /v2/ may be 200 for the dockerd handshake)", func() error {
+		if err := c.Expect("GET", "/v2/", NoAuth, 200, 401); err != nil {
 			return err
 		}
-		return c.Expect("GET", "/v2/", BadToken, 401)
+		if err := c.Expect("GET", "/v2/", BadToken, 401); err != nil {
+			return err
+		}
+		return c.Expect("GET", "/v2/"+slug+"/demo-"+c.RunID+"/manifests/v1", NoAuth, 401)
 	})
 	for _, s := range slugs {
 		c.Step("auth denial on "+s+": no credentials rejected", func() error {

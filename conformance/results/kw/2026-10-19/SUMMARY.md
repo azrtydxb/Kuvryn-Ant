@@ -13,7 +13,7 @@ Target: `kw` Ant: `git:06c3f70` Date: 2026-10-19
 | conan       | PASS   | 10   | 0    | 0                     | 0    | python `Conan version 2.33.0`                                                                                                                                             |
 | conda       | PASS   | 11   | 0    | 0                     | 0    | conda `conda 26.7.2 / mamba 2.9.0`                                                                                                                                        |
 | cran        | PASS   | 10   | 0    | 0                     | 0    | r `R version 4.6.1 (2026-06-24) -- "Happy Hop"`                                                                                                                           |
-| docker      | FAIL   | 11   | 2    | 0                     | 1    | crane `8a72a424fdecb4caa14f2d525e5d2503331442b5`                                                                                                                          |
+| docker      | PASS   | 14   | 0    | 0                     | 0    | crane `8a72a424fdecb4caa14f2d525e5d2503331442b5`                                                                                                                          |
 | gitlfs      | PASS   | 8    | 0    | 0                     | 1    | alpine `git-lfs/3.7.1 (GitHub; linux arm64; go 1.26.9)`                                                                                                                   |
 | go          | PASS   | 10   | 0    | 0                     | 0    | go `go version go1.27.2 linux/arm64`                                                                                                                                      |
 | helm        | PASS   | 13   | 0    | 0                     | 0    | helm `v4.3.1+gc0d08d0`                                                                                                                                                    |
@@ -21,7 +21,7 @@ Target: `kw` Ant: `git:06c3f70` Date: 2026-10-19
 | maven       | PASS   | 10   | 0    | 1                     | 0    | maven `Apache Maven 3.10.0 (c43a36b8d67be7e0805a411bc0898af1a51f5472)`                                                                                                    |
 | npm         | PASS   | 10   | 0    | 1                     | 0    | node `npm notice`                                                                                                                                                         |
 | nuget       | FAIL   | 12   | 1    | 0                     | 0    | dotnet `10.0.402`                                                                                                                                                         |
-| oras        | FAIL   | 8    | 1    | 0                     | 0    | oras `Version:        1.3.4`                                                                                                                                              |
+| oras        | PASS   | 9    | 0    | 0                     | 0    | oras `Version:        1.3.4`                                                                                                                                              |
 | p2          | PASS   | 7    | 0    | 0                     | 2    | curl `curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0` |
 | pub         | PASS   | 11   | 0    | 0                     | 0    | dart `Dart SDK version: 3.13.5 (stable) (Tue Sep 29 01:00:52 2026 -0700) on "linux_arm64"`                                                                                |
 | pypi        | FAIL   | 15   | 1    | 0                     | 0    | python `pip 26.2.1 / twine twine version 7.0.0 (readme-renderer: 46.0, requests: 2.34.2, requests- / Python 3.14.8`                                                       |
@@ -48,11 +48,6 @@ Target: `kw` Ant: `git:06c3f70` Date: 2026-10-19
 
 - **fail** `remote pull-through miss: pod install AFNetworking 4.0.1 resolved through the feed (specs from cdn.cocoapods.org, source from github)`: exit status 1: ice Unavailable CDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.kw.watteel.lab/feeds/cf-cocoapods-remote-ccb4a4/cocoapods/Specs/a/7/5/AFNetworking/3.0.2/AFNetworking.podspec.json Response: 503 Service Unavailable CDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.kw.watteel.lab/feeds/cf-cocoapods-remote-ccb4a4/cocoapods/Specs/a/7/5/AF
 
-### docker
-
-- **fail** `remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world`: exit status 1: 2026/10/18 22:13:49 logged in via /work/home/.docker/config.json 2026/10/18 22:13:49 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details) 2026/10/18 22:13:50 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-
-- **fail** `auth denial: /v2/ without or with bad token returns 401`: GET /v2/ -> 200, want [401]: {}
-
 ### huggingface
 
 - **fail** `consume: hf download config.json and snapshot_download from the feed`: exit status 1: [90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.[0m [32m✓ Downloaded[0m path: /work/dl/config.json Traceback (most recent call last): File "<string>", line 1, in <module> from huggingface_hub import snapshot_download as s; p=s('kcdemo/model-349c44', cache_dir='/work/hfsnap'); import os; print(sorted(
@@ -68,10 +63,6 @@ Target: `kw` Ant: `git:06c3f70` Date: 2026-10-19
 ### nuget
 
 - **fail** `publish: dotnet pack + dotnet nuget push 1.0.0 (unmodified pack output)`: exit status 1: Kc.Demo8eedf4.1.0.0.nupkg Pushing Kc.Demo8eedf4.1.0.0.nupkg to 'https://ant.kw.watteel.lab/feeds/cf-nuget-local-8eedf4/nuget/v2/package'... PUT https://ant.kw.watteel.lab/feeds/cf-nuget-local-8eedf4/nuget/v2/package/ BadRequest https://ant.kw.watteel.lab/feeds/cf-nuget-local-8eedf4/nuget/v2/package/ 84ms error: Response status code does not indicate success: 400 (Bad Request).
-
-### oras
-
-- **fail** `auth denial: oras login with invalid credentials rejected`: expected failure but command succeeded: Login Succeeded
 
 ### pypi
 

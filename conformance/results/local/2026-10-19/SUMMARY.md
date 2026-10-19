@@ -13,7 +13,7 @@ Target: `local` Ant: `git:06c3f70` Date: 2026-10-19
 | conan       | PASS   | 10   | 0    | 0                     | 0    | python `Conan version 2.33.0`                                                                                                                                             |
 | conda       | PASS   | 11   | 0    | 0                     | 0    | conda `conda 26.7.2 / mamba 2.9.0`                                                                                                                                        |
 | cran        | PASS   | 10   | 0    | 0                     | 0    | r `R version 4.6.1 (2026-06-24) -- "Happy Hop"`                                                                                                                           |
-| docker      | FAIL   | 12   | 1    | 0                     | 1    | crane `8a72a424fdecb4caa14f2d525e5d2503331442b5`                                                                                                                          |
+| docker      | PASS   | 14   | 0    | 0                     | 0    | crane `8a72a424fdecb4caa14f2d525e5d2503331442b5`                                                                                                                          |
 | gitlfs      | PASS   | 8    | 0    | 0                     | 1    | alpine `git-lfs/3.7.1 (GitHub; linux arm64; go 1.26.9)`                                                                                                                   |
 | go          | PASS   | 10   | 0    | 0                     | 0    | go `go version go1.27.2 linux/arm64`                                                                                                                                      |
 | helm        | PASS   | 13   | 0    | 0                     | 0    | helm `v4.3.1+gc0d08d0`                                                                                                                                                    |
@@ -47,10 +47,6 @@ Target: `local` Ant: `git:06c3f70` Date: 2026-10-19
 ### cocoapods
 
 - **fail** `remote pull-through miss: pod install AFNetworking 4.0.1 resolved through the feed (specs from cdn.cocoapods.org, source from github)`: exit status 1: .podspec.json Response: 503 Service Unavailable CDN: antr URL couldn't be downloaded: http://service:***REDACTED***@127.0.0.1:56011/feeds/cf-cocoapods-remote-c51a3c/cocoapods/Specs/a/7/5/AFNetworking/3.0.2/AFNetworking.podspec.json Response: 503 Service Unavailable CDN: antr URL couldn't be downloaded: http://service:***REDACTED***@127.0.0.1:56011/feeds/cf-cocoapods-remote-c51a3c/
-
-### docker
-
-- **fail** `remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world`: exit status 1: 2026/10/18 21:48:54 logged in via /work/home/.docker/config.json 2026/10/18 21:48:54 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details) 2026/10/18 21:48:56 retrying HEAD http://127.0.0.1:56011/v2/cf-docker-hub-6724f8/library/hello-world/ma
 
 ### huggingface
 

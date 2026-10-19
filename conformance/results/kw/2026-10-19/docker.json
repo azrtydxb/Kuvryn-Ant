@@ -1,12 +1,12 @@
 {
   "format": "docker",
   "target": "kw",
-  "run_id": "91f7ec",
-  "started": "2026-10-18T22:13:17Z",
+  "run_id": "5c3ece",
+  "started": "2026-10-19T01:23:42Z",
   "ant": {
     "api_version": "v1",
     "target_base_url": "https://ant.kw.watteel.lab",
-    "version": "git:06c3f70"
+    "version": "git:7dd9c8a"
   },
   "clients": {
     "crane": {
@@ -19,109 +19,109 @@
     {
       "name": "client-version",
       "status": "pass",
-      "duration_ms": 4639,
+      "duration_ms": 824,
       "detail": "",
       "output_tail": "8a72a424fdecb4caa14f2d525e5d2503331442b5\n"
     },
     {
       "name": "publish: crane append (login + push image)",
       "status": "pass",
-      "duration_ms": 2433,
+      "duration_ms": 24467,
       "detail": "",
-      "output_tail": "\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/18 22:13:22 logged in via /work/home/.docker/config.json\n2026/10/18 22:13:22 base unspecified, using empty image\n2026/10/18 22:13:23 pushed blob: sha256:d100e3c34e6b4d3b074252df20d43fa67f559d1be796abd6f50b6eb1726da581\n2026/10/18 22:13:23 pushed blob: sha256:b2783680ff76dc66f92967da3d4dfda71ff66fb2c6ff76cd7fb9971b255c6328\nant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec@sha256:59418e1807c99f14dc4d636253d65a5bdc8ee385de063047226ca7b2b48891a9\n2026/10/18 22:13:24 ant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec:v1: digest: sha256:59418e1807c99f14dc4d636253d65a5bdc8ee385de063047226ca7b2b48891a9 size: 401\n"
+      "output_tail": "\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/19 01:24:07 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:07 base unspecified, using empty image\n2026/10/19 01:24:07 pushed blob: sha256:f7c7ba53a39fbe4d5c0aba69e3c4113d1518f929d3926bb6d7532f5c5ec44e92\n2026/10/19 01:24:07 pushed blob: sha256:e21b404d38ce8645741d06783dda3f02652887ae35975ab47fdce14a096fa31f\nant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece@sha256:4aca5c2b4ad427ba063a562c63a153ef8e346df9ecf1ca30c0ce451c260a4b77\n2026/10/19 01:24:07 ant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece:v1: digest: sha256:4aca5c2b4ad427ba063a562c63a153ef8e346df9ecf1ca30c0ce451c260a4b77 size: 401\n"
     },
     {
       "name": "consume: crane digest/manifest/pull/ls same endpoint",
       "status": "pass",
-      "duration_ms": 874,
+      "duration_ms": 2429,
       "detail": "",
-      "output_tail": "2026/10/18 22:13:25 logged in via /work/home/.docker/config.json\nsha256:59418e1807c99f14dc4d636253d65a5bdc8ee385de063047226ca7b2b48891a9\nsha256:d100e3c34e6b4d3b074252df20d43fa67f559d1be796abd6f50b6eb1726da581\nb2783680ff76dc66f92967da3d4dfda71ff66fb2c6ff76cd7fb9971b255c6328.tar.gz\nmanifest.json\nv1\n"
+      "output_tail": "2026/10/19 01:24:08 logged in via /work/home/.docker/config.json\nsha256:4aca5c2b4ad427ba063a562c63a153ef8e346df9ecf1ca30c0ce451c260a4b77\nsha256:f7c7ba53a39fbe4d5c0aba69e3c4113d1518f929d3926bb6d7532f5c5ec44e92\ne21b404d38ce8645741d06783dda3f02652887ae35975ab47fdce14a096fa31f.tar.gz\nmanifest.json\nv1\n"
     },
     {
       "name": "same-endpoint write then read: retag, platform mutate, multi-arch index",
       "status": "pass",
-      "duration_ms": 4093,
+      "duration_ms": 2025,
       "detail": "",
-      "output_tail": "2026/10/18 22:13:25 logged in via /work/home/.docker/config.json\n2026/10/18 22:13:27 ant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec:v2: digest: sha256:59418e1807c99f14dc4d636253d65a5bdc8ee385de063047226ca7b2b48891a9 size: 401\n2026/10/18 22:13:27 existing blob: sha256:b2783680ff76dc66f92967da3d4dfda71ff66fb2c6ff76cd7fb9971b255c6328\n2026/10/18 22:13:27 pushed blob: sha256:86411614dd7a1bb0e723f4aa5a1477f373ca318e619d92306a6cf0d1fa6c5006\n2026/10/18 22:13:28 ant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec:arm: digest: sha256:9eeaf73e9f22a5c1caf3371bd21650510fc1c30d7333e85ef566ebb6cfa9f7bb size: 401\nant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec@sha256:9eeaf73e9f22a5c1caf3371bd21650510fc1c30d7333e85ef566ebb6cfa9f7bb\n2026/10/18 22:13:28 base unspecified, using empty index\n2026/10/18 22:13:28 existing manifest: sha256:59418e1807c99f14dc4d636253d65a5bdc8ee385de063047226ca7b2b48891a9\n2026/10/18 22:13:28 existing manifest: sha256:9eeaf73e9f22a5c1caf3371bd21650510fc1c30d7333e85ef566ebb6cfa9f7bb\nant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec@sha256:f37a39003bac3b50aac1df7e15359d7ee9653263371881cdef996ff1571df887\n2026/10/18 22:13:28 ant.kw.watteel.lab/cf-docker-local-91f7ec/demo-91f7ec:multi: digest: sha256:f37a39003bac3b50aac1df7e15359d7ee9653263371881cdef996ff1571df887 size: 558\n"
+      "output_tail": "2026/10/19 01:24:10 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:11 ant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece:v2: digest: sha256:4aca5c2b4ad427ba063a562c63a153ef8e346df9ecf1ca30c0ce451c260a4b77 size: 401\n2026/10/19 01:24:11 existing blob: sha256:e21b404d38ce8645741d06783dda3f02652887ae35975ab47fdce14a096fa31f\n2026/10/19 01:24:11 pushed blob: sha256:4cb55245f7ec5bd92d75ff55d84fc347bb45e6219b888f5ff36f80d9e68291ad\n2026/10/19 01:24:11 ant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece:arm: digest: sha256:84fc4eb89aeb4ddcb692f479a010602fa72bdf07ca8808fb95045d197e49c3db size: 401\nant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece@sha256:84fc4eb89aeb4ddcb692f479a010602fa72bdf07ca8808fb95045d197e49c3db\n2026/10/19 01:24:11 base unspecified, using empty index\n2026/10/19 01:24:11 existing manifest: sha256:84fc4eb89aeb4ddcb692f479a010602fa72bdf07ca8808fb95045d197e49c3db\n2026/10/19 01:24:11 existing manifest: sha256:4aca5c2b4ad427ba063a562c63a153ef8e346df9ecf1ca30c0ce451c260a4b77\nant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece@sha256:738b853dfc50e9a3eb6a02ee659ead284457840393c57c763f8781339ac001d2\n2026/10/19 01:24:12 ant.kw.watteel.lab/cf-docker-local-5c3ece/demo-5c3ece:multi: digest: sha256:738b853dfc50e9a3eb6a02ee659ead284457840393c57c763f8781339ac001d2 size: 558\n"
     },
     {
       "name": "delete: crane delete manifest by tag, tag no longer resolves",
       "status": "pass",
-      "duration_ms": 1205,
+      "duration_ms": 942,
       "detail": "",
-      "output_tail": "2026/10/18 22:13:30 logged in via /work/home/.docker/config.json\n2026/10/18 22:13:30 HEAD request failed, falling back on GET: HEAD https://ant.kw.watteel.lab/v2/cf-docker-local-91f7ec/demo-91f7ec/manifests/v2: unexpected status code 404 Not Found (HEAD responses have no body, use GET for details)\nError: GET https://ant.kw.watteel.lab/v2/cf-docker-local-91f7ec/demo-91f7ec/manifests/v2: MANIFEST_UNKNOWN: manifest not found\n"
+      "output_tail": "2026/10/19 01:24:13 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:13 HEAD request failed, falling back on GET: HEAD https://ant.kw.watteel.lab/v2/cf-docker-local-5c3ece/demo-5c3ece/manifests/v2: unexpected status code 404 Not Found (HEAD responses have no body, use GET for details)\nError: GET https://ant.kw.watteel.lab/v2/cf-docker-local-5c3ece/demo-5c3ece/manifests/v2: MANIFEST_UNKNOWN: manifest not found\n"
     },
     {
       "name": "delete/unlist: management API unlist then relist",
       "status": "pass",
-      "duration_ms": 100,
+      "duration_ms": 123,
       "detail": "",
       "output_tail": ""
     },
     {
       "name": "remote pull-through miss via mirror.gcr.io: crane digest+pull of library/hello-world",
       "status": "pass",
-      "duration_ms": 14942,
+      "duration_ms": 3345,
       "detail": "",
-      "output_tail": "2026/10/18 22:13:33 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+      "output_tail": "2026/10/19 01:24:15 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "remote pull-through hit via mirror.gcr.io: pull by digest with upstream unreachable",
       "status": "pass",
-      "duration_ms": 1429,
+      "duration_ms": 518,
       "detail": "",
-      "output_tail": "2026/10/18 22:13:46 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+      "output_tail": "2026/10/19 01:24:17 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world",
-      "status": "fail",
-      "duration_ms": 23618,
-      "detail": "exit status 1: 2026/10/18 22:13:49 logged in via /work/home/.docker/config.json\n2026/10/18 22:13:49 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:50 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:54 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:54 HEAD request failed, falling back on GET: HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:54 retrying GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 22:13:55 retrying GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 22:13:59 retrying GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n",
-      "output_tail": "2026/10/18 22:13:49 logged in via /work/home/.docker/config.json\n2026/10/18 22:13:49 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:50 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:54 retrying HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:54 HEAD request failed, falling back on GET: HEAD https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 22:13:54 retrying GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 22:13:55 retrying GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 22:13:59 retrying GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET https://ant.kw.watteel.lab/v2/cf-docker-hub-91f7ec/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n"
+      "status": "pass",
+      "duration_ms": 10106,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:19 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "remote pull-through hit via registry-1.docker.io: pull by digest with upstream unreachable",
-      "status": "skip",
-      "duration_ms": 0,
-      "detail": "prerequisite step failed",
-      "output_tail": ""
+      "status": "pass",
+      "duration_ms": 797,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:28 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
     },
     {
       "name": "auth denial: invalid token rejected by crane",
       "status": "pass",
-      "duration_ms": 765,
+      "duration_ms": 1563,
       "detail": "",
-      "output_tail": "2026/10/18 22:14:11 HEAD request failed, falling back on GET: HEAD https://ant.kw.watteel.lab/v2/cf-docker-local-91f7ec/demo-91f7ec/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET https://ant.kw.watteel.lab/v2/cf-docker-local-91f7ec/demo-91f7ec/manifests/v1: UNAUTHORIZED: authentication required\n"
+      "output_tail": "2026/10/19 01:24:29 HEAD request failed, falling back on GET: HEAD https://ant.kw.watteel.lab/v2/cf-docker-local-5c3ece/demo-5c3ece/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET https://ant.kw.watteel.lab/v2/cf-docker-local-5c3ece/demo-5c3ece/manifests/v1: UNAUTHORIZED: authentication required\n"
     },
     {
-      "name": "auth denial: /v2/ without or with bad token returns 401",
-      "status": "fail",
-      "duration_ms": 5,
-      "detail": "GET /v2/ -\u003e 200, want [401]: {}",
-      "output_tail": "{}"
-    },
-    {
-      "name": "auth denial on cf-docker-remote-91f7ec: no credentials rejected",
+      "name": "auth denial: bad token and anonymous private-feed reads return 401 (anonymous /v2/ may be 200 for the dockerd handshake)",
       "status": "pass",
-      "duration_ms": 5,
+      "duration_ms": 17,
       "detail": "",
       "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
     },
     {
-      "name": "auth denial on cf-docker-hub-91f7ec: no credentials rejected",
+      "name": "auth denial on cf-docker-remote-5c3ece: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 6,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial on cf-docker-hub-5c3ece: no credentials rejected",
       "status": "pass",
       "duration_ms": 5,
       "detail": "",
       "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
     }
   ],
-  "duration_ms": 54385,
+  "duration_ms": 242432,
   "summary": {
-    "fail": 2,
-    "pass": 11,
-    "skip": 1,
+    "fail": 0,
+    "pass": 14,
+    "skip": 0,
     "unsupported": 0
   },
-  "result": "fail",
-  "feed_cleanup": ["0ea03377:200", "50796dea:200", "b2e7407d:200"]
+  "result": "pass",
+  "feed_cleanup": ["da485ce5:200", "b00e3a1c:200", "4985a592:200"]
 }
