@@ -331,6 +331,7 @@ it("shows the applied policy and publishes the next generation from the authorit
   render(<App />);
   await signInWithToken();
   nav("Federation");
+  await openTab("Policy");
   await screen.findByText("Generation 2");
   await screen.findByText(/lab\/missing \(inert until bound\)/);
   screen.getByText("fed:readers");
@@ -411,6 +412,7 @@ it("shows policy alerts on a member and adopts a conflicting local principal", a
   render(<App />);
   await signInWithToken();
   nav("Federation");
+  await openTab("Policy");
   await screen.findByText(/not confirmed current for 20m0s/);
   expect(screen.queryByRole("button", { name: "Edit policy" })).toBeNull();
   fireEvent.click(await screen.findByRole("button", { name: "Adopt" }));
@@ -581,9 +583,10 @@ it("shows federated feeds, rule compliance and starts a planned home transfer", 
   render(<App />);
   await signInWithToken();
   nav("Federation");
+  await openTab("Replication");
   await screen.findByText("Federated feeds");
   await waitFor(() =>
-    expect(screen.getAllByText("site=beta").length).toBeGreaterThan(1),
+    expect(screen.getAllByText("site=beta").length).toBeGreaterThan(0),
   );
   fireEvent.click(await screen.findByRole("button", { name: "Compliance" }));
   const comp = await screen.findByRole("dialog", { name: "Rule compliance" });
@@ -691,6 +694,7 @@ it("explains read routing and publishes routing settings", async () => {
   render(<App />);
   await signInWithToken();
   nav("Federation");
+  await openTab("Replication");
   await screen.findByText("proxy · blob URLs");
   fireEvent.click(screen.getByRole("button", { name: "Explain" }));
   const explain = await screen.findByRole("dialog", {
@@ -807,14 +811,17 @@ it("shows authority epochs, hands the authority over with a typed confirmation a
   render(<App />);
   await signInWithToken();
   nav("Federation");
+  await openTab("Authority");
   await screen.findByText("Recovery key not proven recently");
   expect(screen.getAllByText("recovery key").length).toBeGreaterThan(0);
   // Federated audit: the member that denies the caller is reported.
+  await openTab("Audit");
   await screen.findByText("federation.member.added");
   screen.getByText("beta: forbidden (audit_read_denied) · 0 · 5 ms");
   screen.getByText("Partial results");
   // Handover needs the member name typed.
-  fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
+  await openTab("Authority");
+  fireEvent.click(await screen.findByRole("button", { name: "Hand over" }));
   const dialog = await screen.findByRole("dialog", {
     name: "Hand over the authority",
   });
@@ -833,3 +840,9 @@ it("shows authority epochs, hands the authority over with a typed confirmation a
     ),
   ).toEqual({ to_member_id: beta, confirm: true });
 });
+
+async function openTab(name: string) {
+  fireEvent.click(
+    await screen.findByRole("tab", { name: new RegExp(`^${name}`) }),
+  );
+}

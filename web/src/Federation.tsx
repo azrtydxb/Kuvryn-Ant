@@ -21,6 +21,7 @@ import {
   Modal,
   PropertyList,
   Table,
+  Tabs,
 } from "./ds/bundle";
 import {
   Card,
@@ -77,6 +78,9 @@ function parseLabels(text: string): Record<string, string> | undefined {
 
 type Secret = { title: string; text: ReactNode; items: [string, string][] };
 
+type FederationTab =
+  "members" | "policy" | "replication" | "authority" | "audit";
+
 export function FederationPage({ client }: { client: Client }) {
   const status = useOptionalCall(client, "getFederationStatus");
   const members = useOptionalCall(client, "listFederationMembers");
@@ -86,6 +90,7 @@ export function FederationPage({ client }: { client: Client }) {
     "found" | "join" | "invite" | "leave" | undefined
   >();
   const [open, setOpen] = useState<string>();
+  const [tab, setTab] = useState<FederationTab>("members");
   const [secret, setSecret] = useState<Secret>();
   const [invitesVersion, setInvitesVersion] = useState(0);
   const reload = () => {
@@ -97,6 +102,8 @@ export function FederationPage({ client }: { client: Client }) {
   const current = list.find((m) => m.instance_id === open);
   const canStart =
     !st || st.state === "none" || st.state === "left" || st.state === "removed";
+  const active = st?.state === "active";
+  const shown: FederationTab = active ? tab : "members";
   return (
     <>
       <PageHeading
@@ -144,81 +151,106 @@ export function FederationPage({ client }: { client: Client }) {
           <StatusCard st={st} />
           {st.state !== "none" && (
             <>
-              <SectionHead title="Members" count={list.length} />
-              {members.state === "loading" && <Loading what="members" />}
-              {members.state === "error" && <Failure error={members.error} />}
-              {members.state === "ready" &&
-                (list.length ? (
-                  <Table
-                    onRowClick={(m: FederationMember) => setOpen(m.instance_id)}
-                    columns={[
-                      {
-                        key: "name",
-                        label: "Member",
-                        render: (m: FederationMember) => (
-                          <span className="row tight">
-                            {m.name}
-                            {m.authority && (
-                              <Badge tone="info">authority</Badge>
-                            )}
-                            {m.self && <Badge>this instance</Badge>}
-                          </span>
-                        ),
-                      },
-                      {
-                        key: "status",
-                        label: "Status",
-                        render: (m: FederationMember) => (
-                          <Badge tone={statusTone[m.status]}>{m.status}</Badge>
-                        ),
-                      },
-                      {
-                        key: "federation_url",
-                        label: "Federation endpoint",
-                        mono: true,
-                      },
-                      {
-                        key: "labels",
-                        label: "Labels",
-                        render: (m: FederationMember) => labelText(m.labels),
-                      },
-                      {
-                        key: "rtt",
-                        label: "RTT",
-                        align: "right",
-                        render: (m: FederationMember) =>
-                          m.self
-                            ? "—"
-                            : m.rtt_ms != null
-                              ? `${m.rtt_ms} ms`
-                              : "—",
-                      },
-                      {
-                        key: "seen",
-                        label: "Last seen",
-                        render: (m: FederationMember) =>
-                          m.self ? "—" : when(m.last_seen_at),
-                      },
-                    ]}
-                    rows={list}
-                  />
-                ) : (
-                  <p className="muted">No members applied yet.</p>
-                ))}
-              {authority && (
-                <Invitations
-                  key={invitesVersion}
-                  client={client}
-                  changed={reload}
+              {active && (
+                <Tabs
+                  value={shown}
+                  onChange={(v: string) => setTab(v as FederationTab)}
+                  className="spaced-tabs"
+                  items={[
+                    { id: "members", label: "Members", count: list.length },
+                    { id: "policy", label: "Policy" },
+                    { id: "replication", label: "Replication" },
+                    { id: "authority", label: "Authority" },
+                    { id: "audit", label: "Audit" },
+                  ]}
                 />
               )}
-              {st.state === "active" && (
+              {shown === "members" && (
+                <>
+                  <SectionHead title="Members" count={list.length} />
+                  {members.state === "loading" && <Loading what="members" />}
+                  {members.state === "error" && (
+                    <Failure error={members.error} />
+                  )}
+                  {members.state === "ready" &&
+                    (list.length ? (
+                      <Table
+                        onRowClick={(m: FederationMember) =>
+                          setOpen(m.instance_id)
+                        }
+                        columns={[
+                          {
+                            key: "name",
+                            label: "Member",
+                            render: (m: FederationMember) => (
+                              <span className="row tight">
+                                {m.name}
+                                {m.authority && (
+                                  <Badge tone="info">authority</Badge>
+                                )}
+                                {m.self && <Badge>this instance</Badge>}
+                              </span>
+                            ),
+                          },
+                          {
+                            key: "status",
+                            label: "Status",
+                            render: (m: FederationMember) => (
+                              <Badge tone={statusTone[m.status]}>
+                                {m.status}
+                              </Badge>
+                            ),
+                          },
+                          {
+                            key: "federation_url",
+                            label: "Federation endpoint",
+                            mono: true,
+                          },
+                          {
+                            key: "labels",
+                            label: "Labels",
+                            render: (m: FederationMember) =>
+                              labelText(m.labels),
+                          },
+                          {
+                            key: "rtt",
+                            label: "RTT",
+                            align: "right",
+                            render: (m: FederationMember) =>
+                              m.self
+                                ? "—"
+                                : m.rtt_ms != null
+                                  ? `${m.rtt_ms} ms`
+                                  : "—",
+                          },
+                          {
+                            key: "seen",
+                            label: "Last seen",
+                            render: (m: FederationMember) =>
+                              m.self ? "—" : when(m.last_seen_at),
+                          },
+                        ]}
+                        rows={list}
+                      />
+                    ) : (
+                      <p className="muted">No members applied yet.</p>
+                    ))}
+                  {authority && (
+                    <Invitations
+                      key={invitesVersion}
+                      client={client}
+                      changed={reload}
+                    />
+                  )}
+                </>
+              )}
+              {active && shown === "policy" && (
                 <FederationPolicy client={client} st={st} />
               )}
-              {st.state === "active" && (
+              {active && shown === "replication" && (
                 <FederationReplication client={client} st={st} members={list} />
               )}
-              {st.state === "active" && (
+              {active && shown === "authority" && (
                 <FederationAuthority
                   client={client}
                   st={st}
@@ -226,7 +258,9 @@ export function FederationPage({ client }: { client: Client }) {
                   changed={reload}
                 />
               )}
-              {st.state === "active" && <FederationAudit client={client} />}
+              {active && shown === "audit" && (
+                <FederationAudit client={client} />
+              )}
             </>
           )}
         </>
