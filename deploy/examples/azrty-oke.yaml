@@ -11,10 +11,13 @@ persistence:
   size: 120Gi
   storageClass: oci-bv
 # The `data` volume is ~71GiB of local application state whose authoritative
-# objects live in the OCI Object Storage bucket below. The platform's Velero
-# fs-backs up every pod volume, and at ~10MiB/s over the WireGuard link to
-# TrueNAS this one takes longer than the hourly interval: it held up every
-# backup and was cancelled whenever the pod rolled. Excluded 2026-10-19.
+# objects live in the OCI Object Storage bucket below. Measured 2026-10-19: a full
+# upload of it takes ~86min at ~14MiB/s over the WireGuard link, longer than
+# Velero's hourly interval, while an incremental is ~8s. When the pod rolls
+# mid-upload the PodVolumeBackup is cancelled, so the next attempt repeats the
+# full upload and (pkg/podvolume/backupper.go) the cancellation stalls the whole
+# backup until the fs-backup timeout. Excluded 2026-10-19: no backup claims to
+# cover it, and the S3 bucket above is the durable copy.
 podAnnotations:
   backup.velero.io/backup-volumes-excludes: data
 storage:
