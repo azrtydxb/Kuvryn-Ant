@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"slices"
 	"time"
 
@@ -48,15 +47,23 @@ type RestoreSummary struct {
 // current schema. A failure before commit leaves the tables empty; blobs already
 // written are unreferenced content-addressed objects that are harmless.
 func Restore(ctx context.Context, pool *pgxpool.Pool, stores Stores, dir string, opts RestoreOptions) (RestoreSummary, error) {
+	t, err := OpenDirTree(dir, false)
+	if err != nil {
+		return RestoreSummary{}, err
+	}
+	defer t.Close()
+	return RestoreTree(ctx, pool, stores, t, opts)
+}
+
+// RestoreTree is Restore for a backup in any Tree. A reference-mode backup
+// carries no blob bytes: restore then requires every referenced blob to exist
+// in the target store with the recorded size and fails before touching the
+// database otherwise.
+func RestoreTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tree, opts RestoreOptions) (RestoreSummary, error) {
 	if opts.Concurrency == 0 {
 		opts.Concurrency = 4
 	}
-	root, err := os.OpenRoot(dir)
-	if err != nil {
-		return RestoreSummary{}, fmt.Errorf("%w: cannot open backup directory", ErrTarget)
-	}
-	defer root.Close()
-	m, sum, err := readManifest(root)
+	m, sum, err := readManifest(ctx, root)
 	if err != nil {
 		return RestoreSummary{}, err
 	}
@@ -69,11 +76,16 @@ func Restore(ctx context.Context, pool *pgxpool.Pool, stores Stores, dir string,
 	if err = verifyTables(ctx, root, m); err != nil {
 		return RestoreSummary{}, err
 	}
-	if err = rejectUnlisted(root, m); err != nil {
+	if err = rejectUnlisted(ctx, root, m); err != nil {
 		return RestoreSummary{}, err
 	}
 	if err = checkTarget(ctx, pool, opts.Force); err != nil {
 		return RestoreSummary{}, err
+	}
+	if m.referenced() {
+		if err = checkBlobs(ctx, stores, m.Blobs, opts.Concurrency); err != nil {
+			return RestoreSummary{}, fmt.Errorf("%w: a reference-mode backup needs its blobs in the target store: %v", ErrTarget, err)
+		}
 	}
 	if err = database.MigrateTo(ctx, pool, m.SchemaVersion); err != nil {
 		return RestoreSummary{}, fmt.Errorf("%w: %v", ErrSchema, err)
@@ -82,8 +94,10 @@ func Restore(ctx context.Context, pool *pgxpool.Pool, stores Stores, dir string,
 	if err != nil {
 		return RestoreSummary{}, err
 	}
-	if err = restoreBlobs(ctx, stores, root, m.Blobs, opts.Concurrency); err != nil {
-		return RestoreSummary{}, err
+	if !m.referenced() {
+		if err = restoreBlobs(ctx, stores, root, m.Blobs, opts.Concurrency); err != nil {
+			return RestoreSummary{}, err
+		}
 	}
 	verified, err := loadTables(ctx, pool, root, m, order, opts.Keys)
 	if err != nil {
@@ -194,7 +208,7 @@ func checkSchemaMatches(ctx context.Context, pool *pgxpool.Pool, m Manifest) ([]
 	return loadOrder(names, fks)
 }
 
-func restoreBlobs(ctx context.Context, stores Stores, root *os.Root, blobs []Blob, workers int) error {
+func restoreBlobs(ctx context.Context, stores Stores, root Tree, blobs []Blob, workers int) error {
 	resolved := map[string]blob.Store{}
 	for _, b := range blobs {
 		if resolved[b.Domain] != nil {
@@ -222,16 +236,15 @@ func restoreBlobs(ctx context.Context, stores Stores, root *os.Root, blobs []Blo
 // size from the bytes actually written and refuses a mismatch (or a different
 // object already stored under the same digest), so a corrupt backup file cannot
 // be published under a valid address.
-func copyBlobIn(ctx context.Context, store blob.Store, root *os.Root, b Blob) error {
-	info, err := root.Lstat(blobPath(b))
-	if err != nil || !info.Mode().IsRegular() || info.Size() != b.Size {
-		return ErrIntegrity
-	}
-	f, err := root.Open(blobPath(b))
+func copyBlobIn(ctx context.Context, store blob.Store, root Tree, b Blob) error {
+	f, size, err := root.Open(ctx, blobPath(b))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+	if size != b.Size {
+		return ErrIntegrity
+	}
 	up, err := store.Stage(ctx)
 	if err != nil {
 		return err
@@ -255,7 +268,7 @@ func copyBlobIn(ctx context.Context, store blob.Store, root *os.Root, b Blob) er
 	return nil
 }
 
-func loadTables(ctx context.Context, pool *pgxpool.Pool, root *os.Root, m Manifest, order []string, keys *secrets.Keyring) (int, error) {
+func loadTables(ctx context.Context, pool *pgxpool.Pool, root Tree, m Manifest, order []string, keys *secrets.Keyring) (int, error) {
 	byName := map[string]Table{}
 	for _, t := range m.Tables {
 		byName[t.Name] = t
@@ -303,8 +316,8 @@ func loadTables(ctx context.Context, pool *pgxpool.Pool, root *os.Root, m Manife
 	return verified, nil
 }
 
-func loadTable(ctx context.Context, tx pgx.Tx, root *os.Root, t Table) error {
-	f, err := root.Open(tablePath(t.Name))
+func loadTable(ctx context.Context, tx pgx.Tx, root Tree, t Table) error {
+	f, _, err := root.Open(ctx, tablePath(t.Name))
 	if err != nil {
 		return err
 	}
