@@ -125,7 +125,7 @@ func TestRetentionWorkerRunsUnderInstanceLease(t *testing.T) {
 	}
 	defer workers.Close()
 	cfg.Retention.Interval, cfg.Retention.Grace = time.Minute, time.Minute
-	workers.startRetention(pool, runtime, cfg.Retention, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	workers.startRetention(pool, runtime, cfg, slog.New(slog.NewTextHandler(io.Discard, nil)))
 	deadline := time.Now().Add(10 * time.Second)
 	for {
 		var marked int
@@ -141,8 +141,8 @@ func TestRetentionWorkerRunsUnderInstanceLease(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	// Disabled interval and absent runtime are inert.
-	workers.startRetention(pool, nil, cfg.Retention, nil)
+	workers.startRetention(pool, nil, cfg, nil)
 	cfg.Retention.Interval = 0
-	workers.startRetention(pool, runtime, cfg.Retention, nil)
-	(*backgroundWorkers)(nil).startRetention(pool, runtime, cfg.Retention, nil)
+	workers.startRetention(pool, runtime, cfg, nil)
+	(*backgroundWorkers)(nil).startRetention(pool, runtime, cfg, nil)
 }

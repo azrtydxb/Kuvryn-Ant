@@ -114,6 +114,8 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 	d := management.OpsDeps{
 		Limits: o.limiter, Pool: o.pool, Codec: codec, Keys: o.cfg.SecretKeys, Background: o.background,
 		StorageBackend: o.cfg.Storage.Backend, Readiness: o.readiness, StagingBytes: o.stagingBytes,
+		GC: management.GCSettingsView{IntervalSeconds: int64(o.cfg.Retention.Interval / time.Second), GraceSeconds: int64(o.cfg.Retention.Grace / time.Second), DryRun: o.cfg.Retention.DryRun,
+			PressureIntervalSeconds: int64(o.cfg.Retention.PressureInterval / time.Second), PressureSweepGraceSeconds: int64(o.cfg.Retention.PressureSweepGrace / time.Second)},
 		Env: []management.EnvSetting{
 			{Key: "storage_backend", Value: backendName(o.cfg.Storage.Backend), Description: "Blob storage backend (ANT_STORAGE_BACKEND)."},
 			{Key: "max_requests", Value: strconv.Itoa(o.cfg.MaxRequests), Description: "Concurrent request limit (ANT_MAX_REQUESTS)."},
@@ -121,6 +123,8 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 			{Key: "gc_interval", Value: o.cfg.Retention.Interval.String(), Description: "Scheduled maintenance interval, 0s disables (ANT_GC_INTERVAL)."},
 			{Key: "gc_grace", Value: o.cfg.Retention.Grace.String(), Description: "Orphan blob grace period (ANT_GC_GRACE)."},
 			{Key: "gc_dry_run", Value: strconv.FormatBool(o.cfg.Retention.DryRun), Description: "Scheduled maintenance runs report only (ANT_GC_DRY_RUN)."},
+			{Key: "pressure_interval", Value: o.cfg.Retention.PressureInterval.String(), Description: "Storage-pressure check interval, 0s disables the worker (ANT_PRESSURE_INTERVAL)."},
+			{Key: "pressure_sweep_grace", Value: o.cfg.Retention.PressureSweepGrace.String(), Description: "Wait before a blob freed by pressure eviction is swept (ANT_PRESSURE_SWEEP_GRACE)."},
 			{Key: "replication_history_max_age", Value: o.cfg.Replication.MaxAge.String(), Description: "Maximum age of replication change history before it is purged (ANT_REPLICATION_HISTORY_MAX_AGE)."},
 			{Key: "replication_history_max_rows", Value: strconv.FormatInt(o.cfg.Replication.MaxRows, 10), Description: "Maximum replication change-history rows kept (ANT_REPLICATION_HISTORY_MAX_ROWS)."},
 			{Key: "replication_purge_interval", Value: o.cfg.Replication.Interval.String(), Description: "Replication history purge interval, 0s disables (ANT_REPLICATION_PURGE_INTERVAL)."},
@@ -155,7 +159,7 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 			if instance != r.instanceID {
 				return nil
 			}
-			return retentionService(o.pool, r.instanceID, r.stores.Resolve, r.manager.Lease, o.cfg.Retention)
+			return retentionService(o.pool, r.instanceID, r.stores.Resolve, r.manager.Lease, o.cfg, r.migrator)
 		}
 	}
 	return d
@@ -189,6 +193,9 @@ func (o *operations) readiness(ctx context.Context) management.ReadinessDetail {
 	out.BlobStorage = o.probeBlob(ctx)
 	out.WriterLease = o.leaseState(ctx)
 	out.Ready = out.Database.Status == "ok" && out.BlobStorage.Status == "ok" && out.WriterLease.State == "held"
+	if w, ok := retention.PressureWarning(); ok {
+		out.Warnings = append(out.Warnings, w)
+	}
 	return out
 }
 

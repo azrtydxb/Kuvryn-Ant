@@ -14,13 +14,40 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/ownership"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func retentionService(pool *pgxpool.Pool, instance string, resolve retention.Resolver, lease func() ownership.Lease, c config.Retention) *retention.Service {
+// retentionOverrides converts the environment-provided settings; they take
+// precedence over, and lock, the corresponding stored instance settings.
+func retentionOverrides(c config.Retention) retention.Overrides {
+	return retention.Overrides{
+		DefaultEnabled: c.DefaultEnabled, DefaultKeepLast: c.DefaultKeepLast, DefaultMaxAge: c.DefaultMaxAge, DefaultMaxIdle: c.DefaultMaxIdle,
+		PressureEnabled: c.PressureEnabled, HighPercent: c.HighPercent, LowPercent: c.LowPercent, CapacityBytes: c.CapacityBytes,
+	}
+}
+
+// routedBackend names the active blob backend through the storage route, which
+// changes during a disk/S3 migration. Without a migrator the configured backend
+// is used.
+func routedBackend(m *storage.Migrator, configured string) func(context.Context) (string, error) {
+	return func(ctx context.Context) (string, error) {
+		if m == nil {
+			return backendName(configured), nil
+		}
+		rt, err := m.Route(ctx)
+		if err != nil {
+			return "", err
+		}
+		return backendName(rt.Active), nil
+	}
+}
+
+func retentionService(pool *pgxpool.Pool, instance string, resolve retention.Resolver, lease func() ownership.Lease, cfg config.Config, migrator *storage.Migrator) *retention.Service {
+	c := cfg.Retention
 	return &retention.Service{DB: pool, InstanceID: instance, Stores: resolve, Lease: lease, Options: retention.Options{
-		Grace: c.Grace, BatchSize: c.BatchSize, IntegrityBatch: c.IntegrityBatch, IntegrityMaxBytes: c.IntegrityMaxBytes,
-	}}
+		Grace: c.Grace, BatchSize: c.BatchSize, IntegrityBatch: c.IntegrityBatch, IntegrityMaxBytes: c.IntegrityMaxBytes, PressureSweepGrace: c.PressureSweepGrace,
+	}, Env: retentionOverrides(c), Backend: routedBackend(migrator, cfg.Storage.Backend), DataDir: cfg.Storage.Directory}
 }
 
 // runGC is a local maintenance operation, authorized like rotate-secrets by
@@ -42,7 +69,7 @@ func runGC(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, dryRun bo
 		return err
 	}
 	defer stores.Close()
-	report, runErr := retentionService(pool, owner.InstanceID, stores.Resolve, nil, cfg.Retention).RunOnce(ctx, dryRun)
+	report, runErr := retentionService(pool, owner.InstanceID, stores.Resolve, nil, cfg, nil).RunOnce(ctx, dryRun)
 	if err = json.NewEncoder(output).Encode(report); err != nil {
 		return err
 	}
@@ -51,12 +78,36 @@ func runGC(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, dryRun bo
 
 // startRetention runs the periodic worker under the instance lease: every
 // mutating step verifies the writer lease, so a replaced owner stops deleting.
-// It is a no-op without serving runtime or when the interval is zero.
-func (w *backgroundWorkers) startRetention(pool *pgxpool.Pool, r *artifactRuntime, c config.Retention, logger *slog.Logger) {
-	if w == nil || r == nil || c.Interval <= 0 {
+// It is a no-op without a serving runtime. The maintenance loop runs every
+// ANT_GC_INTERVAL (0 disables it); the cheap storage-pressure check has its own
+// ANT_PRESSURE_INTERVAL loop, so pressure is relieved between maintenance runs.
+func (w *backgroundWorkers) startRetention(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config, logger *slog.Logger) {
+	c := cfg.Retention
+	if w == nil || r == nil {
 		return
 	}
-	svc := retentionService(pool, r.instanceID, r.stores.Resolve, r.manager.Lease, c)
+	svc := retentionService(pool, r.instanceID, r.stores.Resolve, r.manager.Lease, cfg, r.migrator)
+	if c.PressureInterval > 0 {
+		w.done.Add(1)
+		go func() {
+			defer w.done.Done()
+			svc.RunPressureLoop(w.workCtx, c.PressureInterval, func(rep retention.PressureReport, err error) {
+				if logger == nil {
+					return
+				}
+				if err != nil {
+					logger.Warn("storage pressure check incomplete", "reason", err)
+				}
+				if rep.EvictedVersions > 0 || rep.State == retention.StateUnevictable || rep.Swept > 0 {
+					logger.Info("storage pressure", "state", rep.State, "usage_ratio", rep.UsageRatio, "evicted_versions", rep.EvictedVersions,
+						"evicted_bytes", rep.EvictedBytes, "swept", rep.Swept, "shortfall_bytes", rep.ShortfallBytes)
+				}
+			})
+		}()
+	}
+	if c.Interval <= 0 {
+		return
+	}
 	w.done.Add(1)
 	go func() {
 		defer w.done.Done()

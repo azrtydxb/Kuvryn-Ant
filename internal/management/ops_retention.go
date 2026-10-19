@@ -260,6 +260,8 @@ type RunReport struct {
 	Mismatches          []RunFinding  `json:"mismatches,omitempty"`
 	Errors              []string      `json:"errors,omitempty"`
 	Truncated           bool          `json:"truncated"`
+	// Pressure is the storage-pressure stage; present when the run evaluated it.
+	Pressure *retention.PressureReport `json:"pressure,omitempty"`
 }
 type RetentionRun struct {
 	ID          string     `json:"id"`
@@ -313,6 +315,10 @@ func ReportFrom(rep retention.Report) RunReport {
 			}
 		}
 		out.Errors = append(out.Errors, stage+" stage failed")
+	}
+	if p := rep.Pressure; p.State != "" {
+		p.Evicted = capList(p.Evicted, &out.Truncated)
+		out.Pressure = &p
 	}
 	out.Deleted, out.Marked = capList(out.Deleted, &out.Truncated), capList(out.Marked, &out.Truncated)
 	out.Swept, out.Mismatches = capList(out.Swept, &out.Truncated), capList(out.Mismatches, &out.Truncated)

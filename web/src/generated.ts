@@ -75,7 +75,7 @@ export type AuditEvent = { "id": number; "created_at": string; "principal_id"?: 
 export type AuditPage = { "items": Array<AuditEvent>; "page": PageInfo };
 export type ComponentStatus = { "status": "ok" | "degraded" | "unavailable" | "unknown"; "latency_ms"?: number; "detail"?: string };
 export type WriterLeaseStatus = { "state": "held" | "lost" | "superseded" | "expired" | "unavailable" | "not_serving"; "owner_id"?: string; "epoch"?: number; "expires_at"?: string; "remaining_ms"?: number };
-export type ReadinessDetail = { "ready": boolean; "database": ComponentStatus; "blob_storage": ComponentStatus; "writer_lease": WriterLeaseStatus; "checked_at": string };
+export type ReadinessDetail = { "ready": boolean; "database": ComponentStatus; "blob_storage": ComponentStatus; "writer_lease": WriterLeaseStatus; "checked_at": string; "warnings"?: Array<string> };
 export type SourceHealth = { "source_id": string; "kind": string; "status": "healthy" | "degraded" | "failing" | "unknown" | "not_applicable"; "last_success_at"?: string; "last_error_at"?: string; "last_status_code"?: number; "last_error"?: string; "p95_latency_ms"?: number; "requests": number; "failures": number };
 export type SourceHealthPage = { "items": Array<SourceHealth>; "page": PageInfo };
 export type SourceTestResult = { "source_id": string; "reachable": boolean; "authenticated": boolean; "status_code"?: number; "latency_ms": number; "error"?: string };
@@ -84,7 +84,7 @@ export type FeedStatsPage = { "items": Array<FeedStats>; "page": PageInfo };
 export type SourceStats = { "source_id": string; "name": string; "kind": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "attached_feeds": number; "cache_hits": number; "cache_misses": number };
 export type SourceStatsPage = { "items": Array<SourceStats>; "page": PageInfo };
 export type DomainUsage = { "domain_id": string; "name": string; "blob_count": number; "blob_bytes": number };
-export type StorageUsage = { "backend": string; "blob_count": number; "blob_bytes": number; "logical_bytes": number; "dedup_saved_bytes": number; "unreferenced_bytes": number; "gc_candidates": number; "staging_bytes"?: number; "domains": Array<DomainUsage>; "measured_at": string };
+export type StorageUsage = { "backend": string; "blob_count": number; "blob_bytes": number; "logical_bytes": number; "dedup_saved_bytes": number; "unreferenced_bytes": number; "gc_candidates": number; "staging_bytes"?: number; "domains": Array<DomainUsage>; "measured_at": string; "reclaimable_bytes"?: number; "in_grace_bytes"?: number; "pressure"?: PressureStatus };
 export type TrafficPoint = { "bucket": string; "pulls": number; "publishes": number; "bytes_out": number; "bytes_in": number; "cache_hits": number; "cache_misses": number; "errors": number; "cache_hit_ratio"?: number };
 export type TrafficSeries = { "scope": "instance" | "feed" | "source"; "ref"?: string; "from": string; "to": string; "step_seconds": number; "points": Array<TrafficPoint>; "totals": TrafficPoint };
 export type Provenance = { "asset_id": string; "coordinate": string; "version": string; "asset_key": string; "source_id": string; "feed_id"?: string; "origin": "local" | "remote" | "replica"; "created_at": string; "uploader_id"?: string; "uploader_subject"?: string; "token_id"?: string; "matched_rule"?: string; "digest": string; "verification": "verified" | "integrity_failure"; "verification_detail": string; "downloads": number; "last_downloaded_at"?: string };
@@ -101,7 +101,7 @@ export type PutRetentionPolicy = { "keep_last"?: number; "max_age_seconds"?: num
 export type RunDeletion = { "source_id": string; "coordinate": string; "version": string; "reason": string };
 export type RunBlob = { "domain_id": string; "digest": string; "kind": "row" | "object" };
 export type RunFinding = { "domain_id": string; "digest": string; "kind": "missing" | "size" | "digest" };
-export type RunReport = { "versions_deleted": number; "protected_release": number; "protected_tagged": number; "blobs_marked": number; "blobs_swept": number; "blobs_unmarked": number; "skipped_referenced": number; "gc_failed": number; "integrity_checked": number; "integrity_bytes": number; "integrity_errors": number; "integrity_mismatches": number; "integrity_wrapped": boolean; "deleted"?: Array<RunDeletion>; "marked"?: Array<RunBlob>; "swept"?: Array<RunBlob>; "mismatches"?: Array<RunFinding>; "errors"?: Array<string>; "truncated": boolean };
+export type RunReport = { "versions_deleted": number; "protected_release": number; "protected_tagged": number; "blobs_marked": number; "blobs_swept": number; "blobs_unmarked": number; "skipped_referenced": number; "gc_failed": number; "integrity_checked": number; "integrity_bytes": number; "integrity_errors": number; "integrity_mismatches": number; "integrity_wrapped": boolean; "deleted"?: Array<RunDeletion>; "marked"?: Array<RunBlob>; "swept"?: Array<RunBlob>; "mismatches"?: Array<RunFinding>; "errors"?: Array<string>; "truncated": boolean; "pressure"?: PressureReport };
 export type PrewarmPackage = { "name": string; "version"?: string };
 export type PrewarmLockfile = { "type": "package-lock.json" | "pnpm-lock.yaml" | "go.sum" | "Cargo.lock" | "requirements.txt" | "poetry.lock"; "content": string };
 export type PrewarmSource = { "kind": "packages" | "lockfile" | "images" | "feed"; "packages"?: Array<PrewarmPackage>; "lockfile"?: PrewarmLockfile; "images"?: Array<string>; "feed_id"?: string };
@@ -355,6 +355,13 @@ export type LocalUser = { "username": string; "principal_id": string; "break_gla
 export type LocalUserList = { "items": Array<LocalUser> };
 export type LocalUserInput = { "username": string; "password": string };
 export type LocalUserPassword = { "password": string };
+export type DefaultRetentionPolicy = { "enabled": boolean; "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep": number; "include_tagged": boolean };
+export type PressureSettings = { "enabled": boolean; "high_percent": number; "low_percent": number; "capacity_bytes"?: number };
+export type GCSettings = { "interval_seconds": number; "grace_seconds": number; "dry_run": boolean; "pressure_interval_seconds": number; "pressure_sweep_grace_seconds": number };
+export type RetentionSettings = { "revision": number; "default_policy": DefaultRetentionPolicy; "pressure": PressureSettings; "locked": Array<string>; "gc": GCSettings; "updated_at"?: string };
+export type PutRetentionSettings = { "default_policy": DefaultRetentionPolicy; "pressure": PressureSettings };
+export type PressureStatus = { "enabled": boolean; "state": "disabled" | "no_capacity" | "invalid" | "ok" | "pressure" | "unevictable"; "detail"?: string; "capacity_source": "filesystem" | "quota" | "none"; "used_bytes": number; "capacity_bytes": number; "usage_ratio": number; "high_percent": number; "low_percent": number; "reclaimable_bytes": number; "checked_at"?: string; "last_evicted_at"?: string; "last_evicted_versions": number; "last_evicted_bytes": number; "total_evicted_versions": number; "total_evicted_bytes": number };
+export type PressureReport = { "dry_run": boolean; "state": "disabled" | "no_capacity" | "invalid" | "ok" | "pressure" | "unevictable"; "detail"?: string; "capacity_source": string; "used_bytes": number; "capacity_bytes": number; "usage_ratio": number; "high_percent": number; "low_percent": number; "reclaimable_bytes": number; "target_bytes": number; "evicted_versions": number; "evicted_bytes": number; "shortfall_bytes": number; "expedited": number; "swept": number; "evicted": Array<{ "source_id": string; "coordinate": string; "version": string; "version_id": string; "reason": string }> };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -587,6 +594,9 @@ listLocalUsers: { body: undefined; response: LocalUserList };
 createLocalUser: { body: LocalUserInput; response: LocalUser };
 setLocalUserPassword: { body: LocalUserPassword; response: undefined };
 deleteLocalUser: { body: undefined; response: undefined };
+getRetentionSettings: { body: undefined; response: RetentionSettings };
+putRetentionSettings: { body: PutRetentionSettings; response: RetentionSettings };
+getRetentionPressure: { body: undefined; response: PressureStatus };
 }
 export const routes = {
   "getStatus": {
@@ -1738,5 +1748,20 @@ export const routes = {
     "path": "/api/v1/local-accounts/{username}",
     "method": "DELETE",
     "idempotent": true
+  },
+  "getRetentionSettings": {
+    "path": "/api/v1/retention/settings",
+    "method": "GET",
+    "idempotent": false
+  },
+  "putRetentionSettings": {
+    "path": "/api/v1/retention/settings",
+    "method": "PUT",
+    "idempotent": true
+  },
+  "getRetentionPressure": {
+    "path": "/api/v1/retention/pressure",
+    "method": "GET",
+    "idempotent": false
   }
 } as const;

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
@@ -43,6 +44,9 @@ type Options struct {
 	// StaleUploadAge is how long a multipart upload may sit idle before GC
 	// aborts it (default 24h).
 	StaleUploadAge time.Duration
+	// PressureSweepGrace is the wait before a blob freed by pressure eviction
+	// can be swept (default 15m).
+	PressureSweepGrace time.Duration
 }
 
 const (
@@ -85,6 +89,17 @@ type Service struct {
 	// current writer lease. A lost lease aborts the run before any deletion.
 	Lease   func() ownership.Lease
 	Options Options
+	// Env are deployment-provided settings that override the stored ones.
+	Env Overrides
+	// Backend names the active blob backend ("disk" or "s3"); nil means disk.
+	Backend func(context.Context) (string, error)
+	// DataDir is the disk blob root whose filesystem bounds disk capacity.
+	DataDir string
+	// FSUsage reports total and available bytes of the filesystem holding a
+	// path; nil selects the operating system implementation.
+	FSUsage func(path string) (total, free uint64, err error)
+
+	pressureMu sync.Mutex
 }
 
 func (s *Service) opts() Options { return s.Options.withDefaults() }
@@ -134,6 +149,7 @@ type Report struct {
 	Retention RetentionReport `json:"retention"`
 	GC        GCReport        `json:"gc"`
 	Integrity IntegrityReport `json:"integrity"`
+	Pressure  PressureReport  `json:"pressure"`
 	Errors    []string        `json:"errors,omitempty"`
 }
 
@@ -152,6 +168,8 @@ func (s *Service) RunOnce(ctx context.Context, dryRun bool) (Report, error) {
 		}
 	}
 	stage("retention", func() (err error) { report.Retention, err = s.ApplyRetention(ctx, dryRun); return })
+	// After policy retention, so explicit rules free what they can before pressure evicts more.
+	stage("pressure", func() (err error) { report.Pressure, err = s.RunPressure(ctx, dryRun); return })
 	stage("gc", func() (err error) { report.GC, err = s.CollectGarbage(ctx, dryRun); return })
 	stage("integrity", func() (err error) { report.Integrity, err = s.VerifyIntegrity(ctx, dryRun); return })
 	return report, errors.Join(errs...)

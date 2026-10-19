@@ -83,6 +83,26 @@ observability:
     protocol: http/protobuf # http/protobuf | grpc
     serviceName: kuvryn-ant
     sampleRatio: 1 # 0 < ratio <= 1, parent-based
+# Maintenance: garbage collection, the instance default retention policy and
+# storage-pressure eviction. See docs/operations/storage-maintenance.md.
+maintenance:
+  gcInterval: 6h # "0" disables the scheduled maintenance loop
+  gcGrace: 24h # minimum age of an unreferenced blob before GC marks it
+  # Instance-wide default for remote-cached content in feeds without their own
+  # policy. Empty = not set by the environment (editable in the console).
+  defaultPolicy:
+    maxIdle: "" # e.g. 720h: delete cached content not accessed for 30 days
+    maxAge: ""
+  # Evict least-recently-used cached content when storage fills: start at
+  # highPercent, stop once projected usage is at or below lowPercent. Object
+  # storage has no native capacity, so set capacity (e.g. 500GiB) there.
+  pressure:
+    enabled: false
+    highPercent: 85
+    lowPercent: 75
+    capacity: "" # quota in bytes or with a KiB/MiB/GiB/TiB suffix
+    interval: 5m # "0" disables the periodic check
+    sweepGrace: 15m # wait before a blob freed by eviction is swept
 # audit_events retention. Events a configured audit sink has not exported yet
 # are never purged. "0" keeps events forever.
 auditRetention:

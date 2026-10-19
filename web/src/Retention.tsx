@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { requireETag, type Client } from "./api";
 import { useAllFeeds, useAllSources } from "./data";
 import { useOptionalCall } from "./gaps";
@@ -33,6 +33,8 @@ import {
   when,
 } from "./ui";
 
+import { DefaultsTab, OverviewTab, PressureSummary } from "./StoragePressure";
+
 const DAY = 86400;
 const days = (s?: number) => (s ? String(Math.round(s / DAY)) : "");
 
@@ -49,9 +51,32 @@ export function RetentionPane({ client }: { client: Client }) {
   const feeds = useAllFeeds(client);
   const sources = useAllSources(client);
   const [editing, setEditing] = useState<RetentionPolicy | "new">();
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState<"dry" | "live">();
   const [report, setReport] = useState<RetentionRun>();
-  const [tab, setTab] = useState("policies");
+  const [tab, setTab] = useState("overview");
+  const reportId = report?.state === "running" ? report.id : undefined;
+  useEffect(() => {
+    if (!reportId) return;
+    let stop = false;
+    const timer = setInterval(async () => {
+      try {
+        const r = (
+          await client.call("getRetentionRun", { params: { id: reportId } })
+        ).data;
+        if (!stop && r.state !== "running") {
+          setReport(r);
+          runs.reload();
+        }
+      } catch {
+        /* keep polling until the run finishes */
+      }
+    }, 1500);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportId, client]);
   if (policies.state === "loading") return <Loading what="retention" />;
   if (policies.state === "unavailable")
     return <Unavailable what="Retention and cleanup" />;
@@ -61,7 +86,7 @@ export function RetentionPane({ client }: { client: Client }) {
       ? `Feed · ${feeds.items.find((f) => f.id === p.feed_id)?.slug ?? p.feed_id}`
       : p.source_id
         ? `Source · ${sources.items.find((s) => s.id === p.source_id)?.name ?? p.source_id}`
-        : "Instance default";
+        : "Unknown";
   return (
     <>
       <Alert tone="info" title="Retention removes versions">
@@ -75,11 +100,15 @@ export function RetentionPane({ client }: { client: Client }) {
         onChange={setTab}
         className="spaced-tabs"
         items={[
+          { id: "overview", label: "Overview" },
+          { id: "defaults", label: "Defaults" },
           { id: "policies", label: "Policies" },
           { id: "runs", label: "Runs" },
           { id: "findings", label: "Integrity findings" },
         ]}
       />
+      {tab === "overview" && <OverviewTab client={client} onRun={setRunning} />}
+      {tab === "defaults" && <DefaultsTab client={client} />}
       {tab === "policies" && (
         <>
           <div className="section-head">
@@ -144,7 +173,7 @@ export function RetentionPane({ client }: { client: Client }) {
               size="sm"
               variant="secondary"
               icon="play"
-              onClick={() => setRunning(true)}
+              onClick={() => setRunning("dry")}
             >
               Start run
             </Button>
@@ -247,10 +276,11 @@ export function RetentionPane({ client }: { client: Client }) {
       )}
       {running && (
         <RunModal
+          initial={running}
           client={client}
-          onClose={() => setRunning(false)}
+          onClose={() => setRunning(undefined)}
           done={(r) => {
-            setRunning(false);
+            setRunning(undefined);
             setReport(r);
             runs.reload();
             findings.reload();
@@ -289,8 +319,13 @@ export function RetentionPane({ client }: { client: Client }) {
               ]}
             />
           ) : (
-            <p className="muted">No report recorded yet.</p>
+            <p className="muted">
+              {report.state === "running"
+                ? "Running…"
+                : "No report recorded yet."}
+            </p>
           )}
+          <PressureSummary report={report.report?.pressure} />
           {(report.report?.errors ?? []).length > 0 && (
             <Failure error={Error(report.report!.errors!.join("; "))} />
           )}
@@ -301,15 +336,17 @@ export function RetentionPane({ client }: { client: Client }) {
 }
 
 function RunModal({
+  initial,
   client,
   onClose,
   done,
 }: {
+  initial: "dry" | "live";
   client: Client;
   onClose: () => void;
   done: (r: RetentionRun) => void;
 }) {
-  const [mode, setMode] = useState("dry");
+  const [mode, setMode] = useState<string>(initial);
   const action = useAction();
   const toast = useToast();
   return (
@@ -387,9 +424,7 @@ function PolicyModal({
   onClose: () => void;
   done: () => void;
 }) {
-  const [kind, setKind] = useState(
-    policy?.feed_id ? "feed" : policy?.source_id ? "source" : "instance",
-  );
+  const [kind, setKind] = useState(policy?.source_id ? "source" : "feed");
   const [feed, setFeed] = useState(policy?.feed_id ?? feeds[0]?.id ?? "");
   const [source, setSource] = useState(
     policy?.source_id ?? sources[0]?.id ?? "",
@@ -480,7 +515,6 @@ function PolicyModal({
         <Select
           label="Scope"
           options={[
-            { value: "instance", label: "Instance default" },
             { value: "feed", label: "One feed" },
             { value: "source", label: "One source" },
           ]}

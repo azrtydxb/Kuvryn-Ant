@@ -8,6 +8,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -165,11 +166,18 @@ type StorageUsage struct {
 	// DedupSavedBytes is LogicalBytes minus the physical bytes of referenced blobs.
 	DedupSavedBytes int64 `json:"dedup_saved_bytes"`
 	// UnreferencedBytes belong to blobs with no asset reference (GC candidates after the grace period).
-	UnreferencedBytes int64         `json:"unreferenced_bytes"`
-	GCCandidates      int64         `json:"gc_candidates"`
-	StagingBytes      *int64        `json:"staging_bytes,omitempty"`
-	Domains           []DomainUsage `json:"domains"`
-	MeasuredAt        time.Time     `json:"measured_at"`
+	UnreferencedBytes int64 `json:"unreferenced_bytes"`
+	GCCandidates      int64 `json:"gc_candidates"`
+	// ReclaimableBytes are unreferenced bytes garbage collection will free
+	// (already marked, or old enough to be marked); InGraceBytes are unreferenced
+	// bytes still inside the grace period, which is why unreferenced_bytes can be
+	// large while gc_candidates is 0.
+	ReclaimableBytes *int64                    `json:"reclaimable_bytes,omitempty"`
+	InGraceBytes     *int64                    `json:"in_grace_bytes,omitempty"`
+	Pressure         *retention.PressureStatus `json:"pressure,omitempty"`
+	StagingBytes     *int64                    `json:"staging_bytes,omitempty"`
+	Domains          []DomainUsage             `json:"domains"`
+	MeasuredAt       time.Time                 `json:"measured_at"`
 }
 
 func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
@@ -214,6 +222,12 @@ func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
 	if rows.Err() != nil {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "storage usage unavailable")
 		return
+	}
+	if svc := h.retentionService(p.InstanceID); svc != nil {
+		if st, perr := svc.PressureStatus(ctx); perr == nil {
+			grace := max(0, out.UnreferencedBytes-st.ReclaimableBytes)
+			out.ReclaimableBytes, out.InGraceBytes, out.Pressure = &st.ReclaimableBytes, &grace, &st
+		}
 	}
 	if h.d.StagingBytes != nil {
 		if n, ok := h.d.StagingBytes(ctx); ok {

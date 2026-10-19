@@ -160,6 +160,36 @@ spec:
               value: {{ .Values.auditRetention.retain | quote }}
             - name: ANT_AUDIT_PURGE_INTERVAL
               value: {{ .Values.auditRetention.purgeInterval | quote }}
+            {{- with .Values.maintenance }}
+            - name: ANT_GC_INTERVAL
+              value: {{ .gcInterval | quote }}
+            - name: ANT_GC_GRACE
+              value: {{ .gcGrace | quote }}
+            {{- if .pressure.enabled }}
+            - name: ANT_PRESSURE_ENABLED
+              value: "true"
+            - name: ANT_PRESSURE_HIGH_PERCENT
+              value: {{ .pressure.highPercent | quote }}
+            - name: ANT_PRESSURE_LOW_PERCENT
+              value: {{ .pressure.lowPercent | quote }}
+            {{- if .pressure.capacity }}
+            - name: ANT_STORAGE_CAPACITY_BYTES
+              value: {{ .pressure.capacity | quote }}
+            {{- end }}
+            {{- end }}
+            - name: ANT_PRESSURE_INTERVAL
+              value: {{ .pressure.interval | quote }}
+            - name: ANT_PRESSURE_SWEEP_GRACE
+              value: {{ .pressure.sweepGrace | quote }}
+            {{- if .defaultPolicy.maxIdle }}
+            - name: ANT_RETENTION_DEFAULT_MAX_IDLE
+              value: {{ .defaultPolicy.maxIdle | quote }}
+            {{- end }}
+            {{- if .defaultPolicy.maxAge }}
+            - name: ANT_RETENTION_DEFAULT_MAX_AGE
+              value: {{ .defaultPolicy.maxAge | quote }}
+            {{- end }}
+            {{- end }}
             {{- range $name, $value := .Values.extraEnv }}
             {{- if not (hasPrefix "ANT_" $name) }}{{ fail "extraEnv names must start with ANT_" }}{{ end }}
             - name: {{ $name | quote }}

@@ -43,6 +43,9 @@ type ReadinessDetail struct {
 	BlobStorage ComponentStatus   `json:"blob_storage"`
 	WriterLease WriterLeaseStatus `json:"writer_lease"`
 	CheckedAt   time.Time         `json:"checked_at"`
+	// Warnings are conditions that do not make the instance unready, such as
+	// storage above its high watermark with nothing evictable.
+	Warnings []string `json:"warnings,omitempty"`
 }
 
 // EnvSetting is a deployment-provided, read-only instance setting.
@@ -68,6 +71,8 @@ type OpsDeps struct {
 	StorageBackend string
 	// Env lists read-only deployment settings returned by the settings endpoint.
 	Env []EnvSetting
+	// GC is the read-only maintenance schedule shown with the retention settings.
+	GC GCSettingsView
 	// Retention returns the maintenance service for the serving instance, or nil.
 	Retention func(instance string) *retention.Service
 	// StorageMigrator returns the storage migration service for the serving instance, or nil.
@@ -138,6 +143,9 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"POST /api/v1/retention/policies":               h.createRetentionPolicy,
 		"PUT /api/v1/retention/policies/{id}":           h.putRetentionPolicy,
 		"DELETE /api/v1/retention/policies/{id}":        h.deleteRetentionPolicy,
+		"GET /api/v1/retention/settings":                h.getRetentionSettings,
+		"PUT /api/v1/retention/settings":                h.putRetentionSettings,
+		"GET /api/v1/retention/pressure":                h.getPressureStatus,
 		"GET /api/v1/retention/runs":                    h.listRetentionRuns,
 		"POST /api/v1/retention/runs":                   h.startRetentionRun,
 		"GET /api/v1/retention/runs/{id}":               h.getRetentionRun,

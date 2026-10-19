@@ -18,7 +18,7 @@ import (
 //
 //	KeepLast: more than KeepLast newer versions exist in its component.
 //	MaxAge:   created longer ago than MaxAge.
-//	MaxIdle:  not accessed (last_accessed_at, else created_at) within MaxIdle.
+//	MaxIdle:  not accessed (latest of created_at, last_accessed_at and last download) within MaxIdle.
 //
 // MinKeep newest versions per component are exempt from MaxAge and MaxIdle (not
 // from KeepLast). Tagged versions are exempt unless IncludeTagged. Content in
@@ -203,6 +203,12 @@ func (s *Service) loadSources(ctx context.Context) ([]sourceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	// The instance default fills in for remote-cache feeds without a policy.
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fallback := settings.Default.policy()
 	bySource, byFeed := map[string]*Policy{}, map[string]*Policy{}
 	for i := range policies {
 		if policies[i].SourceID != "" {
@@ -243,6 +249,8 @@ func (s *Service) loadSources(ctx context.Context) ([]sourceInfo, error) {
 		for _, f := range feeds[si.ID] {
 			if p := byFeed[f]; p != nil {
 				fp = append(fp, p)
+			} else if fallback != nil && si.Kind == "remote" {
+				fp = append(fp, fallback)
 			}
 		}
 		if si.Policies = effectivePolicies(bySource[si.ID], fp, len(feeds[si.ID])); len(si.Policies) > 0 {
@@ -325,7 +333,7 @@ func (s *Service) retainComponent(ctx context.Context, src sourceInfo, component
 	if err := q.QueryRow(ctx, "SELECT clock_timestamp()").Scan(&now); err != nil {
 		return err
 	}
-	rows, err := q.Query(ctx, `SELECT v.id::text,v.version,v.created_at,COALESCE((SELECT max(COALESCE(a.last_accessed_at,a.created_at)) FROM assets a WHERE a.version_id=v.id),v.created_at),row_number() OVER (ORDER BY v.created_at DESC,v.id DESC),EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) FROM versions v WHERE v.component_id=$1 ORDER BY 5`, component)
+	rows, err := q.Query(ctx, `SELECT v.id::text,v.version,v.created_at,COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at),row_number() OVER (ORDER BY v.created_at DESC,v.id DESC),EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) FROM versions v WHERE v.component_id=$1 ORDER BY 5`, component)
 	if err != nil {
 		return err
 	}
