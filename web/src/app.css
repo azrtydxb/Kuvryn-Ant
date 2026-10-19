@@ -672,7 +672,7 @@ details > summary {
 .settings-wide .az-table td {
   padding-left: 10px;
   padding-right: 10px;
-
+}
 
 /* Drawer body is a scrolling flex column: its children must keep their own
    height instead of shrinking (which emptied the Install box and clipped the
