@@ -1,0 +1,106 @@
+{
+  "format": "cargo",
+  "target": "oke",
+  "run_id": "f5a196",
+  "started": "2026-10-18T21:53:26Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "cargo": {
+      "image": "rust:1.99.1",
+      "reported_version": "cargo 1.99.1 (5f94df478 2026-08-27)",
+      "pinned_ref": "cargo 1.99.1"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 3434,
+      "detail": "",
+      "output_tail": "cargo 1.99.1 (5f94df478 2026-08-27)\n"
+    },
+    {
+      "name": "publish: cargo publish 0.1.0 to feed",
+      "status": "pass",
+      "duration_ms": 3399,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-f5a196 v0.1.0 (/work/pub)\n    Packaged 4 files, 1.1KiB (769B compressed)\n   Verifying kcdemo-f5a196 v0.1.0 (/work/pub)\n   Compiling kcdemo-f5a196 v0.1.0 (/work/target/package/kcdemo-f5a196-0.1.0)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.59s\n   Uploading kcdemo-f5a196 v0.1.0 (/work/pub)\n    Uploaded kcdemo-f5a196 v0.1.0 to registry `ant`\nnote: waiting for kcdemo-f5a196 v0.1.0 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-f5a196 v0.1.0 at registry `ant`\n"
+    },
+    {
+      "name": "consume: cargo run with dependency from feed (fresh CARGO_HOME)",
+      "status": "pass",
+      "duration_ms": 1121,
+      "detail": "",
+      "output_tail": "answer=42\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 0.1.1 then consumer resolves it",
+      "status": "pass",
+      "duration_ms": 1967,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-f5a196 v0.1.1 (/work/pub)\n    Packaged 4 files, 1.1KiB (770B compressed)\n   Verifying kcdemo-f5a196 v0.1.1 (/work/pub)\n   Compiling kcdemo-f5a196 v0.1.1 (/work/target/package/kcdemo-f5a196-0.1.1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.18s\n   Uploading kcdemo-f5a196 v0.1.1 (/work/pub)\n    Uploaded kcdemo-f5a196 v0.1.1 to registry `ant`\nnote: waiting for kcdemo-f5a196 v0.1.1 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-f5a196 v0.1.1 at registry `ant`\n    Updating `ant` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded kcdemo-f5a196 v0.1.1 (registry `ant`)\n└── kcdemo-f5a196 v0.1.1 (registry `ant`)\n"
+    },
+    {
+      "name": "delete/unlist: cargo yank 0.1.1",
+      "status": "pass",
+      "duration_ms": 1264,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n        Yank kcdemo-f5a196@0.1.1\n"
+    },
+    {
+      "name": "delete/unlist: cargo yank --undo 0.1.1",
+      "status": "pass",
+      "duration_ms": 3091,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n      Unyank kcdemo-f5a196@0.1.1\n"
+    },
+    {
+      "name": "delete: management API delete 0.1.1",
+      "status": "pass",
+      "duration_ms": 59,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: cargo fetch/build itoa from crates.io via feed",
+      "status": "pass",
+      "duration_ms": 2336,
+      "detail": "",
+      "output_tail": "7\n"
+    },
+    {
+      "name": "remote pull-through hit: fresh CARGO_HOME fetch with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 1235,
+      "detail": "",
+      "output_tail": "    Updating `antr` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded itoa v1.0.11 (registry `antr`)\n"
+    },
+    {
+      "name": "auth denial: invalid token rejected by cargo",
+      "status": "pass",
+      "duration_ms": 819,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\nerror: failed to get `kcdemo-f5a196` as a dependency of package `consumer v0.1.0 (/work/cons)`\n\nCaused by:\n  failed to load source for dependency `kcdemo-f5a196`\n\nCaused by:\n  unable to update registry `ant`\n\nCaused by:\n  failed to get successful HTTP response from `https://ant.azrty.com/feeds/cf-cargo-local-f5a196/cargo/config.json` (193.123.92.168), got 403\n  body:\n  {\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial: index config.json requires credentials (401)",
+      "status": "pass",
+      "duration_ms": 17,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 19062,
+  "summary": {
+    "fail": 0,
+    "pass": 11,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["56d3af31:200", "4ef189c9:200"]
+}

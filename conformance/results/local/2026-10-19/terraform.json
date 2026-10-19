@@ -1,0 +1,113 @@
+{
+  "format": "terraform",
+  "target": "local",
+  "run_id": "dd85eb",
+  "started": "2026-10-19T01:19:31Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "terraform": {
+      "image": "hashicorp/terraform:1.16.6",
+      "reported_version": "Terraform v1.16.6",
+      "pinned_ref": "terraform v1.16.6"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 2465,
+      "detail": "",
+      "output_tail": "Terraform v1.16.6\n"
+    },
+    {
+      "name": "publish: PUT signed provider release 1.0.0 (admin ingestion; Terraform has no native publish)",
+      "status": "pass",
+      "duration_ms": 112,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "publish: PUT module archive 1.0.0 (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 36,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: terraform init installs the provider (signature verified) from the feed",
+      "status": "fail",
+      "duration_ms": 878,
+      "detail": "exit status 1: Initializing the backend...\n\nInitializing provider plugins...\n- Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching \"1.0.0\"...\n\nError: Failed to install provider\n\nError while installing 127.0.0.1:56011/kcdemo/kcdd85eb v1.0.0: could not\nquery provider registry for 127.0.0.1:56011/kcdemo/kcdd85eb: failed to\nretrieve authentication checksums for provider: 401 Unauthorized returned\nfrom 127.0.0.1:56011\n",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching \"1.0.0\"...\n\nError: Failed to install provider\n\nError while installing 127.0.0.1:56011/kcdemo/kcdd85eb v1.0.0: could not\nquery provider registry for 127.0.0.1:56011/kcdemo/kcdd85eb: failed to\nretrieve authentication checksums for provider: 401 Unauthorized returned\nfrom 127.0.0.1:56011\n"
+    },
+    {
+      "name": "consume: terraform init downloads the module (the archive URL is fetched with .netrc credentials)",
+      "status": "pass",
+      "duration_ms": 435,
+      "detail": "",
+      "output_tail": "Initializing the backend...\n\nInitializing modules...\nDownloading 127.0.0.1:56011/kcdemo/moddd85eb/aws 1.0.0 for m...\n- m in .terraform/modules/m\n\nInitializing provider plugins...\n\nTerraform has been successfully initialized!\n\nYou may now begin working with Terraform. Try running \"terraform plan\" to see\nany changes that are required for your infrastructure. All Terraform commands\nshould now work.\n\nIf you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\nm\nmodules.json\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish provider 1.1.0 then terraform init -upgrade resolves it",
+      "status": "fail",
+      "duration_ms": 912,
+      "detail": "exit status 1: Initializing the backend...\n\nInitializing provider plugins...\n- Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching \"\u003e= 1.0.0\"...\n\nError: Failed to install provider\n\nError while installing 127.0.0.1:56011/kcdemo/kcdd85eb v1.1.0: could not\nquery provider registry for 127.0.0.1:56011/kcdemo/kcdd85eb: failed to\nretrieve authentication checksums for provider: 401 Unauthorized returned\nfrom 127.0.0.1:56011\n",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching \"\u003e= 1.0.0\"...\n\nError: Failed to install provider\n\nError while installing 127.0.0.1:56011/kcdemo/kcdd85eb v1.1.0: could not\nquery provider registry for 127.0.0.1:56011/kcdemo/kcdd85eb: failed to\nretrieve authentication checksums for provider: 401 Unauthorized returned\nfrom 127.0.0.1:56011\n"
+    },
+    {
+      "name": "delete: DELETE v1/providers/{ns}/{type}/{version} and v1/modules/.../{version}",
+      "status": "pass",
+      "duration_ms": 16,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API delete provider 1.0.0",
+      "status": "pass",
+      "duration_ms": 11,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: terraform init hashicorp/random 3.6.3 from registry.terraform.io via feed",
+      "status": "fail",
+      "duration_ms": 2270,
+      "detail": "exit status 1: Initializing the backend...\n\nInitializing provider plugins...\n- Finding reg.example/hashicorp/random versions matching \"3.6.3\"...\n\nError: Failed to install provider\n\nError while installing reg.example/hashicorp/random v3.6.3: could not query\nprovider registry for reg.example/hashicorp/random: the request failed after\n2 attempts, please try again later: 503 Service Unavailable returned from\n127.0.0.1:56011\n",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding reg.example/hashicorp/random versions matching \"3.6.3\"...\n\nError: Failed to install provider\n\nError while installing reg.example/hashicorp/random v3.6.3: could not query\nprovider registry for reg.example/hashicorp/random: the request failed after\n2 attempts, please try again later: 503 Service Unavailable returned from\n127.0.0.1:56011\n"
+    },
+    {
+      "name": "remote pull-through hit: cached provider zip served with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "prerequisite step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: terraform init with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 445,
+      "detail": "",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching \"1.0.0\"...\n\nError: Failed to query available provider packages\n\nCould not retrieve the list of available versions for provider\n127.0.0.1:56011/kcdemo/kcdd85eb: host 127.0.0.1:56011 rejected the given\nauthentication credentials\n\nTo see which modules are currently depending on\n127.0.0.1:56011/kcdemo/kcdd85eb and what versions are specified, run the\nfollowing command:\n    terraform providers\n"
+    },
+    {
+      "name": "auth denial: unauthenticated provider versions returns 401",
+      "status": "pass",
+      "duration_ms": 3,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"E3TWFFSQF46W2J7PV4MZXOIDVS\"}\n"
+    }
+  ],
+  "duration_ms": 72756,
+  "summary": {
+    "fail": 3,
+    "pass": 8,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["ceffbf3a:200", "16e6a963:200"]
+}

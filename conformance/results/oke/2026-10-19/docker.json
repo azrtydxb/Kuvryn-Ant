@@ -1,0 +1,127 @@
+{
+  "format": "docker",
+  "target": "oke",
+  "run_id": "ebf217",
+  "started": "2026-10-19T01:24:05Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:7dd9c8a"
+  },
+  "clients": {
+    "crane": {
+      "image": "gcr.io/go-containerregistry/crane:debug",
+      "reported_version": "8a72a424fdecb4caa14f2d525e5d2503331442b5",
+      "pinned_ref": "crane (F08/F16 client)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 2227,
+      "detail": "",
+      "output_tail": "8a72a424fdecb4caa14f2d525e5d2503331442b5\n"
+    },
+    {
+      "name": "publish: crane append (login + push image)",
+      "status": "pass",
+      "duration_ms": 2905,
+      "detail": "",
+      "output_tail": "\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/19 01:24:07 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:07 base unspecified, using empty image\n2026/10/19 01:24:08 pushed blob: sha256:cbd5f81ee9460a2345209e0afdaaaa1ef4bb5c4f0215bdac69a227b5ccc8098c\n2026/10/19 01:24:08 pushed blob: sha256:fac856910a9f527b742c7f87ae626eecc22d246e1f5c1f266eb78bcb851fff7c\n2026/10/19 01:24:08 ant.azrty.com/cf-docker-local-ebf217/demo-ebf217:v1: digest: sha256:0af7b58d1e5a5cdfad058db8ae1b227fbd10f2624d2b97aae4d1ffa30f2c1be9 size: 401\nant.azrty.com/cf-docker-local-ebf217/demo-ebf217@sha256:0af7b58d1e5a5cdfad058db8ae1b227fbd10f2624d2b97aae4d1ffa30f2c1be9\n"
+    },
+    {
+      "name": "consume: crane digest/manifest/pull/ls same endpoint",
+      "status": "pass",
+      "duration_ms": 1206,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:10 logged in via /work/home/.docker/config.json\nsha256:0af7b58d1e5a5cdfad058db8ae1b227fbd10f2624d2b97aae4d1ffa30f2c1be9\nsha256:fac856910a9f527b742c7f87ae626eecc22d246e1f5c1f266eb78bcb851fff7c\ncbd5f81ee9460a2345209e0afdaaaa1ef4bb5c4f0215bdac69a227b5ccc8098c.tar.gz\nmanifest.json\nv1\n"
+    },
+    {
+      "name": "same-endpoint write then read: retag, platform mutate, multi-arch index",
+      "status": "pass",
+      "duration_ms": 2796,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:11 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:12 ant.azrty.com/cf-docker-local-ebf217/demo-ebf217:v2: digest: sha256:0af7b58d1e5a5cdfad058db8ae1b227fbd10f2624d2b97aae4d1ffa30f2c1be9 size: 401\n2026/10/19 01:24:12 existing blob: sha256:cbd5f81ee9460a2345209e0afdaaaa1ef4bb5c4f0215bdac69a227b5ccc8098c\n2026/10/19 01:24:13 pushed blob: sha256:0772116646884d8ba15ab626f53f8e5549dada8320e4fbae08ac260abe85a732\n2026/10/19 01:24:13 ant.azrty.com/cf-docker-local-ebf217/demo-ebf217:arm: digest: sha256:301a128c36fd9f79900b97bc1caa0f205d5dcd87d3365819893c7734fcd281e0 size: 401\nant.azrty.com/cf-docker-local-ebf217/demo-ebf217@sha256:301a128c36fd9f79900b97bc1caa0f205d5dcd87d3365819893c7734fcd281e0\n2026/10/19 01:24:13 base unspecified, using empty index\n2026/10/19 01:24:13 existing manifest: sha256:301a128c36fd9f79900b97bc1caa0f205d5dcd87d3365819893c7734fcd281e0\n2026/10/19 01:24:13 existing manifest: sha256:0af7b58d1e5a5cdfad058db8ae1b227fbd10f2624d2b97aae4d1ffa30f2c1be9\nant.azrty.com/cf-docker-local-ebf217/demo-ebf217@sha256:cf046264f66c18d1fc228413708fd04bf0548ff0ebac9eba7b15cc8393ec54b9\n2026/10/19 01:24:13 ant.azrty.com/cf-docker-local-ebf217/demo-ebf217:multi: digest: sha256:cf046264f66c18d1fc228413708fd04bf0548ff0ebac9eba7b15cc8393ec54b9 size: 558\n"
+    },
+    {
+      "name": "delete: crane delete manifest by tag, tag no longer resolves",
+      "status": "pass",
+      "duration_ms": 1133,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:14 logged in via /work/home/.docker/config.json\n2026/10/19 01:24:15 HEAD request failed, falling back on GET: HEAD https://ant.azrty.com/v2/cf-docker-local-ebf217/demo-ebf217/manifests/v2: unexpected status code 404 Not Found (HEAD responses have no body, use GET for details)\nError: GET https://ant.azrty.com/v2/cf-docker-local-ebf217/demo-ebf217/manifests/v2: MANIFEST_UNKNOWN: manifest not found\n"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist",
+      "status": "pass",
+      "duration_ms": 232,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss via mirror.gcr.io: crane digest+pull of library/hello-world",
+      "status": "pass",
+      "duration_ms": 11775,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:18 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+    },
+    {
+      "name": "remote pull-through hit via mirror.gcr.io: pull by digest with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 1812,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:28 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+    },
+    {
+      "name": "remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world",
+      "status": "pass",
+      "duration_ms": 4912,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:32 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+    },
+    {
+      "name": "remote pull-through hit via registry-1.docker.io: pull by digest with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 823,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:35 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+    },
+    {
+      "name": "auth denial: invalid token rejected by crane",
+      "status": "pass",
+      "duration_ms": 403,
+      "detail": "",
+      "output_tail": "2026/10/19 01:24:35 HEAD request failed, falling back on GET: HEAD https://ant.azrty.com/v2/cf-docker-local-ebf217/demo-ebf217/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET https://ant.azrty.com/v2/cf-docker-local-ebf217/demo-ebf217/manifests/v1: UNAUTHORIZED: authentication required\n"
+    },
+    {
+      "name": "auth denial: bad token and anonymous private-feed reads return 401 (anonymous /v2/ may be 200 for the dockerd handshake)",
+      "status": "pass",
+      "duration_ms": 58,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial on cf-docker-remote-ebf217: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 18,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial on cf-docker-hub-ebf217: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 19,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 226029,
+  "summary": {
+    "fail": 0,
+    "pass": 14,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["33b8713a:200", "e50ca5b3:200", "c63a6c6a:200"]
+}

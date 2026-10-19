@@ -1,0 +1,99 @@
+{
+  "format": "rpm",
+  "target": "local",
+  "run_id": "d0bf40",
+  "started": "2026-10-18T23:14:25Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "fedora": {
+      "image": "fedora:latest",
+      "reported_version": "dnf5 version 5.4.3.0",
+      "pinned_ref": "dnf5 of Fedora latest (reference dnf5 5.4.6.0)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 51712,
+      "detail": "",
+      "output_tail": "dnf5 version 5.4.3.0\n"
+    },
+    {
+      "name": "publish: rpmbuild a noarch rpm, then PUT Packages/{nevra}.rpm (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 185533,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: dnf makecache + install from the feed (repomd, primary, filelists, other)",
+      "status": "pass",
+      "duration_ms": 805,
+      "detail": "",
+      "output_tail": "Updating and loading repositories:\n ant                                    100% | 147.7 KiB/s |   2.1 KiB |  00m00s\nRepositories loaded.\nMetadata cache created.\nUpdating and loading repositories:\nRepositories loaded.\nTotal size of inbound packages is 6 KiB. Need to download 6 KiB.\nAfter this operation, 3 B extra will be used (install 3 B, remove 0 B).\nPackage       Arch   Version Repository      Size\nInstalling:\n kcdemod0bf40 noarch 0:1.0-1 ant          3.0   B\n\nTransaction Summary:\n Installing:         1 package\n\n[1/1] kcdemod0bf40-0:1.0-1.noarch       100% |   1.0 MiB/s |   6.4 KiB |  00m00s\n--------------------------------------------------------------------------------\n[1/1] Total                             100% | 918.8 KiB/s |   6.4 KiB |  00m00s\nRunning transaction\n[1/3] Verify package files              100% |   0.0   B/s |   1.0   B |  00m00s\n[2/3] Prepare transaction               100% |   1.0 KiB/s |   1.0   B |  00m00s\n[3/3] Installing kcdemod0bf40-0:1.0-1.n 100% |   8.6 KiB/s | 272.0   B |  00m00s\nWarning: skipped OpenPGP checks for 1 package from repository: ant\nComplete!\n"
+    },
+    {
+      "name": "same-endpoint write then read: PUT 1.1, dnf upgrade",
+      "status": "pass",
+      "duration_ms": 264933,
+      "detail": "",
+      "output_tail": "Cache directory \"/var/cache/libdnf5\" does not exist. Nothing to clean.\nUpdating and loading repositories:\n ant                                    100% |  82.8 KiB/s |   2.2 KiB |  00m00s\nRepositories loaded.\nPackage       Arch   Version Repository      Size\nInstalling:\n kcdemod0bf40 noarch 0:1.1-1 ant          3.0   B\n\nTransaction Summary:\n Installing:         1 package\n\nTotal size of inbound packages is 6 KiB. Need to download 6 KiB.\nAfter this operation, 3 B extra will be used (install 3 B, remove 0 B).\n[1/1] kcdemod0bf40-0:1.1-1.noarch       100% | 378.3 KiB/s |   6.4 KiB |  00m00s\n--------------------------------------------------------------------------------\n[1/1] Total                             100% | 378.3 KiB/s |   6.4 KiB |  00m00s\nRunning transaction\n[1/3] Verify package files              100% |   0.0   B/s |   1.0   B |  00m00s\n[2/3] Prepare transaction               100% | 500.0   B/s |   1.0   B |  00m00s\n[3/3] Installing kcdemod0bf40-0:1.1-1.n 100% | 866.0   B/s | 272.0   B |  00m00s\nWarning: skipped OpenPGP checks for 1 package from repository: ant\nComplete!\nkcdemod0bf40-1.1-1.noarch\n"
+    },
+    {
+      "name": "delete: DELETE Packages/{file}.rpm republishes repodata without it",
+      "status": "pass",
+      "duration_ms": 4379,
+      "detail": "",
+      "output_tail": "Cache directory \"/var/cache/libdnf5\" does not exist. Nothing to clean.\nUpdating and loading repositories:\n ant                                    100% |  21.5 KiB/s |   2.1 KiB |  00m00s\nRepositories loaded.\nFailed to resolve the transaction:\nNo match for argument: kcdemod0bf40-1.1\nYou can try to add to command line:\n  --skip-unavailable to skip unavailable packages\n"
+    },
+    {
+      "name": "delete/unlist: management API delete 1.0",
+      "status": "pass",
+      "duration_ms": 8,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: dnf download acl from the Rocky 9 BaseOS repo via feed",
+      "status": "pass",
+      "duration_ms": 30436,
+      "detail": "",
+      "output_tail": "Updating and loading repositories:\n rocky                                  100% |  34.1 MiB/s |  86.0 MiB |  00m03s\nRepositories loaded.\nDownloading Packages:\n acl-0:2.4.0-1.el9_8.aarch64            100% | 467.2 KiB/s |  73.4 KiB |  00m00s\n/work/acl-2.4.0-1.el9_8.aarch64.rpm\n"
+    },
+    {
+      "name": "remote pull-through hit: cached rpm served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 20,
+      "detail": "",
+      "output_tail": "bڌR����i\u0003�q$��\u0018�\u000f`o��NDD��D3�\u0016����]U��#N�8����%���w�-���\u003c+N�,DM�u'�d\u0001a\u0004O�\f\u001c�(�� V�\\lm��jX\u0014���P\u001d�`An\u0003�.�?�\u0003�\u0019x�c:��\u0016᠞\t�J!�,g�\u0006{\u0000�{����l_t1\u001c��ZA�7nY�0�ێ,\u0013a��f���Z0�9`fl\u001fJ�Y��$���-\u0018w�K$f�\u0007��ݫ�\u0011L�\u0010s\u001ew�\u0003U|z�W��`T��V#s6(��\u0016�\u001e���U��[�\u0011\u0013{�\u0015���/��\u0026���Ɠ�3�ᓟ����EhJ;[\u0007%�R���ņ\u003e͖�'w��9�\nMA~?\u0017�~\u001a\u0003\u000e�R�k\u001f����m|�G�\u0000�\u0013�\u000f����oi#�\"!|�\u0015\n���Y۩la��\u001b��\u0001��#J\u0006����[���{��\u0012\u0015�}���p�Eޟe� V�\u001d�@,�q�\u000eH������CM\f\u0016\u0015�\u0019�n=\u0013=\u0026\u0017��\u0016H��U\f�}\u000b�\u000f'�l�:��W+���\u0007\u0003�_=�l�|\u0014x\u0001�7���e�������J�[�\u001c��̐\u001eH�H�b�#朊\u001aj��\u001f\u0012�B����e����:\u0012���.*��\u0017K���G`$�.\u0002�\"��6]ߨ��w\u0013!_ AfL|\u0003�)\"�\u003e��\fc\u0019�=��Ga�0\u0016ШA�}8R�\u001aN\u003e��թ\u0019��,R�\u0005��f\u0011C\u0016@BQd���Z26�\u0015\t\u0019p+�n?j\u0017��5�����-��uMM��L�(�j߼�~J��\n��A�\rW���ߦ\tk��\u001f�!\u0002��j!Mh�ٛDkT�,�f�]�R�(�;`*\u0012xS�KltR�e�]\t�e��,1�\f�u�\u0006\u0004d��?C�2aeܥ���+�Ъ��(F=��\u0012\\���g\f7�����\u001b�X�p�u�\u0013\u001e�\u0003\u0001\u001a@�H�I�i\u001f\u000eݾ���4����\u0001���/�y�\"v�\u003c\u000109h�~\u0004\f\t�1\\�d�6�#F@u�6��Pڊ���\u000f)��7\u001c\u0000)~�\u000eͣ���~���T\u001a^xC\u001e�\u0017[�9\u001a98��yk!Y2ޓA�� ؊�\f�g\n/_����\u0013�N\u0000�ޕ)��.+O��\u0018l���*�9E\bR\u000f/��W��\f�\u0003K�L�c\u003c\u00145`�\u0017\u0019i��K�������@0#�\"\tO�[\u000eP\u003c\u001d�_\u0019���#}\n�\u0011�\nN�\b\u000bY\u0012]���\b�,��r�\u000b�\u0005O\u0005�~\bx\u000by\u001d�̗P�\u0012�U�\"\r\u0019\u0010Fu��-*4\" 8zT�Xа�\u001a�\u001e �ۑYEi��gh\u0019�p$;�����rg �r��2����չ�\n������ǥ�\u0016�۝��jQ�\\��\u0013m*\u0012�\u0001��/\u000e�g�{�\u0001\u0002*�� Z�\t7*2$\u0007[�\u0003х\u0016k\b \u0017(���ĵ\u000fW:\t�.qws��Ȩ}O\u001eTv�Ã�u��\t'�\u001e���6�Kz\t�9�8����X\u0003�ײ�Al��\u0012G���B��P�W6�ٽ��\u000f\u0010�\u001c�:\u001e��x�(u\u001d�����\"ƨU-��7�u�7��\u0011���@T��%�\u000fys@�D�\u0003�:w�7K\u001c��c�\u0012[\\�e(q\u001b�\n(!w\u0007}�R��S^0�Xv!\u0026\u0007-�L\u0010Ud�I|��o1s���≅2�^Q�o�=��#Ӵ�ݣ�\u0016�\u0012��\u0000\u0003J�y-�\u003e^�k\u000b���\tbK|\r��\u003c��\u0018�9�\u0006t��\r��x��z\u0013�\b�T�'��\u0018\u0016\u0012�d\u0003����h-FK�_��͐�\u0026\u0026��1м�b+��H��|����H�\u0010\rÏ�r�h\u003e\u0013k\u0002�V��/S|\u0012Έ�J*Ɛ\u003e~����\u001c�A.���D�Yq�\u0026\u00073���\u0003\u0005x\\\u0003��T�`��M�e���"
+    },
+    {
+      "name": "auth denial: dnf makecache with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 2342,
+      "detail": "",
+      "output_tail": "Updating and loading repositories:\n bad                                    100% |  11.1 KiB/s | 420.0   B |  00m00s\n\u003e\u003e\u003e Status code: 401 for http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml (IP: 127.0.0.1) - http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Status code: 401 for http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml (IP: 127.0.0.1) - http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Status code: 401 for http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml (IP: 127.0.0.1) - http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Status code: 401 for http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml (IP: 127.0.0.1) - http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Usable URL not found\nFailed to download metadata (baseurl: \"http://127.0.0.1:56011/feeds/cf-rpm-local-d0bf40/rpm\") for repository \"bad\": Usable URL not found\n"
+    },
+    {
+      "name": "auth denial: unauthenticated repomd.xml returns 401",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"ZEOT4WS72OCV2VA6GZYDCQ7V3M\"}\n"
+    }
+  ],
+  "duration_ms": 540195,
+  "summary": {
+    "fail": 0,
+    "pass": 10,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["5d7c7972:200", "c7c17dbc:200"]
+}

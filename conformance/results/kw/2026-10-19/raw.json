@@ -1,0 +1,113 @@
+{
+  "format": "raw",
+  "target": "kw",
+  "run_id": "349c44",
+  "started": "2026-10-18T23:04:02Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "curl": {
+      "image": "curlimages/curl:8.11.1",
+      "reported_version": "curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0",
+      "pinned_ref": "curl"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 393,
+      "detail": "",
+      "output_tail": "curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0\n"
+    },
+    {
+      "name": "publish: curl PUT kcdemo/349c44/payload.bin",
+      "status": "pass",
+      "duration_ms": 740,
+      "detail": "",
+      "output_tail": "201\n"
+    },
+    {
+      "name": "consume: curl GET returns identical bytes, HEAD and Range work",
+      "status": "pass",
+      "duration_ms": 542,
+      "detail": "",
+      "output_tail": "HTTP/2 200 \r\n10\n"
+    },
+    {
+      "name": "same-endpoint write then read: PUT a second key and read it back",
+      "status": "pass",
+      "duration_ms": 928,
+      "detail": "",
+      "output_tail": "second-349c44\n"
+    },
+    {
+      "name": "immutability: PUT different bytes at an existing key conflicts (409)",
+      "status": "pass",
+      "duration_ms": 1034,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "sccache WebDAV: cold compile writes, warm compile hits the feed",
+      "status": "pass",
+      "duration_ms": 2600,
+      "detail": "",
+      "output_tail": "\nthread 'main' (285) panicked at /rustc/31fca3adb283cc9dfd56b49cdee9a96eb9c96ffd/library/std/src/io/stdio.rs:1165:9:\nfailed printing to stdout: Broken pipe (os error 32)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nCompile requests                      6\nCompile requests executed             1\nCache hits                            0\nCache misses                          1\nCache misses (Rust)                   1\nCache hits rate                    0.00 %\nCache hits rate (Rust)             0.00 %\nCache timeouts                        0\nCache read errors                     0\nForced recaches                       0\nCache write errors                    0\nCache errors                          0\nCompilations                          1\nCompilation failures                  0\nNon-cacheable compilations            0\nNon-cacheable calls                   5\nNon-compilation calls                 0\nUnsupported compiler calls            0\nAverage cache write               0.387 s\nAverage compiler                  0.015 s\nCache hits                             1\n"
+    },
+    {
+      "name": "delete: curl DELETE key then GET returns 404",
+      "status": "pass",
+      "duration_ms": 808,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API delete of second.txt",
+      "status": "pass",
+      "duration_ms": 66,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: curl GET raw.githubusercontent.com/golang/go/go1.22.0/LICENSE via feed",
+      "status": "pass",
+      "duration_ms": 788,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through hit: same bytes served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 383,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: invalid token rejected by curl",
+      "status": "pass",
+      "duration_ms": 292,
+      "detail": "",
+      "output_tail": "curl: (22) The requested URL returned error: 401\n"
+    },
+    {
+      "name": "auth denial: unauthenticated PUT rejected",
+      "status": "pass",
+      "duration_ms": 4,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"RSVPZAXPH7WIFLLBAABP7ANZ4I\"}\n"
+    }
+  ],
+  "duration_ms": 9018,
+  "summary": {
+    "fail": 0,
+    "pass": 12,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["472d5abb:200", "c06d9340:200"]
+}

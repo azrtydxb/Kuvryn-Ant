@@ -1,0 +1,99 @@
+{
+  "format": "swift",
+  "target": "local",
+  "run_id": "0c8cc7",
+  "started": "2026-10-18T23:52:39Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "swift": {
+      "image": "swift:6.4.1",
+      "reported_version": "Swift version 6.4.1 (swift-6.4.1-RELEASE)",
+      "pinned_ref": "swift 6.4.1"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 13113,
+      "detail": "",
+      "output_tail": "Swift version 6.4.1 (swift-6.4.1-RELEASE)\n"
+    },
+    {
+      "name": "publish: swift package-registry publish kcdemo.Lib0c8cc7 1.0.0 (native client)",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "SwiftPM does not send registry credentials over plain HTTP; this target is http, so the native client steps run only on https targets",
+      "output_tail": ""
+    },
+    {
+      "name": "publish: PUT {scope}/{name}/{version} multipart (source-archive + metadata) 1.0.1",
+      "status": "pass",
+      "duration_ms": 56,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: swift package resolve with an id: dependency from the registry",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "SwiftPM does not send registry credentials over plain HTTP; this target is http, so the native client steps run only on https targets",
+      "output_tail": ""
+    },
+    {
+      "name": "same-endpoint write then read: release list, metadata and source archive over the registry API",
+      "status": "pass",
+      "duration_ms": 4,
+      "detail": "",
+      "output_tail": "PK\u0003\u0004\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0017\u0000\t\u0000Lib0c8cc7/Package.swiftUT\u0005\u0000\u0001�\u0000�el˱\n�@\f���O\u0011:Y����\u00057G\u0007w��\u001ac\t^/G.*��`\u0011\n�~��߶��|��DB�\u001f��%v�fW��D\rN\u001eo~�\u0003eTN�\u0012�@\u0006i�a�\u0005��G��\u003cr��-��\\BR���r\u0007�\u0026p�^_��y\u001d��f����i\u0026��W�*�\u0003\u0000PK\u0007\b��\t`�\u0000\u0000\u0000�\u0000\u0000\u0000PK\u0003\u0004\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000#\u0000\t\u0000Lib0c8cc7/Sources/Lib0c8cc7/a.swiftUT\u0005\u0000\u0001�\u0000�e\u0000\u0017\u0000��public let answer = 42\n\u0003\u0000PK\u0007\b=�6�\u001e\u0000\u0000\u0000\u0017\u0000\u0000\u0000PK\u0001\u0002\u0014\u0003\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X��\t`�\u0000\u0000\u0000�\u0000\u0000\u0000\u0017\u0000\t\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u0000\u0000\u0000\u0000Lib0c8cc7/Package.swiftUT\u0005\u0000\u0001�\u0000�ePK\u0001\u0002\u0014\u0003\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X=�6�\u001e\u0000\u0000\u0000\u0017\u0000\u0000\u0000#\u0000\t\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u0000\u0000\u0000Lib0c8cc7/Sources/Lib0c8cc7/a.swiftUT\u0005\u0000\u0001�\u0000�ePK\u0005\u0006\u0000\u0000\u0000\u0000\u0002\u0000\u0002\u0000�\u0000\u0000\u0000H\u0001\u0000\u0000\u0000\u0000"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 1.0.1",
+      "status": "pass",
+      "duration_ms": 4,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: DELETE {scope}/{name}/{version}",
+      "status": "pass",
+      "duration_ms": 2,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through: swift registry adapter has no remote source support",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "not supported: internal/swiftrepo has no PullThrough hook (docs/implementation/pull-through.md lists no swift)",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: package resolve with invalid credentials rejected",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "SwiftPM does not send registry credentials over plain HTTP; this target is http, so the native client steps run only on https targets",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: unauthenticated release list returns 401",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": "{\"detail\":\"authentication required\",\"status\":401,\"title\":\"Unauthorized\"}\n"
+    }
+  ],
+  "duration_ms": 13188,
+  "summary": {
+    "fail": 0,
+    "pass": 6,
+    "skip": 4,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["7ea35c10:200"]
+}

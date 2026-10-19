@@ -1,0 +1,106 @@
+{
+  "format": "apt",
+  "target": "oke",
+  "run_id": "29ad02",
+  "started": "2026-10-19T00:12:56Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "debian": {
+      "image": "debian:trixie",
+      "reported_version": "apt 3.0.3 (arm64)",
+      "pinned_ref": "apt of Debian trixie"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1015,
+      "detail": "",
+      "output_tail": "apt 3.0.3 (arm64)\n"
+    },
+    {
+      "name": "publish: dpkg-deb build, then PUT pool/main/k/{pkg}/{file}.deb?distribution=stable (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 5911,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "edge: package built with the dpkg-deb default compression (zstd on trixie) is accepted",
+      "status": "fail",
+      "duration_ms": 59,
+      "detail": "PUT /feeds/cf-apt-local-29ad02/apt/pool/main/k/kcdemo29ad02/kcdemo29ad02_1.0_all.deb -\u003e 400, want [200 201 204]: {\"error\":{\"code\":\"400\",\"message\":\"Bad Request\"}}\n",
+      "output_tail": "{\"error\":{\"code\":\"400\",\"message\":\"Bad Request\"}}\n"
+    },
+    {
+      "name": "consume: apt-get update (signed Release, by-hash) + apt-get install",
+      "status": "pass",
+      "duration_ms": 30322,
+      "detail": "",
+      "output_tail": "Get:1 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable InRelease [1219 B]\nGet:2 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable/main all Packages [286 B]\nFetched 1505 B in 0s (8909 B/s)\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  kcdemo29ad02\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 616 B of archives.\nAfter this operation, 0 B of additional disk space will be used.\nGet:1 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable/main all kcdemo29ad02 all 1.0 [616 B]\ndebconf: unable to initialize frontend: Dialog\ndebconf: (TERM is not set, so the dialog frontend is not usable.)\ndebconf: falling back to frontend: Readline\ndebconf: unable to initialize frontend: Readline\ndebconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/aarch64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/aarch64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, \u003cSTDIN\u003e line 1.)\ndebconf: falling back to frontend: Teletype\ndebconf: unable to initialize frontend: Teletype\ndebconf: (This frontend requires a controlling tty.)\ndebconf: falling back to frontend: Noninteractive\nFetched 616 B in 0s (2543 B/s)\nSelecting previously unselected package kcdemo29ad02.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 5512 files and directories currently installed.)\r\nPreparing to unpack .../kcdemo29ad02_1.0_all.deb ...\r\nUnpacking kcdemo29ad02 (1.0) ...\r\nSetting up kcdemo29ad02 (1.0) ...\r\n"
+    },
+    {
+      "name": "same-endpoint write then read: PUT 1.1, apt-get update, install upgrade",
+      "status": "pass",
+      "duration_ms": 7320,
+      "detail": "",
+      "output_tail": "Get:1 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable InRelease [1219 B]\nGet:2 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable/main all Packages [386 B]\nFetched 1605 B in 0s (10.2 kB/s)\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  kcdemo29ad02\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 616 B of archives.\nAfter this operation, 0 B of additional disk space will be used.\nGet:1 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable/main all kcdemo29ad02 all 1.1 [616 B]\ndebconf: unable to initialize frontend: Dialog\ndebconf: (TERM is not set, so the dialog frontend is not usable.)\ndebconf: falling back to frontend: Readline\ndebconf: unable to initialize frontend: Readline\ndebconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/aarch64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/aarch64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, \u003cSTDIN\u003e line 1.)\ndebconf: falling back to frontend: Teletype\ndebconf: unable to initialize frontend: Teletype\ndebconf: (This frontend requires a controlling tty.)\ndebconf: falling back to frontend: Noninteractive\nFetched 616 B in 0s (3074 B/s)\nSelecting previously unselected package kcdemo29ad02.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 5512 files and directories currently installed.)\r\nPreparing to unpack .../kcdemo29ad02_1.1_all.deb ...\r\nUnpacking kcdemo29ad02 (1.1) ...\r\nSetting up kcdemo29ad02 (1.1) ...\r\nVersion: 1.1\n"
+    },
+    {
+      "name": "delete/unlist: DELETE pool path unlists 1.1 into a new signed generation",
+      "status": "pass",
+      "duration_ms": 7337,
+      "detail": "",
+      "output_tail": "Get:1 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable InRelease [1219 B]\nGet:2 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable/main all Packages [286 B]\nFetched 1505 B in 0s (4556 B/s)\nReading package lists...\n"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 1.0",
+      "status": "pass",
+      "duration_ms": 281,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: apt-get update + install hello from deb.debian.org via feed",
+      "status": "pass",
+      "duration_ms": 41801,
+      "detail": "",
+      "output_tail": "Get:1 https://ant.azrty.com/feeds/cf-apt-remote-29ad02/apt trixie InRelease [140 kB]\nGet:2 https://ant.azrty.com/feeds/cf-apt-remote-29ad02/apt trixie/main arm64 Packages [9614 kB]\nFetched 9755 kB in 28s (345 kB/s)\nReading package lists...\nReading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  hello\n0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.\nNeed to get 52.7 kB of archives.\nAfter this operation, 319 kB of additional disk space will be used.\nGet:1 https://ant.azrty.com/feeds/cf-apt-remote-29ad02/apt trixie/main arm64 hello arm64 2.10-5 [52.7 kB]\ndebconf: unable to initialize frontend: Dialog\ndebconf: (TERM is not set, so the dialog frontend is not usable.)\ndebconf: falling back to frontend: Readline\ndebconf: unable to initialize frontend: Readline\ndebconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/aarch64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/aarch64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/aarch64-linux-gnu/perl-base /usr/lib/aarch64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, \u003cSTDIN\u003e line 1.)\ndebconf: falling back to frontend: Teletype\ndebconf: unable to initialize frontend: Teletype\ndebconf: (This frontend requires a controlling tty.)\ndebconf: falling back to frontend: Noninteractive\nFetched 52.7 kB in 2s (25.0 kB/s)\nSelecting previously unselected package hello.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 5512 files and directories currently installed.)\r\nPreparing to unpack .../hello_2.10-5_arm64.deb ...\r\nUnpacking hello (2.10-5) ...\r\nSetting up hello (2.10-5) ...\r\nhttps://ant.azrty.com/feeds/cf-apt-remote-29ad02/apt/pool/main/h/hello/hello_2.10-5_arm64.deb\n"
+    },
+    {
+      "name": "remote pull-through hit: cached .deb served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 373,
+      "detail": "",
+      "output_tail": "��}~0�Ǖ��H�GZ�G�\u003e�2J[��4\f���Ȍ��[,��\u0013\u0007w�L�9^~!*�~�0��\u0019�/܀dm���,c\u0010\u0011*��T���x���P���\u0018+IbG�\u0018�\u001a�H\u0007��M�\u000b|��X���U��o�Y�+\u0006VRmt\u0019k�\u001f��\u000f@Tf6��n��\u0014U�מ���\u0026�'y�uL/R�\u001a�Ы/\u0003�\u001d��\u0011����{��3�\u001e\u001cb\u0002G��\u000b\u00069�\u001c�\"��եM0������\u001e��\u0007�Z5�\u001fэ�\u001d\u001a\u0010?�\r��l]p�ڀ�e�\rUY�\u0007ʐ��2���n� �hd\u003e���{�.\u0013b����d�\u0005����I\u0018\t~\u0001[9�pf\u0013\u0002���_��_���^�ϳ\u000b�UM\u000e烀n���\b����\u001f�Pe\u0004�\u0007��p�\u0013�\"J����\u001b������\u0026z\u000102WW�o\u0026���\u0004��kH3�\u001c��_≲�����]7���4V�jA�w�+t)�\u0019��V��X\u003e�1��-�B�����^��x�\u001cqOt\f`�\u001fFA�H�S\u001dy,6|Y=g�'~���\r\n\u001a%�f{�\u0000\u0005�\u001d\u0018��R�\r��A\u001a�\u0011ծԘ\u001f@^�/�ՃiX�\"}�A)�s�4J�\b��9\u0001\u0002 I\u001b(�P�p���6do�qM�#�\u001dx�B�\u001a[�\u0011���4W�sRs�!H9m�h\u0005�Wn.]\u0006C�|�=��\u0017AR��������\f�J ��գ�ż3r�����J�\u0005^g\u0004��\n\u0005���k|6Դۑ\u000e+\u0016�tR�r����Stf ���7����a5$_��ę�!�MR\u0006���\tQ\u0006�axJL(�:�EZ����)-v��;\u001b��\u0010M�1�\b\u000fR\u001a��C�\"ѫ�\ra\t��N:���7 �E#c��\u00130\u0016e�m�3IEƓ�M'��\u0002���4܎\u0015���\u0004\u003e\u0018W)x�񤮟\t�f�NdGf�]`��Jf�`\u001616�:����ξ�\u0010w�\u0003�GMX\u0013G#����7� -�nN�\u0026W\u0004�9c-\u0018�����շ\u0003�PHaQ����\u0004\u0007\u0010��9�NJ�/��Obo\u003cXݚ���궨7*\u0014��y(F���\u0002l���A~0�5�Z�\u00186�\t\u001ao`�B�S�q��/g��mٔT\u001f\u0015[��u�d�l\u0006cY����\u003c�5\u001b�\f�wjg�#���\u0026�5����`��\u0018\u001a\u0012�\u001d����\bE�l��PL\u001d�\u001f��\u001c���\u0018�\\\u0026\u0019�M)%f��ީ�����v���\n/t\u003e��t�\u001aí�\u000f��\u0010\u000ev7mvKA%\u0000��\u0002�.�b\u001bt��\u001b�R��C�\u003e�Y\u001cf��\u0013\u0007�K\u000f\u0014ܶ�]9�������7s�_\u0017�G��\u0016\u0007Yh��� \n\t�\u000b]�-u\u0026m�Ct@�Db�\u000bf/��\n\u0016�U,�)���4��\u0000�~\u000f��e\u0002+o\"��n7Z��k��!�M��Kf�s-�\u0006\u0004\\)�\u0012�9(\t\u0015\u003e*=��]\u0007T��m}N\u00100�y�lc\u003c\u0015�\u0002\u0019/��9�q�\u0026�� u�cS)� ��\u0017���p���p�+�s\u0007\u003e\t�`[tR\b{+�u~�}u�6��\u0016䷝a�j��ͿzH16IX�f�\u001b됔\fƮ�B�I�����f���*p�ҢDL�\u003e�A���+�\u0016T��\u0001\u000b��\n\u0006�j\u0012���j�$8\u003e\u001a�8�\u0017�x19��G8�ؐ�9\u0007��\n^�sq�^Ԓ��Z�H��^54*�\bn[~Y]K��\rCWՓ�� ~!F���4����u\u0003��X�:�9Ę\u0015}Y�ˏ�\r��q�yT���\u0003B�߫��EF�%���\tLbW����B\u001fM�\u003e��͓�����\u0015:�1!1Y�\u0000\u0017=\u0000\u0000�\u000f\n\u001c��\u0010\b\u0000\u0001��\u0003��\u0011T\u0002\u0019I��g�\u0002\u0000\u0000\u0000\u0000\u0004YZ"
+    },
+    {
+      "name": "auth denial: apt-get update with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 5530,
+      "detail": "",
+      "output_tail": "Err:1 https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable InRelease\n  401  Unauthorized [IP: 193.123.92.168 443]\nReading package lists...\nE: Failed to fetch https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt/dists/stable/InRelease  401  Unauthorized [IP: 193.123.92.168 443]\nE: The repository 'https://ant.azrty.com/feeds/cf-apt-local-29ad02/apt stable InRelease' is not signed.\n"
+    },
+    {
+      "name": "auth denial: unauthenticated Release returns 401",
+      "status": "pass",
+      "duration_ms": 20,
+      "detail": "",
+      "output_tail": ""
+    }
+  ],
+  "duration_ms": 165457,
+  "summary": {
+    "fail": 1,
+    "pass": 10,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["70ed8ee3:200", "80441770:200"]
+}

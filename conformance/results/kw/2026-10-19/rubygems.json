@@ -1,0 +1,113 @@
+{
+  "format": "rubygems",
+  "target": "kw",
+  "run_id": "ca6517",
+  "started": "2026-10-18T23:59:13Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "ruby": {
+      "image": "ruby:4.0",
+      "reported_version": "RubyGems 4.0.20 / ruby 4.0.7 / Bundler 4.0.20",
+      "pinned_ref": "ruby 4.0 with its bundled RubyGems (reference v4.0.23); CocoaPods gem pinned to 1.17.0 at run time"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 804,
+      "detail": "",
+      "output_tail": "RubyGems 4.0.20 / ruby 4.0.7 / Bundler 4.0.20\n"
+    },
+    {
+      "name": "publish: gem build + gem push 0.1.0",
+      "status": "pass",
+      "duration_ms": 1023,
+      "detail": "",
+      "output_tail": "WARNING:  no homepage specified\nWARNING:  make sure you specify the oldest ruby version constraint (like \"\u003e= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute\nWARNING:  See https://guides.rubygems.org/specification-reference/ for help\nkcdemo-ca6517-0.1.0.gem\nYou are already signed in on https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems.\nPushing gem to https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems...\nSuccessfully registered gem: kcdemo-ca6517 (0.1.0)\n"
+    },
+    {
+      "name": "consume: gem install 0.1.0 from the feed",
+      "status": "pass",
+      "duration_ms": 929,
+      "detail": "",
+      "output_tail": "Successfully installed kcdemo-ca6517-0.1.0\n1 gem installed\nkcdemo-ca6517-0.1.0\n"
+    },
+    {
+      "name": "consume: bundler resolves the gem through the compact index",
+      "status": "pass",
+      "duration_ms": 832,
+      "detail": "",
+      "output_tail": "Fetching gem metadata from https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems/.\nResolving dependencies...\nFetching kcdemo-ca6517 0.1.0\nInstalling kcdemo-ca6517 0.1.0\nBundle complete! 1 Gemfile dependency, 1 gem now installed.\nBundled gems are installed into `./vendor`\n42\n"
+    },
+    {
+      "name": "same-endpoint write then read: push 0.1.1, gem install latest",
+      "status": "pass",
+      "duration_ms": 1995,
+      "detail": "",
+      "output_tail": "WARNING:  no homepage specified\nWARNING:  make sure you specify the oldest ruby version constraint (like \"\u003e= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute\nWARNING:  See https://guides.rubygems.org/specification-reference/ for help\nkcdemo-ca6517-0.1.1.gem\nYou are already signed in on https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems.\nPushing gem to https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems...\nSuccessfully registered gem: kcdemo-ca6517 (0.1.1)\nSuccessfully installed kcdemo-ca6517-0.1.1\n1 gem installed\nkcdemo-ca6517-0.1.1\n"
+    },
+    {
+      "name": "delete: gem yank 0.1.1 (native) removes the version",
+      "status": "pass",
+      "duration_ms": 1407,
+      "detail": "",
+      "output_tail": "You are already signed in on https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems.\nYanking gem from https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems...\nSuccessfully yanked gem: kcdemo-ca6517 (0.1.1)\nERROR:  Could not find a valid gem 'kcdemo-ca6517' (= 0.1.1) in any repository\n"
+    },
+    {
+      "name": "delete/unlist: management API delete 0.1.0",
+      "status": "pass",
+      "duration_ms": 53,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: gem install rake 13.2.1 from rubygems.org via feed",
+      "status": "pass",
+      "duration_ms": 2746,
+      "detail": "",
+      "output_tail": "Successfully installed rake-13.2.1\n1 gem installed\nrake-13.2.1\n"
+    },
+    {
+      "name": "remote pull-through hit: cached gem served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 85,
+      "detail": "",
+      "output_tail": "\u001byz�\u0017j@\u0006]M�^���o_����|��wT��ˏ�\u001fO�^G\u00107�+\u0001��ͬ���s�I�t`vR���\u001e��mq��\\�'�\u001d�\u003eyN�\u001e,`����I9\\�i���\n\u0026���\u0018%:\rg�ev�{��'/��sM�bIH�r�\u0013;�@֤`m\u0013\u0002e�\u0010O'�2;�TF\u001a\b��Ę�\u001c\u000fi���`�\u000ew\u001a�͆�@n�3\u0026\n\t��\u0018ŴO\u0006��'�m��\u0016�tvaƆ(\u0003�NN\u0001=D���J��:�؂s5�ɵ�w��9����ir�c[ɺ���\u0018�\u003e���\u003e�]�;G}���\u000f걪X�\u0001\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
+    },
+    {
+      "name": "auth denial: gem push with invalid key rejected",
+      "status": "pass",
+      "duration_ms": 806,
+      "detail": "",
+      "output_tail": "WARNING:  no homepage specified\nWARNING:  make sure you specify the oldest ruby version constraint (like \"\u003e= 3.0\") that you want your gem to support by setting the `required_ruby_version` gemspec attribute\nWARNING:  See https://guides.rubygems.org/specification-reference/ for help\nkcdemo-ca6517-0.9.0.gem\nYou are already signed in on https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems.\nPushing gem to https://ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems...\n{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"C7RWFPTEA2XURUVJJ2IIF4XOBS\"}\n"
+    },
+    {
+      "name": "auth denial: gem install with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 12828,
+      "detail": "",
+      "output_tail": "ERROR:  Could not find a valid gem 'kcdemo-ca6517' (= 0.1.0), here is why:\n          Unable to download data from https://service:REDACTED@ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems/ - bad response Unauthorized 401 (https://service:REDACTED@ant.kw.watteel.lab/feeds/cf-rubygems-local-ca6517/rubygems/specs.4.8.gz)\n"
+    },
+    {
+      "name": "auth denial: unauthenticated compact index returns 401",
+      "status": "pass",
+      "duration_ms": 33,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"7BNDSQGNDRMF5Z72JXSTNS6DWO\"}\n"
+    }
+  ],
+  "duration_ms": 153758,
+  "summary": {
+    "fail": 0,
+    "pass": 12,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["5c8f8bbf:200", "92b48863:200"]
+}

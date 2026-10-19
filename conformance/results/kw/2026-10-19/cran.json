@@ -1,0 +1,99 @@
+{
+  "format": "cran",
+  "target": "kw",
+  "run_id": "8eedf4",
+  "started": "2026-10-19T00:41:03Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "r": {
+      "image": "r-base:latest",
+      "reported_version": "R version 4.6.1 (2026-06-24) -- \"Happy Hop\"",
+      "pinned_ref": "R (r-base latest)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1593,
+      "detail": "",
+      "output_tail": "R version 4.6.1 (2026-06-24) -- \"Happy Hop\"\n"
+    },
+    {
+      "name": "publish: R CMD build, then PUT src/contrib/{pkg}_{ver}.tar.gz (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 1601,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: install.packages from the feed and call the function",
+      "status": "pass",
+      "duration_ms": 2430,
+      "detail": "",
+      "output_tail": "trying URL 'https://service:***REDACTED***@ant.kw.watteel.lab/feeds/cf-cran-local-8eedf4/cran/src/contrib/kcdemo8eedf4_1.0.0.tar.gz'\nContent type 'application/gzip' length 453 bytes\n==================================================\ndownloaded 453 bytes\n\n* installing *source* package ‘kcdemo8eedf4’ ...\n** this is package ‘kcdemo8eedf4’ version ‘1.0.0’\n** using staged installation\n** R\n** byte-compile and prepare package for lazy loading\nNo man pages found in package  ‘kcdemo8eedf4’ \n** help\n*** installing help indices\n** building package indices\n** testing if installed package can be loaded from temporary location\n** testing if installed package can be loaded from final location\n** testing if installed package keeps a record of temporary installation path\n* DONE (kcdemo8eedf4)\n\nThe downloaded source packages are in\n\t‘/tmp/Rtmpq1f3WD/downloaded_packages’\nDESCRIPTION\nhelp\nhtml\nLICENSE\nMeta\nNAMESPACE\nR\n"
+    },
+    {
+      "name": "same-endpoint write then read: PUT 1.0.1, install.packages resolves it",
+      "status": "pass",
+      "duration_ms": 4751,
+      "detail": "",
+      "output_tail": "trying URL 'https://service:***REDACTED***@ant.kw.watteel.lab/feeds/cf-cran-local-8eedf4/cran/src/contrib/kcdemo8eedf4_1.0.1.tar.gz'\nContent type 'application/gzip' length 453 bytes\n==================================================\ndownloaded 453 bytes\n\n* installing *source* package ‘kcdemo8eedf4’ ...\n** this is package ‘kcdemo8eedf4’ version ‘1.0.1’\n** using staged installation\n** R\n** byte-compile and prepare package for lazy loading\nNo man pages found in package  ‘kcdemo8eedf4’ \n** help\n*** installing help indices\n** building package indices\n** testing if installed package can be loaded from temporary location\n** testing if installed package can be loaded from final location\n** testing if installed package keeps a record of temporary installation path\n* DONE (kcdemo8eedf4)\n\nThe downloaded source packages are in\n\t‘/tmp/RtmpnsodLB/downloaded_packages’\nDESCRIPTION\nhelp\nhtml\nLICENSE\nMeta\nNAMESPACE\nR\n"
+    },
+    {
+      "name": "delete: DELETE src/contrib/{pkg}_{ver}.tar.gz then PACKAGES no longer lists 1.0.1",
+      "status": "pass",
+      "duration_ms": 56,
+      "detail": "",
+      "output_tail": "Package: kcdemo8eedf4\nVersion: 1.0.0\nLicense: MIT + file LICENSE\nMD5sum: eb56d3d2db40dff5dae04ea0866fceaa\nNeedsCompilation: no\n\n"
+    },
+    {
+      "name": "delete/unlist: management API delete 1.0.0",
+      "status": "pass",
+      "duration_ms": 58,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: install.packages praise from cloud.r-project.org via feed",
+      "status": "pass",
+      "duration_ms": 19856,
+      "detail": "",
+      "output_tail": "trying URL 'https://service:***REDACTED***@ant.kw.watteel.lab/feeds/cf-cran-remote-8eedf4/cran/src/contrib/praise_1.0.0.tar.gz'\nContent type 'application/gzip' length 6100 bytes\n==================================================\ndownloaded 6100 bytes\n\n* installing *source* package ‘praise’ ...\n** this is package ‘praise’ version ‘1.0.0’\n** package ‘praise’ successfully unpacked and MD5 sums checked\n** using staged installation\n** R\n** inst\n** byte-compile and prepare package for lazy loading\n** help\n*** installing help indices\n** building package indices\n** testing if installed package can be loaded from temporary location\n** testing if installed package can be loaded from final location\n** testing if installed package keeps a record of temporary installation path\n* DONE (praise)\n\nThe downloaded source packages are in\n\t‘/tmp/RtmplOGtxL/downloaded_packages’\nDESCRIPTION\nhelp\nhtml\nINDEX\nLICENSE\nMeta\nNAMESPACE\nNEWS.md\nR\nREADME.md\nREADME.Rmd\n"
+    },
+    {
+      "name": "remote pull-through hit: cached source tarball served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 387,
+      "detail": "",
+      "output_tail": "?|�����:W�#�QUM\u0026k\u001eeұYE�Q%=kҧ\u0016���J��Be��I\u0001W�m0[2�ג��H\u0012l\u0019���\u001a�8�\u0015\u0004\tu��\u001aޗ_N��;���~���H�\u00176�i����?��\fi��{�(��K�#��l��U�ȷl�-�u!���ߖR8�+_=\u000eX\u0011�Ҷt\u001a��`;ϴ�\\��\u0014\f�v�8=\u0005�E�Z�7��i���x{���\"\u000b���!\"�\"�\u0012� \u0011�����)ko\u0014Y��\u0006'ݾ�Q�tj\u0013׊�̵W�8u�x\u001a��q�za�\n���2�_\u0015��˳�\u0004�+!�A[\u0012D�SE\u00041��\u0010b�����\u001d\u0006�^\u0017�9vW���Mg���%MX�MM?\f��cގ��\u001db{������qɓo\u000e^�\u001f=�^\u0002c\n\r݉�����5��p\u003c�!�Έ\u00056�7ɓ\u0017��\u000f^�\u003e0\u0000ĔZ\u0013w2�X\u0013fٞ7\u001e��ԝ�����!O�''�\u0015�������d�3\u0003�u\u001c\u0013ƞڞ\u001dL�1y�\tO1\u003cק�Nhڎg����\r�Q0\u000e=�\u0006�[8��7\u001e3��خ9�� \u0004�N��V`�l�O\u003c�5�)6���\u0006\u000b]6�F���[�3a�Ԛz���\u0018���`\u000f��3��k:^\u00102�\n��\u001fP�q\u003c �\b�L�\u001d\u001b[�~\u003c�\u000b]\u000b8\u003ed��td���d�Z��\f�;�tl1l�`n�co\u003c���\u001a\u0003Y�\u0011\r�I86���\u0004;�\u0003���j�1\u0019y�?�\u003c 0hԁ�3f�\u003c��xcۦִi���/�\u001b�P�ѩ=\u001a�\\�6}��`@Y�\u0001���\u001e��\n��`bR��v\\?�mX5�����v\u0002�\u0010y2�����Q\u0000�\u0007�������\u001d������t�R��m�ڮ޾�ݱ�9��?��F�5\u001e\u0001)m`.X�Q`Mv\u0002�\u0013�'���\u001aSh\u003c5��kS'���\u0019��\u0004f\u0018��\u000ecl��E}�l��`�\t�����0�s�\u001d�t\f�\u0001��\u000b=����e��F�k���ǸN�����\u001fٛ��v?�U-�v�O�\r�\n���\u000b���K\u0006��_�٫J �.ѯ\u001b�\"��čC\u001a�%�g+����wu?\r�@������=�)�M�j��\u00195YtA}0��8B\u0016?��\u003c�f���R\\\u0007q�@��~OkG)\u001f������0\u000e?��B�\u001f\u0007/��\u0019mTG0\\\u001a\u0017y�uQ{\b�1/b�\u0012�E\u001d[�3����!�}�����1\u001fz�\u001eg��\u000bw��ֵ���(p}�\u0007�\u0005[�N�0�C���\u0000Ő�R�!\u0018̞U�}�2Tc\u000bK���?WԚ,���G-H܍[Fݕ|*�@�m�q�\u0006�^g�Gʄ3ǲ{m�߶mf9ܲy���n\u0007\u0007̸\u0001�\u001b\r�ﳷ9g��\u0002�#�w�*��\u003e�y�\u003ew\u001c����\\�+��\f����Q������tz���\u0004�������G��_���:v��\u0013����{��Uz��v2{�Ф��\u003c�\\\u001e=h���H���\u0007�\u0014\ts��:E�IW*N�XGё\u0007��\u001c�95�.^Nm���\u001995�q�qqj!�\u0018,�R\u0014�J���\u001c*\u0011f�\u0012+�\u0019��\u0006�M�ZB�\u003c�ɟ#aD����a���+\u0019�_�䏑��g��tm����1��|�+* %�S�����\u0006ƪ4�I\u0017!!�7��\u0005�jC\u0001�DI�-D1Z�\"#6rV�%W�e\u0012�\u0015cΩ�U�9\u0001U9sy�9�WR%��� Kp��n�,��\"��\u001fH�͠������\u003e���־���s,���\u0002��Fpv��;10�\u001e߻��\u0017���z4\u003cs������\u0013\b\u0004\u0002�@ \u0010\b\u0004\u0002�@ \u0010\b\u0004\u0002�@�\u0016����\u0007\u0000�\u0000\u0000"
+    },
+    {
+      "name": "auth denial: install.packages with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 723,
+      "detail": "",
+      "output_tail": "Warning: unable to access index for repository https://service:invalid-token@ant.kw.watteel.lab/feeds/cf-cran-local-8eedf4/cran/src/contrib:\n  cannot open URL 'https://service:invalid-token@ant.kw.watteel.lab/feeds/cf-cran-local-8eedf4/cran/src/contrib/PACKAGES'\nWarning message:\npackage ‘kcdemo8eedf4’ is not available for this version of R\n\nA version of this package for your version of R might be available elsewhere,\nsee the ideas at\nhttps://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages \nls: cannot access '/work/rl9/kcdemo8eedf4': No such file or directory\n"
+    },
+    {
+      "name": "auth denial: unauthenticated PACKAGES returns 401",
+      "status": "pass",
+      "duration_ms": 6,
+      "detail": "",
+      "output_tail": ""
+    }
+  ],
+  "duration_ms": 96664,
+  "summary": {
+    "fail": 0,
+    "pass": 10,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["12506343:200", "08b0e472:200"]
+}

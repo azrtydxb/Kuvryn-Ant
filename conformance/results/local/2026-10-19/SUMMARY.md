@@ -1,0 +1,77 @@
+# Conformance summary
+
+Target: `local` Ant: `git:06c3f70` Date: 2026-10-19
+
+| Format      | Result | Pass | Fail | Documented limitation | Skip | Clients                                                                                                                                                                   |
+| ----------- | ------ | ---- | ---- | --------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ansible     | FAIL   | 8    | 2    | 0                     | 1    | python `ansible-galaxy [core 2.21.5]`                                                                                                                                     |
+| apk         | FAIL   | 8    | 1    | 0                     | 1    | alpine `apk-tools 3.0.8-r0, compiled for aarch64.`                                                                                                                        |
+| apt         | FAIL   | 10   | 1    | 0                     | 0    | debian `apt 3.0.3 (arm64)`                                                                                                                                                |
+| cargo       | PASS   | 11   | 0    | 0                     | 0    | cargo `cargo 1.99.1 (5f94df478 2026-08-27)`                                                                                                                               |
+| cocoapods   | FAIL   | 10   | 1    | 0                     | 1    | ruby `1.17.0`                                                                                                                                                             |
+| composer    | PASS   | 10   | 0    | 0                     | 0    | composer `PHP version 8.5.11 (/usr/local/bin/php)`                                                                                                                        |
+| conan       | PASS   | 10   | 0    | 0                     | 0    | python `Conan version 2.33.0`                                                                                                                                             |
+| conda       | PASS   | 11   | 0    | 0                     | 0    | conda `conda 26.7.2 / mamba 2.9.0`                                                                                                                                        |
+| cran        | PASS   | 10   | 0    | 0                     | 0    | r `R version 4.6.1 (2026-06-24) -- "Happy Hop"`                                                                                                                           |
+| docker      | PASS   | 14   | 0    | 0                     | 0    | crane `8a72a424fdecb4caa14f2d525e5d2503331442b5`                                                                                                                          |
+| gitlfs      | PASS   | 8    | 0    | 0                     | 1    | alpine `git-lfs/3.7.1 (GitHub; linux arm64; go 1.26.9)`                                                                                                                   |
+| go          | PASS   | 10   | 0    | 0                     | 0    | go `go version go1.27.2 linux/arm64`                                                                                                                                      |
+| helm        | PASS   | 13   | 0    | 0                     | 0    | helm `v4.3.1+gc0d08d0`                                                                                                                                                    |
+| huggingface | FAIL   | 8    | 1    | 0                     | 0    | python `huggingface_hub 2.2.0`                                                                                                                                            |
+| maven       | PASS   | 10   | 0    | 1                     | 0    | maven `Apache Maven 3.10.0 (c43a36b8d67be7e0805a411bc0898af1a51f5472)`                                                                                                    |
+| npm         | PASS   | 10   | 0    | 1                     | 0    | node `npm notice`                                                                                                                                                         |
+| nuget       | FAIL   | 11   | 2    | 0                     | 0    | dotnet `10.0.402`                                                                                                                                                         |
+| oras        | PASS   | 9    | 0    | 0                     | 0    | oras `Version:        1.3.4`                                                                                                                                              |
+| p2          | PASS   | 7    | 0    | 0                     | 2    | curl `curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0` |
+| pub         | PASS   | 11   | 0    | 0                     | 0    | dart `Dart SDK version: 3.13.5 (stable) (Tue Sep 29 01:00:52 2026 -0700) on "linux_arm64"`                                                                                |
+| pypi        | FAIL   | 15   | 1    | 0                     | 0    | python `pip 26.2.1 / twine twine version 7.0.0 (readme-renderer: 46.0, requests: 2.34.2, requests- / Python 3.14.8`                                                       |
+| raw         | PASS   | 12   | 0    | 0                     | 0    | curl `curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0` |
+| rpm         | PASS   | 10   | 0    | 0                     | 0    | fedora `dnf5 version 5.4.3.0`                                                                                                                                             |
+| rubygems    | PASS   | 12   | 0    | 0                     | 0    | ruby `RubyGems 4.0.20 / ruby 4.0.7 / Bundler 4.0.20`                                                                                                                      |
+| swift       | PASS   | 6    | 0    | 0                     | 4    | swift `Swift version 6.4.1 (swift-6.4.1-RELEASE)`                                                                                                                         |
+| terraform   | FAIL   | 8    | 3    | 0                     | 1    | terraform `Terraform v1.16.6`                                                                                                                                             |
+
+### ansible
+
+- **fail** `publish: ansible-galaxy collection build + publish 1.0.0 (native client)`: exit status 1: Created collection for kcdemo.coll6e2d26 at /work/dist/kcdemo-coll6e2d26-1.0.0.tar.gz Publishing collection artifact '/work/dist/kcdemo-coll6e2d26-1.0.0.tar.gz' to cmd_arg http://127.0.0.1:56011/feeds/cf-ansible-local-6e2d26/ansible/ [ERROR]: Error when publishing collection to cmd_arg (http://127.0.0.1:56011/feeds/cf-ansible-local-6e2d26/ansible/) (HTTP Code: 400, Message: Bad Requ
+- **fail** `remote pull-through miss: ansible-galaxy install ansible.posix:1.5.4 from galaxy.ansible.com via feed`: exit status 1: [WARNING]: The specified collections path '/work/rinst' is not part of the configured Ansible collections paths '/work/home/.ansible/collections:/usr/share/ansible/collections'. The installed collection will not be picked up in an Ansible run, unless within a playbook-adjacent collections directory. [ERROR]: Failed to download collection tar from 'cmd_arg': HTTP Error 503: Service U
+
+### apk
+
+- **fail** `edge: a noarch package listed in the arch index is downloadable (apk requests it under the noarch path)`: exit status 1: Kuvryn Ant v3.24/main/aarch64 [http://service:*@127.0.0.1:56011/feeds/cf-apk-local-0c8cc7/apk/v3.24/main] OK: 18 distinct packages available (1/1) Installing kcdemo0c8cc7na (1.0-r0) ERROR: kcdemo0c8cc7na-1.0-r0: HTTP 404: Not Found 1 error; 8435 KiB in 16 packages
+
+### apt
+
+- **fail** `edge: package built with the dpkg-deb default compression (zstd on trixie) is accepted`: PUT /feeds/cf-apt-local-d0bf40/apt/pool/main/k/kcdemod0bf40/kcdemod0bf40_1.0_all.deb -> 400, want [200 201 204]: {"error":{"code":"400","message":"Bad Request"}}
+
+### cocoapods
+
+- **fail** `remote pull-through miss: pod install AFNetworking 4.0.1 resolved through the feed (specs from cdn.cocoapods.org, source from github)`: exit status 1: .podspec.json Response: 503 Service Unavailable CDN: antr URL couldn't be downloaded: http://service:***REDACTED***@127.0.0.1:56011/feeds/cf-cocoapods-remote-c51a3c/cocoapods/Specs/a/7/5/AFNetworking/3.0.2/AFNetworking.podspec.json Response: 503 Service Unavailable CDN: antr URL couldn't be downloaded: http://service:***REDACTED***@127.0.0.1:56011/feeds/cf-cocoapods-remote-c51a3c/
+
+### huggingface
+
+- **fail** `consume: hf download config.json and snapshot_download from the feed`: exit status 1: [90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.[0m [32m✓ Downloaded[0m path: /work/dl/config.json Traceback (most recent call last): File "<string>", line 1, in <module> from huggingface_hub import snapshot_download as s; p=s('kcdemo/model-d0bf40', cache_dir='/work/hfsnap'); import os; print(sorted(
+
+### maven
+
+- **unsupported** `publish: mvn deploy:deploy-file (native multi-PUT)`: documented limitation (internal/maven README: native Maven deploy multi-PUT returns 405; release bundles via POST version/_bundle): exit status 1: fixes-apache.snapshots.txt) [INFO] [INFO] ------------------< org.apache.maven:standalone-pom >------------------- [INFO] Building Maven Stub Project (No POM) 1 [INFO] --------------------------------[ pom ]--------------------------------- [INFO] [IN
+
+### npm
+
+- **unsupported** `same-endpoint write then read: publish 0.1.1 with default (latest) tag`: documented limitation (internal/npmregistry README: initial publish tags immutable; a second version using latest conflicts): exit status 1: npm notice npm notice package: @kcdemo/pkg-6724f8@0.1.1 npm notice Tarball Contents npm notice 33B index.js npm notice 98B package.json npm notice Tarball Details npm notice name: @kcdemo/pkg-6724f8 npm notice version: 0.1.1 npm notice filename: kcdemo-pkg-67
+
+### nuget
+
+- **fail** `publish: dotnet pack + dotnet nuget push 1.0.0 (unmodified pack output)`: exit status 1: Kc.Demob6308f.1.0.0.nupkg Pushing Kc.Demob6308f.1.0.0.nupkg to 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package'... PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ TooManyRequests http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 18ms (retry after: 61s) PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/
+- **fail** `same-endpoint write then read: publish 1.0.1, restore 1.0.* resolves it`: PUT /feeds/cf-nuget-local-b6308f/nuget/v2/package/ -> 429, want [200 201 202]: {"code":"unavailable","message":"authentication attempts limited","request_id":"GVXJ4XZH3RBH2HETCFNR4PYHJK"}
+
+### pypi
+
+- **fail** `edge: twine upload of a default setuptools wheel without long description`: exit status 1: * Getting build dependencies for sdist... * Building sdist... * Building wheel from sdist * Getting build dependencies for wheel... * Building wheel... Uploading distributions to http://127.0.0.1:56011/feeds/cf-pypi-local-6724f8/pypi/ Uploading kcdemo_nodesc_6724f8-0.1.0-py3-none-any.whl [?25l
+  [2K[35m 0%[0m [90m━━━━━━━━━━━━━━━━━━━━━�
+
+### terraform
+
+- **fail** `consume: terraform init installs the provider (signature verified) from the feed`: exit status 1: Initializing the backend... Initializing provider plugins... - Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching "1.0.0"... Error: Failed to install provider Error while installing 127.0.0.1:56011/kcdemo/kcdd85eb v1.0.0: could not query provider registry for 127.0.0.1:56011/kcdemo/kcdd85eb: failed to retrieve authentication checksums for provider: 401 Unauthorized returne
+- **fail** `same-endpoint write then read: publish provider 1.1.0 then terraform init -upgrade resolves it`: exit status 1: Initializing the backend... Initializing provider plugins... - Finding 127.0.0.1:56011/kcdemo/kcdd85eb versions matching ">= 1.0.0"... Error: Failed to install provider Error while installing 127.0.0.1:56011/kcdemo/kcdd85eb v1.1.0: could not query provider registry for 127.0.0.1:56011/kcdemo/kcdd85eb: failed to retrieve authentication checksums for provider: 401 Unauthorized retu
+- **fail** `remote pull-through miss: terraform init hashicorp/random 3.6.3 from registry.terraform.io via feed`: exit status 1: Initializing the backend... Initializing provider plugins... - Finding reg.example/hashicorp/random versions matching "3.6.3"... Error: Failed to install provider Error while installing reg.example/hashicorp/random v3.6.3: could not query provider registry for reg.example/hashicorp/random: the request failed after 2 attempts, please try again later: 503 Service Unavailable return

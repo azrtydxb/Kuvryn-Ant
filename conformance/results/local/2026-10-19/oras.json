@@ -1,0 +1,92 @@
+{
+  "format": "oras",
+  "target": "local",
+  "run_id": "573df5",
+  "started": "2026-10-19T01:28:38Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:7dd9c8a"
+  },
+  "clients": {
+    "oras": {
+      "image": "alpine:3.24.2",
+      "reported_version": "Version:        1.3.4",
+      "pinned_ref": "oras v1.3.4 (official release binary downloaded into the container; the oras image has no shell)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1208,
+      "detail": "",
+      "output_tail": "Version:        1.3.4\n"
+    },
+    {
+      "name": "publish: oras push artifact with artifact-type",
+      "status": "pass",
+      "duration_ms": 900,
+      "detail": "",
+      "output_tail": "Preparing a.txt\nUploading 8e13e02c347f a.txt\nUploading 44136fa355b3 application/vnd.oci.empty.v1+json\nUploaded  8e13e02c347f a.txt\nUploaded  44136fa355b3 application/vnd.oci.empty.v1+json\nUploading 0f6e2b39e6ff application/vnd.oci.image.manifest.v1+json\nUploaded  0f6e2b39e6ff application/vnd.oci.image.manifest.v1+json\nPushed [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5:v1\nArtifactType: application/vnd.kuvryn.demo\nDigest: sha256:0f6e2b39e6ff06e61e5ce57f3a4e604da9a7af62ec46a4af8433e3b96f275fcb\n"
+    },
+    {
+      "name": "consume: oras pull returns identical content and manifest fetch works",
+      "status": "pass",
+      "duration_ms": 725,
+      "detail": "",
+      "output_tail": "Downloading 0f6e2b39e6ff application/vnd.oci.image.manifest.v1+json\nProcessing  0f6e2b39e6ff application/vnd.oci.image.manifest.v1+json\nDownloading 8e13e02c347f a.txt\nDownloaded  8e13e02c347f a.txt\nDownloaded  0f6e2b39e6ff application/vnd.oci.image.manifest.v1+json\nPulled [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5:v1\nDigest: sha256:0f6e2b39e6ff06e61e5ce57f3a4e604da9a7af62ec46a4af8433e3b96f275fcb\nartifact 573df5\n"
+    },
+    {
+      "name": "same-endpoint write then read: attach a referrer and discover it, retag and copy",
+      "status": "pass",
+      "duration_ms": 1622,
+      "detail": "",
+      "output_tail": "Preparing sbom.json\nExists    44136fa355b3 application/vnd.oci.empty.v1+json\nUploading ea75820aa8a7 sbom.json\nUploaded  ea75820aa8a7 sbom.json\nUploading 6b78fbddd2e1 application/vnd.oci.image.manifest.v1+json\nUploaded  6b78fbddd2e1 application/vnd.oci.image.manifest.v1+json\nAttached to [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5@sha256:0f6e2b39e6ff06e61e5ce57f3a4e604da9a7af62ec46a4af8433e3b96f275fcb\nDigest: sha256:6b78fbddd2e19b06e0adaf11562248fa42a8a46549eae4c7b3dfe5b734d2a29e\nTagging [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5@sha256:0f6e2b39e6ff06e61e5ce57f3a4e604da9a7af62ec46a4af8433e3b96f275fcb\nTagged v2\nCopied [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5:v1 =\u003e [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5:copied\nDigest: sha256:0f6e2b39e6ff06e61e5ce57f3a4e604da9a7af62ec46a4af8433e3b96f275fcb\n"
+    },
+    {
+      "name": "delete: oras manifest delete by digest removes the manifest and its tags",
+      "status": "pass",
+      "duration_ms": 265,
+      "detail": "",
+      "output_tail": "Deleted [registry] 127.0.0.1:56011/cf-oras-local-573df5/art573df5@sha256:0f6e2b39e6ff06e61e5ce57f3a4e604da9a7af62ec46a4af8433e3b96f275fcb\nError response from registry: failed to fetch the content of \"127.0.0.1:56011/cf-oras-local-573df5/art573df5:v1\": 127.0.0.1:56011/cf-oras-local-573df5/art573df5:v1: not found\n"
+    },
+    {
+      "name": "remote pull-through miss: oras manifest fetch + blob fetch of ghcr.io/oras-project/oras:v1.3.4",
+      "status": "pass",
+      "duration_ms": 4187,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through hit: manifest by digest served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 300,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: oras pull with invalid credentials rejected (login only pings /v2/, which may be anonymous)",
+      "status": "pass",
+      "duration_ms": 552,
+      "detail": "",
+      "output_tail": "Error response from registry: unauthorized: registry authentication required\nError response from registry: 127.0.0.1:56011/cf-oras-local-573df5/art573df5:v1: not found\n"
+    },
+    {
+      "name": "auth denial: unauthenticated manifest fetch returns 401",
+      "status": "pass",
+      "duration_ms": 3,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 74787,
+  "summary": {
+    "fail": 0,
+    "pass": 9,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["fa0be8f0:200", "e1dd334a:200"]
+}

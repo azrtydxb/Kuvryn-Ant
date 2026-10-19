@@ -1,0 +1,99 @@
+{
+  "format": "conan",
+  "target": "kw",
+  "run_id": "ca6517",
+  "started": "2026-10-18T23:43:28Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "python": {
+      "image": "python:3.14",
+      "reported_version": "Conan version 2.33.0",
+      "pinned_ref": "pip 26.2.1, twine 7.0.0, conan 2.33.0, huggingface-hub 2.2.0, ansible-core 2.21.5 (pinned by pip in a venv under /work)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 8352,
+      "detail": "",
+      "output_tail": "Conan version 2.33.0\n"
+    },
+    {
+      "name": "publish: conan create + conan upload kcdemoca6517/1.0",
+      "status": "pass",
+      "duration_ms": 7213,
+      "detail": "",
+      "output_tail": "\n======== Exporting recipe to the cache ========\nkcdemoca6517/1.0 export\nExporting package recipe: /work/rec/conanfile.py\nCopied 1 '.py' file: conanfile.py\nExported to cache folder: /work/conan-home/p/kcdem9984ff5f038d5/e\nExported: kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e (2026-10-18 23:43:39 UTC)\n\n======== Input profiles ========\nProfile host:\n[settings]\narch=armv8\nbuild_type=Release\ncompiler=gcc\ncompiler.cppstd=gnu17\ncompiler.libcxx=libstdc++11\ncompiler.version=14\nos=Linux\n[conf]\n\n\nProfile build:\n[settings]\narch=armv8\nbuild_type=Release\ncompiler=gcc\ncompiler.cppstd=gnu17\ncompiler.libcxx=libstdc++11\ncompiler.version=14\nos=Linux\n[conf]\n\n\n\n======== Computing dependency graph ========\nGraph root\n    cli\nRequirements\n    kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e - Cache\n\n======== Computing necessary packages ========\nkcdemoca6517/1.0: Forced build from source\nRequirements\n    kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e:da39a3ee5e6b4b0d3255bfef95601890afd80709 - Build\n\n======== Installing packages ========\n\n-------- Installing package kcdemoca6517/1.0 (1 of 1) --------\nBuilding from source kcdemoca6517/1.0:da39a3ee5e6b4b0d3255bfef95601890afd80709\n\u003e\u003e\u003e Source step\nGetting sources for kcdemoca6517/1.0\nCopying sources to build folder\nSources in /work/conan-home/p/b/kcdem9b3fd1ae20dff/b\n\u003e\u003e\u003e Generate step for kcdemoca6517/1.0\nGenerators folder: /work/conan-home/p/b/kcdem9b3fd1ae20dff/b\nGenerating aggregated env files\nGenerated aggregated env files: ['conanbuild.sh', 'conanrun.sh']\nBuilding your package in /work/conan-home/p/b/kcdem9b3fd1ae20dff/b\n\u003e\u003e\u003e Build step for kcdemoca6517/1.0\nkcdemoca6517/1.0: Package 'da39a3ee5e6b4b0d3255bfef95601890afd80709' built\nkcdemoca6517/1.0: Build folder /work/conan-home/p/b/kcdem9b3fd1ae20dff/b\n\u003e\u003e\u003e Package step for kcdemoca6517/1.0:da39a3ee5e6b4b0d3255bfef95601890afd80709\nPackaging in folder /work/conan-home/p/b/kcdem9b3fd1ae20dff/p\npackage(): WARN: No files in this package!\nCreated package revision 0ba8627bd47edc3a501e8f0eb9a79e5e\nPackage 'da39a3ee5e6b4b0d3255bfef95601890afd80709' created\nFull package reference: kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e:da39a3ee5e6b4b0d3255bfef95601890afd80709#0ba8627bd47edc3a501e8f0eb9a79e5e\nPackage folder /work/conan-home/p/b/kcdem9b3fd1ae20dff/p\nAuthenticated in remote 'ant' with user 'service'\n\n======== Uploading to remote ant ========\n\n-------- Checking server for existing packages --------\nkcdemoca6517/1.0: Checking which revisions exist in the remote server\nConnecting to remote 'ant' with user 'service'\n\n-------- Preparing artifacts for upload --------\nkcdemoca6517/1.0:da39a3ee5e6b4b0d3255bfef95601890afd80709: Compressing conan_package.tgz\n\n-------- Uploading artifacts --------\nkcdemoca6517/1.0: Uploading recipe 'kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e' (192B)\nkcdemoca6517/1.0: Uploading package 'kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e:da39a3ee5e6b4b0d3255bfef95601890afd80709#0ba8627bd47edc3a501e8f0eb9a79e5e' (122B)\nUpload completed in 3s\n\n\n-------- Upload summary --------\nant\n  kcdemoca6517/1.0\n    revisions\n      310684c71f21303f7b14bfe26f170f2e (Uploaded)\n        packages\n          da39a3ee5e6b4b0d3255bfef95601890afd80709\n            revisions\n              0ba8627bd47edc3a501e8f0eb9a79e5e (Uploaded)\n"
+    },
+    {
+      "name": "consume: conan install --requires from the feed with a fresh cache",
+      "status": "pass",
+      "duration_ms": 3621,
+      "detail": "",
+      "output_tail": "Authenticated in remote 'ant' with user 'service'\n\n======== Input profiles ========\nProfile host:\n[settings]\narch=armv8\nbuild_type=Release\ncompiler=gcc\ncompiler.cppstd=gnu17\ncompiler.libcxx=libstdc++11\ncompiler.version=14\nos=Linux\n\nProfile build:\n[settings]\narch=armv8\nbuild_type=Release\ncompiler=gcc\ncompiler.cppstd=gnu17\ncompiler.libcxx=libstdc++11\ncompiler.version=14\nos=Linux\n\n\n======== Computing dependency graph ========\nkcdemoca6517/1.0: Not found in local cache, looking in remotes...\nkcdemoca6517/1.0: Checking remote: ant\nConnecting to remote 'ant' with user 'service'\nkcdemoca6517/1.0: Downloaded recipe revision 310684c71f21303f7b14bfe26f170f2e\nGraph root\n    cli\nRequirements\n    kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e - Downloaded (ant)\n\n======== Computing necessary packages ========\nRequirements\n    kcdemoca6517/1.0#310684c71f21303f7b14bfe26f170f2e:da39a3ee5e6b4b0d3255bfef95601890afd80709#0ba8627bd47edc3a501e8f0eb9a79e5e - Download (ant)\n\n======== Installing packages ========\n\n-------- Downloading 1 package --------\nDownloading binary packages in 1 parallel threads\nkcdemoca6517/1.0: Retrieving package da39a3ee5e6b4b0d3255bfef95601890afd80709 from remote 'ant'\nkcdemoca6517/1.0: Package installed da39a3ee5e6b4b0d3255bfef95601890afd80709\nkcdemoca6517/1.0: Downloaded package revision 0ba8627bd47edc3a501e8f0eb9a79e5e\n\n======== Finalizing install (deploy, generators) ========\n\u003e\u003e\u003e Generate step for cli\nGenerators folder: /work\nGenerating aggregated env files\nGenerated aggregated env files: ['conanbuild.sh', 'conanrun.sh']\nInstall finished successfully\n"
+    },
+    {
+      "name": "same-endpoint write then read: upload 1.1 and list remote revisions",
+      "status": "pass",
+      "duration_ms": 36766,
+      "detail": "",
+      "output_tail": "\n======== Exporting recipe to the cache ========\nkcdemoca6517/1.1 export\nExporting package recipe: /work/rec/conanfile.py\nCopied 1 '.py' file: conanfile.py\nExported to cache folder: /work/conan-home/p/kcdem39efa66a641b4/e\nExported: kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06 (2026-10-18 23:44:21 UTC)\n\n======== Input profiles ========\nProfile host:\n[settings]\narch=armv8\nbuild_type=Release\ncompiler=gcc\ncompiler.cppstd=gnu17\ncompiler.libcxx=libstdc++11\ncompiler.version=14\nos=Linux\n[conf]\n\n\nProfile build:\n[settings]\narch=armv8\nbuild_type=Release\ncompiler=gcc\ncompiler.cppstd=gnu17\ncompiler.libcxx=libstdc++11\ncompiler.version=14\nos=Linux\n[conf]\n\n\n\n======== Computing dependency graph ========\nGraph root\n    cli\nRequirements\n    kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06 - Cache\n\n======== Computing necessary packages ========\nkcdemoca6517/1.1: Forced build from source\nRequirements\n    kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06:da39a3ee5e6b4b0d3255bfef95601890afd80709 - Build\n\n======== Installing packages ========\n\n-------- Installing package kcdemoca6517/1.1 (1 of 1) --------\nBuilding from source kcdemoca6517/1.1:da39a3ee5e6b4b0d3255bfef95601890afd80709\n\u003e\u003e\u003e Source step\nGetting sources for kcdemoca6517/1.1\nCopying sources to build folder\nSources in /work/conan-home/p/b/kcdem56933197d1c45/b\n\u003e\u003e\u003e Generate step for kcdemoca6517/1.1\nGenerators folder: /work/conan-home/p/b/kcdem56933197d1c45/b\nGenerating aggregated env files\nGenerated aggregated env files: ['conanbuild.sh', 'conanrun.sh']\nBuilding your package in /work/conan-home/p/b/kcdem56933197d1c45/b\n\u003e\u003e\u003e Build step for kcdemoca6517/1.1\nkcdemoca6517/1.1: Package 'da39a3ee5e6b4b0d3255bfef95601890afd80709' built\nkcdemoca6517/1.1: Build folder /work/conan-home/p/b/kcdem56933197d1c45/b\n\u003e\u003e\u003e Package step for kcdemoca6517/1.1:da39a3ee5e6b4b0d3255bfef95601890afd80709\nPackaging in folder /work/conan-home/p/b/kcdem56933197d1c45/p\npackage(): WARN: No files in this package!\nCreated package revision 0ba8627bd47edc3a501e8f0eb9a79e5e\nPackage 'da39a3ee5e6b4b0d3255bfef95601890afd80709' created\nFull package reference: kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06:da39a3ee5e6b4b0d3255bfef95601890afd80709#0ba8627bd47edc3a501e8f0eb9a79e5e\nPackage folder /work/conan-home/p/b/kcdem56933197d1c45/p\nWARN: Remote 'ant' already exists in remotes\nAuthenticated in remote 'ant' with user 'service'\n\n======== Uploading to remote ant ========\n\n-------- Checking server for existing packages --------\nkcdemoca6517/1.1: Checking which revisions exist in the remote server\nConnecting to remote 'ant' with user 'service'\n\n-------- Preparing artifacts for upload --------\nkcdemoca6517/1.1:da39a3ee5e6b4b0d3255bfef95601890afd80709: Compressing conan_package.tgz\n\n-------- Uploading artifacts --------\nkcdemoca6517/1.1: Uploading recipe 'kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06' (192B)\nkcdemoca6517/1.1: Uploading package 'kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06:da39a3ee5e6b4b0d3255bfef95601890afd80709#0ba8627bd47edc3a501e8f0eb9a79e5e' (122B)\nUpload completed in 1s\n\n\n-------- Upload summary --------\nant\n  kcdemoca6517/1.1\n    revisions\n      330b8fcb77e5432cb0732e89397e0d06 (Uploaded)\n        packages\n          da39a3ee5e6b4b0d3255bfef95601890afd80709\n            revisions\n              0ba8627bd47edc3a501e8f0eb9a79e5e (Uploaded)\nConnecting to remote 'ant' with user 'service'\nFound 2 pkg/version recipes matching kcdemoca6517/* in ant\n    kcdemoca6517/1.1\n"
+    },
+    {
+      "name": "delete: conan remove kcdemoca6517/1.1 from the remote (native REST v2 DELETE)",
+      "status": "pass",
+      "duration_ms": 1986,
+      "detail": "",
+      "output_tail": "WARN: Remote 'ant' already exists in remotes\nAuthenticated in remote 'ant' with user 'service'\nConnecting to remote 'ant' with user 'service'\nRemove summary:\nant\n  kcdemoca6517/1.1#330b8fcb77e5432cb0732e89397e0d06: Removed recipe and all binaries\nConnecting to remote 'ant' with user 'service'\nFound 1 pkg/version recipes matching kcdemoca6517/* in ant\n"
+    },
+    {
+      "name": "delete/unlist: management API delete 1.0",
+      "status": "pass",
+      "duration_ms": 72,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: conan download zlib/1.3.1 recipe from center2.conan.io via feed",
+      "status": "pass",
+      "duration_ms": 4049,
+      "detail": "",
+      "output_tail": "Authenticated in remote 'antr' with user 'service'\nConnecting to remote 'antr' with user 'service'\nDownloading recipe 'zlib/1.3.1#cac0f6daea041b0ccf42934163defb20'\nDownloading 'zlib/1.3.1' sources\nDownload completed in 1s\n\nLocal Cache\n  zlib\n    zlib/1.3.1\n      revisions\n        cac0f6daea041b0ccf42934163defb20 (2025-12-09 12:51:39 UTC)\n"
+    },
+    {
+      "name": "remote pull-through hit: fresh cache downloads the recipe with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 2609,
+      "detail": "",
+      "output_tail": "Authenticated in remote 'antr' with user 'service'\nConnecting to remote 'antr' with user 'service'\nDownloading recipe 'zlib/1.3.1#cac0f6daea041b0ccf42934163defb20'\nDownloading 'zlib/1.3.1' sources\nDownload completed in 0s\n\nLocal Cache\n  zlib\n    zlib/1.3.1\n      revisions\n        cac0f6daea041b0ccf42934163defb20 (2026-10-18 23:44:29 UTC)\n"
+    },
+    {
+      "name": "auth denial: conan remote login with invalid token rejected",
+      "status": "pass",
+      "duration_ms": 1774,
+      "detail": "",
+      "output_tail": "ERROR: Wrong user or password. [Remote: ant]\n"
+    },
+    {
+      "name": "auth denial: unauthenticated search returns 401",
+      "status": "pass",
+      "duration_ms": 23,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"YLVYR5RUY3544O72AUD2GC4PZQ\"}\n"
+    }
+  ],
+  "duration_ms": 131759,
+  "summary": {
+    "fail": 0,
+    "pass": 10,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["166b740e:200", "9b9bf541:200"]
+}

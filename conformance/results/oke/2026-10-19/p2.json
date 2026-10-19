@@ -1,0 +1,92 @@
+{
+  "format": "p2",
+  "target": "oke",
+  "run_id": "bfd252",
+  "started": "2026-10-19T00:59:58Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "curl": {
+      "image": "curlimages/curl:8.11.1",
+      "reported_version": "curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0",
+      "pinned_ref": "curl"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 767,
+      "detail": "",
+      "output_tail": "curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0\n"
+    },
+    {
+      "name": "publish: PUT repository.zip (p2 repository with a signed-checksum bundle)",
+      "status": "pass",
+      "duration_ms": 907,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: p2.index, content.xml and artifacts.xml are served; the bundle jar matches its checksum",
+      "status": "pass",
+      "duration_ms": 890,
+      "detail": "",
+      "output_tail": "version=1\nmetadata.repository.factory.order=content.xml.xz,content.jar,content.xml,!\nartifact.repository.factory.order=artifacts.xml.xz,artifacts.jar,artifacts.xml,!\n"
+    },
+    {
+      "name": "consume: Eclipse p2 director / Tycho install",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "manual: the Eclipse p2 director (about 150 MB platform) was not pinned into the harness; protocol-level reads above exercise the repository files. Run `eclipse -application org.eclipse.equinox.p2.director -repository \u003cfeed\u003e/p2 -installIU org.kcdemo.bundlebfd252` manually",
+      "output_tail": ""
+    },
+    {
+      "name": "same-endpoint conflict: re-publishing the same artifact id/version with different bytes returns 409",
+      "status": "pass",
+      "duration_ms": 74,
+      "detail": "",
+      "output_tail": "{\"error\":{\"code\":\"409\",\"message\":\"Conflict\"}}\n"
+    },
+    {
+      "name": "delete/unlist: p2 has no per-artifact delete (F17); DELETE of the bundle is refused",
+      "status": "pass",
+      "duration_ms": 64,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through: p2 adapter has no remote source support",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "not supported: internal/p2repo README: no remote/composite import",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: invalid token rejected by curl",
+      "status": "pass",
+      "duration_ms": 562,
+      "detail": "",
+      "output_tail": "curl: (22) The requested URL returned error: 401\n"
+    },
+    {
+      "name": "auth denial: unauthenticated content.xml returns 401",
+      "status": "pass",
+      "duration_ms": 56,
+      "detail": "",
+      "output_tail": ""
+    }
+  ],
+  "duration_ms": 68728,
+  "summary": {
+    "fail": 0,
+    "pass": 7,
+    "skip": 2,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["5c278395:200"]
+}

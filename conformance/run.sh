@@ -3,12 +3,14 @@
 #   target   local | oke | kw | <any label for the results directory>
 # Environment:
 #   ANT_BASE_URL     base URL (local: auto-started if unset; oke: https://ant.azrty.com; kw: https://ant.kw.watteel.lab)
-#   ANT_TOKEN / ANT_TOKEN_FILE   admin service token (never written to results)
+#   ANT_TOKEN / ANT_TOKEN_FILE   admin service token, raw or credential JSON (never written to results)
 #   ANT_CA_BUNDLE    PEM bundle for a private CA (kw)
 #   ANT_VERSION      version label recorded as Ant version (default: git sha)
-# Needs: docker, python3 (stdlib only).
+#   ANT_CONF_STATE   state directory of the throwaway local instance (default /tmp/ant-conformance-dev)
+# Needs: docker and go (the harness is the Go package conformance/harness, driven by cmd/conformance).
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
+ROOT=$(cd "$HERE/.." && pwd)
 [ $# -ge 1 ] || {
 	echo "usage: $0 <target> [formats...]" >&2
 	exit 2
@@ -25,8 +27,9 @@ if [ "$TARGET" = local ] && [ -z "${ANT_BASE_URL:-}" ]; then
 fi
 export ANT_BASE_URL
 [ -z "${ANT_TOKEN_FILE:-}" ] || export ANT_TOKEN_FILE
+cd "$ROOT"
 set +e
-python3 -I "$HERE/harness/run.py" "$@"
+go run ./cmd/conformance "$@"
 RC=$?
 [ -n "$STARTED" ] && [ -z "${ANT_KEEP_INSTANCE:-}" ] && "$HERE/dev-instance.sh" stop >/dev/null
 exit $RC

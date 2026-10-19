@@ -1,0 +1,113 @@
+{
+  "format": "terraform",
+  "target": "oke",
+  "run_id": "0c44be",
+  "started": "2026-10-18T23:25:42Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "terraform": {
+      "image": "hashicorp/terraform:1.16.6",
+      "reported_version": "Terraform v1.16.6",
+      "pinned_ref": "terraform v1.16.6"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 20295,
+      "detail": "",
+      "output_tail": "Terraform v1.16.6\n"
+    },
+    {
+      "name": "publish: PUT signed provider release 1.0.0 (admin ingestion; Terraform has no native publish)",
+      "status": "pass",
+      "duration_ms": 748,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "publish: PUT module archive 1.0.0 (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 156,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: terraform init installs the provider (signature verified) from the feed",
+      "status": "fail",
+      "duration_ms": 2165,
+      "detail": "exit status 1: Initializing the backend...\n\nInitializing provider plugins...\n- Finding ant.azrty.com/kcdemo/kc0c44be versions matching \"1.0.0\"...\n\nError: Failed to install provider\n\nError while installing ant.azrty.com/kcdemo/kc0c44be v1.0.0: could not query\nprovider registry for ant.azrty.com/kcdemo/kc0c44be: failed to retrieve\nauthentication checksums for provider: 401 Unauthorized returned from\nant.azrty.com\n",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding ant.azrty.com/kcdemo/kc0c44be versions matching \"1.0.0\"...\n\nError: Failed to install provider\n\nError while installing ant.azrty.com/kcdemo/kc0c44be v1.0.0: could not query\nprovider registry for ant.azrty.com/kcdemo/kc0c44be: failed to retrieve\nauthentication checksums for provider: 401 Unauthorized returned from\nant.azrty.com\n"
+    },
+    {
+      "name": "consume: terraform init downloads the module (the archive URL is fetched with .netrc credentials)",
+      "status": "pass",
+      "duration_ms": 1956,
+      "detail": "",
+      "output_tail": "Initializing the backend...\n\nInitializing modules...\nDownloading ant.azrty.com/kcdemo/mod0c44be/aws 1.0.0 for m...\n- m in .terraform/modules/m\n\nInitializing provider plugins...\n\nTerraform has been successfully initialized!\n\nYou may now begin working with Terraform. Try running \"terraform plan\" to see\nany changes that are required for your infrastructure. All Terraform commands\nshould now work.\n\nIf you ever set or change modules or backend configuration for Terraform,\nrerun this command to reinitialize your working directory. If you forget, other\ncommands will detect it and remind you to do so if necessary.\nm\nmodules.json\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish provider 1.1.0 then terraform init -upgrade resolves it",
+      "status": "fail",
+      "duration_ms": 2717,
+      "detail": "exit status 1: Initializing the backend...\n\nInitializing provider plugins...\n- Finding ant.azrty.com/kcdemo/kc0c44be versions matching \"\u003e= 1.0.0\"...\n\nError: Failed to install provider\n\nError while installing ant.azrty.com/kcdemo/kc0c44be v1.1.0: could not query\nprovider registry for ant.azrty.com/kcdemo/kc0c44be: failed to retrieve\nauthentication checksums for provider: 401 Unauthorized returned from\nant.azrty.com\n",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding ant.azrty.com/kcdemo/kc0c44be versions matching \"\u003e= 1.0.0\"...\n\nError: Failed to install provider\n\nError while installing ant.azrty.com/kcdemo/kc0c44be v1.1.0: could not query\nprovider registry for ant.azrty.com/kcdemo/kc0c44be: failed to retrieve\nauthentication checksums for provider: 401 Unauthorized returned from\nant.azrty.com\n"
+    },
+    {
+      "name": "delete: DELETE v1/providers/{ns}/{type}/{version} and v1/modules/.../{version}",
+      "status": "pass",
+      "duration_ms": 67,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API delete provider 1.0.0",
+      "status": "pass",
+      "duration_ms": 81,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: terraform init hashicorp/random 3.6.3 from registry.terraform.io via feed",
+      "status": "fail",
+      "duration_ms": 3198,
+      "detail": "exit status 1: Initializing the backend...\n\nInitializing provider plugins...\n- Finding reg.example/hashicorp/random versions matching \"3.6.3\"...\n\nError: Failed to install provider\n\nError while installing reg.example/hashicorp/random v3.6.3: could not query\nprovider registry for reg.example/hashicorp/random: the request failed after\n2 attempts, please try again later: 503 Service Unavailable returned from\nant.azrty.com\n",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding reg.example/hashicorp/random versions matching \"3.6.3\"...\n\nError: Failed to install provider\n\nError while installing reg.example/hashicorp/random v3.6.3: could not query\nprovider registry for reg.example/hashicorp/random: the request failed after\n2 attempts, please try again later: 503 Service Unavailable returned from\nant.azrty.com\n"
+    },
+    {
+      "name": "remote pull-through hit: cached provider zip served with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "prerequisite step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: terraform init with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 1846,
+      "detail": "",
+      "output_tail": "Initializing the backend...\n\nInitializing provider plugins...\n- Finding ant.azrty.com/kcdemo/kc0c44be versions matching \"1.0.0\"...\n\nError: Failed to query available provider packages\n\nCould not retrieve the list of available versions for provider\nant.azrty.com/kcdemo/kc0c44be: host ant.azrty.com rejected the given\nauthentication credentials\n\nTo see which modules are currently depending on ant.azrty.com/kcdemo/kc0c44be\nand what versions are specified, run the following command:\n    terraform providers\n"
+    },
+    {
+      "name": "auth denial: unauthenticated provider versions returns 401",
+      "status": "pass",
+      "duration_ms": 17,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"MFP3VQOTKM266E2LL74TEZ6DAW\"}\n"
+    }
+  ],
+  "duration_ms": 33649,
+  "summary": {
+    "fail": 3,
+    "pass": 8,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["f358d764:200", "7f39f033:200"]
+}

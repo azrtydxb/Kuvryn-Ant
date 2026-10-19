@@ -1,0 +1,120 @@
+{
+  "format": "nuget",
+  "target": "local",
+  "run_id": "b6308f",
+  "started": "2026-10-19T00:24:10Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "dotnet": {
+      "image": "mcr.microsoft.com/dotnet/sdk:10.0.402",
+      "reported_version": "10.0.402",
+      "pinned_ref": "dotnet SDK 10.0.402"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 6242,
+      "detail": "",
+      "output_tail": "10.0.402\n"
+    },
+    {
+      "name": "publish: dotnet pack + dotnet nuget push 1.0.0 (unmodified pack output)",
+      "status": "fail",
+      "duration_ms": 184893,
+      "detail": "exit status 1: Kc.Demob6308f.1.0.0.nupkg\nPushing Kc.Demob6308f.1.0.0.nupkg to 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package'...\n  PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/\n  TooManyRequests http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 18ms (retry after: 61s)\n  PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/\n  BadRequest http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 2169ms\nerror: Response status code does not indicate success: 400 (Bad Request).\n",
+      "output_tail": "Kc.Demob6308f.1.0.0.nupkg\nPushing Kc.Demob6308f.1.0.0.nupkg to 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package'...\n  PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/\n  TooManyRequests http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 18ms (retry after: 61s)\n  PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/\n  BadRequest http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 2169ms\nerror: Response status code does not indicate success: 400 (Bad Request).\n"
+    },
+    {
+      "name": "publish: repack 1.0.0 without the nuspec BOM, then dotnet nuget push",
+      "status": "pass",
+      "duration_ms": 73386,
+      "detail": "",
+      "output_tail": "Pushing Kc.Demob6308f.1.0.0.nupkg to 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package'...\n  PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/\n  Created http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 109ms\nYour package was pushed.\n"
+    },
+    {
+      "name": "publish: PUT v2/package/ multipart with the BOM-free package (direct API, independent of the client)",
+      "status": "pass",
+      "duration_ms": 33,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: dotnet restore 1.0.0 from the feed into a fresh package folder",
+      "status": "pass",
+      "duration_ms": 67749,
+      "detail": "",
+      "output_tail": "  Determining projects to restore...\n  Restored /work/cons/cons.csproj (in 186 ms).\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 1.0.1, restore 1.0.* resolves it",
+      "status": "fail",
+      "duration_ms": 4954,
+      "detail": "PUT /feeds/cf-nuget-local-b6308f/nuget/v2/package/ -\u003e 429, want [200 201 202]: {\"code\":\"unavailable\",\"message\":\"authentication attempts limited\",\"request_id\":\"GVXJ4XZH3RBH2HETCFNR4PYHJK\"}\n",
+      "output_tail": "{\"code\":\"unavailable\",\"message\":\"authentication attempts limited\",\"request_id\":\"GVXJ4XZH3RBH2HETCFNR4PYHJK\"}\n"
+    },
+    {
+      "name": "delete: dotnet nuget delete 1.0.1 (native), restore of 1.0.1 then fails",
+      "status": "pass",
+      "duration_ms": 67930,
+      "detail": "",
+      "output_tail": "warn : Deleting Kc.Demob6308f 1.0.1 from the 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package'.\n  DELETE http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/Kc.Demob6308f/1.0.1\n  NotFound http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/Kc.Demob6308f/1.0.1 79ms\nerror: Response status code does not indicate success: 404 (Not Found).\n  Determining projects to restore...\n/work/cons/cons.csproj : error NU1102: Unable to find package Kc.Demob6308f with version (\u003e= 1.0.1)\n/work/cons/cons.csproj : error NU1102:   - Found 1 version(s) in ant [ Nearest version: 1.0.0 ]\n  Failed to restore /work/cons/cons.csproj (in 214 ms).\n"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 1.0.0",
+      "status": "pass",
+      "duration_ms": 25,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: dotnet restore Newtonsoft.Json 13.0.3 from api.nuget.org via feed",
+      "status": "pass",
+      "duration_ms": 69158,
+      "detail": "",
+      "output_tail": "  Determining projects to restore...\n  Restored /work/cons/cons.csproj (in 2.69 sec).\n"
+    },
+    {
+      "name": "remote pull-through hit: cached nupkg served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 21,
+      "detail": "",
+      "output_tail": "\u0000\u0000�\u0001\u0000\u0000\u000b\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�*\u0000\u0000_rels/.relsPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000;9hV��{Ļ{\u0003\u0000\u0010�\b\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�+\u0000\u0000lib/net20/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV�\u0017�B��\u0000\u0000jN\t\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u0003\u0000lib/net20/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000\u003c9hV�g\u0000k#5\u0003\u0000\u0010�\u0007\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�e\u0004\u0000lib/net35/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV�{󛟭\u0000\u0000�w\b\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u0007\u0000lib/net35/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000\u003c9hV�\u0004�x��\u0003\u0000\u0010�\b\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�H\b\u0000lib/net40/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV�i!�X�\u0000\u0000}�\b\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u000b\u0000lib/net40/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000\u003c9hV�\u0010b�-!\u0004\u0000\u0010�\n\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000R~\f\u0000lib/net45/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hVuo��\n�\u0000\u0000E�\n\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u0010\u0000lib/net45/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000;9hV=����#\u0004\u0000\u0010�\n\u0000\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�j\u0011\u0000lib/net6.0/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV:x�l��\u0000\u0000N�\n\u0000\u001e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000Ď\u0015\u0000lib/net6.0/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000\u003c9hV���K2�\u0003\u0000\u0010c\n\u0000\u0026\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�X\u0016\u0000lib/netstandard1.0/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV����=�\u0000\u0000ڏ\n\u0000\u0026\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000(S\u001a\u0000lib/netstandard1.0/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000\u003c9hVre�@�\u0013\u0004\u0000\u0010�\n\u0000\u0026\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u0019\u001b\u0000lib/netstandard1.3/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV��\n@m�\u0000\u0000��\n\u0000\u0026\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�-\u001f\u0000lib/netstandard1.3/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000\u003c9hV�\u0013s��\u0018\u0004\u0000\u0010�\n\u0000\u0026\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u001f\u0000lib/netstandard2.0/Newtonsoft.Json.dllPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hVh\u0015�y��\u0000\u0000=�\n\u0000\u0026\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u000e$\u0000lib/netstandard2.0/Newtonsoft.Json.xmlPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\b\u0000�8hV�\rt��\u0001\u0000\u0000�\u0002\u0000\u0000Q\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��$\u0000package/services/metadata/core-properties/d209b95bc94842f88c554aec290ef888.psmdcpPK\u0001\u0002\u0014\u0000\u0014\u0000\u0000\u0000\u0000\u0000k�gV�Z�\u0012�_\u0000\u0000�_\u0000\u0000\u000e\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��$\u0000.signature.p7sPK\u0005\u0006\u0000\u0000\u0000\u0000\u0018\u0000\u0018\u0000\r\u0007\u0000\u0000�;%\u0000\u0000\u0000"
+    },
+    {
+      "name": "auth denial: dotnet nuget push with invalid API key rejected",
+      "status": "pass",
+      "duration_ms": 1365,
+      "detail": "",
+      "output_tail": "Pushing Kc.Demob6308f.1.0.0.nupkg to 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package'...\n  PUT http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/\n  Unauthorized http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v2/package/ 28ms\nerror: Response status code does not indicate success: 401 (Unauthorized).\n"
+    },
+    {
+      "name": "auth denial: dotnet restore with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 6858,
+      "detail": "",
+      "output_tail": "  Determining projects to restore...\n  Retrying 'FindPackagesByIdAsync' for source 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v3/flatcontainer/kc.demob6308f/index.json'.\n  Response status code does not indicate success: 401 (Unauthorized).\n  Retrying 'FindPackagesByIdAsync' for source 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v3/flatcontainer/kc.demob6308f/index.json'.\n  Response status code does not indicate success: 401 (Unauthorized).\n  Retrying 'FindPackagesByIdAsync' for source 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v3/flatcontainer/kc.demob6308f/index.json'.\n  Response status code does not indicate success: 401 (Unauthorized).\n  Retrying 'FindPackagesByIdAsync' for source 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v3/flatcontainer/kc.demob6308f/index.json'.\n  Response status code does not indicate success: 401 (Unauthorized).\n  Retrying 'FindPackagesByIdAsync' for source 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v3/flatcontainer/kc.demob6308f/index.json'.\n  Response status code does not indicate success: 401 (Unauthorized).\n/work/cons/cons.csproj : error NU1301: Failed to retrieve information about 'Kc.Demob6308f' from remote source 'http://127.0.0.1:56011/feeds/cf-nuget-local-b6308f/nuget/v3/flatcontainer/kc.demob6308f/index.json'.\n/work/cons/cons.csproj : error NU1301:   Response status code does not indicate success: 429 (Too Many Requests).\n  Failed to restore /work/cons/cons.csproj (in 5.6 sec).\n"
+    },
+    {
+      "name": "auth denial: unauthenticated service index returns 401",
+      "status": "pass",
+      "duration_ms": 1,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"UMWR2P7B6IDHKCHREGZU45DRGZ\"}\n"
+    }
+  ],
+  "duration_ms": 612664,
+  "summary": {
+    "fail": 2,
+    "pass": 11,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["1bf51530:200", "d2699f37:200"]
+}
