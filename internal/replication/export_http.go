@@ -45,9 +45,6 @@ type exportHandlers struct {
 	// authz authenticates and authorizes "replicate" on the feed and returns
 	// the exporting instance and the feed.
 	authz func(w http.ResponseWriter, r *http.Request) (instance, feed string, ok bool)
-	// longWrites extends the write deadline of blob responses (the federation
-	// listener has a short default write timeout).
-	longWrites bool
 }
 
 func (h exportHandlers) authorize(w http.ResponseWriter, r *http.Request) (string, string, bool) {
@@ -81,7 +78,7 @@ const FederationExportPrefix = "/federation/v1/replication/export/feeds/"
 // The caller is already an authenticated, active member (peer.Handler);
 // authorize decides from the applied, authority-signed topology.
 func FederationExport(e Exporter, instance string, authorize func(ctx context.Context, member, feed string) bool) http.Handler {
-	h := exportHandlers{e: e, longWrites: true, authz: func(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+	h := exportHandlers{e: e, authz: func(w http.ResponseWriter, r *http.Request) (string, string, bool) {
 		caller, ok := peer.Caller(r)
 		feed := r.PathValue("feed")
 		if !ok || !uuidPattern.MatchString(feed) {
@@ -203,9 +200,10 @@ func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer body.Close()
-	if h.longWrites {
-		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(time.Hour))
-	}
+	// Both listeners have short write timeouts (10 s on the main server). A blob
+	// stream may run far longer over a slow peer link, so the deadline moves
+	// forward with every write instead: a transfer that keeps making progress
+	// completes, one that stalls for blobWriteIdle is cut off.
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("X-Content-Digest", "sha256:"+string(info.Digest))
 	w.Header().Set("Accept-Ranges", "bytes")
@@ -224,7 +222,28 @@ func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Range", "bytes "+strconv.FormatInt(offset, 10)+"-"+strconv.FormatInt(offset+n-1, 10)+"/"+strconv.FormatInt(info.Size, 10))
 		w.WriteHeader(http.StatusPartialContent)
 	}
-	_, _ = io.Copy(w, body)
+	streamBlob(w, body)
+}
+
+// blobWriteIdle is how long a blob response may go without a successful write.
+var blobWriteIdle = 60 * time.Second
+
+// streamBlob copies body to w, moving the write deadline forward on every write.
+func streamBlob(w http.ResponseWriter, body io.Reader) {
+	c := http.NewResponseController(w)
+	_ = c.SetWriteDeadline(time.Now().Add(blobWriteIdle))
+	_, _ = io.CopyBuffer(&progressWriter{w: w, c: c}, body, make([]byte, 64<<10))
+}
+
+// progressWriter extends the write deadline before every write.
+type progressWriter struct {
+	w io.Writer
+	c *http.ResponseController
+}
+
+func (p *progressWriter) Write(data []byte) (int, error) {
+	_ = p.c.SetWriteDeadline(time.Now().Add(blobWriteIdle))
+	return p.w.Write(data)
 }
 
 // parseRange accepts a single "bytes=start-" or "bytes=start-end" range.
