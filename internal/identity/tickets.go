@@ -67,3 +67,14 @@ func dropTicket(raw string) {
 	delete(tickets.m, ticketKey(raw))
 	tickets.Unlock()
 }
+
+// IssueTicket mints a single-use, process-local ticket for a principal that
+// trusted in-process code has already authenticated (for example the
+// federation router after it verified a principal assertion, or after it
+// resolved the caller of a request it re-dispatches). The ticket lets the
+// package adapters' own Bearer pipeline see that principal. drop releases an
+// unused ticket. Request headers must never be turned into a principal here.
+func IssueTicket(p Principal) (ticket string, drop func()) {
+	raw := mintTicket(p)
+	return raw, func() { dropTicket(raw) }
+}

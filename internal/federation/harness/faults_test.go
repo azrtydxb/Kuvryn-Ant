@@ -39,6 +39,7 @@ type faultProxy struct {
 	delay  atomic.Int64
 	mu     sync.Mutex
 	held   []net.Conn
+	live   map[net.Conn]bool // forwarded connections (closed when dropping)
 	wg     sync.WaitGroup
 }
 
@@ -60,6 +61,14 @@ func (p *faultProxy) addr() string { return p.ln.Addr().String() }
 // set switches the fault mode; leaving blackhole releases held connections.
 func (p *faultProxy) set(mode int32) {
 	p.mode.Store(mode)
+	if mode == faultDrop {
+		// Taking a member off the network also breaks pooled connections.
+		p.mu.Lock()
+		for c := range p.live {
+			_ = c.Close()
+		}
+		p.mu.Unlock()
+	}
 	if mode != faultBlackhole {
 		p.mu.Lock()
 		for _, c := range p.held {
@@ -106,6 +115,13 @@ func (p *faultProxy) accept() {
 func (p *faultProxy) forward(c net.Conn) {
 	defer p.wg.Done()
 	defer c.Close()
+	p.mu.Lock()
+	if p.live == nil {
+		p.live = map[net.Conn]bool{}
+	}
+	p.live[c] = true
+	p.mu.Unlock()
+	defer func() { p.mu.Lock(); delete(p.live, c); p.mu.Unlock() }()
 	if p.mode.Load() == faultDelay {
 		time.Sleep(time.Duration(p.delay.Load()))
 	}

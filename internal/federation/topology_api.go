@@ -351,6 +351,8 @@ type FeedInput struct {
 	FeedKey      string          `json:"feed_key"`
 	HomeMemberID string          `json:"home_member_id"`
 	Descriptor   *FeedDescriptor `json:"descriptor"`
+	// Routing is optional; nil means proxy routing (D5).
+	Routing *FeedRouting `json:"routing"`
 }
 
 func newUUID() string {
@@ -385,7 +387,7 @@ func (s *Service) CreateFeedTx(ctx context.Context, tx pgx.Tx, actor string, in 
 			_ = tx.QueryRow(ctx, `SELECT f.format,f.anonymous_read FROM federated_feed_bindings b JOIN feeds f ON (f.instance_id,f.id)=(b.instance_id,b.feed_id) WHERE b.instance_id=$1 AND b.feed_key=$2`,
 				s.cfg.InstanceID, in.FeedKey).Scan(&d.Format, &d.AnonymousRead)
 		}
-		out = TopologyFeed{Key: in.FeedKey, Home: home.InstanceID, Descriptor: d, Revision: 1}
+		out = TopologyFeed{Key: in.FeedKey, Home: home.InstanceID, Descriptor: d, Revision: 1, Routing: in.Routing}
 		b.Feeds = append(b.Feeds, out)
 		return nil
 	})
@@ -1159,4 +1161,33 @@ func rejectHomeTarget(b *TopologyBody, r *ReplicationRule) error {
 		}
 	}
 	return nil
+}
+
+// SetFeedRoutingTx replaces the routing of a feed key (authority only). The
+// feed revision increases; members pick the change up with the topology.
+func (s *Service) SetFeedRoutingTx(ctx context.Context, tx pgx.Tx, actor, key string, in FeedRouting) (*TopologyDocument, TopologyFeed, error) {
+	var out TopologyFeed
+	if in.Mode == "" {
+		in.Mode = RouteProxy
+	}
+	if !validRouting(&in) {
+		return nil, out, invalid("routing mode must be proxy, redirect or off; blob_urls and cache need proxy; cache_ttl_seconds needs cache (at most 30 days); prefer lists up to 8 distinct label keys")
+	}
+	doc, err := s.publishTopologyTx(ctx, tx, actor, func(b *TopologyBody, _ *Membership) error {
+		f, ok := b.Feed(key)
+		if !ok {
+			return ErrNotFound
+		}
+		r := in
+		r.Prefer = append([]string(nil), in.Prefer...)
+		f.Routing = &r
+		f.Revision++
+		out = *f
+		return nil
+	})
+	if err != nil {
+		return nil, out, err
+	}
+	return doc, out, audit(ctx, tx, s.cfg.InstanceID, actor, "federation.feed.routing_updated", "", "success",
+		map[string]any{"feed_key": key, "mode": in.Mode, "blob_urls": in.BlobURLs, "cache": in.Cache, "generation": doc.Generation})
 }

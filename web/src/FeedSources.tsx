@@ -9,6 +9,7 @@ import type {
   ResolveExplanation,
   SourceAttachmentPage,
 } from "./generated";
+import { RouteCandidates } from "./FederationRouting";
 import {
   Alert,
   Badge,
@@ -545,11 +546,13 @@ function Resolve({ client, feed }: { client: Client; feed: Feed }) {
           title={
             result.serving
               ? `Served by ${result.serving.name}`
-              : result.status === "pull_through"
-                ? "Would be pulled through an upstream"
-                : result.status === "namespace_mismatch"
-                  ? "Namespace does not match"
-                  : "Not found in any visible source"
+              : result.status === "federated"
+                ? "Not here: would be routed to another federation member"
+                : result.status === "pull_through"
+                  ? "Would be pulled through an upstream"
+                  : result.status === "namespace_mismatch"
+                    ? "Namespace does not match"
+                    : "Not found in any visible source"
           }
         >
           {result.sources
@@ -562,6 +565,7 @@ function Resolve({ client, feed }: { client: Client; feed: Feed }) {
             ` Cache: ${result.cache.state.replace("_", " ")}.`}
         </Alert>
       )}
+      {result?.federation && <RouteCandidates plan={result.federation} />}
     </Card>
   );
 }

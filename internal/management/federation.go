@@ -34,6 +34,9 @@ type federationHandlers struct {
 // is not serving or has no secret keyring; reads then report federation as
 // disabled and mutations answer 503.
 func RegisterFederation(mux *http.ServeMux, pool *pgxpool.Pool, svc *federation.Service) {
+	if svc != nil {
+		routeExplainers.Store(svc.InstanceID(), svc)
+	}
 	h := federationHandlers{identityHandlers{feedHandlers{db: pool}}, svc}
 	bearer := identity.NewBearer(identity.Tokens{DB: pool})
 	for pattern, handler := range map[string]http.HandlerFunc{
@@ -80,6 +83,8 @@ func RegisterFederation(mux *http.ServeMux, pool *pgxpool.Pool, svc *federation.
 		"POST /api/v1/federation/replication/adopt":                 h.adoptJob,
 		"GET /api/v1/federation/quarantines":                        h.quarantines,
 		"POST /api/v1/federation/quarantines/{id}/resolve":          h.resolveQuarantine,
+		"PUT /api/v1/federation/feeds/{fed}/{slug}/routing":         h.setFeedRouting,
+		"GET /api/v1/federation/routes/{fed}/{slug}":                h.explainRoute,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}

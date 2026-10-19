@@ -65,6 +65,7 @@ func (s *Service) WriteMetrics(w io.Writer) {
 	fmt.Fprintln(w, "# HELP ant_federation_join_rejected_total Refused join attempts (invalid, expired, consumed or revoked invitations).\n# TYPE ant_federation_join_rejected_total counter")
 	fmt.Fprintf(w, "ant_federation_join_rejected_total %d\n", s.metrics.joinRejected.Load())
 	s.writeSearchMetrics(w)
+	s.writeRouteMetrics(w)
 }
 
 // writeSearchMetrics emits the cross-instance search counters.
