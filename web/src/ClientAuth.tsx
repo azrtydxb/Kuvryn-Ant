@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Client } from "./api";
+import { APIError, type Client } from "./api";
 import { useAllFeeds } from "./data";
 import { isUnavailable } from "./gaps";
 import type {
@@ -844,6 +844,13 @@ export function PersonalTokensPane({ client }: { client: Client }) {
   if (list.error)
     return isUnavailable(list.error) ? (
       <Unavailable what="Personal access tokens" />
+    ) : list.error instanceof APIError && list.error.status === 403 ? (
+      <SettingsSection title="Personal access tokens">
+        <Alert tone="info" title="Sign in as a person to manage these">
+          Personal access tokens belong to a signed-in user. This session uses a
+          service token, which cannot own them.
+        </Alert>
+      </SettingsSection>
     ) : (
       <Failure error={list.error} />
     );
@@ -993,6 +1000,7 @@ function PersonalTokenCreator({
   const feeds = useAllFeeds(client);
   const [name, setName] = useState("");
   const [feed, setFeed] = useState("");
+  const [namespace, setNamespace] = useState("");
   const [actions, setActions] = useState<TokenScope["actions"]>(["read"]);
   const [duration, setDuration] = useState("90 d");
   const [created, setCreated] = useState<CreatedPersonalAccessToken>();
@@ -1047,7 +1055,15 @@ function PersonalTokenCreator({
                   const r = await client.call("createPersonalAccessToken", {
                     body: {
                       name: name.trim(),
-                      scopes: [{ actions, ...(feed ? { feed_id: feed } : {}) }],
+                      scopes: [
+                        {
+                          actions,
+                          ...(feed ? { feed_id: feed } : {}),
+                          ...(namespace.trim()
+                            ? { namespace: namespace.trim() }
+                            : {}),
+                        },
+                      ],
                       expires_in_days: durations[duration],
                     },
                   });
@@ -1120,6 +1136,14 @@ function PersonalTokenCreator({
             ]}
             value={feed}
             onChange={val(setFeed)}
+          />
+          <Input
+            label="Namespace (optional)"
+            mono
+            maxLength={200}
+            value={namespace}
+            onChange={val(setNamespace)}
+            hint="Limit the token to one package namespace."
           />
           <ActionPicker value={actions} onChange={setActions} />
           <div>

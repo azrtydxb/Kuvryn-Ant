@@ -254,13 +254,23 @@ export function Toolbar({
   );
 }
 export function Mono({
+  className,
   children,
   muted,
 }: {
+  className?: string;
   children: ReactNode;
   muted?: boolean;
 }) {
-  return <span className={"mono" + (muted ? " muted" : "")}>{children}</span>;
+  return (
+    <span
+      className={
+        "mono" + (muted ? " muted" : "") + (className ? " " + className : "")
+      }
+    >
+      {children}
+    </span>
+  );
 }
 export function Copyable({ text, label }: { text: string; label?: string }) {
   const [done, setDone] = useState(false);

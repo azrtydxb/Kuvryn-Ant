@@ -3,6 +3,7 @@ import { requireETag, type Client } from "./api";
 import { useOptionalCall } from "./gaps";
 import { formats, type InstanceSettings } from "./generated";
 import {
+  Alert,
   Badge,
   Button,
   Input,
@@ -15,6 +16,7 @@ import {
 } from "./ds/bundle";
 import { LimitsPane } from "./Limits";
 import { AccessPane, PersonalTokensPane } from "./ClientAuth";
+import { ServiceTokensSection } from "./Tokens";
 import { PrewarmPane } from "./Prewarm";
 import { RetentionPane } from "./Retention";
 import { StorageMigrationSection } from "./StorageMigration";
@@ -40,13 +42,13 @@ const nav = [
   { id: "storage", label: "Storage", icon: "hard-drive", group: "Instance" },
   { id: "security", label: "Security", icon: "lock", group: "Instance" },
   { id: "limits", label: "Limits & quotas", icon: "gauge", group: "Instance" },
+  { id: "access", label: "Access", icon: "shield-check", group: "Instance" },
   {
     id: "templates",
     label: "Policy templates",
     icon: "layers",
     group: "Content",
   },
-  { id: "access", label: "Access", icon: "shield-check", group: "Instance" },
   {
     id: "retention",
     label: "Retention & cleanup",
@@ -87,7 +89,7 @@ export function SettingsPage({
           ) : tab === "access" ? (
             <AccessPane client={client} />
           ) : tab === "tokens" ? (
-            <PersonalTokensPane client={client} />
+            <TokensPane client={client} />
           ) : tab === "retention" ? (
             <RetentionPane client={client} />
           ) : tab === "prewarm" ? (
@@ -137,31 +139,44 @@ function SettingsForm({
 }) {
   const item = (key: string) => value.items.find((i) => i.key === key);
   const locked = (key: string) => !!item(key)?.read_only;
-  const [age, setAge] = useState(
-    String(
-      Math.round(Number(item("session_max_age_seconds")?.value ?? 0) / 60),
-    ),
+  const initialAge = String(
+    Math.round(Number(item("session_max_age_seconds")?.value ?? 0) / 60),
   );
-  const [idle, setIdle] = useState(
-    String(
-      Math.round(Number(item("session_idle_timeout_seconds")?.value ?? 0) / 60),
-    ),
+  const initialIdle = String(
+    Math.round(Number(item("session_idle_timeout_seconds")?.value ?? 0) / 60),
   );
+  const [age, setAge] = useState(initialAge);
+  const [idle, setIdle] = useState(initialIdle);
   const [anon, setAnon] = useState(
     item("default_anonymous_read")?.value === "true",
   );
   const action = useAction();
   const toast = useToast();
+  const dirty =
+    age !== initialAge ||
+    idle !== initialIdle ||
+    anon !== (item("default_anonymous_read")?.value === "true");
+  const unenforced = [
+    "session_max_age_seconds",
+    "session_idle_timeout_seconds",
+  ].some((k) => item(k)?.enforced === false);
   const ageOK = Number(age) >= 1 && Number(age) <= 480;
   const idleOK = Number(idle) >= 1 && Number(idle) <= 30;
   async function save() {
     const ok = await action.run(() =>
       client.call("putSettings", {
         etag: requireETag(`"${value.revision}"`),
+        // Environment-backed keys are rejected by the server; omit them.
         body: {
-          session_max_age_seconds: Math.round(Number(age) * 60),
-          session_idle_timeout_seconds: Math.round(Number(idle) * 60),
-          default_anonymous_read: anon,
+          ...(locked("session_max_age_seconds")
+            ? {}
+            : { session_max_age_seconds: Math.round(Number(age) * 60) }),
+          ...(locked("session_idle_timeout_seconds")
+            ? {}
+            : { session_idle_timeout_seconds: Math.round(Number(idle) * 60) }),
+          ...(locked("default_anonymous_read")
+            ? {}
+            : { default_anonymous_read: anon }),
         },
       }),
     );
@@ -173,7 +188,9 @@ function SettingsForm({
   const footer = (
     <Button
       type="submit"
-      disabled={action.busy || (section === "security" && !(ageOK && idleOK))}
+      disabled={
+        action.busy || !dirty || (section === "security" && !(ageOK && idleOK))
+      }
     >
       {action.busy ? "Saving…" : "Save"}
     </Button>
@@ -215,21 +232,22 @@ function SettingsForm({
             title="All settings"
             description="Where each value comes from. Environment-backed values cannot be changed here."
           >
-            <PropertyList
-              items={value.items.map((i) => ({
-                label: i.key,
-                mono: true,
-                value: (
-                  <span className="row tight">
-                    {i.value}
-                    <Badge tone={i.source === "env" ? "warn" : "neutral"}>
-                      {i.source}
-                    </Badge>
-                    {i.read_only && <Badge tone="outline">read-only</Badge>}
-                  </span>
-                ),
-              }))}
-            />
+            {value.items.map((i) => (
+              <SettingsRow
+                key={i.key}
+                label={<Mono>{i.key}</Mono>}
+                description={i.description}
+              >
+                <span className="row tight">
+                  <Mono>{i.value}</Mono>
+                  <Badge tone={i.source === "env" ? "warn" : "neutral"}>
+                    {i.source}
+                  </Badge>
+                  {i.read_only && <Badge tone="outline">read-only</Badge>}
+                  {!i.enforced && <Badge tone="outline">recorded only</Badge>}
+                </span>
+              </SettingsRow>
+            ))}
           </SettingsSection>
         </>
       ) : (
@@ -258,6 +276,12 @@ function SettingsForm({
             error={idleOK ? undefined : "Between 1 and 30 minutes."}
             hint="Sign out browser sessions after inactivity."
           />
+          {unenforced && (
+            <Alert tone="info" title="Recorded only">
+              These values are stored for the console, but the runtime still
+              applies its built-in session limits.
+            </Alert>
+          )}
           <Failure error={action.error} />
           <SettingsRow
             label="Encryption key rotation"
@@ -382,6 +406,15 @@ function About({
           />
         </SettingsRow>
       </SettingsSection>
+    </>
+  );
+}
+
+function TokensPane({ client }: { client: Client }) {
+  return (
+    <>
+      <PersonalTokensPane client={client} />
+      <ServiceTokensSection client={client} />
     </>
   );
 }

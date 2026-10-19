@@ -18,6 +18,7 @@ import {
   Modal,
   SegmentedControl,
   Select,
+  SettingsSection,
   Table,
 } from "./ds/bundle";
 import {
@@ -25,6 +26,7 @@ import {
   Loading,
   Mono,
   useAction,
+  useResource,
   useToast,
   uuidPattern,
   val,
@@ -375,7 +377,14 @@ export function TokensTab({
       )}
       <Table
         columns={[
-          { key: "id", label: "Token", mono: true },
+          {
+            key: "id",
+            label: "Token",
+            mono: true,
+            render: (t: TokenRecord) => (
+              <span title={t.id}>{t.id.slice(0, 8)}</span>
+            ),
+          },
           {
             key: "principal",
             label: "Principal",
@@ -386,11 +395,11 @@ export function TokensTab({
             key: "scopes",
             label: "Scope",
             render: (t: TokenRecord) => (
-              <Mono muted>
+              <Mono muted className="wrap-cell">
                 {(t.scopes ?? [])
                   .map(
                     (s) =>
-                      `${s.actions.join(",")} · ${s.namespace ?? s.feed_id ?? "*"}`,
+                      `${s.actions.join(", ")} · ${s.namespace ?? s.feed_id ?? "*"}`,
                   )
                   .join("; ") || "—"}
               </Mono>
@@ -487,5 +496,50 @@ export function TokensTab({
         </Modal>
       )}
     </>
+  );
+}
+
+// Admin-only: service-account tokens (non-human principals), separate from
+// the signed-in user's own personal access tokens.
+export function ServiceTokensSection({ client }: { client: Client }) {
+  const principals = useResource(
+    () => client.call("listPrincipals", { query: { limit: "200" } }),
+    [client],
+  );
+  const [issuing, setIssuing] = useState(false);
+  const [version, setVersion] = useState(0);
+  const items = principals.value?.data.items ?? [];
+  return (
+    <SettingsSection
+      title="Service account tokens"
+      description="Tokens issued to service principals for automation (CI, replication, mirrors). They are not tied to your account. Administrators only."
+    >
+      <div>
+        <Button
+          icon="key-round"
+          disabled={principals.loading || !!principals.error}
+          onClick={() => setIssuing(true)}
+        >
+          Issue service token
+        </Button>
+      </div>
+      {principals.error ? (
+        <Failure error={principals.error} />
+      ) : principals.loading ? (
+        <Loading what="service principals" />
+      ) : (
+        <TokensTab key={version} client={client} principals={items} />
+      )}
+      {issuing && (
+        <TokenIssuer
+          client={client}
+          principals={items}
+          onClose={() => {
+            setIssuing(false);
+            setVersion((v) => v + 1);
+          }}
+        />
+      )}
+    </SettingsSection>
   );
 }

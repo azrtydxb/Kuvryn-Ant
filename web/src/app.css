@@ -658,3 +658,18 @@ details > summary {
   flex-direction: column;
   gap: 14px;
 }
+.stack.tight {
+  gap: 2px;
+}
+.wrap-cell {
+  display: inline-block;
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 140px;
+  max-width: 180px;
+}
+.settings-wide .az-table th,
+.settings-wide .az-table td {
+  padding-left: 10px;
+  padding-right: 10px;
+}
