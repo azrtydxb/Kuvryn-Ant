@@ -28,6 +28,7 @@ type Registry struct {
 	instance  string
 	transfers chan struct{}
 	publicURL string
+	audits    auditCache
 }
 
 func New(db *pgxpool.Pool, s *artifact.Service) (*Registry, error) {
@@ -135,6 +136,10 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	route := parts[3]
+	if strings.HasPrefix(route, auditPrefix) {
+		s.audit(w, r, p, feed, route)
+		return
+	}
 	tags := strings.HasPrefix(route, "-/package/")
 	if tags {
 		route = strings.TrimPrefix(route, "-/package/")
