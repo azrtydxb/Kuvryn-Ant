@@ -10,6 +10,9 @@ imagePullSecrets: []
 # - ip: 192.168.10.150
 #   hostnames: [ant-federation.kw.watteel.lab]
 hostAliases: []
+# Annotations for the pod template, for example a backup tool opting a volume out
+# (azrty-oke sets `backup.velero.io/backup-volumes-excludes: data`).
+podAnnotations: {}
 replicaCount: 1 # This release enforces exactly one writer.
 publicURL: https://ant.example.invalid
 instanceID: "" # Empty resolves the bootstrapped instance from PostgreSQL.
