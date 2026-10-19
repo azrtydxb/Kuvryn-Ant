@@ -224,7 +224,7 @@ export type FoundFederation = { "name": string; "member_name"?: string; "labels"
 export type FederationFoundResult = { "status": FederationStatus; "recovery_key": string; "recovery_public_key": string; "ca_sha256": string };
 export type JoinFederation = { "authority_url": string; "ca_sha256": string; "authority_cert_sha256"?: string; "invitation": string; "labels"?: Record<string, string> };
 export type LeaveFederation = { "confirm": boolean; "force"?: boolean };
-export type FederationInvitation = { "id": string; "name": string; "labels": Record<string, string>; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked" };
+export type FederationInvitation = { "id": string; "name": string; "labels": Record<string, string>; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "claimed" | "consumed" | "expired" | "revoked"; "claimed_at"?: string };
 export type FederationInvitationList = { "items": Array<FederationInvitation> };
 export type CreateFederationInvitation = { "name": string; "labels"?: Record<string, string>; "ttl_seconds"?: number };
 export type FederationIssuedInvitation = { "id": string; "name": string; "labels": Record<string, string>; "expires_at": string; "created_at": string; "consumed_at"?: string; "consumed_by"?: string; "revoked_at"?: string; "state": "pending" | "consumed" | "expired" | "revoked"; "secret": string; "ca_sha256": string; "authority_url": string; "authority_cert_sha256": string };
@@ -232,7 +232,7 @@ export type RotateFederationRecoveryKey = { "rotation": FederationRecoveryRotati
 export type FederationRecoveryTemplate = { "federation_id": string; "generation": number; "previous_key": string; "authority": { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery"; "signature"?: string } };
 export type FederationRecoveryRotationResult = { "status": FederationStatus; "recovery_public_key": string };
 export type FederationDocumentMember = { "instance_id": string; "name": string; "status": "active" | "suspended" | "removed"; "api_url": string; "federation_url": string; "cert_sha256": string; "cert_serial": string; "previous_cert_sha256"?: string; "previous_cert_serial"?: string; "previous_cert_until"?: string; "signing_key": string; "labels": Record<string, string>; "software_version": string; "protocol": FederationProtocolRange; "joined_at": string };
-export type FederationAuthorityCertificate = { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery" | "previous_epoch"; "signature": string };
+export type FederationAuthorityCertificate = { "epoch": number; "instance_id": string; "public_key": string; "certified_by": "recovery" | "previous_epoch"; "signature": string; "acceptance"?: string };
 export type FederationRecoveryRotation = { "previous_key": string; "new_key": string; "generation": number; "signature": string };
 export type FederationSignature = { "key_id": string; "alg": string; "value": string };
 export type FederationMembershipDocument = { "kind": "membership"; "federation_id": string; "federation_name": string; "generation": number; "authority_epoch": number; "prev_hash": string; "protocol": FederationProtocolRange; "authority": FederationAuthorityCertificate; "recovery_public_key": string; "recovery_rotation"?: FederationRecoveryRotation; "ca_certificates": Array<string>; "members": Array<FederationDocumentMember>; "revoked_cert_serials": Array<string>; "issued_at": string; "issued_by": string; "signature"?: FederationSignature };
@@ -267,7 +267,7 @@ export type FederationPolicyDocument = { "kind": "policy"; "federation_id": stri
 export type FederationPrincipalConflict = { "domain": string; "subject": string; "principal_id": string; "reason": "conflict_local_principal" };
 export type FederationPolicyReport = { "roles": number; "grants": number; "principals": number; "revoked": number; "unresolved_feed_keys": Array<string>; "inert_admin_grants": number; "conflicts": Array<FederationPrincipalConflict> };
 export type FederationPolicyStatus = { "generation": number; "hash"?: string; "applied_at"?: string; "confirmed_at"?: string; "age_seconds": number; "staleness": "fresh" | "warning" | "critical"; "error"?: string; "error_at"?: string; "report": FederationPolicyReport };
-export type FederationAlert = { "code": "policy_stale" | "policy_rejected" | "membership_stale" | "policy_conflicts" | "topology_rejected" | "feed_home_conflict"; "severity": "warning" | "critical"; "message": string };
+export type FederationAlert = { "code": "policy_stale" | "policy_rejected" | "membership_stale" | "policy_conflicts" | "topology_rejected" | "feed_home_conflict" | "authority_fenced" | "handover_pending" | "recovery_key_unverified" | "member_unreachable"; "severity": "warning" | "critical"; "message": string };
 export type FederationSettings = { "accept_admin_grants": boolean; "policy_max_age_seconds"?: number };
 export type FederationPolicyHistory = { "generation": number; "hash": string; "issued_at": string; "issued_by": string; "received_at": string };
 export type FederationPolicyView = { "status": FederationPolicyStatus; "document"?: FederationPolicyDocument; "has_draft": boolean; "settings": FederationSettings; "history": Array<FederationPolicyHistory> };
@@ -316,6 +316,20 @@ export type FederationReplicationStatus = { "items": Array<FederationRuleStatus>
 export type AdoptFederationReplicationJob = { "job_id": string; "rule_id": string };
 export type FederationAdoptResult = { "job_id": string; "rule_id": string; "feed_key": string; "phase": string; "checkpoint": number; "previous_peer_id": string; "peer_id": string };
 export type ResolveFederationQuarantine = { "confirm": boolean };
+export type FederationEpochRecord = { "epoch": number; "instance_id": string; "name"?: string; "certified_by": "recovery" | "previous_epoch"; "from_generation": number; "key_fingerprint": string; "applied_at"?: string };
+export type FederationHandoverStatus = { "to_member_id": string; "to_name"?: string; "started_at": string; "base_generation": number; "expires_at": string };
+export type FederationFenceStatus = { "at": string; "by_epoch": number };
+export type FederationRecoveryDrill = { "verified_at"?: string; "due": boolean };
+export type FederationAuthorityStatus = { "role": "member" | "authority"; "epoch": number; "authority_instance_id": string; "authority_name"?: string; "key_fingerprint": string; "recovery_key_fingerprint": string; "epochs": Array<FederationEpochRecord>; "handover"?: FederationHandoverStatus; "fenced"?: FederationFenceStatus; "recovery": FederationRecoveryDrill; "pending_authority_key": boolean };
+export type HandoverFederationAuthority = { "to_member_id": string; "confirm": boolean };
+export type FederationHandoverResult = { "status": FederationStatus; "epoch": number; "applied": boolean };
+export type RecoverFederationAuthority = { "authority_certificate": FederationAuthorityCertificate; "remove_previous_authority"?: boolean; "confirm": boolean };
+export type FederationRecoverResult = { "status": FederationStatus; "epoch": number; "ca_sha256": string; "previous_authority_removed": boolean };
+export type FederationRecoveryChallenge = { "federation_id": string; "challenge": string; "expires_at": string; "recovery_public_key": string };
+export type VerifyFederationRecoveryKey = { "challenge": string; "signature": string };
+export type FederationAuditEvent = { "member": string; "member_name": string; "id": number; "created_at": string; "principal_id"?: string; "action": string; "resource_id"?: string; "result": "success" | "denied" | "failure"; "details"?: {  } };
+export type FederationAuditMember = { "id": string; "name": string; "status": "ok" | "forbidden" | "timeout" | "error" | "skipped"; "code"?: string; "took_ms": number; "events": number };
+export type FederationAuditPage = { "items": Array<FederationAuditEvent>; "members": Array<FederationAuditMember>; "partial": boolean; "page": PageInfo };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -522,6 +536,14 @@ getFederationReplicationStatus: { body: undefined; response: FederationReplicati
 adoptFederationReplicationJob: { body: AdoptFederationReplicationJob; response: FederationAdoptResult };
 listFederationQuarantines: { body: undefined; response: FederationQuarantineList };
 resolveFederationQuarantine: { body: ResolveFederationQuarantine; response: FederationQuarantine };
+getFederationAuthority: { body: undefined; response: FederationAuthorityStatus };
+handoverFederationAuthority: { body: HandoverFederationAuthority; response: FederationHandoverResult };
+abortFederationAuthorityHandover: { body: undefined; response: undefined };
+createFederationRecoveryEpochTemplate: { body: undefined; response: FederationRecoveryTemplate };
+recoverFederationAuthority: { body: RecoverFederationAuthority; response: FederationRecoverResult };
+createFederationRecoveryChallenge: { body: undefined; response: FederationRecoveryChallenge };
+verifyFederationRecoveryKey: { body: VerifyFederationRecoveryKey; response: FederationAuthorityStatus };
+federatedAudit: { body: undefined; response: FederationAuditPage };
 }
 export const routes = {
   "getStatus": {
@@ -1543,5 +1565,45 @@ export const routes = {
     "path": "/api/v1/federation/quarantines/{id}/resolve",
     "method": "POST",
     "idempotent": true
+  },
+  "getFederationAuthority": {
+    "path": "/api/v1/federation/authority",
+    "method": "GET",
+    "idempotent": false
+  },
+  "handoverFederationAuthority": {
+    "path": "/api/v1/federation/authority/handover",
+    "method": "POST",
+    "idempotent": false
+  },
+  "abortFederationAuthorityHandover": {
+    "path": "/api/v1/federation/authority/handover/abort",
+    "method": "POST",
+    "idempotent": false
+  },
+  "createFederationRecoveryEpochTemplate": {
+    "path": "/api/v1/federation/authority/recovery-template",
+    "method": "POST",
+    "idempotent": false
+  },
+  "recoverFederationAuthority": {
+    "path": "/api/v1/federation/authority/recover",
+    "method": "POST",
+    "idempotent": false
+  },
+  "createFederationRecoveryChallenge": {
+    "path": "/api/v1/federation/recovery-key/challenge",
+    "method": "POST",
+    "idempotent": false
+  },
+  "verifyFederationRecoveryKey": {
+    "path": "/api/v1/federation/recovery-key/verify",
+    "method": "POST",
+    "idempotent": false
+  },
+  "federatedAudit": {
+    "path": "/api/v1/federation/audit",
+    "method": "GET",
+    "idempotent": false
   }
 } as const;

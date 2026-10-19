@@ -3,6 +3,7 @@ package federation
 import (
 	"fmt"
 	"io"
+	"sort"
 )
 
 // WriteMetrics emits federation gauges from the in-memory trust state (no
@@ -28,6 +29,11 @@ func (s *Service) WriteMetrics(w io.Writer) {
 	}
 	fmt.Fprintln(w, "# HELP ant_federation_authority_epoch Applied authority epoch.\n# TYPE ant_federation_authority_epoch gauge")
 	fmt.Fprintf(w, "ant_federation_authority_epoch %d\n", t.doc.AuthorityEpoch)
+	if t.state.Role != "" {
+		fmt.Fprintln(w, "# HELP ant_federation_authority Whether this instance currently holds the authority role.\n# TYPE ant_federation_authority gauge")
+		fmt.Fprintf(w, "ant_federation_authority %d\n", map[bool]int{true: 1, false: 0}[t.state.Role == "authority"])
+	}
+	s.writeMemberMetrics(w, t)
 	counts := map[string]int{"active": 0, "suspended": 0, "removed": 0}
 	for _, m := range t.doc.Members {
 		counts[m.Status]++
@@ -78,4 +84,44 @@ func (s *Service) writeSearchMetrics(w io.Writer) {
 	fmt.Fprintf(w, "ant_federation_search_cache_hits_total %d\n", s.search.cacheHits.Load())
 	fmt.Fprintln(w, "# HELP ant_federation_search_rate_limited_total Peer search requests refused by the per-peer or per-principal limit.\n# TYPE ant_federation_search_rate_limited_total counter")
 	fmt.Fprintf(w, "ant_federation_search_rate_limited_total %d\n", s.search.rateLimited.Load())
+}
+
+// writeMemberMetrics emits the reachability of every other active member as
+// this instance last observed it (status pings and proxied requests).
+func (s *Service) writeMemberMetrics(w io.Writer, t *trust) {
+	if t.doc == nil {
+		return
+	}
+	type row struct {
+		name string
+		up   int
+		rtt  float64
+	}
+	var rows []row
+	rs := &s.route
+	rs.mu.Lock()
+	for _, m := range t.doc.Members {
+		if m.Status != "active" || m.InstanceID == s.cfg.InstanceID {
+			continue
+		}
+		h := rs.members[m.InstanceID]
+		r := row{name: m.Name}
+		if h != nil {
+			r.rtt = h.rttMS / 1000
+			if h.failures == 0 && !h.lastSuccess.IsZero() {
+				r.up = 1
+			}
+		}
+		rows = append(rows, r)
+	}
+	rs.mu.Unlock()
+	sort.Slice(rows, func(i, j int) bool { return rows[i].name < rows[j].name })
+	fmt.Fprintln(w, "# HELP ant_federation_member_up Whether the last request to the member succeeded (1) or it is unreachable or not yet seen (0).\n# TYPE ant_federation_member_up gauge")
+	for _, r := range rows {
+		fmt.Fprintf(w, "ant_federation_member_up{member=%q} %d\n", r.name, r.up)
+	}
+	fmt.Fprintln(w, "# HELP ant_federation_member_rtt_seconds Smoothed round-trip time to the member over the federation listener.\n# TYPE ant_federation_member_rtt_seconds gauge")
+	for _, r := range rows {
+		fmt.Fprintf(w, "ant_federation_member_rtt_seconds{member=%q} %g\n", r.name, r.rtt)
+	}
 }

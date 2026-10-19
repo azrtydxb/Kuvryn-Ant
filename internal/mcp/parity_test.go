@@ -49,6 +49,7 @@ func parityCases() []parityCase {
 		{"start_feed_transfer", map[string]any{"feed_key": "lab/x", "to_member_id": someID, "confirm": true}, "POST", "/api/v1/federation/feeds/lab/x/transfer", `{"confirm":true,"to_member_id":"` + someID + `"}`},
 		{"set_replication_rule", map[string]any{"feed_key": "lab/x", "targets": map[string]any{"members": []any{someID}}}, "POST", "/api/v1/federation/replication/rules", `{"feed_key":"lab/x","targets":{"members":["` + someID + `"]}}`},
 		{"adopt_replication_job", map[string]any{"job_id": someID, "rule_id": otherID}, "POST", "/api/v1/federation/replication/adopt", `{"job_id":"` + someID + `","rule_id":"` + otherID + `"}`},
+		{"handover_federation_authority", map[string]any{"to_member_id": someID, "confirm": true}, "POST", "/api/v1/federation/authority/handover", `{"to_member_id":"` + someID + `","confirm":true}`},
 	}
 }
 

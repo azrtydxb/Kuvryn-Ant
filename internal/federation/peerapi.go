@@ -25,6 +25,7 @@ type peerStatus struct {
 	Name            string        `json:"name"`
 	State           string        `json:"state"`
 	TimeUnixMS      int64         `json:"time_unix_ms"`
+	AuthorityEpoch  int64         `json:"authority_epoch,omitempty"`
 	SoftwareVersion string        `json:"software_version"`
 	Protocol        ProtocolRange `json:"protocol"`
 	Membership      struct {
@@ -60,6 +61,14 @@ func peerErr(w http.ResponseWriter, err error) {
 		peerFail(w, http.StatusConflict, "protocol_unsupported")
 	case errors.Is(err, ErrSelf):
 		peerFail(w, http.StatusConflict, "conflict")
+	case errors.Is(err, ErrMemberNotCurrent):
+		peerFail(w, http.StatusConflict, "member_not_current")
+	case errors.Is(err, ErrIsAuthority):
+		peerFail(w, http.StatusConflict, "is_authority")
+	case errors.Is(err, ErrHandoverPending):
+		peerFail(w, http.StatusConflict, "handover_pending")
+	case errors.Is(err, ErrNotFound):
+		peerFail(w, http.StatusNotFound, "not_found")
 	case errors.As(err, &rej):
 		peerFail(w, http.StatusConflict, rej.Reason)
 	case errors.As(err, &in):
@@ -78,6 +87,10 @@ func (s *Service) PeerHandler() http.Handler {
 	mux.HandleFunc("GET /federation/v1/documents/{kind}", s.peerDocuments)
 	mux.HandleFunc("POST /federation/v1/nudge", s.peerNudge)
 	mux.HandleFunc("POST /federation/v1/leave", s.peerLeave)
+	mux.HandleFunc("POST /federation/v1/join/confirm", s.peerJoinConfirm)
+	mux.HandleFunc("POST /federation/v1/authority/prepare", s.peerAuthorityPrepare)
+	mux.HandleFunc("POST /federation/v1/authority/commit", s.peerAuthorityCommit)
+	mux.HandleFunc("POST /federation/v1/audit/query", s.peerAudit)
 	mux.HandleFunc("POST /federation/v1/csr/renew", s.peerRenew)
 	mux.HandleFunc("GET /federation/v1/status", s.peerStatus)
 	mux.HandleFunc("POST /federation/v1/access-check", s.peerAccessCheck)
@@ -96,7 +109,7 @@ func (s *Service) PeerHandler() http.Handler {
 	}
 	s.peerMu.Unlock()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { peerFail(w, http.StatusNotFound, "not_found") })
-	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true},
+	return &peer.Handler{Trust: s, Mux: mux, Public: map[string]bool{"POST /federation/v1/join": true, "POST /federation/v1/join/confirm": true},
 		// A nudge may carry the generation that announces the sender's renewed
 		// certificate; peerNudge re-checks the pin after applying it.
 		DeferPin: map[string]bool{"POST /federation/v1/nudge": true}, Logger: s.cfg.Logger, Reject: s.peerRejected}
@@ -209,7 +222,7 @@ func (s *Service) peerDocuments(w http.ResponseWriter, r *http.Request) {
 func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 	caller, _ := peer.Caller(r)
 	t := s.trust.Load()
-	if t.doc == nil || caller.InstanceID != t.doc.Authority.InstanceID {
+	if t.doc == nil {
 		peerFail(w, http.StatusForbidden, "not_authority")
 		return
 	}
@@ -221,10 +234,26 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
+	// Only the authority pushes documents, except that the member that became
+	// authority of a higher epoch announces it (membership documents are
+	// self-authenticating; applying one still requires a valid chain).
+	announcesEpoch := false
+	for _, d := range body.Documents {
+		if d.AuthorityEpoch > t.doc.AuthorityEpoch && d.Authority.InstanceID == caller.InstanceID {
+			announcesEpoch = true
+		}
+	}
+	if caller.InstanceID != t.doc.Authority.InstanceID && !announcesEpoch {
+		peerFail(w, http.StatusForbidden, "not_authority")
+		return
+	}
 	pending := []Membership{}
 	for _, d := range body.Documents {
 		if d.Generation > t.doc.Generation {
 			pending = append(pending, d)
+		} else if d.AuthorityEpoch > t.doc.AuthorityEpoch {
+			s.epochHint.Store(caller.InstanceID) // replaces voided local generations; sync resolves it
+			s.Nudge()
 		}
 	}
 	if len(pending) > 0 && pending[0].Generation == t.doc.Generation+1 {
@@ -236,6 +265,11 @@ func (s *Service) peerNudge(w http.ResponseWriter, r *http.Request) {
 		}
 	} else if len(pending) > 0 {
 		s.Nudge()
+	}
+	if caller.InstanceID != s.trust.Load().authorityID() {
+		// An epoch announcement that could not be applied yet (sync resolves it).
+		peerJSON(w, http.StatusAccepted, map[string]any{"accepted": true})
+		return
 	}
 	// The sender presented a certificate this member did not accept yet.
 	// Membership documents are self-authenticating, so applying them was safe;
@@ -406,6 +440,7 @@ func (s *Service) peerStatus(w http.ResponseWriter, r *http.Request) {
 			out.Name = m.Name
 		}
 		out.Membership.Generation, out.Membership.Hash = t.doc.Generation, Hash(t.doc)
+		out.AuthorityEpoch = t.doc.AuthorityEpoch
 	}
 	peerJSON(w, http.StatusOK, out)
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 )
 
-const federationUsage = "usage: ant federation status | re-identify --confirm | purge --confirm | recovery sign-rotation|sign-authority-cert ..."
+const federationUsage = "usage: ant federation status | re-identify --confirm | purge --confirm | recovery sign-rotation|sign-authority-cert|sign-challenge ..."
 
 // federationCommand runs the offline federation operations: status (local
 // view from the database), re-identify (give a restored copy a new instance

@@ -727,3 +727,109 @@ it("explains read routing and publishes routing settings", async () => {
     cache: false,
   });
 });
+
+it("shows authority epochs, hands the authority over with a typed confirmation and reads the federated audit", async () => {
+  let handedOver = false;
+  install((url, init) => {
+    if (url === "/api/v1/federation/status") return json(active);
+    if (url === "/api/v1/federation/members")
+      return json({
+        items: [
+          member(alpha, "alpha", { authority: true, self: true }),
+          member(beta, "beta"),
+        ],
+      });
+    if (url === "/api/v1/federation/invitations") return json({ items: [] });
+    if (url === "/api/v1/federation/authority")
+      return json({
+        role: "authority",
+        epoch: handedOver ? 2 : 1,
+        authority_instance_id: alpha,
+        authority_name: "alpha",
+        key_fingerprint: "a".repeat(16),
+        recovery_key_fingerprint: "b".repeat(16),
+        epochs: [
+          {
+            epoch: 1,
+            instance_id: alpha,
+            name: "alpha",
+            certified_by: "recovery",
+            from_generation: 1,
+            key_fingerprint: "a".repeat(16),
+            applied_at: "2026-10-18T10:00:00Z",
+          },
+        ],
+        recovery: { due: true },
+        pending_authority_key: false,
+      });
+    if (
+      url === "/api/v1/federation/authority/handover" &&
+      init.method === "POST"
+    ) {
+      handedOver = true;
+      return json({ status: active, epoch: 2, applied: true });
+    }
+    if (url.startsWith("/api/v1/federation/audit"))
+      return json({
+        items: [
+          {
+            member: alpha,
+            member_name: "alpha",
+            id: 7,
+            created_at: "2026-10-18T10:00:00Z",
+            action: "federation.member.added",
+            result: "success",
+            details: { name: "beta" },
+          },
+        ],
+        members: [
+          {
+            id: alpha,
+            name: "alpha",
+            status: "ok",
+            took_ms: 3,
+            events: 1,
+          },
+          {
+            id: beta,
+            name: "beta",
+            status: "forbidden",
+            code: "audit_read_denied",
+            took_ms: 5,
+            events: 0,
+          },
+        ],
+        partial: true,
+        page: { has_more: false },
+      });
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Federation");
+  await screen.findByText("Recovery key not proven recently");
+  expect(screen.getAllByText("recovery key").length).toBeGreaterThan(0);
+  // Federated audit: the member that denies the caller is reported.
+  await screen.findByText("federation.member.added");
+  screen.getByText("beta: forbidden (audit_read_denied) · 0 · 5 ms");
+  screen.getByText("Partial results");
+  // Handover needs the member name typed.
+  fireEvent.click(screen.getByRole("button", { name: "Hand over" }));
+  const dialog = await screen.findByRole("dialog", {
+    name: "Hand over the authority",
+  });
+  const submit = within(dialog).getByRole("button", { name: "Hand over" });
+  expect((submit as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.change(within(dialog).getByLabelText("Type beta to confirm"), {
+    target: { value: "beta" },
+  });
+  fireEvent.click(submit);
+  await waitFor(() =>
+    expect(posts("/api/v1/federation/authority/handover")).toHaveLength(1),
+  );
+  expect(
+    JSON.parse(
+      posts("/api/v1/federation/authority/handover")[0].init.body as string,
+    ),
+  ).toEqual({ to_member_id: beta, confirm: true });
+});

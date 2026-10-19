@@ -33,8 +33,8 @@ func TestCanonicalizeRFC8785(t *testing.T) {
 }
 
 type testFed struct {
-	recovery, authority ed25519.PrivateKey
-	docs                []*Membership
+	recovery, authority, member ed25519.PrivateKey
+	docs                        []*Membership
 }
 
 func genKey(t *testing.T) ed25519.PrivateKey {
@@ -57,14 +57,14 @@ const (
 
 func newTestFed(t *testing.T) *testFed {
 	t.Helper()
-	f := &testFed{recovery: genKey(t), authority: genKey(t)}
+	f := &testFed{recovery: genKey(t), authority: genKey(t), member: genKey(t)}
 	ca, _, err := newCA("unit", time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
 	m := &Membership{Kind: "membership", FederationID: tfID, FederationName: "unit", Generation: 1, AuthorityEpoch: 1,
 		Protocol: ProtocolRange{1, 1}, RecoveryPublicKey: pub(f.recovery), CACertificates: []string{ca.CertPEM}, RevokedCertSerials: []string{},
-		Members:  []Member{{InstanceID: tfA, Name: "alpha", Status: "active", FederationURL: tfURL, SigningKey: pub(genKey(t)), Protocol: ProtocolRange{1, 1}}},
+		Members:  []Member{{InstanceID: tfA, Name: "alpha", Status: "active", FederationURL: tfURL, SigningKey: pub(f.member), Protocol: ProtocolRange{1, 1}}},
 		IssuedAt: time.Now().UTC().Format(time.RFC3339Nano)}
 	m.Authority = AuthorityCert{Epoch: 1, InstanceID: tfA, PublicKey: pub(f.authority), CertifiedBy: "recovery"}
 	m.Authority.Signature = sign(f.recovery, authorityStatement(tfID, m.Authority))
@@ -193,9 +193,27 @@ func TestRecoveryRotationAndEpochs(t *testing.T) {
 	g2.Generation, g2.PrevHash, g2.AuthorityEpoch = 2, Hash(g1), 2
 	g2.Authority = AuthorityCert{Epoch: 2, InstanceID: tfA, PublicKey: pub(epoch2), CertifiedBy: "previous_epoch"}
 	g2.Authority.Signature = sign(f.authority, authorityStatement(tfID, g2.Authority))
+	// An epoch change needs the new authority member's own acceptance.
+	_ = Sign(g2, epoch2)
+	if err := Verify(g2, g1); !errors.Is(err, ErrAuthorityCert) {
+		t.Fatalf("handover without acceptance: %v", err)
+	}
+	g2.Authority.Acceptance = sign(genKey(t), acceptanceStatement(tfID, g2.Authority))
+	_ = Sign(g2, epoch2)
+	if err := Verify(g2, g1); !errors.Is(err, ErrAuthorityCert) {
+		t.Fatalf("handover accepted by another key: %v", err)
+	}
+	g2.Authority.Acceptance = sign(f.member, acceptanceStatement(tfID, g2.Authority))
 	_ = Sign(g2, epoch2)
 	if err := Verify(g2, g1); err != nil {
 		t.Fatalf("planned handover rejected: %v", err)
+	}
+	// The acceptance is bound to the epoch key: a swapped key invalidates it.
+	swapped := g2.Clone()
+	swapped.Authority.PublicKey = pub(genKey(t))
+	_ = Sign(swapped, epoch2)
+	if err := Verify(swapped, g1); !errors.Is(err, ErrAuthorityCert) {
+		t.Fatalf("acceptance reused for another key: %v", err)
 	}
 	// An epoch-1 document after epoch 2 was applied is stale.
 	f.docs = []*Membership{g1}
@@ -226,5 +244,41 @@ func TestRecoveryExport(t *testing.T) {
 	}
 	if _, err := parseRecovery("ant-recovery-v1:short"); err == nil {
 		t.Fatal("short recovery key accepted")
+	}
+}
+
+func TestHandoverCertificationCarriesThroughTheEpoch(t *testing.T) {
+	f := newTestFed(t)
+	g1 := f.docs[0]
+	epoch2 := genKey(t)
+	g2 := g1.Clone()
+	g2.Generation, g2.PrevHash, g2.AuthorityEpoch = 2, Hash(g1), 2
+	g2.Authority = AuthorityCert{Epoch: 2, InstanceID: tfA, PublicKey: pub(epoch2), CertifiedBy: "previous_epoch"}
+	g2.Authority.Signature = sign(f.authority, authorityStatement(tfID, g2.Authority))
+	g2.Authority.Acceptance = sign(f.member, acceptanceStatement(tfID, g2.Authority))
+	if err := Sign(g2, epoch2); err != nil {
+		t.Fatal(err)
+	}
+	if err := Verify(g2, g1); err != nil {
+		t.Fatalf("handover rejected: %v", err)
+	}
+	// Later documents of the epoch carry the certification unchanged.
+	g3 := g2.Clone()
+	g3.Generation, g3.PrevHash = 3, Hash(g2)
+	if err := Sign(g3, epoch2); err != nil {
+		t.Fatal(err)
+	}
+	if err := Verify(g3, g2); err != nil {
+		t.Fatalf("second document of the epoch rejected: %v", err)
+	}
+	// A different certification inside the same epoch is not.
+	g4 := g3.Clone()
+	g4.Generation, g4.PrevHash = 4, Hash(g3)
+	g4.Authority.Signature = sign(genKey(t), authorityStatement(tfID, g4.Authority))
+	if err := Sign(g4, epoch2); err != nil {
+		t.Fatal(err)
+	}
+	if err := Verify(g4, g3); !errors.Is(err, ErrAuthorityCert) {
+		t.Fatalf("altered certification: %v", err)
 	}
 }

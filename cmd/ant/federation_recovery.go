@@ -16,7 +16,8 @@ import (
 
 const recoveryUsage = `usage: ant federation recovery sign-rotation --template FILE --key FILE --new-key-out FILE
        ant federation recovery sign-authority-cert --template FILE --key FILE [--rotation FILE]
-FILE "-" for --template or --rotation reads standard input. Both commands run offline (no database, no network).`
+       ant federation recovery sign-challenge --challenge FILE --key FILE
+FILE "-" for --template, --rotation or --challenge reads standard input. All commands run offline (no database, no network).`
 
 // federationRecoveryCommand signs recovery-key rotations offline, so the
 // recovery private key never reaches a server (§5.1, D2):
@@ -26,12 +27,28 @@ FILE "-" for --template or --rotation reads standard input. Both commands run of
 //  3. ant federation recovery sign-authority-cert --template template.json --key new.key --rotation rotation.json > request.json
 //  4. POST request.json to /api/v1/federation/recovery-key/rotate
 //
+// Forced authority recovery (the authority is lost or compromised) uses the same
+// signer on the member that takes over:
+//
+//  1. POST /api/v1/federation/authority/recovery-template on that member -> template.json
+//  2. ant federation recovery sign-authority-cert --template template.json --key recovery.key > request.json
+//  3. POST request.json (plus "confirm": true) to /api/v1/federation/authority/recover
+//
+// The recovery-key drill proves possession without changing anything:
+//
+//  1. POST /api/v1/federation/recovery-key/challenge on the authority -> challenge.json
+//  2. ant federation recovery sign-challenge --challenge challenge.json --key recovery.key > proof.json
+//  3. POST proof.json to /api/v1/federation/recovery-key/verify
+//
 // Key files hold the recovery key export (ant-recovery-v1:…); keys are never
 // accepted on the command line.
 func federationRecoveryCommand(logger *slog.Logger, args []string, stdin io.Reader, output io.Writer) int {
-	if len(args) == 0 || (args[0] != "sign-rotation" && args[0] != "sign-authority-cert") {
+	if len(args) == 0 || (args[0] != "sign-rotation" && args[0] != "sign-authority-cert" && args[0] != "sign-challenge") {
 		logger.Error(recoveryUsage)
 		return 1
+	}
+	if args[0] == "sign-challenge" {
+		return recoverySignChallenge(logger, args[1:], stdin, output)
 	}
 	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
@@ -89,6 +106,14 @@ func federationRecoveryCommand(logger *slog.Logger, args []string, stdin io.Read
 		logger.Info("rotation signed; store the new key offline and sign the authority certificate with it", "new_key_file", *newKeyOut,
 			"new_key_fingerprint", federation.KeyFingerprint(public), "generation", rot.Generation)
 	case "sign-authority-cert":
+		if *rotationPath == "" {
+			// A forced recovery is certified by the current recovery key; refuse a
+			// wrong key here instead of producing a request the server rejects.
+			if pub, err := federation.RecoveryPublicKey(key); err != nil || pub != tpl.PreviousKey {
+				logger.Error("the key is not the current recovery key named by the template")
+				return 1
+			}
+		}
 		cert, err := federation.SignAuthorityCertificate(tpl, key)
 		if err != nil {
 			logger.Error("authority certificate not signed", "reason", err)
@@ -145,4 +170,35 @@ func readKeyFile(path string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(raw)), nil
+}
+
+// recoverySignChallenge signs a recovery-key drill challenge offline.
+func recoverySignChallenge(logger *slog.Logger, args []string, stdin io.Reader, output io.Writer) int {
+	fs := flag.NewFlagSet("sign-challenge", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	challengePath := fs.String("challenge", "", "challenge (JSON from POST /api/v1/federation/recovery-key/challenge)")
+	keyPath := fs.String("key", "", "recovery key file")
+	if err := fs.Parse(args); err != nil || fs.NArg() != 0 || *challengePath == "" || *keyPath == "" {
+		logger.Error(recoveryUsage)
+		return 1
+	}
+	var c federation.RecoveryChallenge
+	if err := readJSONFile(*challengePath, stdin, &c); err != nil {
+		logger.Error("challenge unreadable", "reason", err)
+		return 1
+	}
+	key, err := readKeyFile(*keyPath)
+	if err != nil {
+		logger.Error("recovery key unreadable", "reason", err)
+		return 1
+	}
+	sig, err := federation.SignRecoveryChallenge(c, key)
+	if err != nil {
+		logger.Error("challenge not signed", "reason", err)
+		return 1
+	}
+	enc := json.NewEncoder(output)
+	enc.SetIndent("", "  ")
+	_ = enc.Encode(map[string]string{"challenge": c.Challenge, "signature": sig})
+	return 0
 }

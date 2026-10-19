@@ -117,6 +117,11 @@ type Service struct {
 	// search is the cross-instance search runtime (search.go).
 	search   searchState
 	searcher atomic.Pointer[PackageSearcher]
+	auditor  atomic.Pointer[AuditSearcher]
+
+	// epochHint is the instance ID of a member that reported a higher
+	// authority epoch than the applied one (sync asks it first).
+	epochHint atomic.Value
 
 	// topologyCache holds the applied topology document; nil means reload.
 	topologyCache atomic.Pointer[TopologyDocument]
@@ -200,9 +205,17 @@ func (s *Service) Refresh(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		// The CA that issued this member's certificate: after a forced recovery
+		// the membership trusts two CAs and a certificate may still come from
+		// the older one.
 		ca := t.doc.CACertificates[0]
+		leaf, _ := parseCertPEM(st.MemberCert)
 		for _, c := range t.doc.CACertificates {
-			if cert, e := parseCertPEM(c); e == nil && CertSHA256(cert.Raw) == st.CASHA256 {
+			cert, e := parseCertPEM(c)
+			if e != nil {
+				continue
+			}
+			if (leaf != nil && leaf.CheckSignatureFrom(cert) == nil) || (leaf == nil && CertSHA256(cert.Raw) == st.CASHA256) {
 				ca = c
 			}
 		}
@@ -371,6 +384,9 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 			return Status{}, err
 		}
 		out.AuthorityEpoch, out.AuthorityInstanceID = doc.AuthorityEpoch, doc.Authority.InstanceID
+		if st.Role == "authority" {
+			out.CASHA256 = listenerCAFingerprint(doc, st)
+		}
 		out.RecoveryKeyFingerprint = KeyFingerprint(doc.RecoveryPublicKey)
 		head := &DocumentHead{Generation: st.AppliedGeneration, Hash: st.AppliedHash, IssuedAt: doc.IssuedAt}
 		if st.AppliedAt != nil {
@@ -417,6 +433,7 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 			}
 			out.Alerts = computeAlerts(st, ps, out.Policy, s.now())
 			out.Alerts = append(out.Alerts, topologyAlerts(out.Topology)...)
+			out.Alerts = append(out.Alerts, s.operationAlerts(ctx, st)...)
 			sortAlerts(out.Alerts)
 			if len(out.Alerts) > 0 {
 				out.Health = "degraded"

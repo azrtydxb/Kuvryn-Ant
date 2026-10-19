@@ -61,7 +61,7 @@ func secretContext(instance, id, purpose string) Context {
 }
 func secretEvent(ctx context.Context, tx pgx.Tx, instance, actor string, r Record, action string) error {
 	var audit int64
-	if err := tx.QueryRow(ctx, "INSERT INTO audit_events(instance_id,principal_id,action,resource_id) VALUES($1,$2,$3,$4) RETURNING id", instance, actor, action, r.ID).Scan(&audit); err != nil {
+	if err := tx.QueryRow(ctx, "INSERT INTO audit_events(instance_id,principal_id,action,resource_id) VALUES($1,NULLIF($2,'')::uuid,$3,$4) RETURNING id", instance, actor, action, r.ID).Scan(&audit); err != nil {
 		return ErrStorage
 	}
 	if _, err := tx.Exec(ctx, "INSERT INTO outbox_events(audit_id,topic,payload) VALUES($1,$2,jsonb_build_object('secret_id',$3::text,'revision',$4::bigint))", audit, action, r.ID, r.Revision); err != nil {

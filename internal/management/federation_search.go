@@ -38,11 +38,15 @@ type federationSearchHandlers struct {
 func RegisterFederationSearch(mux *http.ServeMux, pool *pgxpool.Pool, svc *federation.Service, codec CursorCodec) {
 	h := federationSearchHandlers{federationHandlers{identityHandlers{feedHandlers{db: pool, codec: codec}}, svc}, codec}
 	if svc != nil {
+		svc.SetAuditSearcher(func(ctx context.Context, p identity.Principal, policy identity.Policy, q federation.AuditQuery) ([]federation.AuditEntry, error) {
+			return queryFederatedAudit(ctx, pool, p, policy, q)
+		})
 		svc.SetPackageSearcher(func(ctx context.Context, p identity.Principal, policy identity.Policy, q federation.SearchQuery, bindings map[string]string) ([]federation.SearchHit, error) {
 			return searchBoundPackages(ctx, pool, p, policy, q, bindings)
 		})
 	}
 	mux.Handle("GET /api/v1/federation/search", identity.NewBearer(identity.Tokens{DB: pool}).Wrap(http.HandlerFunc(h.search)))
+	mux.Handle("GET /api/v1/federation/audit", identity.NewBearer(identity.Tokens{DB: pool}).Wrap(http.HandlerFunc(h.audit)))
 }
 
 // searchBoundSQL mirrors searchPackagesSQL (owner selection per feed before

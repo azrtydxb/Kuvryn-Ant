@@ -3,6 +3,8 @@ import type { Client } from "./api";
 import { useOptionalCall } from "./gaps";
 import { FederationPolicy } from "./FederationPolicy";
 import { FederationReplication } from "./FederationReplication";
+import { FederationAuthority } from "./FederationAuthority";
+import { FederationAudit } from "./FederationAudit";
 import type {
   FederationIssuedInvitation,
   FederationMember,
@@ -216,6 +218,15 @@ export function FederationPage({ client }: { client: Client }) {
               {st.state === "active" && (
                 <FederationReplication client={client} st={st} members={list} />
               )}
+              {st.state === "active" && (
+                <FederationAuthority
+                  client={client}
+                  st={st}
+                  members={list}
+                  changed={reload}
+                />
+              )}
+              {st.state === "active" && <FederationAudit client={client} />}
             </>
           )}
         </>

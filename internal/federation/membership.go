@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -173,19 +174,16 @@ last_sync_error='',last_sync_source='',last_sync_attempt_at=NULL,last_sync_succe
 }
 
 // authorityState returns the locked state of an active authority.
+// A handover in progress pauses every publisher (ErrHandoverPending).
 func (s *Service) authorityState(ctx context.Context, tx pgx.Tx) (State, *Membership, error) {
-	st, err := lockState(ctx, tx, s.cfg.InstanceID)
+	st, applied, err := s.authorityStateAllowPending(ctx, tx)
 	if err != nil {
 		return st, nil, err
 	}
-	if st.State != "active" || st.FederationID == "" {
-		return st, nil, ErrNotConfigured
+	if s.handoverActive(st) {
+		return st, nil, ErrHandoverPending
 	}
-	if st.Role != "authority" {
-		return st, nil, ErrNotAuthority
-	}
-	applied, err := loadDocument(ctx, tx, s.cfg.InstanceID, st.FederationID, st.AppliedGeneration)
-	return st, applied, err
+	return st, applied, nil
 }
 
 // publish signs and applies the next membership generation inside tx. The
@@ -198,6 +196,14 @@ func (s *Service) publish(ctx context.Context, tx pgx.Tx, st State, applied *Mem
 	next.IssuedBy = actor
 	if err := mutate(next); err != nil {
 		return nil, err
+	}
+	if len(next.RevokedCertSerials) > pruneSoftLimit {
+		if _, err := s.pruneRevoked(ctx, tx, next); err != nil {
+			return nil, err
+		}
+	}
+	if len(next.RevokedCertSerials) > maxRevoked {
+		return nil, ErrRevocationListFull
 	}
 	if s.cfg.Keys == nil {
 		return nil, ErrKeysUnavailable
@@ -247,8 +253,9 @@ type Invitation struct {
 	CreatedAt  time.Time         `json:"created_at"`
 	ConsumedAt *time.Time        `json:"consumed_at,omitempty"`
 	ConsumedBy string            `json:"consumed_by,omitempty"`
+	ClaimedAt  *time.Time        `json:"claimed_at,omitempty"`
 	RevokedAt  *time.Time        `json:"revoked_at,omitempty"`
-	State      string            `json:"state"` // pending | consumed | expired | revoked
+	State      string            `json:"state"` // pending | claimed | consumed | expired | revoked
 }
 
 // IssuedInvitation is returned once at creation.
@@ -313,7 +320,7 @@ func (s *Service) CreateInvitation(ctx context.Context, actor string, in Invitat
 			return err
 		}
 		out.Invitation = Invitation{ID: id, Name: in.Name, Labels: nonNil(in.Labels), ExpiresAt: expires, CreatedAt: out.CreatedAt, State: "pending"}
-		out.Secret, out.CASHA256, out.AuthorityURL = secret, st.CASHA256, st.FederationURL
+		out.Secret, out.CASHA256, out.AuthorityURL = secret, listenerCAFingerprint(applied, st), st.FederationURL
 		if cert, err := parseCertPEM(st.MemberCert); err == nil {
 			out.AuthorityCertSHA256 = CertSHA256(cert.Raw)
 		}
@@ -335,7 +342,7 @@ func (s *Service) ListInvitations(ctx context.Context) ([]Invitation, error) {
 	if st.Role != "authority" {
 		return nil, ErrNotAuthority
 	}
-	rows, err := s.cfg.DB.Query(ctx, `SELECT id::text,name,labels,expires_at,created_at,consumed_at,coalesce(consumed_by::text,''),revoked_at FROM federation_invitations
+	rows, err := s.cfg.DB.Query(ctx, `SELECT id::text,name,labels,expires_at,created_at,consumed_at,coalesce(consumed_by::text,''),revoked_at,claimed_at FROM federation_invitations
 WHERE instance_id=$1 AND federation_id=$2 ORDER BY created_at DESC,id LIMIT 500`, s.cfg.InstanceID, st.FederationID)
 	if err != nil {
 		return nil, err
@@ -344,7 +351,7 @@ WHERE instance_id=$1 AND federation_id=$2 ORDER BY created_at DESC,id LIMIT 500`
 	for rows.Next() {
 		var i Invitation
 		var labels []byte
-		if err := rows.Scan(&i.ID, &i.Name, &labels, &i.ExpiresAt, &i.CreatedAt, &i.ConsumedAt, &i.ConsumedBy, &i.RevokedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &labels, &i.ExpiresAt, &i.CreatedAt, &i.ConsumedAt, &i.ConsumedBy, &i.RevokedAt, &i.ClaimedAt); err != nil {
 			return nil, err
 		}
 		i.Labels = map[string]string{}
@@ -356,6 +363,8 @@ WHERE instance_id=$1 AND federation_id=$2 ORDER BY created_at DESC,id LIMIT 500`
 			i.State = "consumed"
 		case !i.ExpiresAt.After(s.now()):
 			i.State = "expired"
+		case i.ClaimedAt != nil && s.now().Sub(*i.ClaimedAt) < joinClaimTTL:
+			i.State = "claimed"
 		default:
 			i.State = "pending"
 		}
@@ -406,6 +415,11 @@ type JoinResponse struct {
 	Documents   []Membership `json:"documents"`
 }
 
+// joinClaimTTL is how long an unconfirmed join holds its invitation. The joiner
+// confirms right after it verified the answer; a join that was relayed by
+// another member, or interrupted, never confirms and releases the invitation.
+const joinClaimTTL = 10 * time.Minute
+
 // maxChain bounds a full chain transfer.
 const maxChain = 10000
 
@@ -436,7 +450,7 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 	if pre.Role != "authority" {
 		return JoinResponse{}, ErrNotAuthority
 	}
-	if _, _, reason, err := s.checkInvitation(ctx, s.cfg.DB, pre.FederationID, invID, req.Invitation, false); err != nil {
+	if _, _, _, reason, err := s.checkInvitation(ctx, s.cfg.DB, pre.FederationID, invID, req.Invitation, req.InstanceID, false); err != nil {
 		if reason != "" {
 			s.rejectInvitation(ctx, invID, req.InstanceID, reason)
 		}
@@ -451,7 +465,7 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 			return err
 		}
 		// Re-check under the lock: another join may have consumed it.
-		name, labelsRaw, why, err := s.checkInvitation(ctx, tx, st.FederationID, invID, req.Invitation, true)
+		name, labelsRaw, claimedBy, why, err := s.checkInvitation(ctx, tx, st.FederationID, invID, req.Invitation, req.InstanceID, true)
 		if err != nil {
 			reason = why
 			return err
@@ -463,6 +477,9 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 		for _, m := range applied.Members {
 			if m.Status == "removed" {
 				continue
+			}
+			if claimedBy != "" && m.InstanceID == claimedBy {
+				continue // the unconfirmed earlier attempt of this invitation is replaced below
 			}
 			if m.InstanceID == req.InstanceID || m.Name == name {
 				reason = "duplicate_instance"
@@ -495,6 +512,17 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 			CertSerial: serial, SigningKey: req.SigningKey, Labels: labels, SoftwareVersion: req.SoftwareVersion,
 			Protocol: ProtocolRange{max(req.Protocol.Min, ProtocolMin), min(req.Protocol.Max, ProtocolMax)}, JoinedAt: s.now().Format(time.RFC3339Nano)}
 		published, err = s.publish(ctx, tx, st, applied, "invitation:"+invID, func(next *Membership) error {
+			for i := range next.Members {
+				if m := &next.Members[i]; claimedBy != "" && m.InstanceID == claimedBy {
+					for _, serial := range []string{m.CertSerial, m.PreviousCertSerial} {
+						if serial != "" && !next.Revoked(serial) {
+							next.RevokedCertSerials = append(next.RevokedCertSerials, serial)
+						}
+					}
+					m.Status = "removed"
+					m.PreviousCertSHA256, m.PreviousCertSerial, m.PreviousCertUntil = "", "", ""
+				}
+			}
 			next.Members = slices.DeleteFunc(next.Members, func(m Member) bool { return m.InstanceID == req.InstanceID })
 			next.Members = append(next.Members, member)
 			return nil
@@ -502,12 +530,12 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 		if err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, `UPDATE federation_invitations SET consumed_at=clock_timestamp(),consumed_by=$4 WHERE instance_id=$1 AND federation_id=$2 AND id=$3`,
+		if _, err := tx.Exec(ctx, `UPDATE federation_invitations SET claimed_at=clock_timestamp(),claimed_by=$4 WHERE instance_id=$1 AND federation_id=$2 AND id=$3`,
 			s.cfg.InstanceID, st.FederationID, invID, req.InstanceID); err != nil {
 			return err
 		}
 		if err := audit(ctx, tx, s.cfg.InstanceID, "", "federation.member.added", req.InstanceID, "success", map[string]any{"name": name, "invitation_id": invID,
-			"generation": published.Generation, "cert_serial": serial}); err != nil {
+			"generation": published.Generation, "cert_serial": serial, "provisional": true}); err != nil {
 			return err
 		}
 		resp.Certificate = certPEM
@@ -527,31 +555,38 @@ func (s *Service) acceptJoin(ctx context.Context, req JoinRequest) (JoinResponse
 // checkInvitation validates an invitation secret. It returns the bound name
 // and labels, or ErrInvitationInvalid with the audit reason. With lock the
 // invitation row is locked for the caller's transaction.
-func (s *Service) checkInvitation(ctx context.Context, q queryer, federationID, invID, secret string, lock bool) (string, []byte, string, error) {
-	var name string
-	var labelsRaw, verifier []byte
+func (s *Service) checkInvitation(ctx context.Context, q queryer, federationID, invID, secret, instance string, lock bool) (name string, labelsRaw []byte, claimedBy, reason string, err error) {
+	var verifier []byte
 	var expires time.Time
-	var consumed, revoked *time.Time
-	query := `SELECT name,labels,verifier,expires_at,consumed_at,revoked_at FROM federation_invitations WHERE instance_id=$1 AND federation_id=$2 AND id=$3`
+	var consumed, revoked, claimedAt *time.Time
+	query := `SELECT name,labels,verifier,expires_at,consumed_at,revoked_at,claimed_at,coalesce(claimed_by::text,'') FROM federation_invitations WHERE instance_id=$1 AND federation_id=$2 AND id=$3`
 	if lock {
 		query += ` FOR UPDATE`
 	}
-	err := q.QueryRow(ctx, query, s.cfg.InstanceID, federationID, invID).Scan(&name, &labelsRaw, &verifier, &expires, &consumed, &revoked)
+	err = q.QueryRow(ctx, query, s.cfg.InstanceID, federationID, invID).Scan(&name, &labelsRaw, &verifier, &expires, &consumed, &revoked, &claimedAt, &claimedBy)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
-		return "", nil, "unknown", ErrInvitationInvalid
+		return "", nil, "", "unknown", ErrInvitationInvalid
 	case err != nil:
-		return "", nil, "", err
+		return "", nil, "", "", err
 	case subtle.ConstantTimeCompare(verifier, invitationVerifier(secret)) != 1:
-		return "", nil, "secret_mismatch", ErrInvitationInvalid
+		return "", nil, "", "secret_mismatch", ErrInvitationInvalid
 	case revoked != nil:
-		return "", nil, "revoked", ErrInvitationInvalid
+		return "", nil, "", "revoked", ErrInvitationInvalid
 	case consumed != nil:
-		return "", nil, "consumed", ErrInvitationInvalid
+		return "", nil, "", "consumed", ErrInvitationInvalid
 	case !expires.After(s.now()):
-		return "", nil, "expired", ErrInvitationInvalid
+		return "", nil, "", "expired", ErrInvitationInvalid
+	// A join that was not confirmed yet holds the invitation for its own
+	// instance until the claim times out (a relayed or interrupted join does
+	// not consume it).
+	case claimedAt != nil && claimedBy != instance && s.now().Sub(*claimedAt) < joinClaimTTL:
+		return "", nil, "", "claimed", ErrInvitationInvalid
 	}
-	return name, labelsRaw, "", nil
+	if claimedAt == nil {
+		claimedBy = ""
+	}
+	return name, labelsRaw, claimedBy, "", nil
 }
 
 // rejectionAuditWindow throttles federation.invitation.rejected records: at
@@ -646,10 +681,9 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 	}
 	head := applied
 	caOK := false
-	var caPEM string
 	for _, c := range head.CACertificates {
 		if cert, err := parseCertPEM(c); err == nil && CertSHA256(cert.Raw) == in.CASHA256 {
-			caOK, caPEM = true, c
+			caOK = true
 		}
 	}
 	// The server that answered must be the authority itself: its leaf
@@ -667,8 +701,34 @@ func (s *Service) Join(ctx context.Context, actor string, in JoinInput) (Status,
 	if err != nil || cert.Subject.CommonName != s.cfg.InstanceID || CertSHA256(cert.Raw) != self.CertSHA256 {
 		return Status{}, &RejectedError{Reason: "certificate_mismatch", Err: ErrMalformed}
 	}
-	if _, err := tlsCertificate(resp.Certificate, caPEM, tlsKey); err != nil {
+	// The pinned CA vouches for the authority's listener; the member certificate
+	// may come from another CA of the membership (the new CA after a forced recovery).
+	issuer := ""
+	for _, c := range head.CACertificates {
+		if ca, err := parseCertPEM(c); err == nil && cert.CheckSignatureFrom(ca) == nil {
+			issuer = c
+		}
+	}
+	if issuer == "" {
+		return Status{}, &RejectedError{Reason: "certificate_mismatch", Err: ErrMalformed}
+	}
+	if _, err := tlsCertificate(resp.Certificate, issuer, tlsKey); err != nil {
 		return Status{}, &RejectedError{Reason: "certificate_mismatch", Err: err}
+	}
+	// Everything the joiner can check has passed: confirm to the authority, on
+	// the same pins, which consumes the invitation. Before this point a relayed
+	// or failed join left the invitation reusable (see joinops.go). An
+	// authority that predates the confirmation (404) consumed it already.
+	invID, _, _ := strings.Cut(in.Invitation, ".")
+	confirmBody, _ := json.Marshal(joinConfirmRequest{Invitation: in.Invitation, InstanceID: s.cfg.InstanceID,
+		Signature: sign(signer, joinConfirmStatement(head.FederationID, invID, s.cfg.InstanceID))})
+	if _, confirmLeaf, cerr := s.client.DoPinnedLeaf(ctx, in.AuthorityURL, in.CASHA256, in.AuthorityCertSHA256, "POST", "/federation/v1/join/confirm", confirmBody); cerr != nil {
+		var pe *peer.ErrPeer
+		if !errors.As(cerr, &pe) || pe.Status != http.StatusNotFound {
+			return Status{}, peerError(in.AuthorityURL, cerr)
+		}
+	} else if confirmLeaf != leaf {
+		return Status{}, &RejectedError{Reason: "authority_certificate_mismatch", Err: ErrMalformed}
 	}
 	authority, _ := head.Member(head.Authority.InstanceID)
 	err = s.tx(ctx, func(tx pgx.Tx) error {
@@ -723,6 +783,12 @@ func peerError(url string, err error) error {
 			return ErrNotAuthority
 		case "protocol_unsupported":
 			return ErrProtocol
+		case "member_not_current":
+			return ErrMemberNotCurrent
+		case "is_authority":
+			return ErrIsAuthority
+		case "handover_pending":
+			return ErrHandoverPending
 		}
 	}
 	return &UnreachableError{Peer: url, Err: err}

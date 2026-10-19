@@ -91,6 +91,11 @@ type AuthorityCert struct {
 	PublicKey   string `json:"public_key"`
 	CertifiedBy string `json:"certified_by"` // recovery | previous_epoch
 	Signature   string `json:"signature"`
+	// Acceptance is the new authority member's own signing-key signature over
+	// the same key (acceptanceStatement). Every epoch change carries it, so a
+	// previous authority or a recovery-key holder cannot appoint a member that
+	// did not agree. Epoch 1 (founding) has none.
+	Acceptance string `json:"acceptance,omitempty"`
 }
 
 // RecoveryRotation is the statement, signed by the previous recovery key,
@@ -206,6 +211,14 @@ func verify(encodedKey, sig string, payload []byte) bool {
 func authorityStatement(federationID string, a AuthorityCert) []byte {
 	b, _ := CanonicalJSON(map[string]any{"type": "authority-certificate", "federation_id": federationID, "epoch": a.Epoch,
 		"instance_id": a.InstanceID, "public_key": a.PublicKey, "certified_by": a.CertifiedBy})
+	return b
+}
+
+// acceptanceStatement is what a member signs with its membership signing key to
+// accept the authority role for one epoch and key.
+func acceptanceStatement(federationID string, a AuthorityCert) []byte {
+	b, _ := CanonicalJSON(map[string]any{"type": "authority-acceptance", "federation_id": federationID, "epoch": a.Epoch,
+		"instance_id": a.InstanceID, "public_key": a.PublicKey})
 	return b
 }
 
@@ -390,8 +403,15 @@ func Verify(doc, applied *Membership) error {
 			return ErrAuthorityCert
 		}
 	case "previous_epoch":
-		if applied == nil || doc.AuthorityEpoch != applied.AuthorityEpoch+1 ||
-			!verify(applied.Authority.PublicKey, doc.Authority.Signature, authorityStatement(doc.FederationID, doc.Authority)) {
+		switch {
+		case applied != nil && doc.AuthorityEpoch == applied.AuthorityEpoch:
+			// Later documents of the epoch carry the certification unchanged
+			// (it was verified with the first document of the epoch).
+			if doc.Authority != applied.Authority {
+				return ErrAuthorityCert
+			}
+		case applied == nil || doc.AuthorityEpoch != applied.AuthorityEpoch+1 ||
+			!verify(applied.Authority.PublicKey, doc.Authority.Signature, authorityStatement(doc.FederationID, doc.Authority)):
 			return ErrAuthorityCert
 		}
 	default:
@@ -400,7 +420,15 @@ func Verify(doc, applied *Membership) error {
 	if applied != nil && doc.AuthorityEpoch == applied.AuthorityEpoch && doc.Authority.PublicKey != applied.Authority.PublicKey {
 		return ErrAuthorityCert
 	}
-	// Signature.
+	// An epoch change names a new authority member, which must be active and
+	// must have accepted the role with its own member signing key.
+	if applied != nil && doc.AuthorityEpoch > applied.AuthorityEpoch {
+		next, ok := doc.Member(doc.Authority.InstanceID)
+		if !ok || next.Status != "active" || !verify(next.SigningKey, doc.Authority.Acceptance, acceptanceStatement(doc.FederationID, doc.Authority)) {
+			return ErrAuthorityCert
+		}
+	}
+	// An epoch change names a new authority member, which must have accepted
 	payload, err := signingPayload(doc)
 	if err != nil {
 		return ErrMalformed

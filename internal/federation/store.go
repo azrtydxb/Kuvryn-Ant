@@ -32,6 +32,18 @@ type State struct {
 	LastSyncError       string
 	LastSyncSource      string
 	Revision            int64
+
+	// Authority operations (P2-M6).
+	PendingAuthoritySecretID string
+	PendingAuthorityEpoch    int64
+	HandoverTo               string
+	HandoverBaseGeneration   int64
+	HandoverStartedAt        *time.Time
+	FencedAt                 *time.Time
+	FencedByEpoch            int64
+	RecoveryChallenge        string
+	RecoveryChallengeExpires *time.Time
+	RecoveryVerifiedAt       *time.Time
 }
 
 type queryer interface {
@@ -41,13 +53,15 @@ type queryer interface {
 
 const stateColumns = `coalesce(federation_id::text,''),coalesce(name,''),coalesce(role,''),state,coalesce(authority_url,''),coalesce(federation_url,''),
 coalesce(ca_sha256,''),coalesce(ca_secret_id::text,''),coalesce(authority_secret_id::text,''),coalesce(member_secret_id::text,''),coalesce(member_cert,''),
-coalesce(member_cert_serial,''),member_cert_expires_at,applied_generation,applied_hash,applied_at,last_sync_attempt_at,last_sync_success_at,last_sync_error,last_sync_source,revision`
+coalesce(member_cert_serial,''),member_cert_expires_at,applied_generation,applied_hash,applied_at,last_sync_attempt_at,last_sync_success_at,last_sync_error,last_sync_source,revision,coalesce(pending_authority_secret_id::text,''),coalesce(pending_authority_epoch,0),coalesce(handover_to::text,''),
+coalesce(handover_base_generation,0),handover_started_at,fenced_at,coalesce(fenced_by_epoch,0),recovery_challenge,recovery_challenge_expires_at,recovery_verified_at`
 
 func scanState(row pgx.Row) (State, error) {
 	var s State
 	err := row.Scan(&s.FederationID, &s.Name, &s.Role, &s.State, &s.AuthorityURL, &s.FederationURL, &s.CASHA256, &s.CASecretID, &s.AuthoritySecretID,
 		&s.MemberSecretID, &s.MemberCert, &s.MemberCertSerial, &s.MemberCertExpiresAt, &s.AppliedGeneration, &s.AppliedHash, &s.AppliedAt,
-		&s.LastSyncAttemptAt, &s.LastSyncSuccessAt, &s.LastSyncError, &s.LastSyncSource, &s.Revision)
+		&s.LastSyncAttemptAt, &s.LastSyncSuccessAt, &s.LastSyncError, &s.LastSyncSource, &s.Revision, &s.PendingAuthoritySecretID, &s.PendingAuthorityEpoch, &s.HandoverTo,
+		&s.HandoverBaseGeneration, &s.HandoverStartedAt, &s.FencedAt, &s.FencedByEpoch, &s.RecoveryChallenge, &s.RecoveryChallengeExpires, &s.RecoveryVerifiedAt)
 	return s, err
 }
 

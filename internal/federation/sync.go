@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
@@ -47,6 +48,11 @@ func (s *Service) applyDocuments(ctx context.Context, docs []Membership, source 
 			}
 			if err := storeDocument(ctx, tx, s.cfg.InstanceID, doc); err != nil {
 				return err
+			}
+			if doc.AuthorityEpoch > cur.AuthorityEpoch {
+				if err := s.applyEpochChange(ctx, tx, st, cur, doc); err != nil {
+					return err
+				}
 			}
 			if self, ok := doc.Member(s.cfg.InstanceID); ok && self.Status == "removed" {
 				next := "removed"
@@ -128,8 +134,13 @@ type heads struct {
 // never affects serving.
 func (s *Service) SyncOnce(ctx context.Context) error {
 	st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
-	if err != nil || st.State != "active" || st.Role == "authority" {
+	if err != nil || st.State != "active" {
 		return err
+	}
+	if st.Role == "authority" {
+		// The authority does not sync documents, but it must learn of a higher
+		// epoch (a forced recovery while it was partitioned) and fence itself.
+		return s.detectFence(ctx, st)
 	}
 	id, t, err := s.identity()
 	if err != nil {
@@ -148,6 +159,19 @@ func (s *Service) SyncOnce(ctx context.Context) error {
 	}
 	sort.Slice(others, func(i, j int) bool { return others[i].Name < others[j].Name })
 	sources = append(sources, others...)
+	// A member that reported a higher authority epoch is asked first: the
+	// applied authority may still be alive and answering at its own epoch.
+	if hint, _ := s.epochHint.Load().(string); hint != "" {
+		slices.SortStableFunc(sources, func(a, b Member) int {
+			switch {
+			case a.InstanceID == hint && b.InstanceID != hint:
+				return -1
+			case b.InstanceID == hint && a.InstanceID != hint:
+				return 1
+			}
+			return 0
+		})
+	}
 	var first error
 	for _, src := range sources {
 		err := s.syncFrom(ctx, id, src)
@@ -188,11 +212,19 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 		if err := json.Unmarshal(raw, &h); err != nil || h.FederationID != st.FederationID {
 			return &RejectedError{Reason: "wrong_federation", Err: ErrWrongFed}
 		}
+		if cur := s.trust.Load(); cur.doc != nil && h.Membership.AuthorityEpoch > cur.doc.AuthorityEpoch {
+			// Another member already follows a higher authority epoch.
+			if err := s.followEpoch(ctx, id, src); err != nil {
+				return err
+			}
+			s.epochHint.Store("")
+			continue
+		}
 		authority := src.InstanceID == s.trust.Load().authorityID()
 		if authority && !resynced && h.Membership.Generation == st.AppliedGeneration && h.Membership.Hash != st.AppliedHash {
 			resynced = true
 			// Same generation, another document: the chains diverged.
-			if err := s.resyncMembership(ctx, id, src); err != nil && !errors.Is(err, errNoDivergence) {
+			if err := s.resyncMembership(ctx, id, src, false); err != nil && !errors.Is(err, errNoDivergence) {
 				return err
 			}
 			continue
@@ -220,7 +252,7 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 		n, err := s.applyDocuments(ctx, docs.Documents, src.Name, false)
 		if err != nil && authority && !resynced && isChainMismatch(err) {
 			resynced = true
-			if rerr := s.resyncMembership(ctx, id, src); rerr != nil && !errors.Is(rerr, errNoDivergence) {
+			if rerr := s.resyncMembership(ctx, id, src, false); rerr != nil && !errors.Is(rerr, errNoDivergence) {
 				return rerr
 			}
 			continue
@@ -278,6 +310,14 @@ func (s *Service) Run(ctx context.Context) {
 		if err := s.RetireCertificates(step); err != nil && ctx.Err() == nil {
 			s.logOnce("retire", "federation certificate retirement failed", "reason", err)
 		}
+		if ok, _ := s.throttle("prune-revocations", 10*time.Minute); ok {
+			if err := s.PruneRevocations(step); err != nil && ctx.Err() == nil {
+				s.logOnce("prune", "federation revocation pruning failed", "reason", err)
+			}
+		}
+		if err := s.ReapUnconfirmedJoins(step); err != nil && ctx.Err() == nil {
+			s.logOnce("reap", "federation join reaper failed", "reason", err)
+		}
 		cancel()
 		select {
 		case <-ctx.Done():
@@ -318,6 +358,10 @@ func (s *Service) PingMembers(ctx context.Context) {
 			var ps peerStatus
 			if json.Unmarshal(raw, &ps) != nil {
 				return
+			}
+			if ps.AuthorityEpoch > t.doc.AuthorityEpoch {
+				s.epochHint.Store(m.InstanceID)
+				s.Nudge()
 			}
 			skew := time.UnixMilli(ps.TimeUnixMS).Sub(start.Add(rtt / 2))
 			health, _ := json.Marshal(map[string]any{"membership_generation": ps.Membership.Generation, "software_version": ps.SoftwareVersion, "state": ps.State})

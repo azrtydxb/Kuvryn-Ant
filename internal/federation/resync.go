@@ -43,7 +43,7 @@ func (s *Service) fetchMembership(ctx context.Context, id peer.Identity, src Mem
 
 // resyncMembership replaces the membership chain segment that diverges from
 // the authority's chain. src must be the authority of the applied membership.
-func (s *Service) resyncMembership(ctx context.Context, id peer.Identity, src Member) error {
+func (s *Service) resyncMembership(ctx context.Context, id peer.Identity, src Member, higherEpoch bool) error {
 	st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
 	if err != nil {
 		return err
@@ -106,7 +106,15 @@ func (s *Service) resyncMembership(ctx context.Context, id peer.Identity, src Me
 		segment = append(segment, next...)
 	}
 	head := &segment[len(segment)-1]
-	if head.Generation < st.AppliedGeneration {
+	prevDoc, err := loadDocument(ctx, s.cfg.DB, s.cfg.InstanceID, st.FederationID, st.AppliedGeneration)
+	if err != nil {
+		return err
+	}
+	// A segment never rolls the chain back, except when it moves to a higher
+	// authority epoch: generations issued by a lower epoch after the fork are
+	// void (a forced recovery happened while this member was partitioned).
+	supersedes := higherEpoch && head.AuthorityEpoch > prevDoc.AuthorityEpoch
+	if head.Generation < st.AppliedGeneration && !supersedes {
 		return &RejectedError{Reason: "stale_generation", Err: ErrStaleGen} // never roll back
 	}
 	var base *Membership
@@ -153,6 +161,17 @@ func (s *Service) resyncMembership(ctx context.Context, id peer.Identity, src Me
 		}
 		for i := range segment {
 			if err := storeDocument(ctx, tx, s.cfg.InstanceID, &segment[i]); err != nil {
+				return err
+			}
+		}
+		if supersedes {
+			// Members that exist only in the voided generations disappear.
+			if _, err := tx.Exec(ctx, `DELETE FROM federation_members WHERE instance_id=$1 AND federation_id=$2 AND membership_generation<>$3`, s.cfg.InstanceID, st.FederationID, head.Generation); err != nil {
+				return err
+			}
+		}
+		if head.AuthorityEpoch > prevDoc.AuthorityEpoch {
+			if err := s.applyEpochChange(ctx, tx, cur, prevDoc, head); err != nil {
 				return err
 			}
 		}
