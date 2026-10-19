@@ -222,7 +222,7 @@ func runGo(c *Ctx) {
 	})
 	c.Step("delete/unlist: management API delete v0.1.0", func() error { return c.MgmtVersion(slug, mod, "v0.1.0", "delete") })
 
-	rslug := c.MustFeed("go", "remote", &Remote{Origin: "https://proxy.golang.org"})
+	rslug := c.MustFeed("go", "remote", &Remote{Origin: "https://proxy.golang.org", Redirect: []string{"https://storage.googleapis.com"}})
 	rsrc := c.LastSource
 	r := map[string]string{}
 	for k, v := range e {

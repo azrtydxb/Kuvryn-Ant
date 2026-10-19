@@ -62,3 +62,10 @@ source under `/sumdb/` (for upstreams that mirror it) and otherwise fetched from
 `https://sum.golang.org` itself (signed; clients verify it). Read requests for
 anything that is not a module path or version answer 404 so the go command can
 probe path prefixes and branch names.
+
+Remote source configuration: proxy.golang.org answers some `.zip` downloads
+(large modules such as `github.com/aws/aws-sdk-go`) with a 302 to
+`https://storage.googleapis.com/proxy-golang-org-prod/...`. Add
+`https://storage.googleapis.com` to the source's `redirect_origins`; without it
+those downloads fail with the `policy` error class (redirect off origin) while
+smaller modules keep working.
