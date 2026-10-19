@@ -1,11 +1,8 @@
 package harness
 
 import (
-	"archive/zip"
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"path"
 	"regexp"
@@ -297,66 +294,15 @@ func runNuget(c *Ctx) {
 		}
 	}
 	c.Step("client-version", func() error { return c.Version("dotnet", "dotnet --version") })
-	// `dotnet pack` writes the .nuspec with a UTF-8 byte-order mark, which the adapter's manifest parser rejects (HTTP 400).
-	// The first step records that; the following steps repack the identical package without the BOM to exercise the rest.
-	stripBOM := func(v string) error {
-		f := "out/" + pid + "." + v + ".nupkg"
-		data, err := c.ReadFile(f)
-		if err != nil {
-			return err
-		}
-		zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-		if err != nil {
-			return err
-		}
-		var out bytes.Buffer
-		zw := zip.NewWriter(&out)
-		for _, e := range zr.File {
-			rc, err := e.Open()
-			if err != nil {
-				return err
-			}
-			b, err := io.ReadAll(rc)
-			_ = rc.Close()
-			if err != nil {
-				return err
-			}
-			if strings.HasSuffix(e.Name, ".nuspec") {
-				b = bytes.TrimPrefix(b, []byte{0xEF, 0xBB, 0xBF})
-			}
-			w, err := zw.Create(e.Name)
-			if err != nil {
-				return err
-			}
-			if _, err = w.Write(b); err != nil {
-				return err
-			}
-		}
-		if err = zw.Close(); err != nil {
-			return err
-		}
-		return c.WriteFile(f, out.Bytes())
-	}
 	// NuGet clients start every request unauthenticated and retry after the 401 challenge, and the instance counts each
 	// challenged request as a failed authentication (10 per minute per address, then 429 for everyone), so every client
 	// step starts after the window has drained.
 	cool := func(f func() error) func() error {
 		return func() error { time.Sleep(65 * time.Second); return f() }
 	}
-	apiPush := func(v string) error {
-		data, err := c.ReadFile("out/" + pid + "." + v + ".nupkg")
-		if err != nil {
-			return err
-		}
-		body, ct := Multipart(Part{Name: "package", Filename: "package.nupkg", ContentType: "application/octet-stream", Data: data})
-		_, _, _, err = c.Do(Req{Method: "PUT", Path: "/feeds/" + slug + "/nuget/v2/package/", Body: body, Hdr: map[string]string{"Content-Type": ct, "X-NuGet-ApiKey": c.Env.Token}, Auth: Basic, Want: []int{200, 201, 202}})
-		return err
-	}
 	c.Step("publish: dotnet pack + dotnet nuget push 1.0.0 (unmodified pack output)", cool(dn(addsrc("ant", src, "$TOKEN")+pack("1.0.0")+" && "+push("1.0.0", "$TOKEN"))))
-	c.Step("publish: repack 1.0.0 without the nuspec BOM, then dotnet nuget push", Seq(func() error { return stripBOM("1.0.0") }, cool(dn(addsrc("ant", src, "$TOKEN")+push("1.0.0", "$TOKEN")))))
-	c.Step("publish: PUT v2/package/ multipart with the BOM-free package (direct API, independent of the client)", func() error { return apiPush("1.0.0") })
 	c.Step("consume: dotnet restore 1.0.0 from the feed into a fresh package folder", cool(dn(addsrc("ant", src, "$TOKEN")+restore("ant", pid, "1.0.0", "/work/pk1")+" && test -d /work/pk1/"+lower+"/1.0.0")))
-	c.Step("same-endpoint write then read: publish 1.0.1, restore 1.0.* resolves it", Seq(dn(pack("1.0.1")), func() error { return stripBOM("1.0.1") }, func() error { return apiPush("1.0.1") },
+	c.Step("same-endpoint write then read: publish 1.0.1, restore 1.0.* resolves it", Seq(cool(dn(addsrc("ant", src, "$TOKEN")+pack("1.0.1")+" && "+push("1.0.1", "$TOKEN"))),
 		cool(dn(addsrc("ant", src, "$TOKEN")+restore("ant", pid, "1.0.*", "/work/pk2")+" && test -d /work/pk2/"+lower+"/1.0.1"))))
 	c.Step("delete: dotnet nuget delete 1.0.1 (native), restore of 1.0.1 then fails", cool(dn(
 		F(`dotnet nuget delete @p@ 1.0.1 -s ant -k $TOKEN --non-interactive && `, "p", pid)+addsrc("ant", src, "$TOKEN")+"! ("+restore("ant", pid, "1.0.1", "/work/pk3")+")")))
