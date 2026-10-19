@@ -395,6 +395,15 @@ function SourceDrawer({
         ]}
       />
       <Rename client={client} source={source} refresh={refresh} />
+      <DeleteSource
+        client={client}
+        source={source}
+        attached={stats?.attached_feeds ?? 0}
+        done={() => {
+          refresh();
+          onClose();
+        }}
+      />
       {remote ? (
         <>
           <RemoteSource client={client} source={source} />
@@ -595,5 +604,94 @@ function SourceOps({ children }: { children: React.ReactNode }) {
       <h4 className="h4">Operations</h4>
       {children}
     </section>
+  );
+}
+
+function DeleteSource({
+  client,
+  source,
+  attached,
+  done,
+}: {
+  client: Client;
+  source: Source;
+  attached: number;
+  done: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [force, setForce] = useState(false);
+  const current = useResource(
+    () => client.call("getSource", { params: { id: source.id } }),
+    [client, source.id],
+  );
+  const action = useAction();
+  const toast = useToast();
+  return (
+    <SourceOps>
+      <div className="row">
+        <Button
+          size="sm"
+          variant="secondary"
+          icon="trash-2"
+          disabled={action.busy || !current.value}
+          onClick={() => setOpen(true)}
+        >
+          Delete source
+        </Button>
+      </div>
+      <Failure error={action.error} />
+      {open && (
+        <Modal
+          title="Delete source"
+          description={`Removes ${source.name}. A source that is attached to feeds or holds content is refused unless forced; forcing detaches it and removes its content (instance administrators only).${attached > 0 ? ` It is attached to ${count(attached)} feed(s).` : ""}`}
+          onClose={() => setOpen(false)}
+          actions={
+            <>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                icon="trash-2"
+                disabled={confirm !== source.name || action.busy}
+                onClick={async () => {
+                  const ok = await action.run(async () => {
+                    await client.call("deleteSource", {
+                      params: { id: source.id },
+                      etag: requireETag(current.value?.etag ?? null),
+                      query: force ? { force: "true" } : {},
+                    });
+                  });
+                  if (ok) {
+                    setOpen(false);
+                    toast("Source deleted", source.name);
+                    done();
+                  }
+                }}
+              >
+                Delete source
+              </Button>
+            </>
+          }
+        >
+          <Input
+            label={`Type ${source.name} to confirm`}
+            mono
+            value={confirm}
+            onChange={val(setConfirm)}
+            autoComplete="off"
+          />
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={force}
+              onChange={(e) => setForce(e.target.checked)}
+            />
+            Force: detach from feeds and remove content
+          </label>
+        </Modal>
+      )}
+    </SourceOps>
   );
 }

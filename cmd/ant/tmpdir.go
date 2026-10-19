@@ -39,3 +39,14 @@ func prepareStagingDir(logger *slog.Logger, dataDir string, cleanStale bool) {
 		logger.Info("removed stale staging files", "dir", dir, "count", removed)
 	}
 }
+
+// spoolDir is where uploads without a declared digest are spooled: the
+// configured TMPDIR when it is not the container's /tmp, otherwise a directory
+// inside the data directory. The default temp directory is a small emptyDir
+// and a multi-GiB spool there evicts the pod.
+func spoolDir(dataDir string) string {
+	if dir := os.Getenv("TMPDIR"); dir != "" && dir != "/tmp" {
+		return dir
+	}
+	return filepath.Join(dataDir, "spool")
+}

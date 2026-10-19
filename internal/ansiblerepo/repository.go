@@ -36,7 +36,7 @@ func New(db *pgxpool.Pool, s *artifact.Service) (*Repository, error) {
 	if db == nil || s == nil || s.Lease == nil || s.Lease().InstanceID == "" {
 		return nil, errors.New("invalid Galaxy configuration")
 	}
-	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: make(chan struct{}, 4), tasks: map[string]importTask{}}, nil
+	return &Repository{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: artifact.NewUploadSlots(), tasks: map[string]importTask{}}, nil
 }
 func (s *Repository) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c := http.NewResponseController(w)

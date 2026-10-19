@@ -23,7 +23,9 @@ To use an existing PostgreSQL 17 or 18 installation, set `ANT_DATABASE_URL` and 
 | `ANT_DATABASE_URL`     | Required PostgreSQL connection string; never logged        |
 | `ANT_ROOT_KEY_FILE`    | Required path to 32 raw key bytes                          |
 | `ANT_LISTEN`           | `127.0.0.1:8080`                                           |
-| `ANT_MAX_REQUESTS`     | 128 active requests; overflow returns 503 with Retry-After |
+| `ANT_MAX_REQUESTS`     | 32 per CPU (128 to 1024) active requests; overflow returns 503 with Retry-After |
+| `ANT_DB_MAX_CONNS`     | 8 per CPU (16 to 64) PostgreSQL connections; keep below the server `max_connections` |
+| `ANT_UPLOAD_SLOTS`     | 2 per CPU (4 to 32) concurrent uploads per package format |
 | `ANT_SHUTDOWN_TIMEOUT` | 15s; configurable 1s–1m                                    |
 
 ## Bootstrap and feed API

@@ -11,9 +11,11 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/config"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/console"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
@@ -29,11 +31,49 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/server"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/tracing"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/transfer"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func run(ctx context.Context, logger *slog.Logger) int { return execute(ctx, logger, nil, os.Stdout) }
 
+// codeReload asks execute to start serving again in-process.
+const codeReload = -2
+
+// execute runs one command. A server that started on a database without an
+// instance restarts itself in-process once ant bootstrap creates one, so the
+// data routes appear without restarting the pod.
 func execute(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
+	for {
+		if code := executeOnce(ctx, logger, args, output); code != codeReload {
+			return code
+		}
+		logger.Info("instance bootstrapped; reloading to serve artifacts")
+	}
+}
+
+// watchBootstrap stops serving (reload) when an instance appears in a database
+// that had none at startup.
+func watchBootstrap(ctx context.Context, pool *pgxpool.Pool, interval time.Duration, onBootstrap func()) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			var one int
+			qctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			err := pool.QueryRow(qctx, "SELECT 1 FROM bootstrap_state WHERE singleton=true").Scan(&one)
+			cancel()
+			if err == nil {
+				onBootstrap()
+				return
+			}
+		}
+	}
+}
+
+func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
 	if len(args) > 0 && args[0] == "diagnostics" {
 		return diagnosticsCommand(ctx, logger, args[1:], output)
 	}
@@ -139,6 +179,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		}
 		return 0
 	}
+	artifact.SetUploadSlots(cfg.UploadSlots)
 	artifacts, err := openArtifacts(ctx, pool, cfg)
 	if err != nil {
 		logger.Error("artifact startup rejected", "reason", err)
@@ -173,6 +214,7 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 	workers.StartReplication(replicationRT, logger)
 	serveCtx, stopServing := context.WithCancel(ctx)
 	defer stopServing()
+	var reload atomic.Bool
 	if artifacts != nil {
 		go func() {
 			select {
@@ -181,6 +223,8 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 			case <-serveCtx.Done():
 			}
 		}()
+	} else if cfg.InstanceID == "" {
+		go watchBootstrap(serveCtx, pool, bootstrapPoll, func() { reload.Store(true); stopServing() })
 	}
 	listener, err := net.Listen("tcp", cfg.Listen)
 	if err != nil {
@@ -282,6 +326,9 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		logger.Error("HTTP service failed to drain or serve")
 		return 1
 	}
+	if reload.Load() && ctx.Err() == nil {
+		return codeReload
+	}
 	if artifacts != nil && ctx.Err() == nil && artifacts.manager.Err() != nil {
 		logger.Error("instance ownership lost")
 		return 1
@@ -305,3 +352,6 @@ func main() {
 	stop()
 	os.Exit(code)
 }
+
+// bootstrapPoll is how often a server without an instance looks for one.
+var bootstrapPoll = 2 * time.Second

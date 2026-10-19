@@ -783,6 +783,92 @@
             "$ref": "#/components/responses/Error"
           }
         }
+      },
+      "delete": {
+        "operationId": "deleteSource",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Detach the source from its feeds and remove its content. Requires instance administration."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceDeleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "Delete a source. Refused with 409 while the source is attached to a feed, holds content, is a publish-rule target or belongs to a replication job, unless force=true (feeds are detached and content removed; replication-job sources are never removed this way). Stored bytes are reclaimed later by garbage collection."
       }
     },
     "/api/v1/feeds/{id}/sources": {
@@ -18161,6 +18247,48 @@
             "format": "int64"
           },
           "upload_sessions_removed": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SourceDeleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "deleted",
+          "feeds_detached",
+          "components_removed",
+          "versions_removed",
+          "assets_removed",
+          "bytes_released"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "feeds_detached": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "components_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "versions_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "assets_removed": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bytes_released": {
             "type": "integer",
             "format": "int64"
           }

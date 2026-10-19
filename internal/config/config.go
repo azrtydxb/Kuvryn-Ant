@@ -12,6 +12,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -29,19 +30,21 @@ type Config struct {
 	SecretKeys      *secrets.Keyring
 	ShutdownTimeout time.Duration
 	MaxRequests     int
-	Retention       Retention
-	Replication     ReplicationHistory
-	OCIMirror       OCIMirror
-	Tracing         tracing.Config
-	AuditRetention  AuditRetention
-	Federation      Federation
+	// UploadSlots bounds concurrent uploads per package format (0: scaled to CPU).
+	UploadSlots    int
+	Retention      Retention
+	Replication    ReplicationHistory
+	OCIMirror      OCIMirror
+	Tracing        tracing.Config
+	AuditRetention AuditRetention
+	Federation     Federation
 	// TrustedProxies are the reverse proxies whose X-Forwarded-For / X-Real-IP
 	// headers are believed (ANT_TRUSTED_PROXIES, comma separated CIDRs; default none).
 	TrustedProxies []netip.Prefix
 }
 
 func Load(getenv func(string) string) (Config, error) {
-	c := Config{Listen: "127.0.0.1:8080", ShutdownTimeout: 15 * time.Second, MaxRequests: 128}
+	c := Config{Listen: "127.0.0.1:8080", ShutdownTimeout: 15 * time.Second, MaxRequests: DefaultMaxRequests(runtime.GOMAXPROCS(0))}
 	if v := getenv("ANT_LISTEN"); v != "" {
 		c.Listen = v
 	}
@@ -61,7 +64,20 @@ func Load(getenv func(string) string) (Config, error) {
 	if err != nil {
 		return Config{}, errors.New("ANT_DATABASE_URL is invalid")
 	}
-	c.Database.MaxConns = 16
+	c.Database.MaxConns = int32(DefaultDBMaxConns(runtime.GOMAXPROCS(0)))
+	if v := getenv("ANT_DB_MAX_CONNS"); v != "" {
+		n, e := strconv.Atoi(v)
+		if e != nil || n < 4 || n > 500 {
+			return Config{}, errors.New("ANT_DB_MAX_CONNS must be between 4 and 500")
+		}
+		c.Database.MaxConns = int32(n)
+	}
+	if v := getenv("ANT_UPLOAD_SLOTS"); v != "" {
+		c.UploadSlots, err = strconv.Atoi(v)
+		if err != nil || c.UploadSlots < 1 || c.UploadSlots > 256 {
+			return Config{}, errors.New("ANT_UPLOAD_SLOTS must be between 1 and 256")
+		}
+	}
 	c.Database.MinConns = 0
 	c.Database.ConnConfig.ConnectTimeout = 5 * time.Second
 	if v := getenv("ANT_SHUTDOWN_TIMEOUT"); v != "" {
@@ -166,3 +182,17 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	return c, nil
 }
+
+func clamp(v, lo, hi int) int { return min(max(v, lo), hi) }
+
+// DefaultDBMaxConns scales the PostgreSQL pool with the CPUs available: 8 per
+// CPU, between 16 and 64. A fixed 16 starved busy instances of connections.
+func DefaultDBMaxConns(cpus int) int { return clamp(8*cpus, 16, 64) }
+
+// DefaultMaxRequests scales concurrently admitted requests with the CPUs
+// available: 32 per CPU, between 128 and 1024.
+func DefaultMaxRequests(cpus int) int { return clamp(32*cpus, 128, 1024) }
+
+// DefaultUploadSlots scales concurrent uploads per format with the CPUs
+// available: 2 per CPU, between 4 and 32.
+func DefaultUploadSlots(cpus int) int { return clamp(2*cpus, 4, 32) }

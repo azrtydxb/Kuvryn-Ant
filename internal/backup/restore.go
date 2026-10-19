@@ -269,10 +269,23 @@ func loadTables(ctx context.Context, pool *pgxpool.Pool, root *os.Root, m Manife
 		defer cancel()
 		_ = tx.Rollback(rollback)
 	}()
+	// Restored rows already carry the changes their triggers would record (and the
+	// federation origin guards must not veto them), so user triggers stay off
+	// for the load only. Needs table ownership, not superuser.
+	for _, name := range order {
+		if _, err = tx.Exec(ctx, "ALTER TABLE "+quote(name)+" DISABLE TRIGGER USER"); err != nil {
+			return 0, fmt.Errorf("cannot defer triggers of table %s: %w", name, err)
+		}
+	}
 	for _, name := range order {
 		t := byName[name]
 		if err = loadTable(ctx, tx, root, t); err != nil {
 			return 0, fmt.Errorf("load of table %s failed: %w", t.Name, err)
+		}
+	}
+	for _, name := range order {
+		if _, err = tx.Exec(ctx, "ALTER TABLE "+quote(name)+" ENABLE TRIGGER USER"); err != nil {
+			return 0, fmt.Errorf("cannot restore triggers of table %s: %w", name, err)
 		}
 	}
 	if err = resetIdentities(ctx, tx); err != nil {

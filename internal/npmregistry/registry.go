@@ -34,7 +34,7 @@ func New(db *pgxpool.Pool, s *artifact.Service) (*Registry, error) {
 	if db == nil || s == nil || s.Lease == nil || s.Lease().InstanceID == "" {
 		return nil, errors.New("invalid npm registry configuration")
 	}
-	return &Registry{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: make(chan struct{}, 2)}, nil
+	return &Registry{db: db, service: s, auth: identity.NewBearer(identity.Tokens{DB: db}), instance: s.Lease().InstanceID, transfers: artifact.NewUploadSlots()}, nil
 }
 
 // SetPublicURL configures the trusted external origin before serving requests.

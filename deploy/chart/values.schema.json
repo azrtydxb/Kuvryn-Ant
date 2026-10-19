@@ -110,8 +110,18 @@
     },
     "maxRequests": {
       "type": "integer",
-      "minimum": 1,
+      "minimum": 0,
       "maximum": 4096
+    },
+    "dbMaxConns": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 500
+    },
+    "uploadSlots": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 256
     },
     "image": {
       "type": "object",

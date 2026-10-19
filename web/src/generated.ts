@@ -64,6 +64,7 @@ export type PublishPolicyTestRequest = { "policy": PutPublishPolicy; "coordinate
 export type PublishPolicyTestTrace = { "rule_id": string; "priority": number; "matched": boolean; "selected": boolean; "reason": string };
 export type PublishPolicyTestResult = { "allowed": boolean; "reason": string; "matched_rule_id"?: string; "target_source_id"?: string; "target_source_name"?: string; "denial"?: string; "principal_id": string; "principal_authorized"?: boolean; "trace": Array<PublishPolicyTestTrace> };
 export type FeedDeleted = { "id": string; "deleted": boolean; "sources_detached": number; "replication_jobs_removed": number; "role_grants_removed": number; "retention_policies_removed": number; "upload_sessions_removed": number };
+export type SourceDeleted = { "id": string; "deleted": boolean; "feeds_detached": number; "components_removed": number; "versions_removed": number; "assets_removed": number; "bytes_released": number };
 export type CachePurge = { "source_id": string; "components_removed": number; "versions_removed": number; "assets_removed": number; "bytes_released": number };
 export type TokenRecord = { "id": string; "principal_id": string; "scopes": Array<{ "feed_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin"> }>; "status": "active" | "expired" | "revoked"; "created_at": string; "expires_at": string; "revoked_at"?: string; "last_used_at"?: string };
 export type TokenPage = { "items": Array<TokenRecord>; "page": PageInfo };
@@ -342,6 +343,7 @@ listSources: { body: undefined; response: SourcePage };
 createSource: { body: CreateSource; response: Source };
 getSource: { body: undefined; response: Source };
 updateSource: { body: PatchSource; response: Source };
+deleteSource: { body: undefined; response: SourceDeleted };
 listFeedSources: { body: undefined; response: SourceAttachmentPage };
 reorderFeedSources: { body: ReorderSources; response: SourceOrder };
 attachFeedSource: { body: AttachSource; response: SourceAttachmentMutation };
@@ -594,6 +596,11 @@ export const routes = {
   "updateSource": {
     "path": "/api/v1/sources/{id}",
     "method": "PATCH",
+    "idempotent": true
+  },
+  "deleteSource": {
+    "path": "/api/v1/sources/{id}",
+    "method": "DELETE",
     "idempotent": true
   },
   "listFeedSources": {

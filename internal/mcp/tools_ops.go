@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 )
@@ -102,6 +103,33 @@ func opsCatalog() []*tool {
 				}
 				c.resourceID = c.str("source_id")
 				return c.api(http.MethodDelete, "/api/v1/sources/"+c.str("source_id")+"/cache", q, nil, key(c)).result()
+			}},
+		{name: "delete_source", title: "Delete source", desc: "DESTRUCTIVE: delete a source. Refused while it is attached to a feed, holds content, is a publish-rule target or belongs to a replication job (delete the job first). force=true (instance admin) detaches it and removes its content; bytes are reclaimed later by garbage collection. Audited. Requires confirm: true.", destructive: true, idempotent: true,
+			params: []param{id("source_id", "Source ID."), {name: "force", typ: "boolean", desc: "Detach from feeds and remove content (instance admin)."}, {name: "revision", typ: "integer", desc: "Source revision; the current revision is used when omitted."}},
+			run: func(c *call) *toolResult {
+				src := c.str("source_id")
+				c.resourceID = src
+				rev, bad := c.revision("revision", func() (int64, *toolResult) {
+					resp := c.api(http.MethodGet, "/api/v1/sources/"+src, nil, nil, nil)
+					if resp.status >= 400 {
+						return 0, resp.result()
+					}
+					var s struct {
+						Revision int64 `json:"revision"`
+					}
+					if json.Unmarshal(resp.body, &s) != nil || s.Revision < 1 {
+						return 0, errResult("cannot determine revision")
+					}
+					return s.Revision, nil
+				})
+				if bad != nil {
+					return bad
+				}
+				q := url.Values{}
+				if c.args["force"] == true {
+					q.Set("force", "true")
+				}
+				return c.api(http.MethodDelete, "/api/v1/sources/"+src, q, nil, map[string]string{"Idempotency-Key": c.idempotencyKey(), "If-Match": etag(rev)}).result()
 			}},
 		{name: "resolve_coordinate", title: "Explain resolution", desc: "Explain which source of a feed would serve a package coordinate and why (read policy, local ownership, remote fall-through).", readOnly: true,
 			params: []param{id("feed_id", "Feed ID."), {name: "coordinate", typ: "string", required: true, desc: "Package coordinate."}, {name: "namespace", typ: "string", desc: "Namespace."}},

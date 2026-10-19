@@ -172,6 +172,19 @@ type s3Upload struct {
 	// stateID, when non-empty, names the persisted resume state of this upload.
 	stateID   string
 	createdAt time.Time
+	// spare is the second part buffer of an overlapped upload: while one part is
+	// being sent the writer keeps filling the other. It costs one more buffer
+	// slot, taken only when one is free; otherwise parts are sent synchronously.
+	spare     []byte
+	extraSlot bool
+	inflight  *partFlight
+}
+
+// partFlight is a part being uploaded in the background.
+type partFlight struct {
+	done chan struct{}
+	part types.CompletedPart
+	err  error
 }
 
 func (u *s3Upload) Write(p []byte) (int, error) {
@@ -203,7 +216,7 @@ func (u *s3Upload) Write(p []byte) (int, error) {
 		written += n
 		p = p[n:]
 		if u.used == len(u.buffer) {
-			if err := u.flush(u.ctx); err != nil {
+			if err := u.bufferFull(); err != nil {
 				u.failure = err
 				return written, err
 			}
@@ -215,18 +228,81 @@ func (u *s3Upload) flush(ctx context.Context) error {
 	if u.used == 0 {
 		return nil
 	}
-	sum := md5.Sum(u.buffer[:u.used]) // Transport integrity, never the content identity.
-	number := int32(len(u.parts) + 1)
-	out, err := u.store.client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(u.key), UploadId: aws.String(u.id), PartNumber: aws.Int32(number), Body: bytes.NewReader(u.buffer[:u.used]), ContentLength: aws.Int64(int64(u.used)), ContentMD5: aws.String(base64.StdEncoding.EncodeToString(sum[:]))})
+	part, err := u.uploadPart(ctx, u.buffer[:u.used], int32(len(u.parts)+1))
 	if err != nil {
-		return s3Error(err)
+		return err
 	}
-	if out == nil || aws.ToString(out.ETag) == "" {
-		return &CapabilityError{"multipart part ETag"}
-	}
-	u.parts = append(u.parts, types.CompletedPart{ETag: out.ETag, PartNumber: aws.Int32(number)})
+	u.parts = append(u.parts, part)
 	u.used = 0
 	return u.persist(ctx)
+}
+
+func (u *s3Upload) uploadPart(ctx context.Context, data []byte, number int32) (types.CompletedPart, error) {
+	sum := md5.Sum(data) // Transport integrity, never the content identity.
+	out, err := u.store.client.UploadPart(ctx, &s3.UploadPartInput{Bucket: aws.String(u.store.config.Bucket), Key: aws.String(u.key), UploadId: aws.String(u.id), PartNumber: aws.Int32(number), Body: bytes.NewReader(data), ContentLength: aws.Int64(int64(len(data))), ContentMD5: aws.String(base64.StdEncoding.EncodeToString(sum[:]))})
+	if err != nil {
+		return types.CompletedPart{}, s3Error(err)
+	}
+	if out == nil || aws.ToString(out.ETag) == "" {
+		return types.CompletedPart{}, &CapabilityError{"multipart part ETag"}
+	}
+	return types.CompletedPart{ETag: out.ETag, PartNumber: aws.Int32(number)}, nil
+}
+
+// overlap reports whether a full buffer can be sent in the background while the
+// writer fills the next one. Resumable uploads checkpoint after every part and
+// stay synchronous.
+func (u *s3Upload) overlap() bool {
+	if u.stateID != "" {
+		return false
+	}
+	if u.spare != nil {
+		return true
+	}
+	select {
+	case u.store.slots <- struct{}{}:
+		u.extraSlot = true
+		u.spare = make([]byte, u.store.config.PartSize)
+		return true
+	default:
+		return false
+	}
+}
+
+// bufferFull sends the full buffer, in the background when possible.
+func (u *s3Upload) bufferFull() error {
+	if !u.overlap() {
+		return u.flush(u.ctx)
+	}
+	if err := u.drain(); err != nil {
+		return err
+	}
+	full, number := u.buffer[:u.used], int32(len(u.parts)+1)
+	u.buffer, u.spare = u.spare, u.buffer
+	u.used = 0
+	f := &partFlight{done: make(chan struct{})}
+	u.inflight = f
+	ctx := u.ctx
+	go func() {
+		defer close(f.done)
+		f.part, f.err = u.uploadPart(ctx, full, number)
+	}()
+	return nil
+}
+
+// drain waits for the background part and records it.
+func (u *s3Upload) drain() error {
+	f := u.inflight
+	if f == nil {
+		return nil
+	}
+	<-f.done
+	u.inflight = nil
+	if f.err != nil {
+		return f.err
+	}
+	u.parts = append(u.parts, f.part)
+	return nil
 }
 func (u *s3Upload) Abort() error { u.mu.Lock(); defer u.mu.Unlock(); return u.cleanup() }
 func (u *s3Upload) cleanup() error {
@@ -234,6 +310,7 @@ func (u *s3Upload) cleanup() error {
 		return nil
 	}
 	u.closed = true
+	_ = u.drain() // a background part must not outlive its upload
 	// Cancellation must not prevent aborting remote uploads. Cleanup is bounded;
 	// failures are returned so operators can reap leaked staging uploads later.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(u.ctx), 30*time.Second)
@@ -257,7 +334,11 @@ func (u *s3Upload) cleanup() error {
 			failures = append(failures, err)
 		}
 	}
-	u.buffer = nil
+	u.buffer, u.spare = nil, nil
+	if u.extraSlot {
+		u.extraSlot = false
+		<-u.store.slots
+	}
 	<-u.store.slots
 	return errors.Join(failures...)
 }
@@ -297,6 +378,9 @@ func (u *s3Upload) Finalize(ctx context.Context, expected Info) (result Info, re
 			}
 		}
 		return actual, nil
+	}
+	if err := u.drain(); err != nil {
+		return Info{}, err
 	}
 	if err := u.flush(ctx); err != nil {
 		return Info{}, err

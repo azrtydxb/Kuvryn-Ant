@@ -32,7 +32,7 @@ func New(db *pgxpool.Pool, service *artifact.Service) (*Repository, error) {
 	if db == nil || service == nil || service.DB != db || service.Lease == nil || service.Lease().InstanceID == "" {
 		return nil, ErrConfiguration
 	}
-	r := &Repository{db: db, service: service, instance: service.Lease().InstanceID, uploads: make(chan struct{}, 4)}
+	r := &Repository{db: db, service: service, instance: service.Lease().InstanceID, uploads: artifact.NewUploadSlots()}
 	r.auth = identity.NewBearer(identity.Tokens{DB: db}).Wrap(http.HandlerFunc(r.serve))
 	return r, nil
 }

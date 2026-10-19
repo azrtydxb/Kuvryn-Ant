@@ -50,6 +50,7 @@ func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog
 		}
 		status(w, http.StatusOK, "ready")
 	})
+	progress := withProgressDeadlines(mux)
 	slots := make(chan struct{}, maxRequests)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.stopping.Load() {
@@ -79,7 +80,7 @@ func New(db Pinger, maxRequests int, shutdownTimeout time.Duration, logger *slog
 			}
 			return
 		}
-		mux.ServeHTTP(w, r)
+		progress.ServeHTTP(w, r)
 	})
 	resolve := func(r *http.Request) string { _, pattern := mux.Handler(r); return pattern }
 	s.http = &http.Server{Handler: tracing.Middleware(resolve)(management.WithRequestID(telemetry.Wrap(logger, resolve, handler))), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10, ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError)}

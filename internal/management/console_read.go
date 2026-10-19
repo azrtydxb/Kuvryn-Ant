@@ -38,6 +38,7 @@ func RegisterConsole(mux *http.ServeMux, pool *pgxpool.Pool, codec CursorCodec) 
 		"POST /api/v1/feeds/{id}/publish-policy:test": h.testPublishPolicy,
 		"DELETE /api/v1/feeds/{id}":                   h.deleteFeed,
 		"DELETE /api/v1/sources/{id}/cache":           h.purgeSourceCache,
+		"DELETE /api/v1/sources/{id}":                 h.deleteSource,
 		"GET /api/v1/tokens":                          h.listTokens,
 		"GET /api/v1/identity-bindings":               h.listBindings,
 		"DELETE /api/v1/identity-bindings/{id}":       h.deleteBinding,
