@@ -1,12 +1,12 @@
 {
   "format": "cargo",
   "target": "local",
-  "run_id": "6724f8",
-  "started": "2026-10-18T21:52:32Z",
+  "run_id": "46dad4",
+  "started": "2026-10-19T10:45:12Z",
   "ant": {
     "api_version": "v1",
-    "target_base_url": "http://127.0.0.1:56011",
-    "version": "git:06c3f70"
+    "target_base_url": "http://127.0.0.1:31631",
+    "version": "git:037527d"
   },
   "clients": {
     "cargo": {
@@ -19,82 +19,82 @@
     {
       "name": "client-version",
       "status": "pass",
-      "duration_ms": 16182,
+      "duration_ms": 494,
       "detail": "",
       "output_tail": "cargo 1.99.1 (5f94df478 2026-08-27)\n"
     },
     {
       "name": "publish: cargo publish 0.1.0 to feed",
       "status": "pass",
-      "duration_ms": 3435,
+      "duration_ms": 1358,
       "detail": "",
-      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-6724f8 v0.1.0 (/work/pub)\n    Packaged 4 files, 1.1KiB (768B compressed)\n   Verifying kcdemo-6724f8 v0.1.0 (/work/pub)\n   Compiling kcdemo-6724f8 v0.1.0 (/work/target/package/kcdemo-6724f8-0.1.0)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.24s\n   Uploading kcdemo-6724f8 v0.1.0 (/work/pub)\n    Uploaded kcdemo-6724f8 v0.1.0 to registry `ant`\nnote: waiting for kcdemo-6724f8 v0.1.0 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-6724f8 v0.1.0 at registry `ant`\n"
+      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-46dad4 v0.1.0 (/work/pub)\n    Packaged 4 files, 1.1KiB (770B compressed)\n   Verifying kcdemo-46dad4 v0.1.0 (/work/pub)\n   Compiling kcdemo-46dad4 v0.1.0 (/work/target/package/kcdemo-46dad4-0.1.0)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.02s\n   Uploading kcdemo-46dad4 v0.1.0 (/work/pub)\n    Uploaded kcdemo-46dad4 v0.1.0 to registry `ant`\nnote: waiting for kcdemo-46dad4 v0.1.0 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-46dad4 v0.1.0 at registry `ant`\n"
     },
     {
       "name": "consume: cargo run with dependency from feed (fresh CARGO_HOME)",
       "status": "pass",
-      "duration_ms": 2800,
+      "duration_ms": 795,
       "detail": "",
       "output_tail": "answer=42\n"
     },
     {
       "name": "same-endpoint write then read: publish 0.1.1 then consumer resolves it",
       "status": "pass",
-      "duration_ms": 1677,
+      "duration_ms": 715,
       "detail": "",
-      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-6724f8 v0.1.1 (/work/pub)\n    Packaged 4 files, 1.1KiB (767B compressed)\n   Verifying kcdemo-6724f8 v0.1.1 (/work/pub)\n   Compiling kcdemo-6724f8 v0.1.1 (/work/target/package/kcdemo-6724f8-0.1.1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.11s\n   Uploading kcdemo-6724f8 v0.1.1 (/work/pub)\n    Uploaded kcdemo-6724f8 v0.1.1 to registry `ant`\nnote: waiting for kcdemo-6724f8 v0.1.1 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-6724f8 v0.1.1 at registry `ant`\n    Updating `ant` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded kcdemo-6724f8 v0.1.1 (registry `ant`)\n└── kcdemo-6724f8 v0.1.1 (registry `ant`)\n"
+      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-46dad4 v0.1.1 (/work/pub)\n    Packaged 4 files, 1.1KiB (770B compressed)\n   Verifying kcdemo-46dad4 v0.1.1 (/work/pub)\n   Compiling kcdemo-46dad4 v0.1.1 (/work/target/package/kcdemo-46dad4-0.1.1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s\n   Uploading kcdemo-46dad4 v0.1.1 (/work/pub)\n    Uploaded kcdemo-46dad4 v0.1.1 to registry `ant`\nnote: waiting for kcdemo-46dad4 v0.1.1 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-46dad4 v0.1.1 at registry `ant`\n    Updating `ant` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded kcdemo-46dad4 v0.1.1 (registry `ant`)\n└── kcdemo-46dad4 v0.1.1 (registry `ant`)\n"
     },
     {
       "name": "delete/unlist: cargo yank 0.1.1",
       "status": "pass",
-      "duration_ms": 1207,
+      "duration_ms": 351,
       "detail": "",
-      "output_tail": "    Updating `ant` index\n        Yank kcdemo-6724f8@0.1.1\n"
+      "output_tail": "    Updating `ant` index\n        Yank kcdemo-46dad4@0.1.1\n"
     },
     {
       "name": "delete/unlist: cargo yank --undo 0.1.1",
       "status": "pass",
-      "duration_ms": 15707,
+      "duration_ms": 546,
       "detail": "",
-      "output_tail": "    Updating `ant` index\n      Unyank kcdemo-6724f8@0.1.1\n"
+      "output_tail": "    Updating `ant` index\n      Unyank kcdemo-46dad4@0.1.1\n"
     },
     {
       "name": "delete: management API delete 0.1.1",
       "status": "pass",
-      "duration_ms": 7,
+      "duration_ms": 6,
       "detail": "",
       "output_tail": ""
     },
     {
       "name": "remote pull-through miss: cargo fetch/build itoa from crates.io via feed",
       "status": "pass",
-      "duration_ms": 1429,
+      "duration_ms": 1380,
       "detail": "",
       "output_tail": "7\n"
     },
     {
       "name": "remote pull-through hit: fresh CARGO_HOME fetch with upstream unreachable",
       "status": "pass",
-      "duration_ms": 14835,
+      "duration_ms": 381,
       "detail": "",
       "output_tail": "    Updating `antr` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded itoa v1.0.11 (registry `antr`)\n"
     },
     {
       "name": "auth denial: invalid token rejected by cargo",
       "status": "pass",
-      "duration_ms": 603,
+      "duration_ms": 306,
       "detail": "",
-      "output_tail": "    Updating `ant` index\nerror: failed to get `kcdemo-6724f8` as a dependency of package `consumer v0.1.0 (/work/cons)`\n\nCaused by:\n  failed to load source for dependency `kcdemo-6724f8`\n\nCaused by:\n  unable to update registry `ant`\n\nCaused by:\n  failed to get successful HTTP response from `http://127.0.0.1:56011/feeds/cf-cargo-local-6724f8/cargo/config.json` (127.0.0.1), got 403\n  body:\n  {\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
+      "output_tail": "    Updating `ant` index\nerror: failed to get `kcdemo-46dad4` as a dependency of package `consumer v0.1.0 (/work/cons)`\n\nCaused by:\n  failed to load source for dependency `kcdemo-46dad4`\n\nCaused by:\n  unable to update registry `ant`\n\nCaused by:\n  failed to get successful HTTP response from `http://127.0.0.1:31631/feeds/cf-cargo-local-46dad4/cargo/config.json` (127.0.0.1), got 403\n  body:\n  {\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
     },
     {
       "name": "auth denial: index config.json requires credentials (401)",
       "status": "pass",
-      "duration_ms": 0,
+      "duration_ms": 1,
       "detail": "",
       "output_tail": "{\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
     }
   ],
-  "duration_ms": 57902,
+  "duration_ms": 71360,
   "summary": {
     "fail": 0,
     "pass": 11,
@@ -102,5 +102,8 @@
     "unsupported": 0
   },
   "result": "pass",
-  "feed_cleanup": ["2135fde8:200", "b230dae1:200"]
+  "feed_cleanup": [
+    "661abf7f:200",
+    "f4307087:200"
+  ]
 }

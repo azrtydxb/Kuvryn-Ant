@@ -407,6 +407,13 @@ func TestS3FailuresAbortAndReleaseBudget(t *testing.T) {
 			if _, err := upload.Write(data); err != nil {
 				t.Fatal(err)
 			}
+			if kind == "part" || kind == "copy" || kind == "conditional" {
+				// Small objects are published with one PutObject; start the
+				// multipart path these failures belong to.
+				if err := upload.(*s3Upload).ensureMultipart(ctx); err != nil {
+					t.Fatal(err)
+				}
+			}
 			if kind == "cancellation" {
 				cancel()
 			}
@@ -467,7 +474,8 @@ func TestS3EmptyBudgetAndCapabilityLimit(t *testing.T) {
 func TestS3CleanupFailureIsObservable(t *testing.T) {
 	s, f := fixture(t)
 	f.failDelete = true
-	_, err := fixturePut(context.Background(), s, []byte("data"), content([]byte("data")))
+	big := bytes.Repeat([]byte("d"), s3MinimumPartSize+1) // staged through multipart; small objects have no staging object
+	_, err := fixturePut(context.Background(), s, big, content(big))
 	if err == nil || !errors.Is(err, ErrBackend) {
 		t.Fatalf("cleanup failure hidden: %v", err)
 	}
@@ -562,7 +570,12 @@ func TestS3CredentialProviderErrorIsSanitized(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = store.Stage(context.Background())
+	upload, err := store.Stage(context.Background())
+	if err == nil {
+		// The multipart upload starts lazily; the first S3 call fails at Finalize.
+		_, _ = upload.Write([]byte("data"))
+		_, err = upload.Finalize(context.Background(), content([]byte("data")))
+	}
 	if !errors.Is(err, ErrBackend) || strings.Contains(fmt.Sprintf("%+v", err), secret) {
 		t.Fatal("SDK credential retrieval error escaped")
 	}
@@ -610,5 +623,47 @@ func TestS3PartUploadOverlapsWithWriting(t *testing.T) {
 	// All budget slots, including the second buffer, are released.
 	if len(s.slots) != 0 {
 		t.Fatalf("%d slots still held", len(s.slots))
+	}
+}
+
+// An object that fits the first buffer is published with a single PutObject:
+// no staging multipart upload, copy or delete round trips.
+func TestS3SmallObjectUsesSinglePut(t *testing.T) {
+	s, f := fixture(t)
+	data := []byte("small package metadata")
+	if _, err := fixturePut(context.Background(), s, data, content(data)); err != nil {
+		t.Fatal(err)
+	}
+	f.assertClean(t, 1)
+	if f.sequence != 0 || f.copyCalls != 0 || f.conditionalCalls != 1 {
+		t.Fatalf("multipart used for a small object: uploads=%d copies=%d puts=%d", f.sequence, f.copyCalls, f.conditionalCalls)
+	}
+	f.mu.Lock()
+	for _, body := range f.objects {
+		if !bytes.Equal(body, data) {
+			t.Fatal("stored bytes differ")
+		}
+	}
+	f.mu.Unlock()
+	// A duplicate publish of the same content is verified, not an error.
+	if _, err := fixturePut(context.Background(), s, data, content(data)); err != nil {
+		t.Fatal(err)
+	}
+	f.assertClean(t, 1)
+}
+
+// Objects larger than the first buffer grow it and go through multipart.
+func TestS3GrowingBufferSwitchesToMultipart(t *testing.T) {
+	s, f := fixture(t)
+	data := bytes.Repeat([]byte("g"), s3MinimumPartSize+17)
+	if _, err := fixturePut(context.Background(), s, data, content(data)); err != nil {
+		t.Fatal(err)
+	}
+	f.assertClean(t, 1)
+	if f.sequence != 2 {
+		t.Fatalf("expected staging and publication multipart uploads, got %d", f.sequence)
+	}
+	if len(s.slots) != 0 {
+		t.Fatal("budget leak")
 	}
 }

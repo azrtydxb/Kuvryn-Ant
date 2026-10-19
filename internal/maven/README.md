@@ -45,8 +45,10 @@ in flight) and the PUT of `{group}/{artifact}/maven-metadata.xml` is the complet
 signal that publishes the version atomically; the uploaded metadata document is
 discarded because the service generates its own. A deploy without the POM (or without
 the jar for jar packaging) is rejected with 400 and never advertised, a changed
-re-deploy of an existing version is 409, an identical one 204. Staging is local to the
-process: send all PUTs of one deployment to the same replica. Timestamped snapshots and
+re-deploy of an existing version is 409, an identical one 204. Staged files are persisted in
+PostgreSQL (`maven_deploy_*`, chunked, 15 minute TTL purged by the next deploy request), so the
+PUTs of one deployment may reach different replicas and survive a restart; the metadata PUT
+leases the staged sets so two replicas never commit one deployment twice. Timestamped snapshots and
 SNAPSHOT metadata return 501; mutable snapshot generation support is not claimed.
 Only releases are supported. Inherited/interpolated POM coordinates, packaging
 other than jar/pom, group plugin-prefix metadata, signatures and remote proxy

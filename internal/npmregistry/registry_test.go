@@ -230,8 +230,8 @@ func TestPublishReadAndIsolation(t *testing.T) {
 	}
 	assertCode(t, f.request("GET", target, nil, map[string]string{"If-None-Match": response.Header().Get("ETag")}), 304)
 	assertCode(t, f.request("GET", base+"-/package/@scope%2fdemo/dist-tags", nil, nil), 200)
-	assertCode(t, f.request("PUT", base+"-/package/@scope%2fdemo/dist-tags/latest", []byte(`"2.0.0"`), nil), 501)
-	assertCode(t, f.request("DELETE", target, nil, nil), 501)
+	assertCode(t, f.request("PUT", base+"-/package/@scope%2fdemo/dist-tags/latest", []byte(`"2.0.0"`), nil), 404)
+	assertCode(t, f.request("DELETE", target, nil, nil), 405)
 	d := f.request("GET", base+name+"/-/demo-1.0.0.tgz", nil, nil)
 	assertCode(t, d, 200)
 	if !bytes.Equal(d.Body.Bytes(), b) {

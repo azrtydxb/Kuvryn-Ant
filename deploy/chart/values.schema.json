@@ -19,6 +19,19 @@
         "enabled": { "type": "boolean" },
         "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
         "publicURL": { "type": "string", "pattern": "^(https://[^/?#@]+)?$" },
+        "routing": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxStreams": { "type": "integer", "minimum": 0 },
+            "streamsPerPrincipal": { "type": "integer", "minimum": 0 },
+            "streamsPerClient": { "type": "integer", "minimum": 0 },
+            "principalRate": { "type": "integer", "minimum": 0 },
+            "minTransferRate": { "type": "integer", "minimum": 0 },
+            "transferGrace": { "type": "string" },
+            "transferTimeout": { "type": "string" }
+          }
+        },
         "service": {
           "type": "object",
           "additionalProperties": false,

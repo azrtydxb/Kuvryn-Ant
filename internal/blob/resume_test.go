@@ -110,7 +110,11 @@ func TestS3AbortStaleUploads(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A leaked, non-resumable staging upload.
-	if _, err := s.Stage(ctx); err != nil {
+	leaked, err := s.Stage(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := leaked.(*s3Upload).ensureMultipart(ctx); err != nil {
 		t.Fatal(err)
 	}
 	now = now.Add(23 * time.Hour)

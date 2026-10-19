@@ -135,6 +135,14 @@ spec:
               value: {{ printf "0.0.0.0:%d" (int .Values.federation.port) | quote }}
             - name: ANT_FEDERATION_PUBLIC_URL
               value: {{ .Values.federation.publicURL | quote }}
+            {{- with .Values.federation.routing }}
+            {{- range $k, $v := dict "ANT_FEDERATION_ROUTE_MAX_STREAMS" .maxStreams "ANT_FEDERATION_ROUTE_STREAMS_PER_PRINCIPAL" .streamsPerPrincipal "ANT_FEDERATION_ROUTE_STREAMS_PER_CLIENT" .streamsPerClient "ANT_FEDERATION_ROUTE_PRINCIPAL_RATE" .principalRate "ANT_FEDERATION_ROUTE_MIN_TRANSFER_RATE" .minTransferRate "ANT_FEDERATION_ROUTE_TRANSFER_GRACE" .transferGrace "ANT_FEDERATION_ROUTE_TRANSFER_TIMEOUT" .transferTimeout }}
+            {{- if $v }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.federation.join.existingSecret }}
             - name: ANT_FEDERATION_JOIN_DIR
               value: /run/ant/federation-join

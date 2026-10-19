@@ -36,7 +36,9 @@ func openFederation(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime,
 		return nil
 	}
 	svc, err := federation.New(federation.Config{DB: pool, Keys: cfg.SecretKeys, InstanceID: r.instanceID, PublicURL: cfg.Federation.PublicURL,
-		ListenAddress: cfg.Federation.Listen, APIURL: apiURL, SoftwareVersion: buildVersion(), Logger: logger})
+		ListenAddress: cfg.Federation.Listen, APIURL: apiURL, SoftwareVersion: buildVersion(), Logger: logger,
+		RouteMaxStreams: cfg.Federation.RouteMaxStreams, RouteMaxStreamsPerPrincipal: cfg.Federation.RouteStreamsPerPrincipal, RouteMaxStreamsPerClient: cfg.Federation.RouteStreamsPerClient,
+		RoutePrincipalRate: cfg.Federation.RoutePrincipalRate, RouteMinTransferRate: cfg.Federation.RouteMinTransferRate, RouteTransferGrace: cfg.Federation.RouteTransferGrace, RouteTransferTimeout: cfg.Federation.RouteTransferTimeout})
 	if err != nil {
 		logger.Error("federation disabled", "reason", err)
 		return nil

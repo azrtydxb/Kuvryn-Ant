@@ -213,6 +213,14 @@ func TestPublishIndexDownload(t *testing.T) {
 		t.Fatal(e)
 	}
 	assertCode(t, f.request("PUT", base+"api/v1/crates/new", body, map[string]string{"Authorization": token.Secret}), 403)
+	// A publish-only token (no delete) may yank and unyank: reversible, publisher-level.
+	pub, e := (identity.Tokens{DB: f.pool}).Issue(context.Background(), f.instance, f.principal, f.principal, []identity.Scope{{Actions: []identity.Action{identity.Read, identity.Publish}}}, time.Now().Add(time.Hour))
+	if e != nil {
+		t.Fatal(e)
+	}
+	assertCode(t, f.request("DELETE", base+"api/v1/crates/demo/1.0.0/yank", nil, map[string]string{"Authorization": pub.Secret}), 200)
+	assertCode(t, f.request("PUT", base+"api/v1/crates/demo/1.0.0/unyank", nil, map[string]string{"Authorization": pub.Secret}), 200)
+	assertCode(t, f.request("DELETE", base+"api/v1/crates/demo/1.0.0/yank", nil, map[string]string{"Authorization": token.Secret}), 403)
 }
 func TestRealCargoPublishFetch(t *testing.T) {
 	if _, e := exec.LookPath("cargo"); e != nil {

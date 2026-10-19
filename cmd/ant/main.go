@@ -351,7 +351,7 @@ func buildVersion() string {
 
 func main() {
 	errorRing = diagnostics.NewRing(500)
-	logger := slog.New(tracing.LogHandler(diagnostics.NewHandler(slog.NewJSONHandler(os.Stderr, nil), errorRing)))
+	logger := slog.New(observability.RedactHandler(tracing.LogHandler(diagnostics.NewHandler(slog.NewJSONHandler(os.Stderr, nil), errorRing))))
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	code := execute(ctx, logger, os.Args[1:], os.Stdout)
 	stop()

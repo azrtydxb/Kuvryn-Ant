@@ -647,6 +647,13 @@ func (c *Ctx) MgmtVersion(slug, needle, version, action string) error {
 func (c *Ctx) Cleanup() {
 	_ = os.RemoveAll(c.Work)
 	var res []string
+	if os.Getenv("CONF_KEEP_FEEDS") != "" {
+		for _, fid := range c.feeds {
+			res = append(res, fid[:8]+":kept")
+		}
+		c.Ev.Cleanup = res
+		return
+	}
 	for _, fid := range c.feeds {
 		r, err := c.rev("feeds", fid)
 		if err == nil {

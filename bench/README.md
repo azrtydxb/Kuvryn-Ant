@@ -47,3 +47,14 @@ Needs `kubectl` contexts `azrty-oke` and `kw`, Go, and the automation tokens in 
   Base RSS is reported separately from growth.
 - Direct-backend throughput (the 80 percent warm-throughput target) is not measured by the runner; see the evidence
   README for what was and was not measured.
+
+## Publish path (`bench/publishpath`)
+
+`go test` benchmark of `artifact.Service.Publish` (64 KiB objects, distinct coordinates) against a throwaway PostgreSQL and a disk store, with optional object-store latency injected into Stage, Finalize and Stat the way the S3 backend behaves. It needs no cluster and isolates serialization in the publish transaction, which the HTTP-level `publish` scenario above cannot show.
+
+```sh
+ANT_BENCH_STORE_LATENCY=20ms scripts/test-postgres.sh -race=false ./bench/publishpath -run '^$' -bench Publish -benchtime 400x
+ANT_BENCH_WAITS=1 ...   # also sample what the active database sessions wait on
+```
+
+Finding behind the 2026-10-18 kw plateau (about 7 req/s regardless of concurrency): every publish held the instance writer-lease row and the feed row `FOR UPDATE` until commit, and the in-transaction object-store `Stat` ran under both, so throughput was capped at 1 / (commit-path latency). With 20 ms object-store latency, 16 publishers: 42 req/s before, 114 req/s after (both locks are now `FOR SHARE`: takeover, renewal and feed edits still exclude writers, writers no longer exclude each other); 4 publishers: 23 -> 40 req/s. A single publisher is unchanged (about 10 req/s, the sum of the injected latencies). The S3 backend also now publishes an object that fits its first buffer (at most one part, 64 MiB by default) with one conditional `PutObject` instead of staging multipart + server-side copy + delete (9 requests down to 1 plus the `Stat`), and no longer allocates a 64 MiB part buffer per upload up front (it starts at 1 MiB and grows).

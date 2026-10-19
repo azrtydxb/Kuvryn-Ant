@@ -152,8 +152,12 @@ func (s *Registry) serve(w http.ResponseWriter, r *http.Request) {
 		s.unpublish(w, r, p, feed, name, kind, file)
 		return
 	}
+	if tags && strings.HasPrefix(tail, "dist-tags/") && (r.Method == "PUT" || r.Method == "POST" || r.Method == "DELETE") {
+		s.distTag(w, r, p, feed, name, strings.TrimPrefix(tail, "dist-tags/"))
+		return
+	}
 	if r.Method == "DELETE" || (tags && r.Method != "GET" && r.Method != "HEAD") {
-		failure(w, 501, "mutable dist-tags are not supported")
+		failure(w, 405, "unsupported npm operation")
 		return
 	}
 	if !tags && tail == "" && r.Method == "PUT" {

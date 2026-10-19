@@ -9,7 +9,7 @@ package npmregistry
 // Every removal is authorized, policy-checked, audited and tombstoned by
 // artifact.Service.Delete; bytes are reclaimed later by garbage collection.
 // `npm deprecate` rewrites the packument without removing versions and is
-// accepted as a no-op. Mutable dist-tags remain unsupported.
+// accepted as a no-op. Dist-tags are managed in disttag.go.
 
 import (
 	"context"

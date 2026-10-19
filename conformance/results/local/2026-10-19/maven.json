@@ -1,12 +1,12 @@
 {
   "format": "maven",
   "target": "local",
-  "run_id": "d0bf40",
-  "started": "2026-10-18T22:54:40Z",
+  "run_id": "30b0d3",
+  "started": "2026-10-19T10:46:51Z",
   "ant": {
     "api_version": "v1",
-    "target_base_url": "http://127.0.0.1:56011",
-    "version": "git:06c3f70"
+    "target_base_url": "http://127.0.0.1:31631",
+    "version": "git:037527d"
   },
   "clients": {
     "maven": {
@@ -19,88 +19,91 @@
     {
       "name": "client-version",
       "status": "pass",
-      "duration_ms": 1091,
+      "duration_ms": 1314,
       "detail": "",
       "output_tail": "Apache Maven 3.10.0 (c43a36b8d67be7e0805a411bc0898af1a51f5472)\n"
     },
     {
-      "name": "publish: mvn deploy:deploy-file (native multi-PUT)",
-      "status": "unsupported",
-      "duration_ms": 8053,
-      "detail": "documented limitation (internal/maven README: native Maven deploy multi-PUT returns 405; release bundles via POST version/_bundle): exit status 1: fixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- deploy:3.1.4:deploy-file (default-cli) @ standalone-pom ---\n[WARNING] Using credentials of server 'ant' for repository http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven, although no repository or mirror with this id is declared in settings or on the command line and the server declares no \u003crepositoryOrigins\u003e. Declare 'http://127.0.0.1:56011' in \u003crepositoryOrigins\u003e of that server in settings to bind these credentials explicitly, or set maven.repository.credentialScope=strict to refuse such credential use.\n[INFO] ------------------------------------------------------------------------\n[ERROR] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  3.372 s\n[INFO] Finished at: 2026-10-18T22:54:47Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy-file (default-cli) on project standalone-pom: Failed to deploy artifacts: Could not transfer artifact org.kcdemo:demo-d0bf40:jar:1.0 from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 405 -\u003e [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException\n",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- deploy:3.1.4:deploy-file (default-cli) @ standalone-pom ---\n[WARNING] Using credentials of server 'ant' for repository http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven, although no repository or mirror with this id is declared in settings or on the command line and the server declares no \u003crepositoryOrigins\u003e. Declare 'http://127.0.0.1:56011' in \u003crepositoryOrigins\u003e of that server in settings to bind these credentials explicitly, or set maven.repository.credentialScope=strict to refuse such credential use.\n[INFO] ------------------------------------------------------------------------\n[ERROR] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  3.372 s\n[INFO] Finished at: 2026-10-18T22:54:47Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy-file (default-cli) on project standalone-pom: Failed to deploy artifacts: Could not transfer artifact org.kcdemo:demo-d0bf40:jar:1.0 from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 405 -\u003e [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException\n"
+      "name": "publish: mvn deploy:deploy-file (native multi-PUT, metadata PUT completes the version)",
+      "status": "pass",
+      "duration_ms": 4783,
+      "detail": "",
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- deploy:3.1.4:deploy-file (default-cli) @ standalone-pom ---\n[WARNING] Using credentials of server 'ant' for repository http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven, although no repository or mirror with this id is declared in settings or on the command line and the server declares no \u003crepositoryOrigins\u003e. Declare 'http://127.0.0.1:31631' in \u003crepositoryOrigins\u003e of that server in settings to bind these credentials explicitly, or set maven.repository.credentialScope=strict to refuse such credential use.\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  3.169 s\n[INFO] Finished at: 2026-10-19T10:46:56Z\n[INFO] ------------------------------------------------------------------------\n"
     },
     {
       "name": "publish: POST version/_bundle (adapter bundle API) 1.0",
       "status": "pass",
-      "duration_ms": 153,
+      "duration_ms": 112,
       "detail": "",
       "output_tail": ""
     },
     {
       "name": "consume: mvn dependency:get 1.0 with fresh local repo",
       "status": "pass",
-      "duration_ms": 47919,
+      "duration_ms": 9356,
       "detail": "",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-d0bf40:jar:1.0\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  4.641 s\n[INFO] Finished at: 2026-10-18T22:54:56Z\n[INFO] ------------------------------------------------------------------------\n"
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-30b0d3:jar:1.0\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  7.124 s\n[INFO] Finished at: 2026-10-19T10:47:06Z\n[INFO] ------------------------------------------------------------------------\n"
     },
     {
       "name": "same-endpoint write then read: bundle 1.1, maven-metadata.xml lists it, mvn resolves 1.1",
       "status": "pass",
-      "duration_ms": 8815,
+      "duration_ms": 9211,
       "detail": "",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-d0bf40:jar:1.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  4.251 s\n[INFO] Finished at: 2026-10-18T22:55:46Z\n[INFO] ------------------------------------------------------------------------\n"
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-30b0d3:jar:1.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  6.171 s\n[INFO] Finished at: 2026-10-19T10:47:14Z\n[INFO] ------------------------------------------------------------------------\n"
     },
     {
       "name": "delete: DELETE version directory 1.1 then mvn cannot resolve it",
       "status": "pass",
-      "duration_ms": 8312,
+      "duration_ms": 6406,
       "detail": "",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-d0bf40:jar:1.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 400\n[WARNING] The POM for org.kcdemo:demo-d0bf40:jar:1.1 is missing, no dependency information available\n[INFO] ------------------------------------------------------------------------\n[ERROR] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  4.156 s\n[INFO] Finished at: 2026-10-18T22:55:52Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-dependency-plugin:3.8.1:get (default-cli) on project standalone-pom: Couldn't download artifact: The following artifacts could not be resolved: org.kcdemo:demo-d0bf40:jar:1.1 (absent): Could not find artifact org.kcdemo:demo-d0bf40:jar:1.1 in ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven) -\u003e [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException\n"
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-30b0d3:jar:1.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven): HTTP Status: 400\n[WARNING] The POM for org.kcdemo:demo-30b0d3:jar:1.1 is missing, no dependency information available\n[INFO] ------------------------------------------------------------------------\n[ERROR] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  4.963 s\n[INFO] Finished at: 2026-10-19T10:47:22Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-dependency-plugin:3.8.1:get (default-cli) on project standalone-pom: Couldn't download artifact: The following artifacts could not be resolved: org.kcdemo:demo-30b0d3:jar:1.1 (absent): Could not find artifact org.kcdemo:demo-30b0d3:jar:1.1 in ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven) -\u003e [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException\n"
     },
     {
       "name": "delete/unlist: management API unlist then relist 1.0",
       "status": "pass",
-      "duration_ms": 27,
+      "duration_ms": 23,
       "detail": "",
       "output_tail": ""
     },
     {
       "name": "remote pull-through miss: mvn dependency:get commons-codec 1.16.1 from Maven Central via feed",
       "status": "pass",
-      "duration_ms": 29795,
+      "duration_ms": 15757,
       "detail": "",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving commons-codec:commons-codec:jar:1.16.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:56011/feeds/cf-maven-remote-d0bf40/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  4.533 s\n[INFO] Finished at: 2026-10-18T22:56:03Z\n[INFO] ------------------------------------------------------------------------\n"
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving commons-codec:commons-codec:jar:1.16.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-remote-30b0d3/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  3.823 s\n[INFO] Finished at: 2026-10-19T10:47:28Z\n[INFO] ------------------------------------------------------------------------\n"
     },
     {
       "name": "remote pull-through hit: fresh local repo resolves with upstream unreachable",
       "status": "pass",
-      "duration_ms": 61970,
+      "duration_ms": 31456,
       "detail": "",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving commons-codec:commons-codec:jar:1.16.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:56011/feeds/cf-maven-remote-d0bf40/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  5.195 s\n[INFO] Finished at: 2026-10-18T22:57:24Z\n[INFO] ------------------------------------------------------------------------\n"
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving commons-codec:commons-codec:jar:1.16.1\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-remote-30b0d3/maven): HTTP Status: 400\n[INFO] ------------------------------------------------------------------------\n[INFO] BUILD SUCCESS\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  3.991 s\n[INFO] Finished at: 2026-10-19T10:47:45Z\n[INFO] ------------------------------------------------------------------------\n"
     },
     {
       "name": "auth denial: mvn with invalid token rejected",
       "status": "pass",
-      "duration_ms": 16931,
+      "duration_ms": 22905,
       "detail": "",
-      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24136 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-d0bf40:jar:1.0\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 401\n[INFO] ------------------------------------------------------------------------\n[ERROR] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  4.397 s\n[INFO] Finished at: 2026-10-18T22:57:43Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-dependency-plugin:3.8.1:get (default-cli) on project standalone-pom: Couldn't download artifact: Failed to read artifact descriptor for org.kcdemo:demo-d0bf40:jar:1.0: The following artifacts could not be resolved: org.kcdemo:demo-d0bf40:pom:1.0 (absent): Could not transfer artifact org.kcdemo:demo-d0bf40:pom:1.0 from/to ant (http://127.0.0.1:56011/feeds/cf-maven-local-d0bf40/maven): HTTP Status: 401 -\u003e [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException\n"
+      "output_tail": "[INFO] Scanning for projects...\n[INFO] Loaded 24138 auto-discovered prefixes for remote repository central (prefixes-central.txt)\n[INFO] Loaded 74 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)\n[INFO] \n[INFO] ------------------\u003c org.apache.maven:standalone-pom \u003e-------------------\n[INFO] Building Maven Stub Project (No POM) 1\n[INFO] --------------------------------[ pom ]---------------------------------\n[INFO] \n[INFO] --- dependency:3.8.1:get (default-cli) @ standalone-pom ---\n[INFO] Resolving org.kcdemo:demo-30b0d3:jar:1.0\n[WARNING] Could not transfer metadata /.meta/prefixes.txt from/to ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven): HTTP Status: 401\n[INFO] ------------------------------------------------------------------------\n[ERROR] BUILD FAILURE\n[INFO] ------------------------------------------------------------------------\n[INFO] Total time:  5.538 s\n[INFO] Finished at: 2026-10-19T10:48:32Z\n[INFO] ------------------------------------------------------------------------\n[ERROR] Failed to execute goal org.apache.maven.plugins:maven-dependency-plugin:3.8.1:get (default-cli) on project standalone-pom: Couldn't download artifact: Failed to read artifact descriptor for org.kcdemo:demo-30b0d3:jar:1.0: The following artifacts could not be resolved: org.kcdemo:demo-30b0d3:pom:1.0 (absent): Could not transfer artifact org.kcdemo:demo-30b0d3:pom:1.0 from/to ant (http://127.0.0.1:31631/feeds/cf-maven-local-30b0d3/maven): HTTP Status: 401 -\u003e [Help 1]\n[ERROR] \n[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.\n[ERROR] Re-run Maven using the -X switch to enable full debug logging.\n[ERROR] \n[ERROR] For more information about the errors and possible solutions, please read the following articles:\n[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException\n"
     },
     {
       "name": "auth denial: unauthenticated pom returns 401",
       "status": "pass",
-      "duration_ms": 0,
+      "duration_ms": 2,
       "detail": "",
       "output_tail": "service credentials required\n"
     }
   ],
-  "duration_ms": 183121,
+  "duration_ms": 166402,
   "summary": {
     "fail": 0,
-    "pass": 10,
+    "pass": 11,
     "skip": 0,
-    "unsupported": 1
+    "unsupported": 0
   },
   "result": "pass",
-  "feed_cleanup": ["01a8ee6f:200", "661e6d0f:200"]
+  "feed_cleanup": [
+    "63ad73e3:200",
+    "02aed293:200"
+  ]
 }
