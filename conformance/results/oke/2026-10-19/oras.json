@@ -1,0 +1,92 @@
+{
+  "format": "oras",
+  "target": "oke",
+  "run_id": "f5a196",
+  "started": "2026-10-18T21:51:00Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "oras": {
+      "image": "alpine:3.24.2",
+      "reported_version": "Version:        1.3.4",
+      "pinned_ref": "oras v1.3.4 (official release binary downloaded into the container; the oras image has no shell)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 17970,
+      "detail": "",
+      "output_tail": "Version:        1.3.4\n"
+    },
+    {
+      "name": "publish: oras push artifact with artifact-type",
+      "status": "pass",
+      "duration_ms": 7711,
+      "detail": "",
+      "output_tail": "Preparing a.txt\nUploading b53af8975436 a.txt\nUploading 44136fa355b3 application/vnd.oci.empty.v1+json\nUploaded  44136fa355b3 application/vnd.oci.empty.v1+json\nUploaded  b53af8975436 a.txt\nUploading 7477eb766a83 application/vnd.oci.image.manifest.v1+json\nUploaded  7477eb766a83 application/vnd.oci.image.manifest.v1+json\nPushed [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196:v1\nArtifactType: application/vnd.kuvryn.demo\nDigest: sha256:7477eb766a838b7f3794a4fe39debad5921bf7a326d6291a9d37596a95f63be1\n"
+    },
+    {
+      "name": "consume: oras pull returns identical content and manifest fetch works",
+      "status": "pass",
+      "duration_ms": 1857,
+      "detail": "",
+      "output_tail": "Downloading 7477eb766a83 application/vnd.oci.image.manifest.v1+json\nProcessing  7477eb766a83 application/vnd.oci.image.manifest.v1+json\nDownloading b53af8975436 a.txt\nDownloaded  b53af8975436 a.txt\nDownloaded  7477eb766a83 application/vnd.oci.image.manifest.v1+json\nPulled [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196:v1\nDigest: sha256:7477eb766a838b7f3794a4fe39debad5921bf7a326d6291a9d37596a95f63be1\nartifact f5a196\n"
+    },
+    {
+      "name": "same-endpoint write then read: attach a referrer and discover it, retag and copy",
+      "status": "pass",
+      "duration_ms": 19483,
+      "detail": "",
+      "output_tail": "Preparing sbom.json\nUploading ea75820aa8a7 sbom.json\nExists    44136fa355b3 application/vnd.oci.empty.v1+json\nUploaded  ea75820aa8a7 sbom.json\nUploading 03ec5d9fec26 application/vnd.oci.image.manifest.v1+json\nUploaded  03ec5d9fec26 application/vnd.oci.image.manifest.v1+json\nAttached to [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196@sha256:7477eb766a838b7f3794a4fe39debad5921bf7a326d6291a9d37596a95f63be1\nDigest: sha256:03ec5d9fec2635bd71403ee0b4d2f93020b7de53b91f3b82d0bead70a4d7cc00\nTagging [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196@sha256:7477eb766a838b7f3794a4fe39debad5921bf7a326d6291a9d37596a95f63be1\nTagged v2\nCopied [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196:v1 =\u003e [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196:copied\nDigest: sha256:7477eb766a838b7f3794a4fe39debad5921bf7a326d6291a9d37596a95f63be1\n"
+    },
+    {
+      "name": "delete: oras manifest delete by digest removes the manifest and its tags",
+      "status": "pass",
+      "duration_ms": 2988,
+      "detail": "",
+      "output_tail": "Deleted [registry] ant.azrty.com/cf-oras-local-f5a196/artf5a196@sha256:7477eb766a838b7f3794a4fe39debad5921bf7a326d6291a9d37596a95f63be1\nError response from registry: failed to fetch the content of \"ant.azrty.com/cf-oras-local-f5a196/artf5a196:v1\": ant.azrty.com/cf-oras-local-f5a196/artf5a196:v1: not found\n"
+    },
+    {
+      "name": "remote pull-through miss: oras manifest fetch + blob fetch of ghcr.io/oras-project/oras:v1.3.4",
+      "status": "pass",
+      "duration_ms": 13901,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through hit: manifest by digest served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 1864,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: oras login with invalid credentials rejected",
+      "status": "fail",
+      "duration_ms": 15240,
+      "detail": "expected failure but command succeeded: Login Succeeded\n",
+      "output_tail": "Login Succeeded\n"
+    },
+    {
+      "name": "auth denial: unauthenticated manifest fetch returns 401",
+      "status": "pass",
+      "duration_ms": 21,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 81364,
+  "summary": {
+    "fail": 1,
+    "pass": 8,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["caa1a2b8:200", "a38c83e8:200"]
+}

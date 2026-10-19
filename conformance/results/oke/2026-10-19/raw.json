@@ -1,0 +1,113 @@
+{
+  "format": "raw",
+  "target": "oke",
+  "run_id": "0c44be",
+  "started": "2026-10-18T23:03:57Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "curl": {
+      "image": "curlimages/curl:8.11.1",
+      "reported_version": "curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0",
+      "pinned_ref": "curl"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1010,
+      "detail": "",
+      "output_tail": "curl 8.11.1 (aarch64-unknown-linux-musl) libcurl/8.11.1 OpenSSL/3.3.2 zlib/1.3.1 brotli/1.1.0 zstd/1.5.6 libidn2/2.3.7 libpsl/0.21.5 libssh2/1.11.1 nghttp2/1.64.0\n"
+    },
+    {
+      "name": "publish: curl PUT kcdemo/0c44be/payload.bin",
+      "status": "pass",
+      "duration_ms": 1562,
+      "detail": "",
+      "output_tail": "201\n"
+    },
+    {
+      "name": "consume: curl GET returns identical bytes, HEAD and Range work",
+      "status": "pass",
+      "duration_ms": 847,
+      "detail": "",
+      "output_tail": "HTTP/2 200 \r\n10\n"
+    },
+    {
+      "name": "same-endpoint write then read: PUT a second key and read it back",
+      "status": "pass",
+      "duration_ms": 726,
+      "detail": "",
+      "output_tail": "second-0c44be\n"
+    },
+    {
+      "name": "immutability: PUT different bytes at an existing key conflicts (409)",
+      "status": "pass",
+      "duration_ms": 552,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "sccache WebDAV: cold compile writes, warm compile hits the feed",
+      "status": "pass",
+      "duration_ms": 5381,
+      "detail": "",
+      "output_tail": "Compile requests                      6\nCompile requests executed             1\nCache hits                            0\nCache misses                          1\nCache misses (Rust)                   1\nCache hits rate                    0.00 %\nCache hits rate (Rust)             0.00 %\nCache timeouts                        0\nCache read errors                     0\nForced recaches                       0\nCache write errors                    0\nCache errors                          0\nCompilations                          1\nCompilation failures                  0\nNon-cacheable compilations            0\nNon-cacheable calls                   5\nNon-compilation calls                 0\nUnsupported compiler calls            0\nAverage cache write               0.342 s\nAverage compiler                  0.160 s\nCache hits                             1\n"
+    },
+    {
+      "name": "delete: curl DELETE key then GET returns 404",
+      "status": "pass",
+      "duration_ms": 525,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API delete of second.txt",
+      "status": "pass",
+      "duration_ms": 87,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: curl GET raw.githubusercontent.com/golang/go/go1.22.0/LICENSE via feed",
+      "status": "pass",
+      "duration_ms": 889,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through hit: same bytes served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 907,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: invalid token rejected by curl",
+      "status": "pass",
+      "duration_ms": 324,
+      "detail": "",
+      "output_tail": "curl: (22) The requested URL returned error: 401\n"
+    },
+    {
+      "name": "auth denial: unauthenticated PUT rejected",
+      "status": "pass",
+      "duration_ms": 15,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"NX7YKU6RVMXEZTLT6FAISARJRR\"}\n"
+    }
+  ],
+  "duration_ms": 13141,
+  "summary": {
+    "fail": 0,
+    "pass": 12,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["9d673cc9:200", "ee4e133d:200"]
+}

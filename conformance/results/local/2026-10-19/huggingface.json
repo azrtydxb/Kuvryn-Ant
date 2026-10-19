@@ -1,0 +1,92 @@
+{
+  "format": "huggingface",
+  "target": "local",
+  "run_id": "d0bf40",
+  "started": "2026-10-18T23:28:35Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "python": {
+      "image": "python:3.14",
+      "reported_version": "huggingface_hub 2.2.0",
+      "pinned_ref": "pip 26.2.1, twine 7.0.0, conan 2.33.0, huggingface-hub 2.2.0, ansible-core 2.21.5 (pinned by pip in a venv under /work)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 23190,
+      "detail": "",
+      "output_tail": "huggingface_hub 2.2.0\n"
+    },
+    {
+      "name": "publish: PUT ant-upload + POST ant-commit (admin ingestion; the hub commit API is not implemented)",
+      "status": "pass",
+      "duration_ms": 129,
+      "detail": "",
+      "output_tail": "{\"files\":2,\"refs\":[\"main\"],\"sha\":\"71b9b7b1ec2d71474efbfe5bc744fbb30680d04c\"}"
+    },
+    {
+      "name": "consume: hf download config.json and snapshot_download from the feed",
+      "status": "fail",
+      "duration_ms": 4644,
+      "detail": "exit status 1: \u001b[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.\u001b[0m\n\u001b[32m✓ Downloaded\u001b[0m\n  path: /work/dl/config.json\nTraceback (most recent call last):\n  File \"\u003cstring\u003e\", line 1, in \u003cmodule\u003e\n    from huggingface_hub import snapshot_download as s; p=s('kcdemo/model-d0bf40', cache_dir='/work/hfsnap'); import os; print(sorted(os.listdir(p)))\n                                                          ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/utils/_validators.py\", line 89, in _inner_fn\n    return fn(*args, **kwargs)\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/utils/_http.py\", line 276, in _inner\n    return fn(*args, **kwargs)\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/_snapshot_download.py\", line 292, in snapshot_download\n    for f in api.list_repo_tree(\n             ~~~~~~~~~~~~~~~~~~^\n        repo_id=repo_id, recursive=True, revision=commit_hash, repo_type=repo_type\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/hf_api.py\", line 3970, in list_repo_tree\n    yield (RepoFile(**path_info) if path_info[\"type\"] == \"file\" else RepoFolder(**path_info))\n           ~~~~~~~~^^^^^^^^^^^^^\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/hf_api.py\", line 697, in __init__\n    lfs = BlobLfsInfo(size=lfs[\"size\"], sha256=lfs[\"oid\"], pointer_size=lfs[\"pointerSize\"])\n                                               ~~~^^^^^^^\nKeyError: 'oid'\n",
+      "output_tail": "\u001b[90mHint: The `hf-cli` skill is not installed. Run `hf skills add -g` to teach your AI agents how to use the `hf` CLI.\u001b[0m\n\u001b[32m✓ Downloaded\u001b[0m\n  path: /work/dl/config.json\nTraceback (most recent call last):\n  File \"\u003cstring\u003e\", line 1, in \u003cmodule\u003e\n    from huggingface_hub import snapshot_download as s; p=s('kcdemo/model-d0bf40', cache_dir='/work/hfsnap'); import os; print(sorted(os.listdir(p)))\n                                                          ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/utils/_validators.py\", line 89, in _inner_fn\n    return fn(*args, **kwargs)\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/utils/_http.py\", line 276, in _inner\n    return fn(*args, **kwargs)\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/_snapshot_download.py\", line 292, in snapshot_download\n    for f in api.list_repo_tree(\n             ~~~~~~~~~~~~~~~~~~^\n        repo_id=repo_id, recursive=True, revision=commit_hash, repo_type=repo_type\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/hf_api.py\", line 3970, in list_repo_tree\n    yield (RepoFile(**path_info) if path_info[\"type\"] == \"file\" else RepoFolder(**path_info))\n           ~~~~~~~~^^^^^^^^^^^^^\n  File \"/work/hv/lib/python3.14/site-packages/huggingface_hub/hf_api.py\", line 697, in __init__\n    lfs = BlobLfsInfo(size=lfs[\"size\"], sha256=lfs[\"oid\"], pointer_size=lfs[\"pointerSize\"])\n                                               ~~~^^^^^^^\nKeyError: 'oid'\n"
+    },
+    {
+      "name": "same-endpoint write then read: second commit, new revision visible to the client",
+      "status": "pass",
+      "duration_ms": 5435,
+      "detail": "",
+      "output_tail": "\u001b[32m✓ Downloaded\u001b[0m\n  path: /work/dl2/extra.txt\n"
+    },
+    {
+      "name": "delete: DELETE ant-ref/main tombstones the ref",
+      "status": "pass",
+      "duration_ms": 47,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: hf download prajjwal1/bert-tiny config.json from huggingface.co via feed",
+      "status": "pass",
+      "duration_ms": 2673,
+      "detail": "",
+      "output_tail": "\u001b[32m✓ Downloaded\u001b[0m\n  path: /work/rdl/config.json\n"
+    },
+    {
+      "name": "remote pull-through hit: cached file served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 13,
+      "detail": "",
+      "output_tail": "{\"hidden_size\": 128, \"hidden_act\": \"gelu\", \"initializer_range\": 0.02, \"vocab_size\": 30522, \"hidden_dropout_prob\": 0.1, \"num_attention_heads\": 2, \"type_vocab_size\": 2, \"max_position_embeddings\": 512, \"num_hidden_layers\": 2, \"intermediate_size\": 512, \"attention_probs_dropout_prob\": 0.1}"
+    },
+    {
+      "name": "auth denial: hf download with invalid token rejected",
+      "status": "pass",
+      "duration_ms": 1162,
+      "detail": "",
+      "output_tail": "\u001b[1m\u001b[31mError: Client error '401 Unauthorized' for url 'http://127.0.0.1:56011/feeds/cf-huggingface-local-d0bf40/huggingface/kcdemo/model-d0bf40/resolve/main/config.json' (Request ID: D53QOAMWA3PQS7IIMITO6YSW4W)\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401\u001b[0m\n\u001b[90mHint: set HF_DEBUG=1 as environment variable for full traceback.\u001b[0m\n"
+    },
+    {
+      "name": "auth denial: unauthenticated api/whoami-v2 returns 401",
+      "status": "pass",
+      "duration_ms": 1,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"QHCLEMYRKHX6HXEUVCFANLQWJJ\"}\n"
+    }
+  ],
+  "duration_ms": 37327,
+  "summary": {
+    "fail": 1,
+    "pass": 8,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["9d7c9cf2:200", "17de220e:200"]
+}

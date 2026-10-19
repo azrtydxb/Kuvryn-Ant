@@ -1,0 +1,92 @@
+{
+  "format": "oras",
+  "target": "kw",
+  "run_id": "91f7ec",
+  "started": "2026-10-18T22:15:16Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "oras": {
+      "image": "alpine:3.24.2",
+      "reported_version": "Version:        1.3.4",
+      "pinned_ref": "oras v1.3.4 (official release binary downloaded into the container; the oras image has no shell)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1421,
+      "detail": "",
+      "output_tail": "Version:        1.3.4\n"
+    },
+    {
+      "name": "publish: oras push artifact with artifact-type",
+      "status": "pass",
+      "duration_ms": 2468,
+      "detail": "",
+      "output_tail": "Preparing a.txt\nUploading 6c7fb5000c66 a.txt\nUploading 44136fa355b3 application/vnd.oci.empty.v1+json\nUploaded  6c7fb5000c66 a.txt\nUploaded  44136fa355b3 application/vnd.oci.empty.v1+json\nUploading 13dba7a41109 application/vnd.oci.image.manifest.v1+json\nUploaded  13dba7a41109 application/vnd.oci.image.manifest.v1+json\nPushed [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec:v1\nArtifactType: application/vnd.kuvryn.demo\nDigest: sha256:13dba7a411090f26bf23df0ac3ce9a07909f6f0ba91ee6f69a2fad9a07674b23\n"
+    },
+    {
+      "name": "consume: oras pull returns identical content and manifest fetch works",
+      "status": "pass",
+      "duration_ms": 1395,
+      "detail": "",
+      "output_tail": "Downloading 13dba7a41109 application/vnd.oci.image.manifest.v1+json\nProcessing  13dba7a41109 application/vnd.oci.image.manifest.v1+json\nDownloading 6c7fb5000c66 a.txt\nDownloaded  6c7fb5000c66 a.txt\nDownloaded  13dba7a41109 application/vnd.oci.image.manifest.v1+json\nPulled [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec:v1\nDigest: sha256:13dba7a411090f26bf23df0ac3ce9a07909f6f0ba91ee6f69a2fad9a07674b23\nartifact 91f7ec\n"
+    },
+    {
+      "name": "same-endpoint write then read: attach a referrer and discover it, retag and copy",
+      "status": "pass",
+      "duration_ms": 4996,
+      "detail": "",
+      "output_tail": "Preparing sbom.json\nExists    44136fa355b3 application/vnd.oci.empty.v1+json\nUploading ea75820aa8a7 sbom.json\nUploaded  ea75820aa8a7 sbom.json\nUploading fd4ccf3631b9 application/vnd.oci.image.manifest.v1+json\nUploaded  fd4ccf3631b9 application/vnd.oci.image.manifest.v1+json\nAttached to [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec@sha256:13dba7a411090f26bf23df0ac3ce9a07909f6f0ba91ee6f69a2fad9a07674b23\nDigest: sha256:fd4ccf3631b973826954f84de38fb237a3fdd342b7d539a1c70b5b5b31df55e9\nTagging [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec@sha256:13dba7a411090f26bf23df0ac3ce9a07909f6f0ba91ee6f69a2fad9a07674b23\nTagged v2\nCopied [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec:v1 =\u003e [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec:copied\nDigest: sha256:13dba7a411090f26bf23df0ac3ce9a07909f6f0ba91ee6f69a2fad9a07674b23\n"
+    },
+    {
+      "name": "delete: oras manifest delete by digest removes the manifest and its tags",
+      "status": "pass",
+      "duration_ms": 19959,
+      "detail": "",
+      "output_tail": "Deleted [registry] ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec@sha256:13dba7a411090f26bf23df0ac3ce9a07909f6f0ba91ee6f69a2fad9a07674b23\nError response from registry: failed to fetch the content of \"ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec:v1\": ant.kw.watteel.lab/cf-oras-local-91f7ec/art91f7ec:v1: not found\n"
+    },
+    {
+      "name": "remote pull-through miss: oras manifest fetch + blob fetch of ghcr.io/oras-project/oras:v1.3.4",
+      "status": "pass",
+      "duration_ms": 14847,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through hit: manifest by digest served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 1282,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: oras login with invalid credentials rejected",
+      "status": "fail",
+      "duration_ms": 2386,
+      "detail": "expected failure but command succeeded: Login Succeeded\n",
+      "output_tail": "Login Succeeded\n"
+    },
+    {
+      "name": "auth denial: unauthenticated manifest fetch returns 401",
+      "status": "pass",
+      "duration_ms": 6,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 48919,
+  "summary": {
+    "fail": 1,
+    "pass": 8,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["4254c55a:200", "c0248c00:200"]
+}

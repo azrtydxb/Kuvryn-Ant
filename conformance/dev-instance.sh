@@ -28,7 +28,7 @@ start)
 	export ANT_DATABASE_URL="host=$STATE user=ant dbname=ant_conf sslmode=disable"
 	export ANT_ROOT_KEY_FILE="$STATE/root.key" ANT_DATA_DIR="$STATE/storage" ANT_STORAGE_BACKEND=disk
 	"$STATE/ant" bootstrap conformance >"$STATE/credential.json"
-	PORT=${ANT_CONF_PORT:-$(python3 -I -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')}
+	PORT=${ANT_CONF_PORT:-$(awk 'BEGIN{srand(); print int(20000+rand()*30000)}')}
 	ANT_LISTEN="127.0.0.1:$PORT" nohup "$STATE/ant" >"$STATE/app.log" 2>&1 &
 	echo $! >"$STATE/ant.pid"
 	i=0
@@ -40,7 +40,7 @@ start)
 		}
 		sleep 0.2
 	done
-	python3 -I -c "import json,sys;print(json.load(open('$STATE/credential.json'))['token'])" >"$STATE/token"
+	sed -n 's/.*"token"[ ]*:[ ]*"\([^"]*\)".*/\1/p' "$STATE/credential.json" >"$STATE/token"
 	printf 'export ANT_BASE_URL=http://127.0.0.1:%s\nexport ANT_TOKEN_FILE=%s/token\n' "$PORT" "$STATE" >"$STATE/env"
 	cat "$STATE/env"
 	;;

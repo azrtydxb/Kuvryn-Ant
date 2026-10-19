@@ -1,0 +1,102 @@
+{
+  "format": "composer",
+  "target": "local",
+  "run_id": "d0bf40",
+  "started": "2026-10-18T23:07:52Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "composer": {
+      "image": "composer:2.10.3",
+      "reported_version": "PHP version 8.5.11 (/usr/local/bin/php)",
+      "pinned_ref": "composer 2.10.3"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 2839,
+      "detail": "",
+      "output_tail": "PHP version 8.5.11 (/usr/local/bin/php)\nRun the \"diagnose\" command to get more detailed diagnostics output.\nComposer version 2.10.3 2026-08-27 13:34:23\n"
+    },
+    {
+      "name": "publish: PUT ingest/{vendor}/{name}/{version} (admin ingestion; Composer has no native publish) 0.1.0",
+      "status": "pass",
+      "duration_ms": 56,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: composer require 0.1.0 from the feed and autoload",
+      "status": "pass",
+      "duration_ms": 1411,
+      "detail": "",
+      "output_tail": "./composer.json has been updated\nRunning composer update kcdemo/pkg-d0bf40\nLoading composer repositories with package information\nWarning: Accessing 127.0.0.1 over http which is an insecure protocol.\nUpdating dependencies\nLock file operations: 1 install, 0 updates, 0 removals\n  - Locking kcdemo/pkg-d0bf40 (0.1.0)\nWriting lock file\nInstalling dependencies from lock file (including require-dev)\nPackage operations: 1 install, 0 updates, 0 removals\n  - Downloading kcdemo/pkg-d0bf40 (0.1.0)\n  - Installing kcdemo/pkg-d0bf40 (0.1.0): Extracting archive\nGenerating autoload files\nNo security vulnerability advisories found.\n42\n"
+    },
+    {
+      "name": "same-endpoint write then read: ingest 0.1.1, composer update resolves it",
+      "status": "pass",
+      "duration_ms": 3992,
+      "detail": "",
+      "output_tail": "./composer.json has been updated\nRunning composer update kcdemo/pkg-d0bf40\nLoading composer repositories with package information\nWarning: Accessing 127.0.0.1 over http which is an insecure protocol.\nUpdating dependencies\nLock file operations: 0 installs, 1 update, 0 removals\n  - Upgrading kcdemo/pkg-d0bf40 (0.1.0 =\u003e 0.1.1)\nWriting lock file\nInstalling dependencies from lock file (including require-dev)\nPackage operations: 0 installs, 1 update, 0 removals\n  - Downloading kcdemo/pkg-d0bf40 (0.1.1)\n  - Upgrading kcdemo/pkg-d0bf40 (0.1.0 =\u003e 0.1.1): Extracting archive\nGenerating autoload files\nNo security vulnerability advisories found.\nversions : * 0.1.1\n"
+    },
+    {
+      "name": "delete: DELETE ingest/{vendor}/{name}/{version} then composer cannot resolve 0.1.1",
+      "status": "pass",
+      "duration_ms": 2439,
+      "detail": "",
+      "output_tail": "./composer.json has been updated\nRunning composer update kcdemo/pkg-d0bf40\nLoading composer repositories with package information\nWarning: Accessing 127.0.0.1 over http which is an insecure protocol.\nUpdating dependencies\nYour requirements could not be resolved to an installable set of packages.\n\n  Problem 1\n    - Root composer.json requires kcdemo/pkg-d0bf40 0.1.1 (exact version match: 0.1.1 or 0.1.1.0), found kcdemo/pkg-d0bf40[0.1.0] but it does not match the constraint.\n\n\nInstallation failed, reverting ./composer.json to its original content.\n"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 0.1.0",
+      "status": "pass",
+      "duration_ms": 5,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: composer require psr/log 3.0.0 from packagist via feed",
+      "status": "pass",
+      "duration_ms": 3245,
+      "detail": "",
+      "output_tail": "./composer.json has been updated\nRunning composer update psr/log\nLoading composer repositories with package information\nWarning: Accessing 127.0.0.1 over http which is an insecure protocol.\nUpdating dependencies\nLock file operations: 1 install, 0 updates, 0 removals\n  - Locking psr/log (3.0.0)\nWriting lock file\nInstalling dependencies from lock file (including require-dev)\nPackage operations: 1 install, 0 updates, 0 removals\n  - Downloading psr/log (3.0.0)\n  - Installing psr/log (3.0.0): Extracting archive\nGenerating autoload files\nNo security vulnerability advisories found.\n"
+    },
+    {
+      "name": "remote pull-through hit: cached dist served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 6,
+      "detail": "",
+      "output_tail": "6��\t:2��I�9:w�f}���\u0001At41R�9w�Nnr\u0017á�'P.d�AhC0\u0010Co�8�3�\u0002*�Қa\u001cl��$\u000e�V\u003e|�m^�\u0019���ո��֎�J;J��/\u003ef�\u0026��I9����zV�U#.�\u0006�f)ɘbcsm�����R����@�z��(\taUk\u0016o\"\u0026]��~ם\u001a�XɈ\u0013����\u0018%��L1�ץR�\u003cF�\u0012���f������w?���\u003e�c�\u003e;j�3�\u0000�u\u001f��Y���uy+#��\u001b����fa\u0013�����㛯9Ϛ�V�R\u0018�����\u0015PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\u0000\u0000�M�R\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0014\u0000\t\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000php-fig-log-fe5ea30/UT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�Rp��O~\u0002\u0000\u0000=\u0004\u0000\u0000\u001b\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000;\u0000\u0000\u0000php-fig-log-fe5ea30/LICENSEUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R��'�^\u0002\u0000\u0000B\u0005\u0000\u0000\u001d\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000�\u0002\u0000\u0000php-fig-log-fe5ea30/README.mdUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R����\u0018\u0001\u0000\u0000+\u0002\u0000\u0000!\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000�\u0005\u0000\u0000php-fig-log-fe5ea30/composer.jsonUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\u0000\u0000�M�R\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0018\u0000\t\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000�\u0006\u0000\u0000php-fig-log-fe5ea30/src/UT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�Rۛ���\u0000\u0000\u0000�\u0001\u0000\u0000*\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000\u003c\u0007\u0000\u0000php-fig-log-fe5ea30/src/AbstractLogger.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R �X1L\u0000\u0000\u0000`\u0000\u0000\u00004\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000�\b\u0000\u0000php-fig-log-fe5ea30/src/InvalidArgumentException.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R���\u0014�\u0000\u0000\u0000P\u0001\u0000\u0000$\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000.\t\u0000\u0000php-fig-log-fe5ea30/src/LogLevel.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R���~�\u0000\u0000\u0000/\u0001\u0000\u00000\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000D\n\u0000\u0000php-fig-log-fe5ea30/src/LoggerAwareInterface.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R\u000e\u0004�\u003e�\u0000\u0000\u0000�\u0001\u0000\u0000,\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000K\u000b\u0000\u0000php-fig-log-fe5ea30/src/LoggerAwareTrait.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R�AaH�\u0003\u0000\u0000A\r\u0000\u0000+\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000z\f\u0000\u0000php-fig-log-fe5ea30/src/LoggerInterface.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R��\f��\u0003\u0000\u0000w\u000e\u0000\u0000'\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000m\u0010\u0000\u0000php-fig-log-fe5ea30/src/LoggerTrait.phpUT\u0005\u0000\u0001�\u0014�`PK\u0001\u0002\u0000\u0000\n\u0000\u0000\u0000\b\u0000�M�R\u001e�K;�\u0001\u0000\u0000�\u0002\u0000\u0000\u0026\u0000\t\u0000\u0000\u0000\u0000\u0000\u0001\u0000\u0000\u0000\u0000\u0000R\u0014\u0000\u0000php-fig-log-fe5ea30/src/NullLogger.phpUT\u0005\u0000\u0001�\u0014�`PK\u0005\u0006\u0000\u0000\u0000\u0000\r\u0000\r\u0000�\u0004\u0000\u00000\u0016\u0000\u0000(\u0000fe5ea303b0887d5caefd3d431c3e61ad47037001"
+    },
+    {
+      "name": "auth denial: composer with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 2071,
+      "detail": "",
+      "output_tail": "./composer.json has been updated\nRunning composer update kcdemo/pkg-d0bf40\nLoading composer repositories with package information\nWarning: Accessing 127.0.0.1 over http which is an insecure protocol.\n\nInstallation failed, reverting ./composer.json to its original content.\n\nIn AuthHelper.php line 225:\n                                                                               \n  The 'http://127.0.0.1:56011/feeds/cf-composer-local-d0bf40/composer/package  \n  s.json' URL required authentication (HTTP 401).                              \n  You must be using the interactive console to authenticate                    \n                                                                               \n\nrequire [--dev] [--dry-run] [--prefer-source] [--prefer-dist] [--prefer-install PREFER-INSTALL] [--fixed] [--no-suggest] [--no-progress] [--no-update] [--no-install] [--no-audit] [--audit-format AUDIT-FORMAT] [--no-security-blocking] [--no-blocking] [--update-no-dev] [-w|--update-with-dependencies] [-W|--update-with-all-dependencies] [--with-dependencies] [--with-all-dependencies] [--ignore-platform-req IGNORE-PLATFORM-REQ] [--ignore-platform-reqs] [--prefer-stable] [--prefer-lowest] [-m|--minimal-changes] [--sort-packages] [-o|--optimize-autoloader] [-a|--classmap-authoritative] [--apcu-autoloader] [--apcu-autoloader-prefix APCU-AUTOLOADER-PREFIX] [--] [\u003cpackages\u003e...]\n\n"
+    },
+    {
+      "name": "auth denial: unauthenticated packages.json returns 401",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"53RS6AV3GDAMH6FJ3A4RVHY374\"}\n"
+    }
+  ],
+  "duration_ms": 16105,
+  "summary": {
+    "fail": 0,
+    "pass": 10,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": [
+    "65e4613b:200",
+    "1b4342fb:200"
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "format": "pypi",
+  "target": "kw",
+  "run_id": "91f7ec",
+  "started": "2026-10-18T22:24:03Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "python": {
+      "image": "python:3.14",
+      "reported_version": "pip 26.2.1 / twine twine version 7.0.0 (readme-renderer: 46.0, requests: 2.34.2, requests- / Python 3.14.8",
+      "pinned_ref": "pip 26.2.1, twine 7.0.0, conan 2.33.0, huggingface-hub 2.2.0, ansible-core 2.21.5 (pinned by pip in a venv under /work)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 15708,
+      "detail": "",
+      "output_tail": "pip 26.2.1 / twine twine version 7.0.0 (readme-renderer: 46.0, requests: 2.34.2, requests- / Python 3.14.8\n"
+    },
+    {
+      "name": "publish: twine upload wheel + sdist 0.1.0",
+      "status": "pass",
+      "duration_ms": 32994,
+      "detail": "",
+      "output_tail": "* Getting build dependencies for sdist...\n* Building sdist...\n* Building wheel from sdist\n* Getting build dependencies for wheel...\n* Building wheel...\nUploading distributions to \nhttps://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/\nUploading kcdemo_91f7ec-0.1.0-py3-none-any.whl\n\u001b[?25l\r\u001b[2K\u001b[35m  0%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/2.9 kB\u001b[0m • \u001b[36m--:--\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25hUploading kcdemo_91f7ec-0.1.0.tar.gz\n\u001b[?25l\r\u001b[2K\u001b[35m  0%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/2.7 kB\u001b[0m • \u001b[36m--:--\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25h"
+    },
+    {
+      "name": "consume: pip install pinned 0.1.0 from the feed and import",
+      "status": "pass",
+      "duration_ms": 13369,
+      "detail": "",
+      "output_tail": "Looking in indexes: https://service:****@ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/\nCollecting kcdemo-91f7ec==0.1.0\n  Downloading kcdemo_91f7ec-0.1.0-py3-none-any.whl.metadata (177 bytes)\nDownloading kcdemo_91f7ec-0.1.0-py3-none-any.whl (1.3 kB)\nInstalling collected packages: kcdemo-91f7ec\nSuccessfully installed kcdemo-91f7ec-0.1.0\n42\n"
+    },
+    {
+      "name": "same-endpoint write then read: twine upload 0.1.1, pip resolves latest",
+      "status": "pass",
+      "duration_ms": 111848,
+      "detail": "",
+      "output_tail": "��━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.9/2.9 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25hUploading kcdemo_91f7ec-0.1.1.tar.gz\n\u001b[?25l\r\u001b[2K\u001b[35m  0%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/2.7 kB\u001b[0m • \u001b[36m--:--\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25hLooking in indexes: https://service:****@ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/\nRequirement already satisfied: kcdemo-91f7ec in ./t1/lib/python3.14/site-packages (0.1.0)\nCollecting kcdemo-91f7ec\n  Downloading kcdemo_91f7ec-0.1.1-py3-none-any.whl.metadata (177 bytes)\nDownloading kcdemo_91f7ec-0.1.1-py3-none-any.whl (1.3 kB)\nInstalling collected packages: kcdemo-91f7ec\n  Attempting uninstall: kcdemo-91f7ec\n    Found existing installation: kcdemo-91f7ec 0.1.0\n    Uninstalling kcdemo-91f7ec-0.1.0:\n      Successfully uninstalled kcdemo-91f7ec-0.1.0\nSuccessfully installed kcdemo-91f7ec-0.1.1\nVersion: 0.1.1\n"
+    },
+    {
+      "name": "edge: twine upload of a default setuptools wheel without long description",
+      "status": "fail",
+      "duration_ms": 5895,
+      "detail": "exit status 1: * Getting build dependencies for sdist...\n* Building sdist...\n* Building wheel from sdist\n* Getting build dependencies for wheel...\n* Building wheel...\nUploading distributions to \nhttps://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/\nUploading kcdemo_nodesc_91f7ec-0.1.0-py3-none-any.whl\n\u001b[?25l\r\u001b[2K\u001b[35m  0%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/2.8 kB\u001b[0m • \u001b[36m--:--\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.8/2.8 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.8/2.8 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25h\u001b[33mWARNING \u001b[0m Error during upload. Retry with the --verbose option for more details. \n\u001b[31mERROR   \u001b[0m HTTPError: 400 Bad Request from                                        \n         https://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/            \n         Bad Request                                                            \n",
+      "output_tail": "* Getting build dependencies for sdist...\n* Building sdist...\n* Building wheel from sdist\n* Getting build dependencies for wheel...\n* Building wheel...\nUploading distributions to \nhttps://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/\nUploading kcdemo_nodesc_91f7ec-0.1.0-py3-none-any.whl\n\u001b[?25l\r\u001b[2K\u001b[35m  0%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/2.8 kB\u001b[0m • \u001b[36m--:--\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.8/2.8 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.8/2.8 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25h\u001b[33mWARNING \u001b[0m Error during upload. Retry with the --verbose option for more details. \n\u001b[31mERROR   \u001b[0m HTTPError: 400 Bad Request from                                        \n         https://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/            \n         Bad Request                                                            \n"
+    },
+    {
+      "name": "delete/unlist: yank 0.1.1 wheel and sdist (PUT files/.../yanked)",
+      "status": "pass",
+      "duration_ms": 161,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: pip skips yanked 0.1.1 and resolves 0.1.0",
+      "status": "pass",
+      "duration_ms": 8713,
+      "detail": "",
+      "output_tail": "Looking in indexes: https://service:****@ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/\nCollecting kcdemo-91f7ec\n  Downloading kcdemo_91f7ec-0.1.0-py3-none-any.whl.metadata (177 bytes)\nDownloading kcdemo_91f7ec-0.1.0-py3-none-any.whl (1.3 kB)\nInstalling collected packages: kcdemo-91f7ec\nSuccessfully installed kcdemo-91f7ec-0.1.0\nVersion: 0.1.0\n"
+    },
+    {
+      "name": "delete/unlist: restore yank (DELETE .../yanked)",
+      "status": "pass",
+      "duration_ms": 126,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: DELETE files/{project}/{file} for the 0.1.1 wheel and sdist",
+      "status": "pass",
+      "duration_ms": 54,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: deleted 0.1.1 no longer resolvable (pip picks 0.1.0)",
+      "status": "pass",
+      "duration_ms": 14577,
+      "detail": "",
+      "output_tail": "Looking in indexes: https://service:****@ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/\nCollecting kcdemo-91f7ec\n  Downloading kcdemo_91f7ec-0.1.0-py3-none-any.whl.metadata (177 bytes)\nDownloading kcdemo_91f7ec-0.1.0-py3-none-any.whl (1.3 kB)\nInstalling collected packages: kcdemo-91f7ec\nSuccessfully installed kcdemo-91f7ec-0.1.0\nVersion: 0.1.0\n"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist",
+      "status": "pass",
+      "duration_ms": 104,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: pip install six==1.16.0 from pypi.org via feed",
+      "status": "pass",
+      "duration_ms": 8767,
+      "detail": "",
+      "output_tail": "Looking in indexes: https://service:****@ant.kw.watteel.lab/feeds/cf-pypi-remote-91f7ec/pypi/simple/\nCollecting six==1.16.0\n  Downloading six-1.16.0-py2.py3-none-any.whl.metadata (1.8 kB)\nDownloading six-1.16.0-py2.py3-none-any.whl (11 kB)\nInstalling collected packages: six\nSuccessfully installed six-1.16.0\n1.16.0\n"
+    },
+    {
+      "name": "remote pull-through hit: cached wheel served by feed URL with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 88,
+      "detail": "",
+      "output_tail": "�Ў�=\u003c��3��k�a6v��o\u0017sy�\u0016~�8����x8�\u001f��D\b)A��\u0005�6�m#�F����.��Ng��\u0003\u0019��\u0000���o��3bH\u001cv��\u003ebI18K��P�+���a�8Z����0+G�\u0003�Œ��{[n.Z\u0015�uG\t���/\u001a�)��8\u0015���\rV�\f/\u001b\n��BU\rf����]��1�Q\u003e��K(���Ǐ\u0001�{\u001f\u0007���#��\u001c\u000f�\u0000\u001f8��\ff�cFG��]��#�oN�[��\u0015�\u0015٨nv���Y�o�پp-��B�YH\u001d@��Ԙ��A\u0002,\b�\u0016�\n��\u0000\rP�6�s\u0010�\u001e@h��M�G^\u0016�T�t]���\u0016�]�\u001dw��O5�!\u0004�qW��qʀ����20�\u0014X�\n�^Q��gh0*^pͯ���\u001ac\u0002��\tE�����6�`Oc�M�S��\u001c�\t}�9O�I#y\u003e�$�~\u001e%It\u0018][~\u001et�2\u0003��;\u0014�6�\u0016�\u0003MP*f��*h\u000e*y�S\u000e9\u0018\\�ar����Y\b�\u001e�n6�\nN�\u0010�\u0011���\u0003E(�ce�F�;k���#���5Cs�W}\u0013��\u003c�~�\u0016����X��(�\u0026�+\u0013�`���6��GF\u0017�\u0000PK\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000Hr�R��ȝ_\u0000\u0000\u0000n\u0000\u0000\u0000\u001a\u0000\u0000\u0000six-1.16.0.dist-info/WHEEL\u000b�HM��\rK-*��ϳR0�3�rO�K-J,�/�RHJ�,.�/\u0007�Q�0�36�3��\n��/��,�\r(-J��L�R()*M�\nIL�R(�4����K�M̫��\u0018#D�\u0000PK\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000Hr�R!:�\u0018\u0006\u0000\u0000\u0000\u0004\u0000\u0000\u0000\"\u0000\u0000\u0000six-1.16.0.dist-info/top_level.txt+ά�\u0002\u0000PK\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000Hr�R.#��!\u0001\u0000\u0000�\u0001\u0000\u0000\u001b\u0000\u0000\u0000six-1.16.0.dist-info/RECORDm�ͺB@\u0000\u0000�}�2��!��\u0010㯄R�6\u003e)5W�����ߕ��\u0000��^�\u0007���\u0004��8\b���Բ\u000b�u;~k��Y�\u000e���լ��϶��|�n}�����\u0018��� *�B�\u0011���\u0016���5���ƕ�ϨO�\u0026�����2K\u0012�j�f��Ѕ�ʓ6���\u0015d%\u0010\u0017�2��(�M=���\u0014��k\u0019:z\u0017����\b�$4vr'�.�ӆg9��7�W�@T58�\u0026\u000eB۱�����o�\u001f���}z�_ijFP�$T=ɴ����\u0002\u003c�\u0011\u0010���ȫ:}ݻ�K�=\u001f甜��`�љ�+��\b��:v�1�\u0018\nD\u001b_����g�\u0001y��##؛\u0000��\u0001PK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\b\u0000=r�R����\u0001!\u0000\u0000��\u0000\u0000\u0006\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u0000\u0000\u0000\u0000six.pyPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\b\u0000Hr�R�^خw\u0002\u0000\u0000*\u0004\u0000\u0000\u001c\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��%!\u0000\u0000six-1.16.0.dist-info/LICENSEPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\b\u0000Hr�R\n��4%\u0003\u0000\u0000\u0003\u0007\u0000\u0000\u001d\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���#\u0000\u0000six-1.16.0.dist-info/METADATAPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\b\u0000Hr�R��ȝ_\u0000\u0000\u0000n\u0000\u0000\u0000\u001a\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��6'\u0000\u0000six-1.16.0.dist-info/WHEELPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\b\u0000Hr�R!:�\u0018\u0006\u0000\u0000\u0000\u0004\u0000\u0000\u0000\"\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���'\u0000\u0000six-1.16.0.dist-info/top_level.txtPK\u0001\u0002\u0014\u0003\u0014\u0000\u0000\u0000\b\u0000Hr�R.#��!\u0001\u0000\u0000�\u0001\u0000\u0000\u001b\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u0001\u0013(\u0000\u0000six-1.16.0.dist-info/RECORDPK\u0005\u0006\u0000\u0000\u0000\u0000\u0006\u0000\u0006\u0000�\u0001\u0000\u0000m)\u0000\u0000\u0000\u0000"
+    },
+    {
+      "name": "auth denial: pip with invalid token rejected",
+      "status": "pass",
+      "duration_ms": 3177,
+      "detail": "",
+      "output_tail": "WARNING: 401 Error, Credentials not correct for https://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/pip/\nLooking in indexes: https://service:****@ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/\nWARNING: 401 Error, Credentials not correct for https://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/simple/kcdemo-91f7ec/\nERROR: Could not find a version that satisfies the requirement kcdemo-91f7ec==0.1.0 (from versions: none)\nERROR: No matching distribution found for kcdemo-91f7ec==0.1.0\n"
+    },
+    {
+      "name": "auth denial: twine upload with invalid token rejected",
+      "status": "pass",
+      "duration_ms": 31837,
+      "detail": "",
+      "output_tail": "* Getting build dependencies for sdist...\n* Building sdist...\n* Building wheel from sdist\n* Getting build dependencies for wheel...\n* Building wheel...\nUploading distributions to \nhttps://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/\nUploading kcdemo_91f7ec-0.9.0.tar.gz\n\u001b[?25l\r\u001b[2K\u001b[35m  0%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m0.0/2.7 kB\u001b[0m • \u001b[36m--:--\u001b[0m • \u001b[31m?\u001b[0m\r\u001b[2K\u001b[35m100%\u001b[0m \u001b[90m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\u001b[0m \u001b[32m2.7/2.7 kB\u001b[0m • \u001b[33m00:00\u001b[0m • \u001b[31m?\u001b[0m\n\u001b[?25h\u001b[33mWARNING \u001b[0m Error during upload. Retry with the --verbose option for more details. \n\u001b[31mERROR   \u001b[0m HTTPError: 401 Unauthorized from                                       \n         https://ant.kw.watteel.lab/feeds/cf-pypi-local-91f7ec/pypi/            \n         Unauthorized                                                           \n"
+    },
+    {
+      "name": "auth denial: unauthenticated simple index returns 401",
+      "status": "pass",
+      "duration_ms": 9,
+      "detail": "",
+      "output_tail": "Unauthorized\n"
+    }
+  ],
+  "duration_ms": 247769,
+  "summary": {
+    "fail": 1,
+    "pass": 15,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["824c99fe:200", "522a0f36:200"]
+}

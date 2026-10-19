@@ -1,0 +1,106 @@
+{
+  "format": "cargo",
+  "target": "kw",
+  "run_id": "91f7ec",
+  "started": "2026-10-18T22:17:10Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "cargo": {
+      "image": "rust:1.99.1",
+      "reported_version": "cargo 1.99.1 (5f94df478 2026-08-27)",
+      "pinned_ref": "cargo 1.99.1"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1269,
+      "detail": "",
+      "output_tail": "cargo 1.99.1 (5f94df478 2026-08-27)\n"
+    },
+    {
+      "name": "publish: cargo publish 0.1.0 to feed",
+      "status": "pass",
+      "duration_ms": 1676,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-91f7ec v0.1.0 (/work/pub)\n    Packaged 4 files, 1.1KiB (770B compressed)\n   Verifying kcdemo-91f7ec v0.1.0 (/work/pub)\n   Compiling kcdemo-91f7ec v0.1.0 (/work/target/package/kcdemo-91f7ec-0.1.0)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.29s\n   Uploading kcdemo-91f7ec v0.1.0 (/work/pub)\n    Uploaded kcdemo-91f7ec v0.1.0 to registry `ant`\nnote: waiting for kcdemo-91f7ec v0.1.0 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-91f7ec v0.1.0 at registry `ant`\n"
+    },
+    {
+      "name": "consume: cargo run with dependency from feed (fresh CARGO_HOME)",
+      "status": "pass",
+      "duration_ms": 1169,
+      "detail": "",
+      "output_tail": "answer=42\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 0.1.1 then consumer resolves it",
+      "status": "pass",
+      "duration_ms": 6626,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n   Packaging kcdemo-91f7ec v0.1.1 (/work/pub)\n    Packaged 4 files, 1.1KiB (771B compressed)\n   Verifying kcdemo-91f7ec v0.1.1 (/work/pub)\n   Compiling kcdemo-91f7ec v0.1.1 (/work/target/package/kcdemo-91f7ec-0.1.1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.15s\n   Uploading kcdemo-91f7ec v0.1.1 (/work/pub)\n    Uploaded kcdemo-91f7ec v0.1.1 to registry `ant`\nnote: waiting for kcdemo-91f7ec v0.1.1 to be available at registry `ant`\nhelp: you may press ctrl-c to skip waiting; the crate should be available shortly\n   Published kcdemo-91f7ec v0.1.1 at registry `ant`\n    Updating `ant` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded kcdemo-91f7ec v0.1.1 (registry `ant`)\n└── kcdemo-91f7ec v0.1.1 (registry `ant`)\n"
+    },
+    {
+      "name": "delete/unlist: cargo yank 0.1.1",
+      "status": "pass",
+      "duration_ms": 12203,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n        Yank kcdemo-91f7ec@0.1.1\n"
+    },
+    {
+      "name": "delete/unlist: cargo yank --undo 0.1.1",
+      "status": "pass",
+      "duration_ms": 1409,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\n      Unyank kcdemo-91f7ec@0.1.1\n"
+    },
+    {
+      "name": "delete: management API delete 0.1.1",
+      "status": "pass",
+      "duration_ms": 31,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: cargo fetch/build itoa from crates.io via feed",
+      "status": "pass",
+      "duration_ms": 3698,
+      "detail": "",
+      "output_tail": "7\n"
+    },
+    {
+      "name": "remote pull-through hit: fresh CARGO_HOME fetch with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 2801,
+      "detail": "",
+      "output_tail": "    Updating `antr` index\n     Locking 1 package to highest compatible version\n Downloading crates ...\n  Downloaded itoa v1.0.11 (registry `antr`)\n"
+    },
+    {
+      "name": "auth denial: invalid token rejected by cargo",
+      "status": "pass",
+      "duration_ms": 1872,
+      "detail": "",
+      "output_tail": "    Updating `ant` index\nerror: failed to get `kcdemo-91f7ec` as a dependency of package `consumer v0.1.0 (/work/cons)`\n\nCaused by:\n  failed to load source for dependency `kcdemo-91f7ec`\n\nCaused by:\n  unable to update registry `ant`\n\nCaused by:\n  failed to get successful HTTP response from `https://ant.kw.watteel.lab/feeds/cf-cargo-local-91f7ec/cargo/config.json` (192.168.10.120), got 403\n  body:\n  {\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial: index config.json requires credentials (401)",
+      "status": "pass",
+      "duration_ms": 5,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"detail\":\"Cargo authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 32922,
+  "summary": {
+    "fail": 0,
+    "pass": 11,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["bae5d4c5:200", "05fc4e0d:200"]
+}

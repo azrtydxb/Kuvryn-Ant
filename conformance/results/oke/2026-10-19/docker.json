@@ -1,0 +1,127 @@
+{
+  "format": "docker",
+  "target": "oke",
+  "run_id": "f5a196",
+  "started": "2026-10-18T21:44:29Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "crane": {
+      "image": "gcr.io/go-containerregistry/crane:debug",
+      "reported_version": "8a72a424fdecb4caa14f2d525e5d2503331442b5",
+      "pinned_ref": "crane (F08/F16 client)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 85908,
+      "detail": "",
+      "output_tail": "8a72a424fdecb4caa14f2d525e5d2503331442b5\n"
+    },
+    {
+      "name": "publish: crane append (login + push image)",
+      "status": "pass",
+      "duration_ms": 60214,
+      "detail": "",
+      "output_tail": "\nWARNING! Your credentials are stored unencrypted in '/work/home/.docker/config.json'.\nConfigure a credential helper to remove this warning. See\nhttps://docs.docker.com/go/credential-store/\n\n2026/10/18 21:46:54 logged in via /work/home/.docker/config.json\n2026/10/18 21:46:54 base unspecified, using empty image\n2026/10/18 21:46:54 pushed blob: sha256:118e03333e6a07fbeeb5bd58e0c6308c124d3dae780e0fc95e1d1939ed7bf15e\n2026/10/18 21:46:54 pushed blob: sha256:5a8098d43bcd79aa4ea4615d9d736eb76a284f22c134e1e165c32e5e1192643e\nant.azrty.com/cf-docker-local-f5a196/demo-f5a196@sha256:44988eae9cede30b64a50706d1b259c600a01981615f7fb301c80e717bc7e366\n2026/10/18 21:46:54 ant.azrty.com/cf-docker-local-f5a196/demo-f5a196:v1: digest: sha256:44988eae9cede30b64a50706d1b259c600a01981615f7fb301c80e717bc7e366 size: 401\n"
+    },
+    {
+      "name": "consume: crane digest/manifest/pull/ls same endpoint",
+      "status": "pass",
+      "duration_ms": 101497,
+      "detail": "",
+      "output_tail": "2026/10/18 21:48:27 logged in via /work/home/.docker/config.json\nsha256:44988eae9cede30b64a50706d1b259c600a01981615f7fb301c80e717bc7e366\nsha256:5a8098d43bcd79aa4ea4615d9d736eb76a284f22c134e1e165c32e5e1192643e\n118e03333e6a07fbeeb5bd58e0c6308c124d3dae780e0fc95e1d1939ed7bf15e.tar.gz\nmanifest.json\nv1\n"
+    },
+    {
+      "name": "same-endpoint write then read: retag, platform mutate, multi-arch index",
+      "status": "pass",
+      "duration_ms": 8349,
+      "detail": "",
+      "output_tail": "2026/10/18 21:48:42 logged in via /work/home/.docker/config.json\n2026/10/18 21:48:43 ant.azrty.com/cf-docker-local-f5a196/demo-f5a196:v2: digest: sha256:44988eae9cede30b64a50706d1b259c600a01981615f7fb301c80e717bc7e366 size: 401\n2026/10/18 21:48:43 existing blob: sha256:118e03333e6a07fbeeb5bd58e0c6308c124d3dae780e0fc95e1d1939ed7bf15e\n2026/10/18 21:48:44 pushed blob: sha256:cb3bce479811f470ec1015f34b6e537b6691a8f547d034f6c263cc6dc94c17bc\n2026/10/18 21:48:44 ant.azrty.com/cf-docker-local-f5a196/demo-f5a196:arm: digest: sha256:0b8e89606045ef0e1648e98e8660aea6791466832b6c259d197024d52b7d6330 size: 401\nant.azrty.com/cf-docker-local-f5a196/demo-f5a196@sha256:0b8e89606045ef0e1648e98e8660aea6791466832b6c259d197024d52b7d6330\n2026/10/18 21:48:44 base unspecified, using empty index\n2026/10/18 21:48:44 existing manifest: sha256:44988eae9cede30b64a50706d1b259c600a01981615f7fb301c80e717bc7e366\n2026/10/18 21:48:44 existing manifest: sha256:0b8e89606045ef0e1648e98e8660aea6791466832b6c259d197024d52b7d6330\n2026/10/18 21:48:44 ant.azrty.com/cf-docker-local-f5a196/demo-f5a196:multi: digest: sha256:d5f830f2d310d17aaa324beace5270fd1eca945654e7a78ea32e9f617645b512 size: 558\nant.azrty.com/cf-docker-local-f5a196/demo-f5a196@sha256:d5f830f2d310d17aaa324beace5270fd1eca945654e7a78ea32e9f617645b512\n"
+    },
+    {
+      "name": "delete: crane delete manifest by tag, tag no longer resolves",
+      "status": "pass",
+      "duration_ms": 5610,
+      "detail": "",
+      "output_tail": "2026/10/18 21:48:50 logged in via /work/home/.docker/config.json\n2026/10/18 21:48:50 HEAD request failed, falling back on GET: HEAD https://ant.azrty.com/v2/cf-docker-local-f5a196/demo-f5a196/manifests/v2: unexpected status code 404 Not Found (HEAD responses have no body, use GET for details)\nError: GET https://ant.azrty.com/v2/cf-docker-local-f5a196/demo-f5a196/manifests/v2: MANIFEST_UNKNOWN: manifest not found\n"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist",
+      "status": "pass",
+      "duration_ms": 174,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss via mirror.gcr.io: crane digest+pull of library/hello-world",
+      "status": "pass",
+      "duration_ms": 45486,
+      "detail": "",
+      "output_tail": "2026/10/18 21:48:56 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+    },
+    {
+      "name": "remote pull-through hit via mirror.gcr.io: pull by digest with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 3406,
+      "detail": "",
+      "output_tail": "2026/10/18 21:49:39 logged in via /work/home/.docker/config.json\nsha256:e2ac70e7319a02c5a477f5825259bd118b94e8b02c279c67afa63adab6d8685b\n4f55086f7dd096d48b0e49be066971a8ed996521c2e190aa21b2435a847198b4.tar.gz\nmanifest.json\n"
+    },
+    {
+      "name": "remote pull-through miss via registry-1.docker.io: crane digest+pull of library/hello-world",
+      "status": "fail",
+      "duration_ms": 12658,
+      "detail": "exit status 1: 2026/10/18 21:49:41 logged in via /work/home/.docker/config.json\n2026/10/18 21:49:42 retrying HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:44 retrying HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:47 retrying HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:47 HEAD request failed, falling back on GET: HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:47 retrying GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:49 retrying GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:52 retrying GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n",
+      "output_tail": "2026/10/18 21:49:41 logged in via /work/home/.docker/config.json\n2026/10/18 21:49:42 retrying HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:44 retrying HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:47 retrying HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:47 HEAD request failed, falling back on GET: HEAD https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: unexpected status code 503 Service Unavailable (HEAD responses have no body, use GET for details)\n2026/10/18 21:49:47 retrying GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:49 retrying GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n2026/10/18 21:49:52 retrying GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\nError: GET https://ant.azrty.com/v2/cf-docker-hub-f5a196/library/hello-world/manifests/latest: UNKNOWN: registry unavailable\n"
+    },
+    {
+      "name": "remote pull-through hit via registry-1.docker.io: pull by digest with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "prerequisite step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: invalid token rejected by crane",
+      "status": "pass",
+      "duration_ms": 1442,
+      "detail": "",
+      "output_tail": "2026/10/18 21:49:54 HEAD request failed, falling back on GET: HEAD https://ant.azrty.com/v2/cf-docker-local-f5a196/demo-f5a196/manifests/v1: unexpected status code 401 Unauthorized (HEAD responses have no body, use GET for details)\nError: GET https://ant.azrty.com/v2/cf-docker-local-f5a196/demo-f5a196/manifests/v1: UNAUTHORIZED: authentication required\n"
+    },
+    {
+      "name": "auth denial: /v2/ without or with bad token returns 401",
+      "status": "fail",
+      "duration_ms": 18,
+      "detail": "GET /v2/ -\u003e 200, want [401]: {}",
+      "output_tail": "{}"
+    },
+    {
+      "name": "auth denial on cf-docker-remote-f5a196: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 20,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    },
+    {
+      "name": "auth denial on cf-docker-hub-f5a196: no credentials rejected",
+      "status": "pass",
+      "duration_ms": 18,
+      "detail": "",
+      "output_tail": "{\"errors\":[{\"code\":\"UNAUTHORIZED\",\"message\":\"registry authentication required\"}]}\n"
+    }
+  ],
+  "duration_ms": 325297,
+  "summary": {
+    "fail": 2,
+    "pass": 11,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["9339820c:200", "d9573943:200", "382ed6aa:200"]
+}

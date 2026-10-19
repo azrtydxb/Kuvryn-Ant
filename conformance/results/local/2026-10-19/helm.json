@@ -1,0 +1,120 @@
+{
+  "format": "helm",
+  "target": "local",
+  "run_id": "d0bf40",
+  "started": "2026-10-18T23:04:18Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "helm": {
+      "image": "alpine/helm:4.3.1",
+      "reported_version": "v4.3.1+gc0d08d0",
+      "pinned_ref": "helm v4.3.1"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 285,
+      "detail": "",
+      "output_tail": "v4.3.1+gc0d08d0\n"
+    },
+    {
+      "name": "publish: helm package, then POST charts/{name}/{version} (ChartMuseum-style)",
+      "status": "pass",
+      "duration_ms": 427,
+      "detail": "",
+      "output_tail": "{\"digest\":\"60bae8eb932e3891b1017f6a2c6ace1926014354a5393b0ea704db0b0df24909\",\"name\":\"kcdemod0bf40\",\"provenanceStored\":false,\"signatureVerified\":false,\"version\":\"0.1.0\"}\n"
+    },
+    {
+      "name": "consume: helm repo add/update, search, pull and template the chart",
+      "status": "pass",
+      "duration_ms": 362,
+      "detail": "",
+      "output_tail": "ant/kcdemod0bf40\t0.1.0        \t0.1.0      \tA Helm chart for Kubernetes\n/work/pulled/kcdemod0bf40-0.1.0.tgz\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 0.1.1, helm repo update, pull latest",
+      "status": "pass",
+      "duration_ms": 614,
+      "detail": "",
+      "output_tail": "/work/pulled2/kcdemod0bf40-0.1.1.tgz\n"
+    },
+    {
+      "name": "delete: DELETE charts/{name}/{version} then index no longer lists 0.1.1",
+      "status": "pass",
+      "duration_ms": 308,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 0.1.0",
+      "status": "pass",
+      "duration_ms": 7,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "helm push: registry login and helm push oci://",
+      "status": "pass",
+      "duration_ms": 572,
+      "detail": "",
+      "output_tail": "Pushed: 127.0.0.1:56011/cf-helm-helmoci-d0bf40/kcdemod0bf40:0.2.0\nDigest: sha256:1846cf63c611134e40f748ee658c75a0aa3cee6344db2838411b1d0635fbb8ef\n"
+    },
+    {
+      "name": "helm pull oci:// of the pushed chart",
+      "status": "pass",
+      "duration_ms": 350,
+      "detail": "",
+      "output_tail": "Pulled: 127.0.0.1:56011/cf-helm-helmoci-d0bf40/kcdemod0bf40:0.2.0\nDigest: sha256:1846cf63c611134e40f748ee658c75a0aa3cee6344db2838411b1d0635fbb8ef\n/work/ocipull/kcdemod0bf40-0.2.0.tgz\n"
+    },
+    {
+      "name": "remote pull-through miss: helm pull podinfo 6.15.0 from stefanprodan.github.io/podinfo via feed",
+      "status": "pass",
+      "duration_ms": 809,
+      "detail": "",
+      "output_tail": "/work/rp/podinfo-6.15.0.tgz\n"
+    },
+    {
+      "name": "remote pull-through hit: cached chart served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 10,
+      "detail": "",
+      "output_tail": "����~���I�5��erC�\u000b�y\u0019�58q��k�G����L�\u0013\u0004���\u003el\u0005��v\u001fӷ\u0005��o\u001f�l\u0006.����n�~��U��㼨��/�\u0006���\u001e�Lw�\u0014��y\u003c\\�\u0004\u0000EF}��l��u�E�~\u001f�\u0000� Ș�\u0011?��\u000f-{ΰ\u0015�;�ׇ��\u0015�\u0011�?��\u003c\u0003����\u001c(�-ቬ\u003e�� \u0000s����\u001fN�_�\u0001���;NS~cϩ���ZSD��\nO\u0012\u0006V�i��|��\u0016p\u0001�B�\u000f\u001f\u003e�7\u0015Oe\u001f\u003e�~��k�\u0007�\"N�\u0000�\u003e�~��e`���\u0017�^��\u001dz1��K\u0017/܇ׯ_��/,�}(��E��\u0001�X\u0003���Q;'�a�n�̰1�/\u0015\\��������vX�V�f?�*ǯy�+��\u0002�4�\u00115�@����\u0002���\u0001�y\u0011A\u001e�h�J\u003ep\u0015��\u000e�%�@Ųa�\u001aTU��\b\u0005U\u00269��`Pr\u0017ilP�I\tއd�km����1u溦Y5᎙\u001c��\u0001�%��.\u0010�݈(�տ�\u0026�(�\u001asi`�#Σ���ݐ\u0001� 5�nn\u0006o�t��\u0017�c��c������K\u0003(1\u0016��tD#/�\u0001\u0013��\u001d_����������O'��\u0010��ejm��G٤�\u001af��,�nX\u0002��u)o$���7\u001aD�.;�\u0011�w\u0026Y�^�\\*\\:H��3����\u0003(J��������\u001cn\u0004^\u0019d��^�VL\u001a�\u001c��\u001e��,\u0007`�]�a\u001fS0�q\u0014|\u0005��{�*$��m��*��9ȡ\u000b�^�F\nuզ�w�h��(A�I���9�\t�\u001c7kcJK����I��`��\u0026��E\u0014�a\u000fA$�T�i4�H�\u0010e������64\u001a�Ls�R������^�\rko��6���\"�R5�w熖�߼B���/�IDRE�\u0006�QS\rIe^b���\u0016\u0001f�@��VS\u000b\u0002LIЄ6_tc!'�_u^uzAP\u000e�2C��M����Қ9�r�a\u001d,{�E�%�[JL�P6\u001f\u001b5��=6�Y�^z%U��\u001c�װ\u0016\\�\u001a�\u0014TB�P��Z�Rj��\u0011W�J�\r�������-+\u001d����H\u001f�[�$�;�/\u0017�\u001a\u001c�P�i�n�䀌w#\u001ebڻ��Jv]\u0012�vB�\u001d\u00177,\u0019u��v7�4J�\u003c��\n�\u0006m�c�Z���\fQ)d�\u000fɈ%�A���e��ء�����9\u000b�?r�����[,�\u001a�b�[\u0019\u0011��\rE��l'�LҘ�7*ٵ\u0012�e\u0015\u001b�АA�\u0017���n�k��*���\u0007����T�B9�\u0000��z��[������\u001f�\u0012m���d#ٹy��\u001ce,��\u001b���\u0006�b���y�y�/��ޙM\u001ak�{ٝF�Y��񤷷��$\\6l wPQt[֎8�\u0010��p��M�:3�\u001a\u000b��Z����R�\u0019x��\u0004w,A\u0026\rr1'ǵŻ��\u001d�����h��\u0003�Ih�\n��]`\u0002��G�B5�\u0017*LS���[\u000b������\\x}�ړ��8�w\u0014t\u001bƞ5P[�\u000b�{�oXIr��(ηz�I����\u001b�\u0007�IGb��d\u000e�a݊���'06Y��䄐�\r�\n�9�\u003e\u003e}w�?\u0017���Ǘ�ίO/�]_\u001e\u001c\u001e_�;\u003e;�8?9�\u000e�\u003c\\��1�\u0015���;[/[~coޞ^�\\�\u001e�������U�����u\u0010�{\u001a\u0006��f��O�\to\u003e�}�N�,#\u00034ߏ9��χ�k�lH�i\u0018ӵ\u001c�Z�\u0019P\u0019��ۀD,�\u0002B�\u0004S��G�R���}��O�X���=|k\r�뱠r���\u000f;�\u001e7إ�ޛVR*\u0018JP�t\u000f���~e\u0010�\"Be���,�b�̂��(��{���k�������y~�\u0015��\u001b\u0000\u0000���z?\u0017\u0000p\u0001\u0000"
+    },
+    {
+      "name": "auth denial: helm repo add with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 252,
+      "detail": "",
+      "output_tail": "Error: looks like \"http://127.0.0.1:56011/feeds/cf-helm-local-d0bf40/helm\" is not a valid chart repository or cannot be reached: failed to fetch http://127.0.0.1:56011/feeds/cf-helm-local-d0bf40/helm/index.yaml : 401 Unauthorized\n"
+    },
+    {
+      "name": "auth denial: helm registry login with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 552,
+      "detail": "",
+      "output_tail": "Error: authenticating to \"127.0.0.1:56011\": GET \"http://127.0.0.1:56011/v2/\": response status code 401: unauthorized: registry authentication required\n"
+    },
+    {
+      "name": "auth denial: unauthenticated index.yaml returns 401",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"O2DGRZIM5WRHNPQFFRLH2QM4SX\"}\n"
+    }
+  ],
+  "duration_ms": 4593,
+  "summary": {
+    "fail": 0,
+    "pass": 13,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["c1bf34f5:200", "90984fc2:200", "fd914e59:200"]
+}

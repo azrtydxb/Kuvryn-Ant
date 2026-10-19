@@ -1,0 +1,99 @@
+{
+  "format": "swift",
+  "target": "kw",
+  "run_id": "ca6517",
+  "started": "2026-10-19T00:09:15Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "swift": {
+      "image": "swift:6.4.1",
+      "reported_version": "Swift version 6.4.1 (swift-6.4.1-RELEASE)",
+      "pinned_ref": "swift 6.4.1"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 4189,
+      "detail": "",
+      "output_tail": "Swift version 6.4.1 (swift-6.4.1-RELEASE)\n"
+    },
+    {
+      "name": "publish: swift package-registry publish kcdemo.Libca6517 1.0.0 (native client)",
+      "status": "fail",
+      "duration_ms": 59488,
+      "detail": "exit status 134: Object 0xffff9400bd80 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:    86 Aborted                    swift package-registry login https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --token \"$TOKEN\" --no-confirm \u003e /dev/null\nObject 0xffffac06b950 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:   105 Aborted                    swift package-registry publish kcdemo.Libca6517 1.0.0 --url https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --scratch-directory /work/scratch\n",
+      "output_tail": "Object 0xffff9400bd80 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:    86 Aborted                    swift package-registry login https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --token \"$TOKEN\" --no-confirm \u003e /dev/null\nObject 0xffffac06b950 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:   105 Aborted                    swift package-registry publish kcdemo.Libca6517 1.0.0 --url https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --scratch-directory /work/scratch\n"
+    },
+    {
+      "name": "publish: PUT {scope}/{name}/{version} multipart (source-archive + metadata) 1.0.1",
+      "status": "pass",
+      "duration_ms": 606,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: swift package resolve with an id: dependency from the registry",
+      "status": "fail",
+      "duration_ms": 43334,
+      "detail": "exit status 1: Object 0xffff840327e0 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:    85 Aborted                    swift package-registry login https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --token \"$TOKEN\" --no-confirm \u003e /dev/null\nwarning: 'cons': failed loading cached manifest for 'cons': attempt to write a readonly database\nerror: failed fetching kcdemo.Libca6517 releases list from https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift: server error 401: authentication required\n",
+      "output_tail": "Object 0xffff840327e0 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:    85 Aborted                    swift package-registry login https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --token \"$TOKEN\" --no-confirm \u003e /dev/null\nwarning: 'cons': failed loading cached manifest for 'cons': attempt to write a readonly database\nerror: failed fetching kcdemo.Libca6517 releases list from https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift: server error 401: authentication required\n"
+    },
+    {
+      "name": "same-endpoint write then read: release list, metadata and source archive over the registry API",
+      "status": "pass",
+      "duration_ms": 52,
+      "detail": "",
+      "output_tail": "PK\u0003\u0004\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0017\u0000\t\u0000Libca6517/Package.swiftUT\u0005\u0000\u0001�\u0000�e��W(.�L+�-���)�-K-*��ϳ2ճ���-�/*Q\bHL�NLOuI-N.�,(�����I-Q(�\b+��\u0014h�%��Z)(�d\u0026%'��\u001a�+�(\u0014\u0014委\u0026�\u0014[)D��d\u0026\u0015%\u0016UbSV�X��\nV��;V3\u0016YF\u000f�\bS�f�\u0026\u0017`\u0000PK\u0007\b�\r\u0005ك\u0000\u0000\u0000�\u0000\u0000\u0000PK\u0003\u0004\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000#\u0000\t\u0000Libca6517/Sources/Libca6517/a.swiftUT\u0005\u0000\u0001�\u0000�e\u0000\u0017\u0000��public let answer = 42\n\u0003\u0000PK\u0007\b=�6�\u001e\u0000\u0000\u0000\u0017\u0000\u0000\u0000PK\u0001\u0002\u0014\u0003\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X�\r\u0005ك\u0000\u0000\u0000�\u0000\u0000\u0000\u0017\u0000\t\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000��\u0000\u0000\u0000\u0000Libca6517/Package.swiftUT\u0005\u0000\u0001�\u0000�ePK\u0001\u0002\u0014\u0003\u0014\u0000\b\u0000\b\u0000\u0000\u0000!X=�6�\u001e\u0000\u0000\u0000\u0017\u0000\u0000\u0000#\u0000\t\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000���\u0000\u0000\u0000Libca6517/Sources/Libca6517/a.swiftUT\u0005\u0000\u0001�\u0000�ePK\u0005\u0006\u0000\u0000\u0000\u0000\u0002\u0000\u0002\u0000�\u0000\u0000\u0000I\u0001\u0000\u0000\u0000\u0000"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 1.0.1",
+      "status": "pass",
+      "duration_ms": 72,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: DELETE {scope}/{name}/{version}",
+      "status": "pass",
+      "duration_ms": 24,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through: swift registry adapter has no remote source support",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "not supported: internal/swiftrepo has no PullThrough hook (docs/implementation/pull-through.md lists no swift)",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: package resolve with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 30511,
+      "detail": "",
+      "output_tail": "Object 0xffff8000f9d0 of class _MultiHandle deallocated with non-zero retain count 2. This object's deinit, or something called from it, may have created a strong reference to self which outlived deinit, resulting in a dangling reference.\nbash: line 1:    85 Aborted                    swift package-registry login https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift --token \"$BADTOKEN\" --no-confirm \u003e /dev/null\nerror: failed fetching kcdemo.Libca6517 releases list from https://ant.kw.watteel.lab/feeds/cf-swift-local-ca6517/swift: server error 401: authentication required\n"
+    },
+    {
+      "name": "auth denial: unauthenticated release list returns 401",
+      "status": "pass",
+      "duration_ms": 37,
+      "detail": "",
+      "output_tail": "{\"detail\":\"authentication required\",\"status\":401,\"title\":\"Unauthorized\"}\n"
+    }
+  ],
+  "duration_ms": 203494,
+  "summary": {
+    "fail": 2,
+    "pass": 7,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["2226a71b:200"]
+}

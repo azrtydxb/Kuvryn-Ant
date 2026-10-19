@@ -1,0 +1,99 @@
+{
+  "format": "go",
+  "target": "local",
+  "run_id": "6724f8",
+  "started": "2026-10-18T21:54:35Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "go": {
+      "image": "golang:1.27.2",
+      "reported_version": "go version go1.27.2 linux/arm64",
+      "pinned_ref": "go1.27.2"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 16617,
+      "detail": "",
+      "output_tail": "go version go1.27.2 linux/arm64\n"
+    },
+    {
+      "name": "publish: build module zip and PUT info/mod/zip (admin ingestion; Go has no native publish)",
+      "status": "pass",
+      "duration_ms": 32813,
+      "detail": "",
+      "output_tail": "go: creating new go.mod: module zipper\ngo: to add module requirements and sums:\n\tgo mod tidy\ngo: downloading golang.org/x/mod v0.42.0\ngo: added golang.org/x/mod v0.42.0\n"
+    },
+    {
+      "name": "consume: go get + go run via GOPROXY feed (fresh module cache)",
+      "status": "pass",
+      "duration_ms": 1328,
+      "detail": "",
+      "output_tail": "go: downloading example.com/kc/demo6724f8 v0.1.0\ngo: added example.com/kc/demo6724f8 v0.1.0\nanswer= 42\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish v0.1.1; go list -versions and @latest",
+      "status": "pass",
+      "duration_ms": 1541,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: DELETE @v/{version} bundle resource, version disappears from the list",
+      "status": "pass",
+      "duration_ms": 11,
+      "detail": "",
+      "output_tail": "v0.1.0\n"
+    },
+    {
+      "name": "delete/unlist: management API delete v0.1.0",
+      "status": "pass",
+      "duration_ms": 16,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: go mod download github.com/google/uuid@v1.6.0 via feed",
+      "status": "pass",
+      "duration_ms": 3439,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through hit: fresh module cache download with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 729,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: invalid token rejected by go",
+      "status": "pass",
+      "duration_ms": 422,
+      "detail": "",
+      "output_tail": "go: example.com/kc/demo6724f8@v0.1.0: reading http://host.docker.internal:52426/feeds/cf-go-local-6724f8/go/example.com/kc/demo6724f8/@v/v0.1.0.info: 401 Unauthorized\n"
+    },
+    {
+      "name": "auth denial: unauthenticated list returns 401",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"MHMWJ623UOXC4GFPFWNSD5AIMB\"}\n"
+    }
+  ],
+  "duration_ms": 56963,
+  "summary": {
+    "fail": 0,
+    "pass": 10,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["597813fe:200", "e1b9d283:200"]
+}

@@ -1,0 +1,106 @@
+{
+  "format": "ansible",
+  "target": "kw",
+  "run_id": "f91492",
+  "started": "2026-10-19T01:17:24Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "python": {
+      "image": "python:3.14",
+      "reported_version": "ansible-galaxy [core 2.21.5]",
+      "pinned_ref": "pip 26.2.1, twine 7.0.0, conan 2.33.0, huggingface-hub 2.2.0, ansible-core 2.21.5 (pinned by pip in a venv under /work)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 32166,
+      "detail": "",
+      "output_tail": "ansible-galaxy [core 2.21.5]\n"
+    },
+    {
+      "name": "publish: ansible-galaxy collection build + publish 1.0.0 (native client)",
+      "status": "fail",
+      "duration_ms": 4074,
+      "detail": "exit status 1: Created collection for kcdemo.collf91492 at /work/dist/kcdemo-collf91492-1.0.0.tar.gz\nPublishing collection artifact '/work/dist/kcdemo-collf91492-1.0.0.tar.gz' to cmd_arg https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/\n[ERROR]: Error when publishing collection to cmd_arg (https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/) (HTTP Code: 400, Message: Bad Request Code: Unknown)\n",
+      "output_tail": "Created collection for kcdemo.collf91492 at /work/dist/kcdemo-collf91492-1.0.0.tar.gz\nPublishing collection artifact '/work/dist/kcdemo-collf91492-1.0.0.tar.gz' to cmd_arg https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/\n[ERROR]: Error when publishing collection to cmd_arg (https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/) (HTTP Code: 400, Message: Bad Request Code: Unknown)\n"
+    },
+    {
+      "name": "publish: POST v3/artifacts/collections with a plain multipart body (workaround for the native client's base64 encoding) 1.0.0",
+      "status": "pass",
+      "duration_ms": 473,
+      "detail": "",
+      "output_tail": "{\"task\":\"https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/v3/imports/2MPE4U5VGB6KCBTVKSLRHKKVXE/\"}"
+    },
+    {
+      "name": "consume: ansible-galaxy collection install from the feed",
+      "status": "pass",
+      "duration_ms": 2109,
+      "detail": "",
+      "output_tail": "[WARNING]: The specified collections path '/work/inst' is not part of the configured Ansible collections paths '/work/home/.ansible/collections:/usr/share/ansible/collections'. The installed collection will not be picked up in an Ansible run, unless within a playbook-adjacent collections directory.\n[WARNING]: kcdemo.collf91492:1.0.0 does not have requires_ansible metadata.\nStarting galaxy collection install process\nProcess install dependency map\nStarting collection install process\nDownloading https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/downloads/kcdemo/collf91492/1.0.0/collection.tar.gz to /work/home/.ansible/tmp/ansible-local-12f6rq5duf/tmpjo234zrn/collection-wjpcju8r\nInstalling 'kcdemo.collf91492:1.0.0' to '/work/inst/ansible_collections/kcdemo/collf91492'\nkcdemo.collf91492:1.0.0 was installed successfully\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 1.0.1 (API) and install latest",
+      "status": "pass",
+      "duration_ms": 4181,
+      "detail": "",
+      "output_tail": "[WARNING]: The specified collections path '/work/inst2' is not part of the configured Ansible collections paths '/work/home/.ansible/collections:/usr/share/ansible/collections'. The installed collection will not be picked up in an Ansible run, unless within a playbook-adjacent collections directory.\n[WARNING]: kcdemo.collf91492:1.0.1 does not have requires_ansible metadata.\nStarting galaxy collection install process\nProcess install dependency map\nStarting collection install process\nDownloading https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/downloads/kcdemo/collf91492/1.0.1/collection.tar.gz to /work/home/.ansible/tmp/ansible-local-111hu0bimk/tmpqmjm6iu7/collection-9rlt6c5a\nInstalling 'kcdemo.collf91492:1.0.1' to '/work/inst2/ansible_collections/kcdemo/collf91492'\nkcdemo.collf91492:1.0.1 was installed successfully\n"
+    },
+    {
+      "name": "delete: DELETE v3/collections/{ns}/{name}/versions/{version}",
+      "status": "pass",
+      "duration_ms": 38,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API delete 1.0.0",
+      "status": "pass",
+      "duration_ms": 64,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: ansible-galaxy install ansible.posix:1.5.4 from galaxy.ansible.com via feed",
+      "status": "fail",
+      "duration_ms": 7391,
+      "detail": "exit status 1: [WARNING]: The specified collections path '/work/rinst' is not part of the configured Ansible collections paths '/work/home/.ansible/collections:/usr/share/ansible/collections'. The installed collection will not be picked up in an Ansible run, unless within a playbook-adjacent collections directory.\n[ERROR]: Failed to download collection tar from 'cmd_arg': HTTP Error 503: Service Unavailable\nStarting galaxy collection install process\nProcess install dependency map\nStarting collection install process\nDownloading https://ant.kw.watteel.lab/feeds/cf-ansible-remote-f91492/ansible/downloads/ansible/posix/1.5.4/collection.tar.gz to /work/home/.ansible/tmp/ansible-local-12vnm52z0v/tmp4fqxk3cx/collection-i9_4lhha\n",
+      "output_tail": "[WARNING]: The specified collections path '/work/rinst' is not part of the configured Ansible collections paths '/work/home/.ansible/collections:/usr/share/ansible/collections'. The installed collection will not be picked up in an Ansible run, unless within a playbook-adjacent collections directory.\n[ERROR]: Failed to download collection tar from 'cmd_arg': HTTP Error 503: Service Unavailable\nStarting galaxy collection install process\nProcess install dependency map\nStarting collection install process\nDownloading https://ant.kw.watteel.lab/feeds/cf-ansible-remote-f91492/ansible/downloads/ansible/posix/1.5.4/collection.tar.gz to /work/home/.ansible/tmp/ansible-local-12vnm52z0v/tmp4fqxk3cx/collection-i9_4lhha\n"
+    },
+    {
+      "name": "remote pull-through hit: cached collection archive served with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "prerequisite step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: ansible-galaxy install with invalid token rejected",
+      "status": "pass",
+      "duration_ms": 1245,
+      "detail": "",
+      "output_tail": "[WARNING]: The specified collections path '/work/inst3' is not part of the configured Ansible collections paths '/work/home/.ansible/collections:/usr/share/ansible/collections'. The installed collection will not be picked up in an Ansible run, unless within a playbook-adjacent collections directory.\n[ERROR]: Error when getting the collection info for kcdemo.collf91492 from cmd_arg (https://ant.kw.watteel.lab/feeds/cf-ansible-local-f91492/ansible/) (HTTP Code: 401, Message: Unauthorized Code: Unknown)\nStarting galaxy collection install process\nProcess install dependency map\n"
+    },
+    {
+      "name": "auth denial: unauthenticated collection detail returns 401",
+      "status": "pass",
+      "duration_ms": 6,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"MT33SY3DWVOHBVCUU52YWW6752\"}\n"
+    }
+  ],
+  "duration_ms": 116915,
+  "summary": {
+    "fail": 2,
+    "pass": 8,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["66e1ea00:200", "4241b7f5:200"]
+}

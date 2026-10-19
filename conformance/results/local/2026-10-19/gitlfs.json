@@ -1,0 +1,92 @@
+{
+  "format": "gitlfs",
+  "target": "local",
+  "run_id": "1fad27",
+  "started": "2026-10-19T01:13:57Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "http://127.0.0.1:56011",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "alpine": {
+      "image": "alpine:3.24.2",
+      "reported_version": "git-lfs/3.7.1 (GitHub; linux arm64; go 1.26.9)",
+      "pinned_ref": "apk-tools of Alpine 3.24.2"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 4827,
+      "detail": "",
+      "output_tail": "git-lfs/3.7.1 (GitHub; linux arm64; go 1.26.9)\n"
+    },
+    {
+      "name": "publish: git lfs track + commit + push uploads the object through the batch API",
+      "status": "pass",
+      "duration_ms": 1770,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: fresh clone + git lfs pull downloads the exact bytes",
+      "status": "pass",
+      "duration_ms": 1977,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "same-endpoint write then read: second object pushed and fetched",
+      "status": "pass",
+      "duration_ms": 4264,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: DELETE objects/{oid} then the object cannot be downloaded",
+      "status": "pass",
+      "duration_ms": 4,
+      "detail": "",
+      "output_tail": "{\"transfer\":\"basic\",\"objects\":[{\"oid\":\"31f89b96349191c68844491d55c51dbef6ddd41b215f492a50b3de0d9c3f2771\",\"size\":200000,\"authenticated\":true,\"error\":{\"code\":404,\"message\":\"Not Found\"}}],\"hash_algo\":\"sha256\"}\n"
+    },
+    {
+      "name": "delete/unlist: management API delete of the second object",
+      "status": "pass",
+      "duration_ms": 3,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through: git-lfs adapter has no remote source support",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "not supported: internal/gitlfs README lists remote pull-through as a remaining gate",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: git lfs pull with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 1964,
+      "detail": "",
+      "output_tail": "warning: current Git remote contains credentials\nDownloading big.bin (200 KB)\nwarning: current Git remote contains credentials\nError downloading object: big.bin (31f89b9): Smudge error: Error downloading big.bin (31f89b96349191c68844491d55c51dbef6ddd41b215f492a50b3de0d9c3f2771): batch response: Authentication required: authentication required\n\nErrors logged to '/work/lfs-c4/.git/lfs/logs/20261019T011411.8014605.log'.\nUse `git lfs logs last` to view the log.\nerror: external filter 'git-lfs filter-process' failed\nfatal: big.bin: smudge filter lfs failed\nwarning: Clone succeeded, but checkout failed.\nYou can inspect what was checked out with 'git status'\nand retry with 'git restore --source=HEAD :/'\n\n"
+    },
+    {
+      "name": "auth denial: unauthenticated batch request returns 401",
+      "status": "pass",
+      "duration_ms": 0,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"7RRRC4W2GNUR6HDLLRE7EHPCWG\"}\n"
+    }
+  ],
+  "duration_ms": 79831,
+  "summary": {
+    "fail": 0,
+    "pass": 8,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["1da6a6d7:200"]
+}

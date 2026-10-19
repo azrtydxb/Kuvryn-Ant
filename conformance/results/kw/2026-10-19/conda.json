@@ -1,0 +1,106 @@
+{
+  "format": "conda",
+  "target": "kw",
+  "run_id": "ca6517",
+  "started": "2026-10-19T00:02:52Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "conda": {
+      "image": "condaforge/miniforge3:latest",
+      "reported_version": "conda 26.7.2 / mamba 2.9.0",
+      "pinned_ref": "conda and mamba of Miniforge (reference conda 26.9.3)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 1529,
+      "detail": "",
+      "output_tail": "conda 26.7.2 / mamba 2.9.0\n"
+    },
+    {
+      "name": "publish: build .tar.bz2 and PUT ingest/noarch/{file} (admin ingestion; conda has no native publish) 1.0.0",
+      "status": "pass",
+      "duration_ms": 7956,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: conda create from the feed channel installs 1.0.0",
+      "status": "pass",
+      "duration_ms": 2844,
+      "detail": "",
+      "output_tail": "Channels:\n - https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda\nPlatform: linux-aarch64\nCollecting package metadata (repodata.json): ...working... done\nSolving environment: ...working... done\n\n## Package Plan ##\n\n  environment location: /work/envs/t1\n\n  added / updated specs:\n    - kcdemo-ca6517=1.0.0\n\n\nThe following packages will be downloaded:\n\n    package                    |            build\n    ---------------------------|-----------------\n    kcdemo-ca6517-1.0.0        |                0          475 B  https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda\n    ------------------------------------------------------------\n                                           Total:          475 B\n\nThe following NEW packages will be INSTALLED:\n\n  kcdemo-ca6517      feeds/cf-conda-local-ca6517/conda/noarch::kcdemo-ca6517-1.0.0-0 \n\n\n\nDownloading and Extracting Packages: ...working... done\nPreparing transaction: ...working... done\nVerifying transaction: ...working... done\nExecuting transaction: ...working... done\n#\n# To activate this environment, use\n#\n#     $ conda activate t1\n#\n# To deactivate an active environment, use\n#\n#     $ conda deactivate\n\n"
+    },
+    {
+      "name": "consume: mamba create from the feed channel",
+      "status": "pass",
+      "duration_ms": 14410,
+      "detail": "",
+      "output_tail": "⚠ Shard Index for https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda/linux-aarch64 not available, falling back to flat repodata\nUsing Flat Repodata for https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/con...           ✔ Starting\nUsing Flat Repodata for https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/con...     ✔ Done (0.0 sec)\n⚠ Shard Index for https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda/noarch not available, falling back to flat repodata\nUsing Flat Repodata for https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/con...           ✔ Starting\nUsing Flat Repodata for https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/con...     ✔ Done (0.0 sec)\nFetch Shard Index for conda-forge/linux-aarch64                                                 ⧖ Starting\nFetch Shard Index for conda-forge/linux-aarch64                                           ✔ Done (0.1 sec)\nFetch Shard Index for conda-forge/noarch                                                        ⧖ Starting\nFetch Shard Index for conda-forge/noarch                                                  ✔ Done (0.1 sec)\nFetching and Parsing Packages' Shards                                                           ⧖ Starting\nFetching and Parsing Packages' Shards                                                     ✔ Done (0.0 sec)\nUsing Flat Repodata for conda-forge/linux-aarch64                                               ✔ Starting\nUsing Flat Repodata for conda-forge/linux-aarch64                                         ✔ Done (3.9 sec)\nUsing Cached Shard Index for conda-forge/noarch                                                     ✔ Done\nUsing Cached Shard Index for conda-forge/linux-aarch64                                              ✔ Done\nFetching and Parsing Packages' Shards                                                           ⧖ Starting\nFetching and Parsing Packages' Shards                                                     ✔ Done (0.0 sec)\nUsing Flat Repodata for conda-forge/noarch                                                      ✔ Starting\nUsing Flat Repodata for conda-forge/noarch                                                ✔ Done (4.4 sec)\nParsing Packages' Records                                                                ✔ Done (10.5 sec)\n\nResolving Environment                                                                           ⧖ Starting\nResolving Environment                                                                     ✔ Done (0.1 sec)\n\nTransaction\n\n  Prefix: /work/envs/t2\n\n  Updating specs:\n\n   - kcdemo-ca6517=1.0.0\n\n\n  Package          Version  Build  Channel                                                    Size\n────────────────────────────────────────────────────────────────────────────────────────────────────\n  Install:\n────────────────────────────────────────────────────────────────────────────────────────────────────\n\n  + kcdemo-ca6517    1.0.0  0      ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda     Cached\n\n  Summary:\n\n  Install: 1 packages\n\n  Total download: 0 B\n\n────────────────────────────────────────────────────────────────────────────────────────────────────\n\n\nwarning  libmamba Security Warning: This transaction includes executing package scripts (pre/post-link/unlink) if present. These scripts can contain arbitrary code. Please ensure you trust the package sources.\n\nTransaction starting\nLinking kcdemo-ca6517-1.0.0-0\n\nTransaction finished\n\n\nTo activate this environment, use:\n\n    mamba activate t2\n\nOr to execute a single command in this environment, use:\n\n    mamba run -n t2 mycommand\n\n"
+    },
+    {
+      "name": "same-endpoint write then read: ingest 1.0.1, conda resolves latest",
+      "status": "pass",
+      "duration_ms": 3578,
+      "detail": "",
+      "output_tail": "Retrieving notices: ...working... done\nChannels:\n - https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda\nPlatform: linux-aarch64\nCollecting package metadata (repodata.json): ...working... done\nSolving environment: ...working... done\n\n## Package Plan ##\n\n  environment location: /work/envs/t3\n\n  added / updated specs:\n    - kcdemo-ca6517\n\n\nThe following packages will be downloaded:\n\n    package                    |            build\n    ---------------------------|-----------------\n    kcdemo-ca6517-1.0.1        |                0          479 B  https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda\n    ------------------------------------------------------------\n                                           Total:          479 B\n\nThe following NEW packages will be INSTALLED:\n\n  kcdemo-ca6517      feeds/cf-conda-local-ca6517/conda/noarch::kcdemo-ca6517-1.0.1-0 \n\n\n\nDownloading and Extracting Packages: ...working... done\nPreparing transaction: ...working... done\nVerifying transaction: ...working... done\nExecuting transaction: ...working... done\n#\n# To activate this environment, use\n#\n#     $ conda activate t3\n#\n# To deactivate an active environment, use\n#\n#     $ conda deactivate\n\n"
+    },
+    {
+      "name": "delete: DELETE ingest/noarch/{file} then repodata no longer lists 1.0.1",
+      "status": "pass",
+      "duration_ms": 70,
+      "detail": "",
+      "output_tail": "{\"info\":{\"subdir\":\"noarch\"},\"packages\":{\"kcdemo-ca6517-1.0.0-0.tar.bz2\":{\"build\":\"0\",\"build_number\":0,\"depends\":[],\"license\":\"MIT\",\"name\":\"kcdemo-ca6517\",\"noarch\":\"generic\",\"sha256\":\"799c7b9f055da2bc8d28d0eb6ba518811d3ccdd4843a525b2240759b8d9baf89\",\"size\":475,\"subdir\":\"noarch\",\"version\":\"1.0.0\"}},\"packages.conda\":{},\"removed\":[],\"repodata_version\":1}"
+    },
+    {
+      "name": "delete/unlist: management API unlist then relist 1.0.0",
+      "status": "pass",
+      "duration_ms": 83,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: conda create font-ttf-inconsolata=2.000 from the conda-test channel via feed",
+      "status": "pass",
+      "duration_ms": 2380,
+      "detail": "",
+      "output_tail": "Channels:\n - https://ant.kw.watteel.lab/feeds/cf-conda-remote-ca6517/conda\nPlatform: linux-aarch64\nCollecting package metadata (repodata.json): ...working... done\nSolving environment: ...working... done\n\n## Package Plan ##\n\n  environment location: /work/envs/r1\n\n  added / updated specs:\n    - font-ttf-inconsolata=2.000\n\n\nThe following packages will be downloaded:\n\n    package                    |            build\n    ---------------------------|-----------------\n    font-ttf-inconsolata-2.000 |                0         100 KB  https://ant.kw.watteel.lab/feeds/cf-conda-remote-ca6517/conda\n    ------------------------------------------------------------\n                                           Total:         100 KB\n\nThe following NEW packages will be INSTALLED:\n\n  font-ttf-inconsol~ feeds/cf-conda-remote-ca6517/conda/noarch::font-ttf-inconsolata-2.000-0 \n\n\n\nDownloading and Extracting Packages: ...working... done\nPreparing transaction: ...working... done\nVerifying transaction: ...working... done\nExecuting transaction: ...working... done\n#\n# To activate this environment, use\n#\n#     $ conda activate r1\n#\n# To deactivate an active environment, use\n#\n#     $ conda deactivate\n\n"
+    },
+    {
+      "name": "remote pull-through hit: cached package served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 52,
+      "detail": "",
+      "output_tail": "^�R~���U\u0011'Jx38˗?�\u003c\u0007y�/������Y+1���!\u00130n��\u001d�$�lod`ͽ���c3�WLSV��\u001d���b�L����\u0006��\u0017\u0017���;�ѵ[���6\u0019�ǉ�9޳���$�\u0002\u000b��e%p��BY\u00021�2�\u0006\u001bK��$o\u0019\u001b�W.���{����7�+f\u0013\u001c�6�M�n��d�|\u0018�Gc)\u001bՌ��=\u0013{�\"�Yo��mmm���\u003e���{v̦\u000f��m�4lL7�J7a�\u0014��\u003e�\u001c�{�N���{2�|\u001c�\u001ap?K�\u0016��KF���͍�����ꎔ��y�=\u000fB�|3�\u003c���\u0010�Cg^/\u001b9d�����yp2�8��7?\u0003?��H�{��\u0010�-\n�h�]���`�\u001e�+u~���\u001d�\u0026\u0003.}\u000b\u003c֟��ޏ\u0007���e4\u0026�[Q\u000by��m\u0014�v���O\u0017e���\u000f\u000bh�\u001c^ŏ%-�[����F^|\u000f�\u0003���)nEL�\u0012�\u003c���}��5C���ONSse�q9^����\u001c��4]%�\u001a�e\u0017�lK_\u0006\u0013������8\u001c�쉧�.E,4|�9׳Z\u001d��2��{}�rպ�4��/T���0���\u003ek\u0014��c\u0006*ؾݘ�;���$�f)0U~�ق�o8���VN�\u003c��\u0017]��7�����{/���z�J�⤬y�����¸\u0016�X�Xo\f9\u0011\u003e�\u0016�\u001a����ρQ�s�W�\u000eO\u0006;��q}�[�Rg�\\�ʣ7/3�����ޒ�祂�xT:����Sw���Δ??�����\u001d��\u0013E��{�����n��u�IJܧ�)#l\u000e���V;\u000e�y���\u0005�\u0019��+n˹5+)a�V���\u003e�X;F�Y6\u0002����\u0014�?�c?�3^G�m��F)�K���kS\u0012\u000eR\t\"�h\u0000\u0012\u0010F�\u0001\u000e������HH�僀�\u000b�(�?^�IsqE5\u0005d\u0013\f\u0001�CW\u0015����\u001b)\u0012\u0002�����Y_�L:\rq]g��ݛ!���\u001b#:\u000f\u0007\t�e\u000f�\u0010�\u0010�\u0011�\u001c�K~\u0013*�u�g@��iW@�:|\u0000��}�\u000ep��殕�w�.Z�\u001c6\u0003k���-v�o[S|6\u003ck�b0A�\t+�L\"x,�����~��\u0012\u0012\u0012\u00168��.~O�I�\rV:��#�o����;\u000b��Gy��\\\t�߸�P���\\�R�)�Q���w��K�j\u001e��^+�j�]�����y\u000b\u0010�\u001a\u001bӱ*繎�Q�^4`�\u001c߿[Fv\\��\u001e3\u0004�����!\u0026�d�\u000fj����)��W��T�Y��$d\u0007�\u0005*��\u0014�\u0018V��b#��$\u001av\\[h�\u003e\"\\���?��Ϧ:��\u001c\\\u000f�g\u0015a�����+�7R�Qy��8}��7ǋ�ȧ%���\u001dɬͤ�'�o����\n!��.u-����\t-��6�\u0005v\\o�\\�\u000eU\u0026\u0015\u0019'�մ��t\u0016��mo�?P�~K��\u0002q�T\u0010Q?\u00075{\u0014\u0010ŕE��\u0004\u0015Z�h��\\�B�\u001bJw\u0015��b��D�q12�Mgg\u000eh���^���\u001a�rдI�F�\u001ewV��齓Z��U�UA\u0012d�\u001f\u0019\u0004t\u001c��:�hezr�#�@\u001f�(�j!,r�\u001b�ŧ\u001f��e!��o\u00139*�#�T��U�D\t�e��:���\u0019/��\u000e�\u0005#�\u0016ϡ�\u000e�Ԛ͞��j\thv\u003e�U\u0000*\f\u0012?S\u0010m���\u0013�����`\u001f�\u0015O��BH)�A\u0013��Hm�'��\u0003�� �=\u003c\b��^�!P\u00034��\u0001,\u0026\b�\u001a8/X�Q��y�\u0018�\u0010]0[A�#\u0002\u001fVø��\u0018\u001a@\u000f�a�)!��\u0000�S���\u0026)�@\u003cx�`\u0026\b�\u001c\u0016�\u0006�#�Q\u001e��w|�߬ΫQ�\u001c�l��hm6a\u0026j\u001c�\u0013G\u0019\u0013���H�\n\u0012\u00140Dh`"
+    },
+    {
+      "name": "auth denial: conda create with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 2144,
+      "detail": "",
+      "output_tail": "Channels:\n - https://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda\nPlatform: linux-aarch64\nCollecting package metadata (repodata.json): ...working... failed\n\nCondaHTTPError: HTTP 401 Unauthorized for url \u003chttps://ant.kw.watteel.lab/feeds/cf-conda-local-ca6517/conda/linux-aarch64/repodata.json\u003e\nElapsed: 00:00.026999\n\nauthentication required\n\n"
+    },
+    {
+      "name": "auth denial: unauthenticated repodata returns 401",
+      "status": "pass",
+      "duration_ms": 6,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"BWHTTX5LBM4C3LALFVBRFQEJPW\"}\n"
+    }
+  ],
+  "duration_ms": 100225,
+  "summary": {
+    "fail": 0,
+    "pass": 11,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["7ce42b57:200", "5fcb5b80:200"]
+}

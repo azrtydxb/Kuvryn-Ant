@@ -1,0 +1,106 @@
+{
+  "format": "pub",
+  "target": "kw",
+  "run_id": "ca6517",
+  "started": "2026-10-18T23:46:45Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "dart": {
+      "image": "dart:3.13.5",
+      "reported_version": "Dart SDK version: 3.13.5 (stable) (Tue Sep 29 01:00:52 2026 -0700) on \"linux_arm64\"",
+      "pinned_ref": "dart 3.13.5"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 616,
+      "detail": "",
+      "output_tail": "Dart SDK version: 3.13.5 (stable) (Tue Sep 29 01:00:52 2026 -0700) on \"linux_arm64\"\n"
+    },
+    {
+      "name": "publish: dart pub publish 0.1.0 (native)",
+      "status": "pass",
+      "duration_ms": 1745,
+      "detail": "",
+      "output_tail": "Resolving dependencies...\nDownloading packages...\nGot dependencies!\nPublishing kcdemo_ca6517 0.1.0 to https://ant.kw.watteel.lab/feeds/cf-pub-local-ca6517/pub/:\n├── CHANGELOG.md (\u003c1 KB)\n├── LICENSE (\u003c1 KB)\n├── README.md (\u003c1 KB)\n├── lib\n│   └── kcdemo_ca6517.dart (\u003c1 KB)\n└── pubspec.yaml (\u003c1 KB)\n\nTotal compressed archive size: \u003c1 KB.\nValidating package...\nPackage validation found the following potential issue:\n* It's strongly recommended to include a \"homepage\" or \"repository\" field in your pubspec.yaml\nUploading...\nMessage from server: Published\n"
+    },
+    {
+      "name": "consume: dart pub get resolves 0.1.0 from the hosted feed",
+      "status": "pass",
+      "duration_ms": 452,
+      "detail": "",
+      "output_tail": "Resolving dependencies...\nDownloading packages...\n+ kcdemo_ca6517 0.1.0\nChanged 1 dependency!\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 0.1.1, pub upgrade resolves it",
+      "status": "pass",
+      "duration_ms": 1198,
+      "detail": "",
+      "output_tail": "Resolving dependencies...\nDownloading packages...\nGot dependencies!\nPublishing kcdemo_ca6517 0.1.1 to https://ant.kw.watteel.lab/feeds/cf-pub-local-ca6517/pub/:\n├── CHANGELOG.md (\u003c1 KB)\n├── LICENSE (\u003c1 KB)\n├── README.md (\u003c1 KB)\n├── lib\n│   └── kcdemo_ca6517.dart (\u003c1 KB)\n└── pubspec.yaml (\u003c1 KB)\n\nTotal compressed archive size: \u003c1 KB.\nValidating package...\nPackage validation found the following potential issue:\n* It's strongly recommended to include a \"homepage\" or \"repository\" field in your pubspec.yaml\nUploading...\nMessage from server: Published\nResolving dependencies...\nDownloading packages...\n\u003e kcdemo_ca6517 0.1.1 (was 0.1.0)\nChanged 1 dependency!\n"
+    },
+    {
+      "name": "delete/unlist: retract 0.1.1 (PUT .../retract) then restore",
+      "status": "pass",
+      "duration_ms": 126,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete: DELETE api/packages/{pkg}/versions/{v}",
+      "status": "pass",
+      "duration_ms": 19,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API delete 0.1.0",
+      "status": "pass",
+      "duration_ms": 39,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: dart pub get meta 1.15.0 from pub.dev via feed",
+      "status": "pass",
+      "duration_ms": 2615,
+      "detail": "",
+      "output_tail": "Resolving dependencies...\nDownloading packages...\n+ meta 1.15.0 (1.19.0 available)\nChanged 1 dependency!\n1 package has newer versions incompatible with dependency constraints.\nTry `dart pub outdated` for more information.\n"
+    },
+    {
+      "name": "remote pull-through hit: cached archive served with upstream unreachable",
+      "status": "pass",
+      "duration_ms": 54,
+      "detail": "",
+      "output_tail": "~X\u0005\u0016�����˴VJhmɈ��+��\f�\u0006���\u000f��Us���v�\u0015�c\\?vv�\"Ք�K_.��)B�w�\u0016\\�o\u0002�P�7\u0000��ӣ;q�?=\"n�]�7y\u000b�ϬS�w�j�\u003cd�\u001f�8o�}Jk�\u0007�8�D\u0019�`q��\u0007��b�Q�-��gi\u0012���\u0017��_ݏ�W\u000b��2��\r{M\u001b����̧�����\u0026�d�\u0007\u0017��\u001a\u0000\u0014��܉\n�[�E!F7l������?�au���VG@v��S\u0002���\f���E2\u001e.ӳK��֦o��\u0007] �M���1E\u0002�=�ϣ11p�\u0018�՝PE���ɀ�^���ȼHݜ�N%#uC�\u0014�\n�\u000f`��\u0018^��\u0004\r�x\u0003\u003c�M~aY����k��_���3\u001c^��CQ\u0003\tlԷe%��_��׍��\t�bt�'V.\"�r�\ns|�S;�\u00009��[�+�3��{��=q��sg�u��g.��r|E�)\u0026\u0003n��v��pX{��X�9��j��d�\u001b?�����6\u001eo��.��\u001e���t�uJj�0\u001b\u0014^˚�T����sU�ّR�a�/D�{\u0019�\f�n�j�\u0000ɤ�\\%�\u001f�^]\u0019�AT|��\u00148_a\u001c%\\�$\n���D����Ѱ�\\��./\u0013\u0015Z���f6�#�k\\�ɔKg ��{'�\u0002BUs����1������[\u0026@\u0010���\u000b)\u001dg�\u0003v���\u003c�9�����ӻ\u000b�^��%���\u0005��J��lp�x�[C�w�$��vA���Cx=�rT�?�n\u0017�p\u000b��G�Ԍ�B��\u000b�R��R�W|\u000b\u001a������\u0019�A�r���)��qh�\u003e_�#a���\u00187�\u003c}���?��=\\{���?}���-��\u000b|v��uN�ꍵ�'\u001d��\u0000�\u0013%��f�!r\u0014Ї�0��s8wj\u0005*d�x\u0010�\\:|r�����]\u0005\u001d\u0016�\"6����;\u0001��V����q$����3�f��p��T\u003c\"y�\u0002������M\b\u0015�g��g�a���3��\u000ft�r�\u0007\u0026�\fb��c0\u0000\u001c��\u0007��\u0005\u0007\u0011�w����yw\u000e 0��\f\u0005d�Ŏ\u0010,\u0002�����H\u000f\u000e\"�-â���*\n\"�\u0019\u0026h�O����]z��s2:�}ws�-��#\u0005ƛׯw\u0000r��^4f��ro�|\u0010���w�CxJ*\u0001\u00003��E�\u0012\u0015j�c��e�z1��rT^QF�\u001c��\u0005��\u003cA�ˑ�R\u0026/JI�D�W{G������ۇ=\u0003�=\u003c�io��k^�b�_�����_\u000e�~|ul^\u001d���\u001d\u001e���]x�|�������Q���\u0011���~��������a���\u001c\u001c��7o_�Ag������^��c��w^������c�\u0003�p�z��f�\u0018�\u001d\u001fth��k���y�;�����\u0017{�����^�\u001d��X/\u000f\u000e[�������λ�ۇ���÷\u0007G=����;�y�����ۅ�aD����l�^m�~\u001dβu��~�\u0010A��h^�����\u0017�{8\u0010Mrwﰷs��q�\u0000�\u0000�ם�����\u001e�\u0001���\\�\u000f�H�G��z\u0007��G���f�G���\r\u0018�%�yw�{� \u0003\u001a�޽8:�;~w�3?\u001e\u001c�\u0012��z�?��:zf^\u001f\u001c\u0011��\u001d�:����m\u001a\u0018�\u0000L�����wG{�������ỷ�{\u0007�mXޟ\u0001+\u0000�6��K�=�ǩ\u0002��\u000e\u000e�N\u0011\u0007�����U\u000f�\u001f\"\u003e\tSۈ�#��α�\f�\u0003\u0004\u001e��\u001c�~���{?��wz��\u0001����Q�\rK�w�\r�hXX|\u0018�\u001dM\u0019�\b�jџ\u001e�vh!��K����\u001e�-�a����L\be;�\u0004��Ժo�o�o�\u0005��\u0007�G-�\u0000�\u0000\u0000"
+    },
+    {
+      "name": "auth denial: dart pub get with invalid token rejected",
+      "status": "pass",
+      "duration_ms": 1227,
+      "detail": "",
+      "output_tail": "Resolving dependencies...\nInvalid token for https://ant.kw.watteel.lab/feeds/cf-pub-local-ca6517/pub/ deleted.\nBecause app depends on kcdemo_ca6517 any which doesn't exist (authentication failed), version solving failed.\n\nhttps://ant.kw.watteel.lab/feeds/cf-pub-local-ca6517/pub/ package repository requested authentication!\nYou can provide credentials using:\n    dart pub token add https://ant.kw.watteel.lab/feeds/cf-pub-local-ca6517/pub/\n"
+    },
+    {
+      "name": "auth denial: unauthenticated package document returns 401",
+      "status": "pass",
+      "duration_ms": 7,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"4IJEUVAGTBNFTVZC2CPSJP7ILJ\"}\n"
+    }
+  ],
+  "duration_ms": 73295,
+  "summary": {
+    "fail": 0,
+    "pass": 11,
+    "skip": 0,
+    "unsupported": 0
+  },
+  "result": "pass",
+  "feed_cleanup": ["8260092f:200", "713c4989:200"]
+}

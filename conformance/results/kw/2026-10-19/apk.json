@@ -1,0 +1,99 @@
+{
+  "format": "apk",
+  "target": "kw",
+  "run_id": "ca6517",
+  "started": "2026-10-19T00:05:40Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.kw.watteel.lab",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "alpine": {
+      "image": "alpine:3.24.2",
+      "reported_version": "apk-tools 3.0.8-r0, compiled for aarch64.",
+      "pinned_ref": "apk-tools of Alpine 3.24.2"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 4027,
+      "detail": "",
+      "output_tail": "apk-tools 3.0.8-r0, compiled for aarch64.\n"
+    },
+    {
+      "name": "publish: abuild a noarch apk, then PUT {branch}/{repo}/{arch}/{file}.apk (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 8754,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: apk update + apk add from the signed feed index",
+      "status": "pass",
+      "duration_ms": 1791,
+      "detail": "",
+      "output_tail": "Kuvryn Ant v3.24/main/aarch64 [https://service:*@ant.kw.watteel.lab/feeds/cf-apk-local-ca6517/apk/v3.24/main]\nOK: 17 distinct packages available\n(1/1) Installing kcdemoca6517 (1.0-r0)\nOK: 8435 KiB in 17 packages\n"
+    },
+    {
+      "name": "edge: a noarch package listed in the arch index is downloadable (apk requests it under the noarch path)",
+      "status": "fail",
+      "duration_ms": 31404,
+      "detail": "exit status 1: Kuvryn Ant v3.24/main/aarch64 [https://service:*@ant.kw.watteel.lab/feeds/cf-apk-local-ca6517/apk/v3.24/main]\nOK: 18 distinct packages available\n(1/1) Installing kcdemoca6517na (1.0-r0)\nERROR: kcdemoca6517na-1.0-r0: HTTP 404: Not Found\n1 error; 8435 KiB in 16 packages\n",
+      "output_tail": "Kuvryn Ant v3.24/main/aarch64 [https://service:*@ant.kw.watteel.lab/feeds/cf-apk-local-ca6517/apk/v3.24/main]\nOK: 18 distinct packages available\n(1/1) Installing kcdemoca6517na (1.0-r0)\nERROR: kcdemoca6517na-1.0-r0: HTTP 404: Not Found\n1 error; 8435 KiB in 16 packages\n"
+    },
+    {
+      "name": "same-endpoint write then read: upload 1.1, apk add resolves it",
+      "status": "pass",
+      "duration_ms": 35613,
+      "detail": "",
+      "output_tail": "Kuvryn Ant v3.24/main/aarch64 [https://service:*@ant.kw.watteel.lab/feeds/cf-apk-local-ca6517/apk/v3.24/main]\nOK: 19 distinct packages available\n(1/1) Installing kcdemoca6517 (1.1-r0)\nOK: 8435 KiB in 17 packages\nkcdemoca6517-1.1-r0\n"
+    },
+    {
+      "name": "delete: DELETE {file}.apk then apk cannot add 1.1",
+      "status": "pass",
+      "duration_ms": 1403,
+      "detail": "",
+      "output_tail": "Kuvryn Ant v3.24/main/aarch64 [https://service:*@ant.kw.watteel.lab/feeds/cf-apk-local-ca6517/apk/v3.24/main]\nOK: 18 distinct packages available\nERROR: unable to select packages:\n  kcdemoca6517-1.0-r0:\n    breaks: world[kcdemoca6517=1.1-r0]\n"
+    },
+    {
+      "name": "delete/unlist: management API delete 1.0",
+      "status": "pass",
+      "duration_ms": 43,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through: apk adapter is local-only",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "not supported: internal/apkrepo README: local sources only, no remote/replica materialization",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: apk update with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 1691,
+      "detail": "",
+      "output_tail": "WARNING: updating and opening https://service:*@ant.kw.watteel.lab/feeds/cf-apk-local-ca6517/apk/v3.24/main/aarch64/APKINDEX.tar.gz: HTTP 401: Unauthorized\n1 unavailable, 0 stale; 16 distinct packages available\n"
+    },
+    {
+      "name": "auth denial: unauthenticated APKINDEX returns 401",
+      "status": "pass",
+      "duration_ms": 5,
+      "detail": "",
+      "output_tail": ""
+    }
+  ],
+  "duration_ms": 149824,
+  "summary": {
+    "fail": 1,
+    "pass": 8,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["6f695ec5:200"]
+}

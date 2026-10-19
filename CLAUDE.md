@@ -15,6 +15,7 @@ The shared agent contract (build/verify commands, conventions, delivery rules) l
 - Single web test: `cd web && npx vitest run src/App.test.tsx`.
 - Regenerate API code: `go generate ./api` (oapi-codegen via `api/codegen.yaml`) and `cd web && npm run generate`; `scripts/check-generated.sh` verifies without rewriting.
 - Real-client smoke test for OCI: `go run ./scripts/ocismoke` (needs crane + PostgreSQL binaries). Real-backend browser QA fixture: `go run ./cmd/qafixture start|stop`.
+- Real-client conformance for all formats (pinned client containers, results JSON + SUMMARY.md): `conformance/run.sh <local|oke|kw> [formats...]`; harness is Go (`conformance/harness`, `cmd/conformance`), see `conformance/README.md`.
 
 ## Architecture
 

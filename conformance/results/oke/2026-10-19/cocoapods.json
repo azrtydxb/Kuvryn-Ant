@@ -1,0 +1,113 @@
+{
+  "format": "cocoapods",
+  "target": "oke",
+  "run_id": "e725b4",
+  "started": "2026-10-19T01:12:05Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "ruby": {
+      "image": "ruby:4.0",
+      "reported_version": "1.17.0",
+      "pinned_ref": "ruby 4.0 with its bundled RubyGems (reference v4.0.23); CocoaPods gem pinned to 1.17.0 at run time"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 19477,
+      "detail": "",
+      "output_tail": "1.17.0\n"
+    },
+    {
+      "name": "publish: PUT pods/{Pod}/{version} (multipart podspec + source archive)",
+      "status": "pass",
+      "duration_ms": 421,
+      "detail": "",
+      "output_tail": "{\"name\":\"KcDemoe725b4\",\"sha256\":\"311809d7b4d614104dc798ceb609121e6c2fbebb55c56cf90ecfd324b0276e10\",\"url\":\"https://ant.azrty.com/feeds/cf-cocoapods-local-e725b4/cocoapods/archives/KcDemoe725b4/1.0.0/KcDemoe725b4-1.0.0.tar.gz\",\"version\":\"1.0.0\"}\n"
+    },
+    {
+      "name": "consume: pod repo add-cdn registers the feed as a CDN source",
+      "status": "pass",
+      "duration_ms": 4367,
+      "detail": "",
+      "output_tail": "Adding spec repo `ant` with CDN `https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-local-e725b4/cocoapods/`\nant\n- URL:  https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-local-e725b4/cocoapods/\n- Path: /work/home/.cocoapods/repos/ant\n"
+    },
+    {
+      "name": "consume: pod install downloads the pod archive from the feed",
+      "status": "pass",
+      "duration_ms": 4351,
+      "detail": "",
+      "output_tail": "Analyzing dependencies\nDownloading dependencies\nInstalling KcDemoe725b4 (1.0.0)\nGenerating Pods project\nSkipping User Project Integration\nPod installation complete! There is 1 dependency from the Podfile and 1 total pod installed.\n"
+    },
+    {
+      "name": "same-endpoint write then read: publish 1.0.1, the CDN versions shard lists it",
+      "status": "pass",
+      "duration_ms": 475,
+      "detail": "",
+      "output_tail": "KcDemoe725b4/1.0.0/1.0.1\n"
+    },
+    {
+      "name": "same-endpoint write then read: pod install resolves ~\u003e 1.0 to 1.0.1",
+      "status": "pass",
+      "duration_ms": 4823,
+      "detail": "",
+      "output_tail": "Analyzing dependencies\nDownloading dependencies\nInstalling KcDemoe725b4 (1.0.1)\nGenerating Pods project\nSkipping User Project Integration\nPod installation complete! There is 1 dependency from the Podfile and 1 total pod installed.\n"
+    },
+    {
+      "name": "delete/unlist: DELETE pods/{Pod}/{version} unlists 1.0.1",
+      "status": "pass",
+      "duration_ms": 78,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "delete/unlist: management API relist then delete 1.0.0",
+      "status": "pass",
+      "duration_ms": 460,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: pod install AFNetworking 4.0.1 resolved through the feed (specs from cdn.cocoapods.org, source from github)",
+      "status": "fail",
+      "duration_ms": 71039,
+      "detail": "exit status 1: tworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.2/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.3/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.4/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.1.0/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.2.0/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.2.1/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/4.0.0/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/4.0.1/AFNetworking.podspec.json Response: 503 Service Unavailable\n",
+      "output_tail": "\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.0-beta.3/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.1/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.2/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.3/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.0.4/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.1.0/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.2.0/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/3.2.1/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/4.0.0/AFNetworking.podspec.json Response: 503 Service Unavailable\n\nCDN: antr URL couldn't be downloaded: https://service:***REDACTED***@ant.azrty.com/feeds/cf-cocoapods-remote-e725b4/cocoapods/Specs/a/7/5/AFNetworking/4.0.1/AFNetworking.podspec.json Response: 503 Service Unavailable\n"
+    },
+    {
+      "name": "remote pull-through hit: cached podspec served with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "prerequisite step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: pod spec cat with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 13682,
+      "detail": "",
+      "output_tail": "Adding spec repo `bad` with CDN `https://service:invalid-token@ant.azrty.com/feeds/cf-cocoapods-local-e725b4/cocoapods/`\n[!] CDN: bad URL couldn't be downloaded: https://service:invalid-token@ant.azrty.com/feeds/cf-cocoapods-local-e725b4/cocoapods/CocoaPods-version.yml Response: 401 {\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"QI6OQEOIH2LGS7P77ITIN7USJ5\"}\n"
+    },
+    {
+      "name": "auth denial: unauthenticated CocoaPods-version.yml returns 401",
+      "status": "pass",
+      "duration_ms": 61,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"U7NMFHCGP3XLIBIWAVIGZIZJMB\"}\n"
+    }
+  ],
+  "duration_ms": 185211,
+  "summary": {
+    "fail": 1,
+    "pass": 10,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["9fb183d5:200", "965ec824:200"]
+}

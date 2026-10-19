@@ -1,0 +1,99 @@
+{
+  "format": "rpm",
+  "target": "oke",
+  "run_id": "29ad02",
+  "started": "2026-10-19T00:16:48Z",
+  "ant": {
+    "api_version": "v1",
+    "target_base_url": "https://ant.azrty.com",
+    "version": "git:06c3f70"
+  },
+  "clients": {
+    "fedora": {
+      "image": "fedora:latest",
+      "reported_version": "dnf5 version 5.4.3.0",
+      "pinned_ref": "dnf5 of Fedora latest (reference dnf5 5.4.6.0)"
+    }
+  },
+  "steps": [
+    {
+      "name": "client-version",
+      "status": "pass",
+      "duration_ms": 24466,
+      "detail": "",
+      "output_tail": "dnf5 version 5.4.3.0\n"
+    },
+    {
+      "name": "publish: rpmbuild a noarch rpm, then PUT Packages/{nevra}.rpm (admin ingestion)",
+      "status": "pass",
+      "duration_ms": 93707,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "consume: dnf makecache + install from the feed (repomd, primary, filelists, other)",
+      "status": "pass",
+      "duration_ms": 4019,
+      "detail": "",
+      "output_tail": "Updating and loading repositories:\n ant                                    100% |   3.9 KiB/s |   2.1 KiB |  00m01s\nMetadata cache created.\nRepositories loaded.\nUpdating and loading repositories:\nRepositories loaded.\nTotal size of inbound packages is 6 KiB. Need to download 6 KiB.\nAfter this operation, 3 B extra will be used (install 3 B, remove 0 B).\nPackage       Arch   Version Repository      Size\nInstalling:\n kcdemo29ad02 noarch 0:1.0-1 ant          3.0   B\n\nTransaction Summary:\n Installing:         1 package\n\n[1/1] kcdemo29ad02-0:1.0-1.noarch       100% |  25.9 KiB/s |   6.4 KiB |  00m00s\n--------------------------------------------------------------------------------\n[1/1] Total                             100% |  25.9 KiB/s |   6.4 KiB |  00m00s\nRunning transaction\n[1/3] Verify package files              100% |   0.0   B/s |   1.0   B |  00m00s\n[2/3] Prepare transaction               100% |   1.0 KiB/s |   1.0   B |  00m00s\n[3/3] Installing kcdemo29ad02-0:1.0-1.n 100% |   1.4 KiB/s | 272.0   B |  00m00s\nWarning: skipped OpenPGP checks for 1 package from repository: ant\nComplete!\n"
+    },
+    {
+      "name": "same-endpoint write then read: PUT 1.1, dnf upgrade",
+      "status": "pass",
+      "duration_ms": 88779,
+      "detail": "",
+      "output_tail": "Cache directory \"/var/cache/libdnf5\" does not exist. Nothing to clean.\nUpdating and loading repositories:\n ant                                    100% |   4.8 KiB/s |   2.2 KiB |  00m00s\nRepositories loaded.\nPackage       Arch   Version Repository      Size\nInstalling:\n kcdemo29ad02 noarch 0:1.1-1 ant          3.0   B\n\nTransaction Summary:\n Installing:         1 package\n\nTotal size of inbound packages is 6 KiB. Need to download 6 KiB.\nAfter this operation, 3 B extra will be used (install 3 B, remove 0 B).\n[1/1] kcdemo29ad02-0:1.1-1.noarch       100% |  46.6 KiB/s |   6.4 KiB |  00m00s\n--------------------------------------------------------------------------------\n[1/1] Total                             100% |  46.6 KiB/s |   6.4 KiB |  00m00s\nRunning transaction\n[1/3] Verify package files              100% |   0.0   B/s |   1.0   B |  00m00s\n[2/3] Prepare transaction               100% |   1.0 KiB/s |   1.0   B |  00m00s\n[3/3] Installing kcdemo29ad02-0:1.1-1.n 100% |   1.0 KiB/s | 272.0   B |  00m00s\nWarning: skipped OpenPGP checks for 1 package from repository: ant\nComplete!\nkcdemo29ad02-1.1-1.noarch\n"
+    },
+    {
+      "name": "delete: DELETE Packages/{file}.rpm republishes repodata without it",
+      "status": "pass",
+      "duration_ms": 1940,
+      "detail": "",
+      "output_tail": "Cache directory \"/var/cache/libdnf5\" does not exist. Nothing to clean.\nUpdating and loading repositories:\n ant                                    100% |   5.9 KiB/s |   2.1 KiB |  00m00s\nRepositories loaded.\nFailed to resolve the transaction:\nNo match for argument: kcdemo29ad02-1.1\nYou can try to add to command line:\n  --skip-unavailable to skip unavailable packages\n"
+    },
+    {
+      "name": "delete/unlist: management API delete 1.0",
+      "status": "pass",
+      "duration_ms": 94,
+      "detail": "",
+      "output_tail": ""
+    },
+    {
+      "name": "remote pull-through miss: dnf download acl from the Rocky 9 BaseOS repo via feed",
+      "status": "fail",
+      "duration_ms": 221180,
+      "detail": "exit status 1: a/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 3 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 5 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 7 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e No more mirrors to try - All mirrors were already tried without success\nFailed to download metadata (baseurl: \"https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm\") for repository \"rocky\": Cannot download, all mirrors were already tried without success\n",
+      "output_tail": "Updating and loading repositories:\n rocky                                   99% | 940.9 KiB/s | 180.4 MiB |  03m16s\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 3 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 5 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e Curl error (92): Stream error in the HTTP/2 framing layer for https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz [HTTP/2 stream 7 was not closed cleanly: INTERNAL_ERROR (err 2)] - https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm/repodata/8d3ab162394254bd62d6eb65ece6352448c0d1b7181abf932fb3bd514fa180bf-primary.xml.gz\n\u003e\u003e\u003e No more mirrors to try - All mirrors were already tried without success\nFailed to download metadata (baseurl: \"https://ant.azrty.com/feeds/cf-rpm-remote-29ad02/rpm\") for repository \"rocky\": Cannot download, all mirrors were already tried without success\n"
+    },
+    {
+      "name": "remote pull-through hit: cached rpm served with upstream unreachable",
+      "status": "skip",
+      "duration_ms": 0,
+      "detail": "prerequisite step failed",
+      "output_tail": ""
+    },
+    {
+      "name": "auth denial: dnf makecache with invalid credentials rejected",
+      "status": "pass",
+      "duration_ms": 3066,
+      "detail": "",
+      "output_tail": "Updating and loading repositories:\n bad                                    100% |   2.4 KiB/s | 420.0   B |  00m00s\n\u003e\u003e\u003e Status code: 401 for https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml (IP: 193.123.92.168) - https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Status code: 401 for https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml (IP: 193.123.92.168) - https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Status code: 401 for https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml (IP: 193.123.92.168) - https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Status code: 401 for https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml (IP: 193.123.92.168) - https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm/repodata/repomd.xml\n\u003e\u003e\u003e Usable URL not found\nFailed to download metadata (baseurl: \"https://ant.azrty.com/feeds/cf-rpm-local-29ad02/rpm\") for repository \"bad\": Usable URL not found\n"
+    },
+    {
+      "name": "auth denial: unauthenticated repomd.xml returns 401",
+      "status": "pass",
+      "duration_ms": 22,
+      "detail": "",
+      "output_tail": "{\"code\":\"unauthenticated\",\"message\":\"authentication required\",\"request_id\":\"3XEU7TQGG7AAOKOW7ACMBLH52B\"}\n"
+    }
+  ],
+  "duration_ms": 502720,
+  "summary": {
+    "fail": 1,
+    "pass": 8,
+    "skip": 1,
+    "unsupported": 0
+  },
+  "result": "fail",
+  "feed_cleanup": ["6277422f:200", "7968900e:200"]
+}

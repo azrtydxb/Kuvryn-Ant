@@ -1,0 +1,86 @@
+{
+  "_comment": "Pinned client container images. Versions track docs/planning/reference-versions.json where an official image with that tag exists; others are pinned by tag (or by an in-container pip/gem pin) and the real version is captured at run time by each scenario's client-version step.",
+  "crane": {
+    "image": "gcr.io/go-containerregistry/crane:debug",
+    "shell": "/busybox/sh",
+    "ref": "crane (F08/F16 client)",
+    "pin": "debug tag; version recorded at run time"
+  },
+  "oras": {
+    "image": "alpine:3.24.2",
+    "shell": "sh",
+    "ref": "oras v1.3.4 (official release binary downloaded into the container; the oras image has no shell)"
+  },
+  "go": { "image": "golang:1.27.2", "shell": "sh", "ref": "go1.27.2" },
+  "cargo": { "image": "rust:1.99.1", "shell": "sh", "ref": "cargo 1.99.1" },
+  "node": {
+    "image": "node:24",
+    "shell": "sh",
+    "ref": "node 24 + pnpm (pinned in scenario)",
+    "pnpm": "10.18.3"
+  },
+  "curl": { "image": "curlimages/curl:8.11.1", "shell": "sh", "ref": "curl" },
+  "socat": {
+    "image": "alpine/socat:1.8.0.1",
+    "shell": "sh",
+    "ref": "loopback forwarder sidecar"
+  },
+  "python": {
+    "image": "python:3.14",
+    "shell": "sh",
+    "ref": "pip 26.2.1, twine 7.0.0, conan 2.33.0, huggingface-hub 2.2.0, ansible-core 2.21.5 (pinned by pip in a venv under /work)"
+  },
+  "maven": {
+    "image": "maven:3.10.0-eclipse-temurin-21",
+    "shell": "sh",
+    "ref": "maven 3.10.0"
+  },
+  "dotnet": {
+    "image": "mcr.microsoft.com/dotnet/sdk:10.0.402",
+    "shell": "sh",
+    "ref": "dotnet SDK 10.0.402"
+  },
+  "helm": { "image": "alpine/helm:4.3.1", "shell": "sh", "ref": "helm v4.3.1" },
+  "ruby": {
+    "image": "ruby:4.0",
+    "shell": "sh",
+    "ref": "ruby 4.0 with its bundled RubyGems (reference v4.0.23); CocoaPods gem pinned to 1.17.0 at run time"
+  },
+  "composer": {
+    "image": "composer:2.10.3",
+    "shell": "sh",
+    "ref": "composer 2.10.3"
+  },
+  "alpine": {
+    "image": "alpine:3.24.2",
+    "shell": "sh",
+    "ref": "apk-tools of Alpine 3.24.2"
+  },
+  "debian": {
+    "image": "debian:trixie",
+    "shell": "bash",
+    "ref": "apt of Debian trixie"
+  },
+  "fedora": {
+    "image": "fedora:latest",
+    "shell": "bash",
+    "ref": "dnf5 of Fedora latest (reference dnf5 5.4.6.0)"
+  },
+  "conda": {
+    "image": "condaforge/miniforge3:latest",
+    "shell": "bash",
+    "ref": "conda and mamba of Miniforge (reference conda 26.9.3)"
+  },
+  "terraform": {
+    "image": "hashicorp/terraform:1.16.6",
+    "shell": "sh",
+    "ref": "terraform v1.16.6"
+  },
+  "swift": { "image": "swift:6.4.1", "shell": "bash", "ref": "swift 6.4.1" },
+  "r": {
+    "image": "r-base:latest",
+    "shell": "bash",
+    "ref": "R (r-base latest)"
+  },
+  "dart": { "image": "dart:3.13.5", "shell": "bash", "ref": "dart 3.13.5" }
+}
