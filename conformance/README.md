@@ -15,4 +15,6 @@ A step that hits a documented adapter limitation is `unsupported`, not `fail`. A
 
 Output: `results/<target>/<date>/<format>.json` (clients and versions, steps with status, timings, output tail, Ant version) and `SUMMARY.md`. The token is passed to containers by environment variable and redacted from all recorded output; the runner refuses to write evidence that still contains it. Loopback targets are reached through a socat sidecar so clients can use `127.0.0.1:<port>` without TLS.
 
+Each run deletes the feeds and sources it created (`cf-<format>-<tag>-<runid>`) when the format finishes; `CONF_KEEP_FEEDS=1` keeps them. When no formats are named, the `oke` target skips `huggingface` (OKE has no GPUs and Hugging Face is not configured there); `local` and `kw` run every format, and `conformance/run.sh oke huggingface` still runs it explicitly.
+
 Formats: docker, oras (oci-artifacts), cargo, go, npm, pypi, maven, nuget, helm, raw, rubygems, composer, conan, conda, apk, apt, rpm, terraform, swift, cocoapods, huggingface, ansible, cran, pub, git-lfs, p2. Client images are listed in `harness/clients.json`. The p2 director (Tycho/Eclipse platform) is not pinned into the harness; p2 is exercised at the protocol level and the director run is documented as manual in the p2 scenario. The workflow `.github/workflows/conformance.yml` is `workflow_dispatch` only.

@@ -60,7 +60,7 @@ type OpsDeps struct {
 	Background context.Context
 	Health     *remoteruntime.Health
 	// Prober performs a connection test of a remote source (remoteruntime.Manager.Probe).
-	Prober func(ctx context.Context, source string) (remoteruntime.ProbeResult, error)
+	Prober func(ctx context.Context, source, format string) (remoteruntime.ProbeResult, error)
 	// Readiness reports dependency state beyond database reachability.
 	Readiness func(ctx context.Context) ReadinessDetail
 	// StagingBytes reports local upload staging usage, when the backend has one.

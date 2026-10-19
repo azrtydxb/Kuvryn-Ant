@@ -3,12 +3,15 @@ package remoteruntime
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/upstream"
 )
 
 const healthRing = 128
@@ -23,6 +26,7 @@ type Health struct {
 }
 type sourceHealth struct {
 	lastSuccess, lastError time.Time
+	lastLog                time.Time
 	lastStatus             int
 	lastErr                string
 	ring                   [healthRing]int32
@@ -53,7 +57,17 @@ func failureStatus(status int) bool {
 }
 
 func errorClass(err error, status int) string {
+	var fe *upstream.FetchError
 	switch {
+	case errors.As(err, &fe):
+		if fe.Class == "status" {
+			return "upstream_error"
+		}
+		return fe.Class
+	case errors.Is(err, upstream.ErrCircuitOpen):
+		return "circuit_open"
+	case errors.Is(err, upstream.ErrPolicy):
+		return "policy"
 	case errors.Is(err, context.DeadlineExceeded):
 		return "timeout"
 	case errors.Is(err, context.Canceled):
@@ -71,7 +85,9 @@ func errorClass(err error, status int) string {
 
 // Record notes one upstream exchange. status is 0 when no response was received.
 func (h *Health) Record(source string, status int, latency time.Duration, err error) {
-	if h == nil || source == "" || errors.Is(err, context.Canceled) {
+	if h == nil || source == "" || errors.Is(err, context.Canceled) || errors.Is(err, upstream.ErrCircuitOpen) {
+		// A cancelled client or a fast-failed request while the breaker is open
+		// never reached the upstream, so neither says anything about its health.
 		return
 	}
 	failed := err != nil || failureStatus(status)
@@ -103,6 +119,15 @@ func (h *Health) Record(source string, status int, latency time.Duration, err er
 		s.pendingErr++
 		s.lastError = now
 		s.lastErr = errorClass(err, status)
+		if now.Sub(s.lastLog) >= 30*time.Second {
+			s.lastLog = now
+			attrs := []any{"source_id", source, "class", s.lastErr, "status", status, "latency_ms", latency.Milliseconds()}
+			var fe *upstream.FetchError
+			if errors.As(err, &fe) && fe.Host != "" {
+				attrs = append(attrs, "host", fe.Host)
+			}
+			slog.Warn("upstream request failed", attrs...)
+		}
 	} else {
 		s.lastSuccess = now
 	}
@@ -224,9 +249,29 @@ type ProbeResult struct {
 	Error         string
 }
 
-// Probe performs one bounded GET of the source origin using its configured
-// credentials, CA and egress policy. It records the outcome in Health.
-func (m *Manager) Probe(ctx context.Context, source string) (ProbeResult, error) {
+// ProbePath returns the origin-relative path used to test a source of the
+// given feed format. Registry roots frequently redirect off-origin or answer
+// 4xx, so formats with a well-known liveness endpoint use it.
+func ProbePath(format string) string {
+	switch format {
+	case "oci", "oci-artifacts":
+		return "v2/"
+	case "nuget":
+		return "v3/index.json"
+	case "npm":
+		return "-/ping"
+	default:
+		return ""
+	}
+}
+
+// Probe performs one bounded GET of the format's liveness endpoint under the
+// source's configured credentials, CA and egress policy. Only outcomes that
+// prove something about the upstream are recorded in Health: a bad probe path
+// (redirect off origin, 4xx other than auth, an anonymous registry challenge)
+// reports reachability to the operator without poisoning the health that real
+// traffic records.
+func (m *Manager) Probe(ctx context.Context, source, format string) (ProbeResult, error) {
 	admit, err := m.admission(ctx)
 	if err != nil {
 		return ProbeResult{}, err
@@ -244,20 +289,53 @@ func (m *Manager) Probe(ctx context.Context, source string) (ProbeResult, error)
 	}
 	defer func() { <-m.network }()
 	start := time.Now()
-	response, err := e.fetcher.Fetch(ctx, http.MethodGet, target(e, Request{Path: ""}), http.Header{})
+	response, err := e.fetcher.Fetch(ctx, http.MethodGet, target(e, Request{Path: ProbePath(format)}), http.Header{})
 	latency := time.Since(start)
+	var redirect *upstream.RedirectError
+	if errors.As(err, &redirect) {
+		// The origin answered with a redirect we will not follow: it is up.
+		return ProbeResult{Reachable: true, Authenticated: true, StatusCode: redirect.Status, LatencyMS: latency.Milliseconds()}, nil
+	}
 	if err != nil {
 		m.health.Record(source, 0, latency, err)
 		return ProbeResult{LatencyMS: latency.Milliseconds(), Error: errorClass(err, 0)}, nil
 	}
 	defer response.Body.Close()
-	m.health.Record(source, response.StatusCode, latency, nil)
-	res := ProbeResult{Reachable: true, StatusCode: response.StatusCode, LatencyMS: latency.Milliseconds()}
-	res.Authenticated = response.StatusCode != http.StatusUnauthorized && response.StatusCode != http.StatusForbidden
-	if failureStatus(response.StatusCode) {
-		res.Error = errorClass(nil, response.StatusCode)
+	res := probeOutcome(format, response.StatusCode, response.Header.Get("Www-Authenticate") != "")
+	res.LatencyMS = latency.Milliseconds()
+	if res.record {
+		m.health.Record(source, response.StatusCode, latency, nil)
 	}
-	return res, nil
+	return res.ProbeResult, nil
+}
+
+type probeDecision struct {
+	ProbeResult
+	record bool
+}
+
+// probeOutcome interprets a probe response. record reports whether the status
+// is evidence about the source's health (and so belongs in Health).
+func probeOutcome(format string, status int, challenge bool) probeDecision {
+	res := ProbeResult{Reachable: true, StatusCode: status, Authenticated: true}
+	switch {
+	case status == http.StatusUnauthorized && challenge && (format == "oci" || format == "oci-artifacts"):
+		// Registries answer /v2/ with a challenge to anonymous clients; that is
+		// the normal handshake, not a credential failure.
+		return probeDecision{res, false}
+	case status == http.StatusUnauthorized || status == http.StatusForbidden:
+		res.Authenticated = false
+		res.Error = errorClass(nil, status)
+		return probeDecision{res, true}
+	case status >= 500 || status == http.StatusTooManyRequests:
+		res.Error = errorClass(nil, status)
+		return probeDecision{res, true}
+	case status >= 400:
+		// 400/404 from a probe path says the host is up, not that real traffic
+		// works; do not record it either way.
+		return probeDecision{res, false}
+	}
+	return probeDecision{res, true}
 }
 
 // Health returns the manager's recorder.

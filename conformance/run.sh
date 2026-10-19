@@ -7,6 +7,8 @@
 #   ANT_CA_BUNDLE    PEM bundle for a private CA (kw)
 #   ANT_VERSION      version label recorded as Ant version (default: git sha)
 #   ANT_CONF_STATE   state directory of the throwaway local instance (default /tmp/ant-conformance-dev)
+# By default the oke target skips the huggingface format (OKE has no GPUs and Hugging Face is not
+# configured there); name it explicitly to run it. local and kw run every format.
 # Needs: docker and go (the harness is the Go package conformance/harness, driven by cmd/conformance).
 set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)

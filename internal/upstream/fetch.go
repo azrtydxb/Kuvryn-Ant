@@ -169,7 +169,7 @@ func (f *Fetcher) addresses(ctx context.Context, host string) ([]netip.Addr, err
 		return nil, ctx.Err()
 	}
 	if e != nil || len(ips) == 0 {
-		return nil, ErrUnavailable
+		return nil, &FetchError{Class: "dns", Host: host}
 	}
 	for _, ip := range ips {
 		if ip.Zone() != "" || !ip.IsValid() || (!f.cfg.AllowPrivate && !publicIP(ip)) {
@@ -197,7 +197,7 @@ func (f *Fetcher) dial(ctx context.Context, _, address string) (net.Conn, error)
 			return nil, ctx.Err()
 		}
 	}
-	return nil, ErrUnavailable
+	return nil, &FetchError{Class: "dial", Host: host}
 }
 
 type idleConn struct{ net.Conn }
@@ -292,6 +292,7 @@ func (f *Fetcher) fetch(ctx context.Context, method, target string, headers http
 	outcome := 0
 	defer func() { f.finish(outcome) }()
 	sameOrigin := origin(u) == origin(f.origin)
+	var last error
 	for attempt := 0; attempt < 3; attempt++ {
 		auth, usedKey := "", ""
 		if sameOrigin {
@@ -328,8 +329,17 @@ func (f *Fetcher) fetch(ctx context.Context, method, target string, headers http
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
+		var redirect *RedirectError
+		if errors.As(e, &redirect) {
+			return nil, redirect
+		}
 		if errors.Is(e, ErrPolicy) {
 			return nil, ErrPolicy
+		}
+		if e != nil {
+			last = e
+		} else if response != nil {
+			last = &FetchError{Class: "status", Host: f.origin.Hostname(), Status: response.StatusCode}
 		}
 		if attempt < 2 {
 			jitter, _ := rand.Int(rand.Reader, big.NewInt(100))
@@ -343,6 +353,9 @@ func (f *Fetcher) fetch(ctx context.Context, method, target string, headers http
 		}
 	}
 	outcome = 1
+	if last != nil {
+		return nil, last
+	}
 	return nil, ErrUnavailable
 }
 func (f *Fetcher) once(ctx context.Context, method string, start *url.URL, headers http.Header, bearer string) (*http.Response, error) {
@@ -385,7 +398,7 @@ func (f *Fetcher) once(ctx context.Context, method string, start *url.URL, heade
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
-			return nil, ErrUnavailable
+			return nil, classify(e, u.Hostname())
 		}
 		resp.Body = &responseBody{ReadCloser: resp.Body, ctx: requestCtx, cancel: cancelRequest, timer: time.AfterFunc(30*time.Second, cancelRequest)}
 		if resp.StatusCode != 301 && resp.StatusCode != 302 && resp.StatusCode != 303 && resp.StatusCode != 307 && resp.StatusCode != 308 {
@@ -399,6 +412,9 @@ func (f *Fetcher) once(ctx context.Context, method string, start *url.URL, heade
 		u, e = parse(location.String(), f.cfg.AllowHTTP)
 		if e != nil {
 			return nil, e
+		}
+		if !f.allowed[origin(u)] {
+			return nil, &RedirectError{Status: resp.StatusCode}
 		}
 	}
 	return nil, ErrPolicy

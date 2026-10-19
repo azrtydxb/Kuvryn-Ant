@@ -268,6 +268,7 @@ type Ctx struct {
 	Ev      *Evidence
 	API     Api
 	feeds   []string
+	sources []string
 	feedIDs map[string]string
 	// LastSource is the source created by the most recent Feed call.
 	LastSource string
@@ -320,6 +321,7 @@ func (c *Ctx) Feed(format, tag string, remote *Remote) (string, error) {
 		return "", err
 	}
 	fid, sid := feed["id"].(string), src["id"].(string)
+	c.sources = append(c.sources, sid)
 	c.feeds = append(c.feeds, fid)
 	c.feedIDs[slug] = fid
 	if remote != nil {
@@ -665,6 +667,19 @@ func (c *Ctx) Cleanup() {
 			}
 		}
 		res = append(res, fid[:8]+":"+err.Error())
+	}
+	// Deleting a feed leaves its sources behind; remove them too so a run leaves nothing.
+	for _, sid := range c.sources {
+		r, err := c.rev("sources", sid)
+		if err == nil {
+			var s int
+			s, _, err = c.API.Req("DELETE", "/api/v1/sources/"+sid+"?force=true", nil, r)
+			if err == nil {
+				res = append(res, fmt.Sprintf("source %s:%d", sid[:8], s))
+				continue
+			}
+		}
+		res = append(res, "source "+sid[:8]+":"+err.Error())
 	}
 	c.Ev.Cleanup = res
 }
