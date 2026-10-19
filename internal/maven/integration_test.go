@@ -192,7 +192,7 @@ func TestReleaseBundlePG(t *testing.T) {
 	body, ct = bundle(t, map[string][]byte{"demo-3.0.pom": pom("org.example", "demo", "3.0", "jar")})
 	assertCode(t, f.request("POST", basePath+"3.0/_bundle", body, map[string]string{"Content-Type": ct}), 400)
 	assertCode(t, f.request("GET", basePath+"3.0/demo-3.0.pom", nil, nil), 404)
-	assertCode(t, f.request("PUT", basePath+"3.0/demo-3.0.pom", pom("org.example", "demo", "3.0", "jar"), nil), 405)
+	assertCode(t, f.request("PUT", basePath+"3.0/_bundle", nil, nil), 405)
 	assertCode(t, f.request("GET", basePath+"1.0-SNAPSHOT/maven-metadata.xml", nil, nil), 501)
 	assertCode(t, f.request("GET", basePath+"maven-metadata.xml", nil, map[string]string{"Authorization": ""}), 401)
 }

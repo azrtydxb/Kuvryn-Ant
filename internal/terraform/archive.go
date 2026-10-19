@@ -18,6 +18,7 @@ import (
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
+	pgperrors "github.com/ProtonMail/go-crypto/openpgp/errors"
 )
 
 const (
@@ -224,6 +225,16 @@ func parseKey(b []byte) (signingKey, error) {
 // the supplied key and returns the signature in binary form (what Terraform
 // reads). An ASCII-armored signature is accepted and normalized.
 func verifySignature(key signingKey, sums, sig []byte) ([]byte, error) {
+	return verifySignatureAt(key, sums, sig, false)
+}
+
+// verifySignatureAt is verifySignature; with expiredOK a signature that is
+// cryptographically valid but made with a key (or carrying an expiry) that has
+// since lapsed is accepted. Pull-through caches an upstream publisher's files
+// verbatim and leaves the trust decision to the client, which applies its own
+// policy; refusing here would make every release signed by a rotated key (a
+// routine event for HashiCorp) uninstallable through the feed.
+func verifySignatureAt(key signingKey, sums, sig []byte, expiredOK bool) ([]byte, error) {
 	if len(sig) == 0 || len(sig) > maxSmallPart {
 		return nil, errInvalid
 	}
@@ -238,6 +249,9 @@ func verifySignature(key signingKey, sums, sig []byte) ([]byte, error) {
 		}
 	}
 	signer, e := openpgp.CheckDetachedSignature(key.ring, bytes.NewReader(sums), bytes.NewReader(sig), nil)
+	if e != nil && expiredOK && signer != nil && (e == pgperrors.ErrKeyExpired || e == pgperrors.ErrSignatureExpired) {
+		e = nil
+	}
 	if e != nil || signer == nil || signer.PrimaryKey.KeyId != key.ring[0].PrimaryKey.KeyId {
 		return nil, errInvalid
 	}

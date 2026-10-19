@@ -69,3 +69,10 @@ client verification with the pinned ansible-core baseline, remote/replica
 resolution, testing/import state machine parity, signature bundles, retention and
 deployment evidence remain release gates. All 26 formats remain Phase 1 scope.
 Protocol reference: https://docs.ansible.com/ansible/latest/dev_guide/developing_collections_distributing.html
+## Publishing and remote redirects
+
+`ansible-galaxy collection publish` sends the archive base64 encoded
+(`Content-Transfer-Encoding: base64` on the `file` part); the part is decoded before the
+`sha256` field is checked. galaxy.ansible.com serves `download_url` through a redirect to
+its S3 bucket, so a remote source for it needs `https://galaxy.ansible.com` and
+`https://ansible-galaxy-ng.s3.dualstack.us-east-1.amazonaws.com` in its redirect origins.

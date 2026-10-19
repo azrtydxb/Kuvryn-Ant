@@ -238,7 +238,16 @@ func TestPostgres(t *testing.T) {
 		t.Fatal("package bytes changed")
 	}
 	assertCode(t, f.request("HEAD", base+"aarch64/demo-1.0-r0.apk", nil), 200)
-	assertCode(t, f.request("GET", base+"aarch64/noarch-1.0-r0.apk", nil), 404)
+	// A noarch package is served from every arch path and from /noarch/ (apk asks for
+	// the package architecture); an arch-specific package is not.
+	for _, arch := range []string{"aarch64", "noarch", "x86_64"} {
+		w := f.request("GET", base+arch+"/noarch-1.0-r0.apk", nil)
+		assertCode(t, w, 200)
+		if !bytes.Equal(w.Body.Bytes(), makeApk(t, "noarch", "1.0-r0", "noarch", "n")) {
+			t.Fatal("noarch bytes differ via ", arch)
+		}
+	}
+	assertCode(t, f.request("GET", base+"noarch/demo-1.0-r0.apk", nil), 404)
 
 	// Public key + signed index per architecture.
 	var feedKey string

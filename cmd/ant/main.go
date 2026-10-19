@@ -249,6 +249,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 			return 1
 		}
 		origins := []interface{ SetPublicURL(string) error }{artifacts.nuget, artifacts.npm, artifacts.cargo, artifacts.gitlfs, artifacts.composer, artifacts.pubrepo, artifacts.conan, artifacts.conda, artifacts.ansible, artifacts.cran, artifacts.apk, artifacts.apt, artifacts.rpm, artifacts.terraform, artifacts.swift, artifacts.cocoapods, artifacts.huggingface, artifacts.p2}
+		artifacts.terraform.SetSigningKey(cfg.RootKey)
 		for _, adapter := range origins {
 			if err = adapter.SetPublicURL(publicURL); err != nil {
 				logger.Error("invalid artifact public origin")

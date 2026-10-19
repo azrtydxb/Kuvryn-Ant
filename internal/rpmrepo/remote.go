@@ -20,6 +20,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
+	"github.com/klauspost/compress/zstd"
 	"github.com/ulikunitz/xz"
 )
 
@@ -42,8 +43,7 @@ import (
 //   - A repository owned by a local source (any local RPM) is never answered
 //     from upstream.
 //
-// Limitations: zstd-compressed primary.xml (Fedora) is not decodable; checksums
-// other than sha256 cannot be verified and are refused; the repomd signature
+// Limitations: checksums other than sha256 cannot be verified and are refused; the repomd signature
 // itself is not verified by this server.
 
 const (
@@ -129,6 +129,7 @@ func (s *Repository) remoteRepodata(w http.ResponseWriter, r *http.Request, p id
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)
 	defer cancel()
+	awaitUpstream(w, 10*time.Minute)
 	doc, err := s.remoteMeta(ctx, p, feed, "repomd.xml")
 	switch {
 	case errors.Is(err, artifact.ErrNotFound):
@@ -251,9 +252,16 @@ func scanPrimary(r io.Reader, href string) (map[string]pkgSum, error) {
 		r = x
 	case strings.HasSuffix(href, ".bz2"):
 		r = bzip2.NewReader(r)
+	case strings.HasSuffix(href, ".zst"):
+		z, err := zstd.NewReader(r, zstd.WithDecoderConcurrency(1), zstd.WithDecoderMaxMemory(256<<20))
+		if err != nil {
+			return nil, errMalformed
+		}
+		defer z.Close()
+		r = z
 	case strings.HasSuffix(href, ".xml"):
 	default:
-		return nil, artifact.ErrUnavailable // zstd and unknown encodings
+		return nil, artifact.ErrUnavailable // unknown encodings
 	}
 	dec := xml.NewDecoder(io.LimitReader(r, maxPrimaryInflated))
 	items := map[string]pkgSum{}
@@ -353,6 +361,7 @@ func (s *Repository) remotePackage(w http.ResponseWriter, r *http.Request, p ide
 	href := strings.Join(rest, "/")
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)
 	defer cancel()
+	awaitUpstream(w, 10*time.Minute)
 	pub := n.pub(feed, packageAsset)
 	pub.Namespace, pub.MediaType = nsRemote, "application/x-rpm"
 	// Package-owner semantics apply to cache hits as well as misses.

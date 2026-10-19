@@ -60,7 +60,13 @@ Identical retries return 201; different bytes for an existing version return 409
 
 - Not run against a real `terraform init` (needs a trusted TLS host); protocol shapes
   follow the official specs and are tested by a client-style flow.
-- Whether Terraform sends registry credentials when fetching `download_url`/module
-  archives on the same host is unverified; if not, anonymous or signed-URL support is needed.
+- Terraform sends no credentials when fetching `download_url`, `shasums_url` and
+  `shasums_signature_url`. The download document therefore advertises those three URLs
+  with an `ant-sig` query parameter: an HMAC (key derived from the root key) over the
+  exact path and a 15 minute expiry, carrying the principal that was authorized to read
+  the provider. The principal is re-resolved on use, so revoked tokens and removed grants
+  stop working immediately. Module archive URLs are not signed.
+- Upstream signature files named `SHA256SUMS.<keyid>.sig` (HashiCorp) are accepted and
+  re-served as `SHA256SUMS.sig`.
 - Module closure checks cover archive structure only, not `source = "./..."` references.
 - Remote/replica materialization and deletion/retention are core gaps.

@@ -176,6 +176,27 @@ func TestHuggingFaceModelAndDatasetLifecycle(t *testing.T) {
 	if !strings.Contains(r.Body.String(), "weights/model.bin") {
 		t.Fatal(r.Body.String())
 	}
+	// huggingface_hub reads lfs["oid"], ["size"] and ["pointerSize"] of every tree file.
+	var tree []struct {
+		Type string
+		LFS  *map[string]any `json:"lfs"`
+	}
+	if e := json.Unmarshal(r.Body.Bytes(), &tree); e != nil {
+		t.Fatal(e)
+	}
+	for _, e := range tree {
+		if e.Type != "file" {
+			continue
+		}
+		if e.LFS == nil {
+			t.Fatal("tree file without lfs", r.Body.String())
+		}
+		for _, k := range []string{"oid", "size", "pointerSize"} {
+			if _, ok := (*e.LFS)[k]; !ok {
+				t.Fatalf("tree lfs lacks %s: %s", k, r.Body.String())
+			}
+		}
+	}
 
 	// HEAD and GET resolve with HF headers.
 	url := base + "/acme/tiny/resolve/main/weights/model.bin"

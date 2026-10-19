@@ -5,7 +5,7 @@ Local Alpine APK v2 repositories (contract F01). Mount: `/feeds/{slug}/apk/`.
 | Method | Path | Notes |
 | --- | --- | --- |
 | PUT | `{branch}/{repo}/{arch}/{name}-{ver}-r{N}.apk` | Feed Admin. Parses `.PKGINFO` from the control segment; name/version must match the filename, arch must equal the path arch or `noarch`. Package + index entry publish as one atomic bundle. Package bytes and signature segment are preserved. |
-| GET/HEAD | same | Download. |
+| GET/HEAD | same | Download. A noarch package (`A:noarch`) is served from every arch path of its branch/repo and from `noarch/`, which is where apk asks for it. |
 | DELETE | same | Feed Admin, local sources only; removes version, assets and tags in one transaction with audit and outbox events. Blobs are left for GC. |
 | GET | `{branch}/{repo}/{arch}/APKINDEX.tar.gz` | Generated on request from committed entries, signed `.SIGN.RSA.ant-<feed8>.rsa.pub` (RSA-2048, SHA-1 over the compressed index segment). |
 | GET | `keys/ant-<feed8>.rsa.pub` | PEM public key for `/etc/apk/keys`. |

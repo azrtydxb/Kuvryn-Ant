@@ -305,3 +305,53 @@ func TestProvider(t *testing.T) {
 		t.Fatalf("tampered zip served: %d %s", w.Code, w.Body.String())
 	}
 }
+
+// Terraform fetches download_url, shasums_url and shasums_signature_url without
+// credentials; on an authenticated feed the advertised URLs must carry their own
+// short-lived authorization.
+func TestProviderSignedFileURLs(t *testing.T) {
+	f := setup(t)
+	f.registry.SetSigningKey(bytes.Repeat([]byte{7}, 32))
+	const base = testBase + "v1/providers/acme/signed/"
+	p := newProvider(t, "signed", "1.0.0", "linux/amd64")
+	assertCode(t, f.putProvider(base+"1.0.0", p, map[string]string{"protocols": "5.0"}), 201)
+	w := f.request("GET", base+"1.0.0/download/linux/amd64", nil, nil)
+	assertCode(t, w, 200)
+	var dl struct {
+		DownloadURL         string `json:"download_url"`
+		ShasumsURL          string `json:"shasums_url"`
+		ShasumsSignatureURL string `json:"shasums_signature_url"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &dl); err != nil {
+		t.Fatal(err)
+	}
+	anon := func(u string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("GET", strings.TrimPrefix(u, "https://packages.example"), nil)
+		req.RemoteAddr = "127.0.0.1:1234"
+		rec := httptest.NewRecorder()
+		f.registry.ServeHTTP(rec, req)
+		return rec
+	}
+	name := zipName("signed", "1.0.0", "linux", "amd64")
+	for _, u := range []string{dl.DownloadURL, dl.ShasumsURL, dl.ShasumsSignatureURL} {
+		if !strings.Contains(u, "ant-sig=") {
+			t.Fatalf("unsigned url %s", u)
+		}
+		assertCode(t, anon(u), 200)
+	}
+	if got := anon(dl.DownloadURL).Body.Bytes(); !bytes.Equal(got, p.zips[name]) {
+		t.Fatal("zip differs")
+	}
+	// Unsigned, tampered and re-pointed URLs stay unauthorized.
+	assertCode(t, anon(strings.SplitN(dl.DownloadURL, "?", 2)[0]), 401)
+	assertCode(t, anon(dl.DownloadURL+"x"), 403)
+	sig := strings.SplitN(dl.DownloadURL, "?", 2)[1]
+	assertCode(t, anon(strings.SplitN(dl.ShasumsURL, "?", 2)[0]+"?"+sig), 403)
+	// Revoking the principal's token ends the URL's usefulness.
+	if _, err := f.pool.Exec(context.Background(), `UPDATE service_tokens SET revoked_at=clock_timestamp() WHERE instance_id=$1`, f.instance); err != nil {
+		t.Fatal(err)
+	}
+	if rec := anon(dl.DownloadURL); rec.Code == 200 {
+		t.Fatal("revoked token still served")
+	}
+}

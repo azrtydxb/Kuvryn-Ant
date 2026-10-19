@@ -332,6 +332,7 @@ func (r *artifactRuntime) Register(mux *http.ServeMux) { r.RegisterRouted(mux, n
 // placement-aware routing of reads that miss locally) when it is non-nil.
 func (r *artifactRuntime) RegisterRouted(mux *http.ServeMux, route func(oci bool, next http.Handler) http.Handler) {
 	wrap := func(oci bool, h http.Handler) http.Handler {
+		h = holdWriteDeadline(h)
 		if route == nil {
 			return h
 		}
@@ -375,4 +376,14 @@ func (r *artifactRuntime) Close() {
 		r.stores.Close()
 		_ = r.manager.Close()
 	}
+}
+
+// holdWriteDeadline hands the artifact core a way to extend the response write
+// deadline while it waits for a remote origin (see artifact.WithWriteDeadlineExtender).
+func holdWriteDeadline(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rc := http.NewResponseController(w)
+		extend := func(d time.Duration) { _ = rc.SetWriteDeadline(time.Now().Add(d)) }
+		next.ServeHTTP(w, r.WithContext(artifact.WithWriteDeadlineExtender(r.Context(), extend)))
+	})
 }

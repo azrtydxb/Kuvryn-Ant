@@ -200,9 +200,9 @@ func runMaven(c *Ctx) {
 	if err := stage("1.0"); err != nil {
 		panic(err)
 	}
-	c.Step("publish: mvn deploy:deploy-file (native multi-PUT)", func() error {
+	c.Step("publish: mvn deploy:deploy-file (native multi-PUT, metadata PUT completes the version)", func() error {
 		return c.Sh("maven", mvnSetup+"mvn -B -ntp -s /work/home/.m2/settings.xml org.apache.maven.plugins:maven-deploy-plugin:3.1.4:deploy-file -Dfile=/work/demo-1.0.jar -DpomFile=/work/demo-1.0.pom -DrepositoryId=ant -Durl="+repo)
-	}, Limitation("internal/maven README: native Maven deploy multi-PUT returns 405; release bundles via POST version/_bundle"))
+	})
 	c.Step("publish: POST version/_bundle (adapter bundle API) 1.0", func() error { return bundle("1.0") })
 	c.Step("consume: mvn dependency:get 1.0 with fresh local repo", func() error { return get("1.0", "/tmp/m2-a", "ant", repo, nil) })
 	c.Step("same-endpoint write then read: bundle 1.1, maven-metadata.xml lists it, mvn resolves 1.1", Seq(

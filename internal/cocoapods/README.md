@@ -20,3 +20,9 @@ podspec URLs embed the public URL in force at publish time; archive downloads ne
 client credentials; not exercised against the real CocoaPods 1.17.0 client.
 
 Verify: `sh internal/cocoapods/test-postgres.sh`
+
+## Remote sources and redirects
+
+`cdn.cocoapods.org` answers podspec requests with a 301 to `https://cdn.jsdelivr.net`.
+Redirects to hosts that are not the source origin are refused (and surface as 503), so a
+CocoaPods remote source needs `https://cdn.jsdelivr.net` in its redirect origins.

@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"github.com/klauspost/compress/zstd"
+	"github.com/ulikunitz/xz"
 	"io"
 	"path"
 	"regexp"
@@ -190,27 +192,20 @@ func inspectDeb(r io.ReaderAt, size int64) (control, error) {
 				return control{}, errInvalid
 			}
 			haveVersion = true
-		case name == "control.tar.gz" || name == "control.tar":
+		case name == "control.tar" || strings.HasPrefix(name, "control.tar."):
 			if ctl != nil || msize > maxControl {
 				return control{}, errInvalid
 			}
-			var src io.Reader = io.NewSectionReader(r, pos, msize)
-			if name == "control.tar.gz" {
-				g, e := gzip.NewReader(src)
-				if e != nil {
-					return control{}, errInvalid
-				}
-				defer g.Close()
-				src = g
+			src, closeSrc, e := controlDecoder(strings.TrimPrefix(name, "control.tar"), io.NewSectionReader(r, pos, msize))
+			if e != nil {
+				return control{}, errInvalid
 			}
 			b, e := readControlTar(src)
+			closeSrc()
 			if e != nil {
 				return control{}, e
 			}
 			ctl = b
-		case strings.HasPrefix(name, "control.tar."):
-			// xz and zstd decoders are not part of this build.
-			return control{}, errInvalid
 		case name == "data.tar" || strings.HasPrefix(name, "data.tar."):
 			if haveData || msize == 0 {
 				return control{}, errInvalid
@@ -264,4 +259,33 @@ func readControlTar(src io.Reader) ([]byte, error) {
 		return nil, errInvalid
 	}
 	return out, nil
+}
+
+// controlDecoder wraps the compressed control archive. ext is "" (plain) or the
+// member suffix (.gz, .xz, .zst). dpkg-deb has written zstd by default since
+// dpkg 1.21.18 (Debian trixie). Decompressed output is bounded by the caller.
+func controlDecoder(ext string, src io.Reader) (io.Reader, func(), error) {
+	switch ext {
+	case "":
+		return src, func() {}, nil
+	case ".gz":
+		g, e := gzip.NewReader(src)
+		if e != nil {
+			return nil, nil, e
+		}
+		return g, func() { g.Close() }, nil
+	case ".xz":
+		x, e := xz.NewReader(src)
+		if e != nil {
+			return nil, nil, e
+		}
+		return x, func() {}, nil
+	case ".zst":
+		z, e := zstd.NewReader(src, zstd.WithDecoderConcurrency(1), zstd.WithDecoderMaxMemory(64<<20), zstd.WithDecoderMaxWindow(8<<20))
+		if e != nil {
+			return nil, nil, e
+		}
+		return z, z.Close, nil
+	}
+	return nil, nil, errInvalid
 }

@@ -30,6 +30,8 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/klauspost/compress/zstd"
+	"github.com/ulikunitz/xz"
 )
 
 type fixture struct {
@@ -206,8 +208,17 @@ func buildDeb(t *testing.T, d debSpec) []byte {
 	var b bytes.Buffer
 	b.WriteString("!<arch>\n")
 	b.Write(arMember("debian-binary", []byte("2.0\n")))
-	b.Write(arMember(d.controlName, tarGz(t, map[string]string{"./control": d.control()})))
-	b.Write(arMember("data.tar.gz", tarGz(t, map[string]string{"./usr/share/doc/x": d.pkg + d.version})))
+	ctl := tarGz(t, map[string]string{"./control": d.control()})
+	data := tarGz(t, map[string]string{"./usr/share/doc/x": d.pkg + d.version})
+	dataName := "data.tar.gz"
+	switch {
+	case strings.HasSuffix(d.controlName, ".zst"):
+		ctl, data, dataName = recompress(t, ctl, "zst"), recompress(t, data, "zst"), "data.tar.zst"
+	case strings.HasSuffix(d.controlName, ".xz"):
+		ctl, data, dataName = recompress(t, ctl, "xz"), recompress(t, data, "xz"), "data.tar.xz"
+	}
+	b.Write(arMember(d.controlName, ctl))
+	b.Write(arMember(dataName, data))
 	return b.Bytes()
 }
 
@@ -389,7 +400,7 @@ func TestIngestRejections(t *testing.T) {
 	for _, bad := range []debSpec{{pkg: "Bad_Name", version: "1.0", arch: "amd64"}, {pkg: "okname", version: "x1", arch: "amd64"}, {pkg: "okname", version: "1.0", arch: "AMD64"}} {
 		assertCode(t, f.request("PUT", base+"pool/main/o/okname/okname_1.0_amd64.deb?distribution=stable", buildDeb(t, bad)), 400)
 	}
-	assertCode(t, f.request("PUT", base+poolPath("xzpkg", "1.0", "amd64")+"?distribution=stable", buildDeb(t, debSpec{pkg: "xzpkg", version: "1.0", arch: "amd64", controlName: "control.tar.xz"})), 400)
+	assertCode(t, f.request("PUT", base+poolPath("xzpkg", "1.0", "amd64")+"?distribution=stable", buildDeb(t, debSpec{pkg: "xzpkg", version: "1.0", arch: "amd64", controlName: "control.tar.lz4"})), 400)
 	// Wrong declared checksum.
 	req := httptest.NewRequest("PUT", base+poolPath("demo", "4.0", "amd64")+"?distribution=stable", bytes.NewReader(buildDeb(t, debSpec{pkg: "demo", version: "4.0", arch: "amd64"})))
 	req.SetBasicAuth("s", f.token)
@@ -669,4 +680,42 @@ func TestParsers(t *testing.T) {
 	if _, err := inspectDeb(bytes.NewReader([]byte("!<arch>\n")), 8); err == nil {
 		t.Fatal("empty ar accepted")
 	}
+}
+
+// recompress turns a gzip stream into the named encoding (dpkg-deb writes zstd
+// by default on current Debian and Ubuntu).
+func recompress(t *testing.T, gz []byte, enc string) []byte {
+	t.Helper()
+	g, err := gzip.NewReader(bytes.NewReader(gz))
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := io.ReadAll(g)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	var w io.WriteCloser
+	switch enc {
+	case "zst":
+		w, err = zstd.NewWriter(&out)
+	case "xz":
+		w, err = xz.NewWriter(&out)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = w.Write(raw); err != nil {
+		t.Fatal(err)
+	}
+	if err = w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return out.Bytes()
+}
+
+func TestDebWithZstdAndXzMembersAccepted(t *testing.T) {
+	f := setup(t)
+	f.put(t, debSpec{pkg: "zstpkg", version: "1.0", arch: "amd64", controlName: "control.tar.zst"}, "stable", 201)
+	f.put(t, debSpec{pkg: "xzpkg", version: "1.0", arch: "amd64", controlName: "control.tar.xz"}, "stable", 201)
 }

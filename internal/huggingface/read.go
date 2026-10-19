@@ -91,6 +91,14 @@ type lfsInfo struct {
 	PointerSize int    `json:"pointerSize"`
 }
 
+// treeLFS is the lfs object of a tree entry; the Hub names the digest oid there
+// (huggingface_hub reads lfs["oid"], lfs["size"] and lfs["pointerSize"]).
+type treeLFS struct {
+	OID         string `json:"oid"`
+	Size        int64  `json:"size"`
+	PointerSize int    `json:"pointerSize"`
+}
+
 func (s *Repository) info(w http.ResponseWriter, r *http.Request, p identity.Principal, t target, rev string) {
 	commit, m, e := s.revision(r.Context(), p, t, rev)
 	if isNotFound(e) {
@@ -138,7 +146,7 @@ func (s *Repository) tree(w http.ResponseWriter, r *http.Request, p identity.Pri
 			dirs[prefix+rel[:i]] = true
 			continue
 		}
-		out = append(out, map[string]any{"type": "file", "oid": f.SHA256[:40], "size": f.Size, "path": f.Path, "lfs": lfsInfo{f.SHA256, f.Size, 134}})
+		out = append(out, map[string]any{"type": "file", "oid": f.SHA256[:40], "size": f.Size, "path": f.Path, "lfs": treeLFS{f.SHA256, f.Size, 134}})
 	}
 	names := make([]string, 0, len(dirs))
 	for d := range dirs {

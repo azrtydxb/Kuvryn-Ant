@@ -26,6 +26,7 @@ type Repository struct {
 	instance string
 	auth     http.Handler
 	uploads  chan struct{}
+	stage    staging
 }
 
 func New(db *pgxpool.Pool, service *artifact.Service) (*Repository, error) {
@@ -116,7 +117,7 @@ func parsePath(req *http.Request) (location, error) {
 	return l, nil
 }
 func checksumSuffix(name string) string {
-	for _, s := range []string{".sha256", ".sha1", ".md5"} {
+	for _, s := range []string{".sha256", ".sha512", ".sha1", ".md5"} {
 		if strings.HasSuffix(name, s) {
 			return s
 		}
@@ -183,13 +184,15 @@ func (r *Repository) serve(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(204)
 	case req.Method == "POST" && l.file == "_bundle":
 		r.publish(w, req, p, l, feed)
+	case req.Method == "PUT" && l.file != "_bundle":
+		r.put(w, req, p, l, feed)
 	case (req.Method == "GET" || req.Method == "HEAD") && l.metadata:
 		r.metadata(w, req, p, l, feed)
 	case (req.Method == "GET" || req.Method == "HEAD") && l.file != "_bundle":
 		r.get(w, req, p, l.publication(feed))
 	default:
-		w.Header().Set("Allow", "GET, HEAD, POST, DELETE")
-		http.Error(w, "native multi-PUT deployment unsupported; publish a complete release via POST to the version/_bundle endpoint", 405)
+		w.Header().Set("Allow", "GET, HEAD, PUT, POST, DELETE")
+		http.Error(w, http.StatusText(405), 405)
 	}
 }
 func etag(rec artifact.Record) string { return `"sha256:` + string(rec.Info.Digest) + `"` }
