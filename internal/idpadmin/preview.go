@@ -55,8 +55,9 @@ type PreviewResult struct {
 	Subject  Subject `json:"identity"`
 	Verified bool    `json:"signature_verified"`
 	Binding  Binding `json:"binding"`
-	// ProposedRoles are LDAP group-to-role mappings from provider config. The
-	// runtime does not apply these automatically; roles come from the binding.
+	// ProposedRoles are the local role IDs the provider's mapping (LDAP groups,
+	// SAML attribute) yields. At sign-in they apply only to claim-managed
+	// identities; an explicit binding's roles always win.
 	ProposedRoles    []string `json:"proposed_roles,omitempty"`
 	WouldSignIn      bool     `json:"would_sign_in"`
 	Problems         []string `json:"problems"`
@@ -266,6 +267,27 @@ func (p Preview) SAMLAssertion(ctx context.Context, cfg SAMLConfig, payload stri
 	if groupsAttr == "" {
 		r.Warnings = append(r.Warnings, "no groups_attribute configured; groups are not extracted")
 	}
+	if cfg.RolesAttribute != "" {
+		byValue := map[string][]string{}
+		for _, m := range cfg.ClaimRoles {
+			byValue[m.Value] = m.RoleIDs
+		}
+		seen := map[string]bool{}
+		for _, a := range doc.Assertion.Attributes {
+			if a.Name != cfg.RolesAttribute {
+				continue
+			}
+			for _, v := range a.Values {
+				for _, id := range byValue[v] {
+					if !seen[id] {
+						seen[id] = true
+						r.ProposedRoles = append(r.ProposedRoles, id)
+					}
+				}
+			}
+		}
+		sort.Strings(r.ProposedRoles)
+	}
 	now := p.now()
 	if t, err := time.Parse(time.RFC3339, doc.Assertion.Conditions.NotOnOrAfter); err != nil || !now.Before(t) {
 		r.Problems = append(r.Problems, "assertion is expired or has no valid NotOnOrAfter (paste a fresh response)")
@@ -302,6 +324,6 @@ func (p Preview) LDAPUser(ctx context.Context, dir *directory.Provider, provider
 	}
 	r.ProposedRoles = ext.RoleIDs
 	r.Verified = true
-	r.Warnings = append(r.Warnings, "LDAP mapping proposals are informational; effective roles come from the identity binding")
+	r.Warnings = append(r.Warnings, "proposed roles apply only to claim-managed identities (just-in-time users); an explicit binding keeps its own roles")
 	return p.finish(ctx, &r)
 }

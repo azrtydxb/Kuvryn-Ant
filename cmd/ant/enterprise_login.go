@@ -30,6 +30,11 @@ type samlBrowserProvider interface {
 	Begin(string) (*url.URL, samllogin.Pending, error)
 	Consume(context.Context, []byte, samllogin.Pending) (samllogin.Identity, error)
 	Metadata() ([]byte, error)
+	SupportsLogout() bool
+	BeginLogoutPost(samllogin.Identity, string) (samllogin.LogoutPost, samllogin.Pending, error)
+	ConsumeLogout(context.Context, []byte, samllogin.Pending) error
+	ConsumeLogoutRequest(context.Context, []byte) (samllogin.LogoutRequest, error)
+	LogoutResponsePost(string, string) (samllogin.LogoutPost, error)
 }
 type ldapBrowserProvider interface {
 	Authenticate(context.Context, string, []byte) (directory.ExternalIdentity, error)
@@ -162,7 +167,7 @@ func openEnterprise(pool *pgxpool.Pool, instance, origin, samlPath, ldapPath str
 			return nil, "", errBrowserConfig
 		}
 		// The SAML library validates the RSA private key, certificate and imported metadata.
-		p, err := samllogin.New(samllogin.Config{EntityID: c.EntityID, IDPEntityID: c.IDPEntityID, ACSURL: c.Origin + "/auth/saml/callback", MetadataURL: c.Origin + "/auth/saml/metadata", Metadata: metadata, Key: signer, Certificate: cert, Replay: replay})
+		p, err := samllogin.New(samllogin.Config{EntityID: c.EntityID, IDPEntityID: c.IDPEntityID, ACSURL: c.Origin + "/auth/saml/callback", MetadataURL: c.Origin + "/auth/saml/metadata", LogoutURL: c.Origin + "/auth/saml/slo", Metadata: metadata, Key: signer, Certificate: cert, Replay: replay})
 		if err != nil {
 			return nil, "", errBrowserConfig
 		}
@@ -225,6 +230,8 @@ func (e *enterpriseLogin) Register(mux *http.ServeMux) {
 		mux.HandleFunc("/auth/saml/login", e.samlLogin)
 		mux.HandleFunc("/auth/saml/callback", e.samlCallback)
 		mux.HandleFunc("GET /auth/saml/metadata", e.samlMetadata)
+		mux.HandleFunc("/auth/saml/slo", e.samlSLO)
+		mux.HandleFunc("GET /auth/saml/logout", e.samlLogoutPage)
 	}
 	if e.ldap != nil {
 		mux.HandleFunc("/auth/ldap/login", e.ldapLogin)
@@ -292,6 +299,9 @@ func (e *enterpriseLogin) fail(w http.ResponseWriter, r *http.Request, kind stri
 	http.Error(w, "browser authentication failed", http.StatusUnauthorized)
 }
 func (e *enterpriseLogin) saveState(ctx context.Context, kind, issuer, state, browser string, pending samllogin.Pending) error {
+	return e.saveStatePayload(ctx, kind, issuer, state, browser, "", pending)
+}
+func (e *enterpriseLogin) saveStatePayload(ctx context.Context, kind, issuer, state, browser, payload string, pending samllogin.Pending) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	// Bounded opportunistic expiry cleanup; correctness never depends on cleanup.
@@ -299,7 +309,7 @@ func (e *enterpriseLogin) saveState(ctx context.Context, kind, issuer, state, br
 	if err != nil {
 		return err
 	}
-	_, err = e.client.Sessions.DB.Exec(ctx, `INSERT INTO enterprise_login_states(state_hash,browser_hash,instance_id,provider,kind,request_id,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7)`, browserHash(state), browserHash(browser), e.client.Sessions.InstanceID, issuer, kind, pending.ID, pending.Expires)
+	_, err = e.client.Sessions.DB.Exec(ctx, `INSERT INTO enterprise_login_states(state_hash,browser_hash,instance_id,provider,kind,request_id,expires_at,payload) VALUES($1,$2,$3,$4,$5,$6,$7,NULLIF($8,''))`, browserHash(state), browserHash(browser), e.client.Sessions.InstanceID, issuer, kind, pending.ID, pending.Expires, payload)
 	return err
 }
 func (e *enterpriseLogin) consumeState(ctx context.Context, kind, issuer, state, browser string) (samllogin.Pending, error) {
@@ -312,8 +322,34 @@ func (e *enterpriseLogin) consumeState(ctx context.Context, kind, issuer, state,
 	err := e.client.Sessions.DB.QueryRow(ctx, `DELETE FROM enterprise_login_states WHERE state_hash=$1 AND browser_hash=$2 AND instance_id=$3 AND provider=$4 AND kind=$5 AND expires_at>clock_timestamp() RETURNING request_id,expires_at`, browserHash(state), browserHash(browser), e.client.Sessions.InstanceID, issuer, kind).Scan(&pending.ID, &pending.Expires)
 	return pending, err
 }
-func (e *enterpriseLogin) issue(w http.ResponseWriter, r *http.Request, kind, issuer, subject string, groups []string) {
-	session, raw, csrf, err := e.client.Sessions.IssueExternalGroups(r.Context(), issuer, subject, groups)
+
+// loginExtras carries what a verified external login proposes beyond identity.
+// Roles are applied only when RolesMapped (a mapping is configured), so a role
+// removed at the provider is dropped at the next login.
+type loginExtras struct {
+	groups                     []string
+	roles                      []string
+	rolesMapped                bool
+	sessionIndex, nameIDFormat string
+}
+
+func (e *enterpriseLogin) issue(w http.ResponseWriter, r *http.Request, kind, issuer, subject string, x loginExtras) {
+	// Mapped roles fail closed: if they cannot be applied, no session. Explicit
+	// bindings and memberships always win (ApplyClaimRoles never touches them).
+	if x.rolesMapped {
+		if err := e.client.Sessions.ApplyClaimRoles(r.Context(), issuer, subject, x.roles); err != nil {
+			e.fail(w, r, kind)
+			return
+		}
+	}
+	var session oidclogin.Session
+	var raw, csrf string
+	var err error
+	if kind == "saml" {
+		session, raw, csrf, err = e.client.Sessions.IssueExternalSAML(r.Context(), issuer, subject, x.groups, x.sessionIndex, x.nameIDFormat)
+	} else {
+		session, raw, csrf, err = e.client.Sessions.IssueExternalGroups(r.Context(), issuer, subject, x.groups)
+	}
 	if err != nil {
 		e.fail(w, r, kind)
 		return
@@ -411,7 +447,7 @@ func (e *enterpriseLogin) samlCallback(w http.ResponseWriter, r *http.Request) {
 		e.fail(w, r, "saml")
 		return
 	}
-	e.issue(w, r, "saml", identity.Issuer, identity.Subject, identity.Groups)
+	e.issue(w, r, "saml", identity.Issuer, identity.Subject, loginExtras{groups: identity.Groups, roles: identity.Roles, rolesMapped: identity.RolesMapped, sessionIndex: identity.SessionIndex, nameIDFormat: identity.NameIDFormat})
 }
 func (e *enterpriseLogin) ldapLogin(w http.ResponseWriter, r *http.Request) {
 	browserNoStore(w)
@@ -481,10 +517,11 @@ func (e *enterpriseLogin) ldapLogin(w http.ResponseWriter, r *http.Request) {
 		e.fail(w, r, "ldap")
 		return
 	}
-	// RoleIDs/GroupIDs are deliberately not local grants. Only explicit local
-	// identity bindings and memberships, and federated group bindings applied
-	// from the signed federation policy (P2-M2), determine authorization.
-	e.issue(w, r, "ldap", identity.ProviderID, identity.Subject, identity.GroupIDs)
+	// Group IDs alone grant nothing. Roles apply only through the provider's
+	// configured group-to-role mapping (claim-managed memberships, JIT principal
+	// creation); explicit identity bindings and memberships, and federated group
+	// bindings from the signed federation policy (P2-M2), always win.
+	e.issue(w, r, "ldap", identity.ProviderID, identity.Subject, loginExtras{groups: identity.GroupIDs, roles: identity.RoleIDs, rolesMapped: identity.RolesMapped})
 }
 
 type loginAttempt struct {

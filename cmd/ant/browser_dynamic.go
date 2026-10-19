@@ -332,7 +332,7 @@ func (b *browserRuntime) localLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "browser authentication failed", http.StatusUnauthorized)
 		return
 	}
-	s.enterprise.issue(w, r, "local", localadmin.Issuer, res.Subject, nil)
+	s.enterprise.issue(w, r, "local", localadmin.Issuer, res.Subject, loginExtras{})
 }
 
 // labels returns the administrator-chosen display names of the enabled stored

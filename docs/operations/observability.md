@@ -11,17 +11,29 @@ resource IDs.
 is not routed by the chart ingress; scrape it through the optional headless
 metrics Service and restrict it with NetworkPolicy.
 
-| Metric | Type | Labels |
-| --- | --- | --- |
-| `ant_http_requests_total` | counter | `route`, `method`, `status_class` |
-| `ant_http_request_duration_seconds` | histogram | `route`, `method`, `status_class` |
-| `ant_http_active_requests` | gauge | none |
-| `ant_http_saturation_total` | counter | none (requests shed by `ANT_MAX_REQUESTS`) |
-| `ant_database_readiness_failures_total` | counter | none |
-| `ant_data_dir_bytes_free` | gauge | none (bytes available on the filesystem holding `ANT_DATA_DIR`) |
-| `ant_data_dir_bytes_total` | gauge | none (capacity of that filesystem) |
+| Metric                                  | Type      | Labels                                                          |
+| --------------------------------------- | --------- | --------------------------------------------------------------- |
+| `ant_http_requests_total`               | counter   | `route`, `method`, `status_class`                               |
+| `ant_http_request_duration_seconds`     | histogram | `route`, `method`, `status_class`                               |
+| `ant_http_active_requests`              | gauge     | none                                                            |
+| `ant_http_saturation_total`             | counter   | none (requests shed by `ANT_MAX_REQUESTS`)                      |
+| `ant_database_readiness_failures_total` | counter   | none                                                            |
+| `ant_data_dir_bytes_free`               | gauge     | none (bytes available on the filesystem holding `ANT_DATA_DIR`) |
+| `ant_data_dir_bytes_total`              | gauge     | none (capacity of that filesystem)                              |
 
-`route` is a registered route pattern or `unmatched`, so cardinality is bounded.
+`route` is bounded. Management and operational routes carry their registered
+pattern (for example `/api/v1/feeds/{id}`). Package-protocol traffic is named
+`<format>.<class>` with class `metadata` (indexes, packuments, listings),
+`download` (artifact bytes), `publish` (writes), `delete` or `other`, for
+example `npm.metadata`, `maven.download`, `pypi.publish`. OCI traffic is
+`oci.<class>` with class `blob`, `manifest`, `upload`, `tags`, `referrers`,
+`catalog`, `base` or `other`. Federation endpoints are `federation.blob`,
+`federation.proxy`, `federation.route`, `federation.replication`,
+`federation.search`, `federation.audit` and `federation.control`. The class
+comes from the method and the shape of the path only: package names, versions,
+digests and feed slugs never appear in a label. Anything else is `unmatched`.
+The label space is the fixed format list times the fixed classes. Builds before
+this change labelled all data-plane traffic `unmatched`.
 Suggested alerts: sustained 5xx ratio, `ant_http_saturation_total` increasing,
 `ant_database_readiness_failures_total` increasing, and p95 duration by route.
 For the data volume alert on low free space, for example
@@ -52,13 +64,13 @@ appear in the diagnostics bundle.
 Tracing is off by default. Enable it with environment variables (chart values
 under `observability.tracing`):
 
-| Variable | Meaning |
-| --- | --- |
-| `ANT_OTEL_ENABLED` | `true` turns tracing on. Default off; nothing is exported otherwise. |
-| `ANT_OTEL_ENDPOINT` | Optional OTLP base URL, for example `http://otel-collector:4318`. Overrides `OTEL_EXPORTER_OTLP_ENDPOINT`. Must not contain credentials. |
-| `ANT_OTEL_PROTOCOL` | `http/protobuf` (default) or `grpc`. Falls back to `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` / `OTEL_EXPORTER_OTLP_PROTOCOL`. |
-| `ANT_OTEL_SERVICE_NAME` | Defaults to `kuvryn-ant` (or `OTEL_SERVICE_NAME`). |
-| `ANT_OTEL_SAMPLE_RATIO` | Parent-based head sampling ratio, greater than 0 and at most 1. Default 1. |
+| Variable                | Meaning                                                                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `ANT_OTEL_ENABLED`      | `true` turns tracing on. Default off; nothing is exported otherwise.                                                                     |
+| `ANT_OTEL_ENDPOINT`     | Optional OTLP base URL, for example `http://otel-collector:4318`. Overrides `OTEL_EXPORTER_OTLP_ENDPOINT`. Must not contain credentials. |
+| `ANT_OTEL_PROTOCOL`     | `http/protobuf` (default) or `grpc`. Falls back to `OTEL_EXPORTER_OTLP_TRACES_PROTOCOL` / `OTEL_EXPORTER_OTLP_PROTOCOL`.                 |
+| `ANT_OTEL_SERVICE_NAME` | Defaults to `kuvryn-ant` (or `OTEL_SERVICE_NAME`).                                                                                       |
+| `ANT_OTEL_SAMPLE_RATIO` | Parent-based head sampling ratio, greater than 0 and at most 1. Default 1.                                                               |
 
 The exporters also honor the standard `OTEL_EXPORTER_OTLP_*` variables
 (headers, timeout, compression, TLS certificates). Put authentication headers
@@ -67,12 +79,12 @@ in a Kubernetes Secret and inject them with a platform mechanism; the chart's
 
 Spans (W3C `traceparent` is honored on incoming requests):
 
-| Span name | Kind | Notes |
-| --- | --- | --- |
-| `METHOD <route pattern>` | server | management API and every package protocol; for example `GET /api/v1/feeds/{id}`. Attributes: `http.route`, `http.request.method`, `http.response.status_code`. Liveness probes are not traced. |
-| `db select`, `db insert`, `db begin`, `db commit`, ... | client | one per SQL statement inside a traced request; transactions show as `db begin` ... `db commit`. Only the SQL verb is recorded, never SQL text or arguments. |
-| `blob stat`, `blob open`, `blob stage`, `blob finalize`, `blob delete`, `blob list` | internal | blob store operations (disk and S3). |
-| `upstream fetch` | internal | remote-source fetches, with `server.address` and status code. |
+| Span name                                                                           | Kind     | Notes                                                                                                                                                                                          |
+| ----------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `METHOD <route pattern>`                                                            | server   | management API and every package protocol; for example `GET /api/v1/feeds/{id}`. Attributes: `http.route`, `http.request.method`, `http.response.status_code`. Liveness probes are not traced. |
+| `db select`, `db insert`, `db begin`, `db commit`, ...                              | client   | one per SQL statement inside a traced request; transactions show as `db begin` ... `db commit`. Only the SQL verb is recorded, never SQL text or arguments.                                    |
+| `blob stat`, `blob open`, `blob stage`, `blob finalize`, `blob delete`, `blob list` | internal | blob store operations (disk and S3).                                                                                                                                                           |
+| `upstream fetch`                                                                    | internal | remote-source fetches, with `server.address` and status code.                                                                                                                                  |
 
 Errors set span status to `error` without error text, because driver and backend
 errors can contain sensitive detail. Background workers (retention, replication,
@@ -96,16 +108,16 @@ readiness detail and its in-memory recent errors; the CLI's error log only
 covers its own short-lived process, so prefer the API (or `kubectl logs`) for
 incident evidence.
 
-| File | Content |
-| --- | --- |
-| `build.json` | version, VCS revision, Go version, OS/arch |
-| `config.json` | effective configuration (allowlisted fields only) |
-| `health.json` | readiness detail: database, blob storage, writer lease |
-| `migrations.json` | applied schema version vs the binary's version, pending count |
-| `checks.json` | database ping and PostgreSQL version; blob backend reachability, with timings |
-| `errors.log` | most recent WARN/ERROR log records (JSON lines) |
-| `runtime.json` | goroutines, heap, GC and CPU counts |
-| `goroutines.txt` | full goroutine dump |
+| File              | Content                                                                       |
+| ----------------- | ----------------------------------------------------------------------------- |
+| `build.json`      | version, VCS revision, Go version, OS/arch                                    |
+| `config.json`     | effective configuration (allowlisted fields only)                             |
+| `health.json`     | readiness detail: database, blob storage, writer lease                        |
+| `migrations.json` | applied schema version vs the binary's version, pending count                 |
+| `checks.json`     | database ping and PostgreSQL version; blob backend reachability, with timings |
+| `errors.log`      | most recent WARN/ERROR log records (JSON lines)                               |
+| `runtime.json`    | goroutines, heap, GC and CPU counts                                           |
+| `goroutines.txt`  | full goroutine dump                                                           |
 
 Redaction is layered. The configuration is built from an allowlist: the database
 password, root key and storage credentials are replaced by `[REDACTED]`, and

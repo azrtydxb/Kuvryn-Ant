@@ -14,6 +14,7 @@ import (
 	"github.com/beevik/etree"
 	"io"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -47,7 +48,12 @@ type Config struct {
 	Certificate                                           *x509.Certificate
 	NameIDFormat                                          saml.NameIDFormat
 	EmailAttribute, DisplayNameAttribute, GroupsAttribute string
-	Replay                                                ReplayStore
+	// RolesAttribute names the assertion attribute whose values ClaimRoles map to
+	// local role IDs (trusted administrator configuration). Mapping is applied by
+	// the HTTP adapter at login; the provider only reports the proposal.
+	RolesAttribute string
+	ClaimRoles     map[string][]string
+	Replay         ReplayStore
 }
 type Provider struct {
 	sp    saml.ServiceProvider
@@ -69,8 +75,12 @@ type Pending struct {
 type Identity struct {
 	Issuer, Subject, NameIDFormat, Email, DisplayName, SessionIndex string
 	Groups                                                          []string
-	Attributes                                                      map[string][]string
-	Expires                                                         time.Time
+	// Roles are the local role IDs the provider's attribute mapping yields for
+	// this login; RolesMapped reports whether a mapping is configured at all.
+	Roles       []string
+	RolesMapped bool
+	Attributes  map[string][]string
+	Expires     time.Time
 }
 
 func New(c Config) (*Provider, error) {
@@ -242,7 +252,30 @@ func (p *Provider) Consume(ctx context.Context, raw []byte, pending Pending) (Id
 	if len(a.AuthnStatements) > 0 {
 		out.SessionIndex = a.AuthnStatements[0].SessionIndex
 	}
+	if p.cfg.RolesAttribute != "" {
+		out.RolesMapped = true
+		out.Roles = p.mapRoles(out.Attributes[p.cfg.RolesAttribute])
+	}
 	return out, nil
+}
+
+// mapRoles yields the sorted, de-duplicated local role IDs for attribute values.
+func (p *Provider) mapRoles(values []string) []string {
+	seen := map[string]bool{}
+	var roles []string
+	for i, v := range values {
+		if i >= 500 {
+			break
+		}
+		for _, r := range p.cfg.ClaimRoles[v] {
+			if !seen[r] {
+				seen[r] = true
+				roles = append(roles, r)
+			}
+		}
+	}
+	sort.Strings(roles)
+	return roles
 }
 func (p *Provider) key(kind, id string) string {
 	return "saml:" + base64.RawURLEncoding.EncodeToString([]byte(p.cfg.IDPEntityID)) + ":" + kind + ":" + id
@@ -287,7 +320,7 @@ func safeXML(raw []byte, root, ns string) error {
 	// Reference. This narrow SAML profile excludes multi-reference XMLDSIG,
 	// independently of the dependency fix for GO-2026-4753.
 	signatureDepth, signedInfoCount, referenceCount := 0, 0, 0
-	singleton := map[string]bool{"Subject": true, "NameID": true, "Conditions": true, "AudienceRestriction": true, "Audience": true, "SubjectConfirmation": true, "SubjectConfirmationData": true, "Signature": true, "Issuer": true, "Status": true, "StatusCode": true}
+	singleton := map[string]bool{"Subject": true, "NameID": true, "Conditions": true, "AudienceRestriction": true, "Audience": true, "SubjectConfirmation": true, "SubjectConfirmationData": true, "Signature": true, "Issuer": true, "Status": true, "StatusCode": true, "SessionIndex": true}
 	for {
 		t, e := d.Token()
 		if e == io.EOF {
@@ -333,7 +366,7 @@ func safeXML(raw []byte, root, ns string) error {
 					return ErrInvalid
 				}
 			}
-			if v.Name.Local == "EncryptedAssertion" {
+			if v.Name.Local == "EncryptedAssertion" || v.Name.Local == "EncryptedID" {
 				return ErrUnsupported
 			}
 			if v.Name.Local == "Assertion" {
@@ -347,13 +380,13 @@ func safeXML(raw []byte, root, ns string) error {
 				path += "/" + s
 			}
 			path += "/" + v.Name.Local
-			if root == "Response" || root == "LogoutResponse" {
+			if root == "Response" || root == "LogoutResponse" || root == "LogoutRequest" {
 				if singleton[v.Name.Local] {
 					expected := assertionNS
 					if v.Name.Local == "Signature" {
 						expected = "http://www.w3.org/2000/09/xmldsig#"
 					}
-					if v.Name.Local == "Status" || v.Name.Local == "StatusCode" {
+					if v.Name.Local == "Status" || v.Name.Local == "StatusCode" || v.Name.Local == "SessionIndex" {
 						expected = protocolNS
 					}
 					if v.Name.Space != expected {

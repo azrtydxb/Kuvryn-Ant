@@ -149,7 +149,8 @@ it("tests an LDAP configuration and then saves it; the bind password is sent onc
   set("Bind password", "bind-password-123");
   set("User base DN", "ou=users,dc=example");
   set("Group base DN", "ou=groups,dc=example");
-  set(/Group to role proposals/, "ZGV2=reader,writer");
+  set(/Group to role mapping/, "ZGV2=reader,writer");
+  set("Group nesting", "direct");
   fireEvent.click(
     within(dialog).getByRole("button", { name: "Test connection" }),
   );
@@ -182,6 +183,7 @@ it("tests an LDAP configuration and then saves it; the bind password is sent onc
     config: {
       user_base_dn: "ou=users,dc=example",
       group_roles: [{ group_id: "ZGV2", role_ids: ["reader", "writer"] }],
+      group_nesting: "direct",
     },
   });
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());

@@ -364,3 +364,58 @@ func TestTransportCancellationDuringStartTLS(t *testing.T) {
 	}
 	<-done
 }
+
+// nestedDirectory models alice -> inner -> outer; the answer to a membership
+// search depends on which DN is the member.
+func nestedDirectory(t *testing.T) *fixture {
+	t.Helper()
+	calls := 0
+	return &fixture{search: func(r *ldap.SearchRequest) (*ldap.SearchResult, error) {
+		calls++
+		switch {
+		case calls == 1:
+			return result(entry(userDN, "immutable-user")), nil
+		case strings.Contains(r.Filter, "(member="+ldap.EscapeFilter(userDN)+")"):
+			return result(group("inner")), nil
+		case strings.Contains(r.Filter, "(member="+ldap.EscapeFilter("cn=inner,ou=groups,dc=example")+")"):
+			return result(group("outer")), nil
+		}
+		return result(), nil
+	}}
+}
+
+func TestGroupNestingPolicy(t *testing.T) {
+	enc := func(s string) string { return base64.RawURLEncoding.EncodeToString([]byte(s)) }
+	for name, tc := range map[string]struct {
+		nesting string
+		groups  []string
+		roles   []string
+	}{
+		"default is nested": {"", []string{enc("inner"), enc("outer")}, []string{"outer-role"}},
+		"nested":            {NestingNested, []string{enc("inner"), enc("outer")}, []string{"outer-role"}},
+		"direct":            {NestingDirect, []string{enc("inner")}, nil},
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := config()
+			c.GroupNesting = tc.nesting
+			c.GroupRoles = map[string][]string{enc("outer"): {"outer-role"}}
+			got, e := provider(t, c, nestedDirectory(t)).Authenticate(context.Background(), "alice", []byte("password"))
+			if e != nil {
+				t.Fatal(e)
+			}
+			if strings.Join(got.GroupIDs, ",") != strings.Join(tc.groups, ",") || strings.Join(got.RoleIDs, ",") != strings.Join(tc.roles, ",") || !got.RolesMapped {
+				t.Fatalf("%+v", got)
+			}
+		})
+	}
+	c := config()
+	c.GroupNesting = "sideways"
+	if _, e := New(c, func(context.Context) ([]byte, time.Time, error) { return nil, time.Time{}, nil }, nil); !errors.Is(e, ErrConfig) {
+		t.Fatalf("unknown policy accepted: %v", e)
+	}
+	// Without any mapping the identity reports no role mapping at all.
+	got, e := provider(t, config(), nestedDirectory(t)).Authenticate(context.Background(), "alice", []byte("password"))
+	if e != nil || got.RolesMapped {
+		t.Fatalf("%+v %v", got, e)
+	}
+}

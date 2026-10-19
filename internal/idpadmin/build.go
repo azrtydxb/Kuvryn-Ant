@@ -59,9 +59,10 @@ func (b Builder) SAML(l Loaded, replay samllogin.ReplayStore) (*samllogin.Provid
 		return nil, ErrInvalid
 	}
 	return samllogin.New(samllogin.Config{
-		EntityID: c.EntityID, IDPEntityID: c.IDPEntityID, ACSURL: b.Origin + "/auth/saml/callback", MetadataURL: b.Origin + "/auth/saml/metadata",
+		EntityID: c.EntityID, IDPEntityID: c.IDPEntityID, ACSURL: b.Origin + "/auth/saml/callback", MetadataURL: b.Origin + "/auth/saml/metadata", LogoutURL: b.Origin + "/auth/saml/slo",
 		Metadata: []byte(c.IDPMetadataXML), Key: signer, Certificate: cert, Replay: replay,
 		GroupsAttribute: c.GroupsAttribute, EmailAttribute: c.EmailAttribute,
+		RolesAttribute: c.RolesAttribute, ClaimRoles: claimRoleMap(c.ClaimRoles),
 	})
 }
 
@@ -93,7 +94,7 @@ func (b Builder) LDAP(l Loaded) (*directory.Provider, error) {
 		ProviderID: c.ProviderID, URL: c.URL, BindDN: c.BindDN, UserBaseDN: c.UserBaseDN, GroupBaseDN: c.GroupBaseDN,
 		LoginAttribute: c.LoginAttribute, UserIDAttribute: c.UserIDAttribute, GroupIDAttribute: c.GroupIDAttribute,
 		UserClass: c.UserClass, GroupClass: c.GroupClass, MemberAttribute: c.MemberAttribute,
-		CAPEM: []byte(c.CAPEM), GroupRoles: c.GroupRoles,
+		CAPEM: []byte(c.CAPEM), GroupRoles: c.GroupRoles, GroupNesting: c.GroupNesting,
 	}, secret, b.Dial)
 }
 

@@ -61,22 +61,22 @@ authority handover and recovery, federated audit, runbooks. Design and per-miles
 
 ## 3. Evidence per acceptance criterion (spec §11)
 
-| AC                                              | State                | Evidence                                                                                                                                      | Gap                                                                                                |
-| ----------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1 Conformance per ecosystem                     | Partial              | `conformance/results/{local,oke,kw}/2026-10-19` (harness #273): 16 formats pass on all three targets                                          | Failures in 10 formats fixed in #280 but not re-run (#288)                                         |
-| 2 Local/remote/routing/same-endpoint            | Partial              | Same runs: publish, consume, same-endpoint, remote miss and upstream-down hit per format                                                      | apk, git-lfs, p2, swift have no remote; pending re-run                                             |
-| 3 Identity (Zitadel + generic OIDC, SAML, LDAP) | Partial              | Unit/integration tests in `internal/{oidclogin,samllogin,directory}`; Zitadel used in production                                              | No recorded real-provider evidence; SAML SLO unrouted; LDAP group mapping not applied (#46 to #50) |
-| 4 UI/API/MCP authz + audit parity               | Partial              | `internal/mcp/parity_test.go`, management deny/audit tests                                                                                    | MCP lacks identity-admin tools; no UI parity tests (#65)                                           |
-| 5 Two-instance replication                      | Pass with follow-ups | `evidence/2026-10-18` AC5 (seed, interrupt/resume, digests, lag, corruption, outage); federation adoption in `evidence/2026-10-19/federation` | Re-run with large blobs after #271/#279; disk-to-S3 pair (#68)                                     |
-| 6 Disk vs S3 equivalence                        | Pass                 | `evidence/2026-10-18/ac6/*.json`: 46/46 steps on disk, MinIO, OCI Object Storage                                                              | Throttling/visibility tests (#29)                                                                  |
-| 7 Import/export inventory and dry run           | Partial              | #260 tests (synthetic Nexus fixtures)                                                                                                         | No real Nexus run (#83, #290)                                                                      |
-| 8 Performance                                   | Partial              | `evidence/2026-10-18` AC8, `bench/`                                                                                                           | Targets missed or not run (#289)                                                                   |
-| 9 Backup/restore, upgrade, recovery             | Partial              | `evidence/2026-10-18/ac9`; restore trigger fix #279, object-storage backups #285                                                              | Restore and rollback not re-run since the fixes (#76, #77)                                         |
-| 10 No claim without evidence + limitations      | Partial              | Per-adapter READMEs, harness `unsupported` records                                                                                            | Release evidence and known-limitations doc not yet published (#219)                                |
+| AC                                              | State                | Evidence                                                                                                                                      | Gap                                                                                                                                                                |
+| ----------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 Conformance per ecosystem                     | Partial              | `conformance/results/{local,oke,kw}/2026-10-19` (harness #273): 16 formats pass on all three targets                                          | Failures in 10 formats fixed in #280 but not re-run (#288)                                                                                                         |
+| 2 Local/remote/routing/same-endpoint            | Partial              | Same runs: publish, consume, same-endpoint, remote miss and upstream-down hit per format                                                      | apk, git-lfs, p2, swift have no remote; pending re-run                                                                                                             |
+| 3 Identity (Zitadel + generic OIDC, SAML, LDAP) | Partial              | Unit/integration tests in `internal/{oidclogin,samllogin,directory}`; Zitadel used in production                                              | No recorded real-provider evidence (procedure: `docs/operations/identity.md`); SAML SLO and LDAP/SAML role mapping routed and tested against fixtures (#46 to #50) |
+| 4 UI/API/MCP authz + audit parity               | Partial              | `internal/mcp/parity_test.go`, management deny/audit tests                                                                                    | MCP lacks identity-admin tools; no UI parity tests (#65)                                                                                                           |
+| 5 Two-instance replication                      | Pass with follow-ups | `evidence/2026-10-18` AC5 (seed, interrupt/resume, digests, lag, corruption, outage); federation adoption in `evidence/2026-10-19/federation` | Re-run with large blobs after #271/#279; disk-to-S3 pair (#68)                                                                                                     |
+| 6 Disk vs S3 equivalence                        | Pass                 | `evidence/2026-10-18/ac6/*.json`: 46/46 steps on disk, MinIO, OCI Object Storage                                                              | Throttling/visibility tests (#29)                                                                                                                                  |
+| 7 Import/export inventory and dry run           | Partial              | #260 tests (synthetic Nexus fixtures)                                                                                                         | No real Nexus run (#83, #290)                                                                                                                                      |
+| 8 Performance                                   | Partial              | `evidence/2026-10-18` AC8, `bench/`                                                                                                           | Targets missed or not run (#289)                                                                                                                                   |
+| 9 Backup/restore, upgrade, recovery             | Partial              | `evidence/2026-10-18/ac9`; restore trigger fix #279, object-storage backups #285                                                              | Restore and rollback not re-run since the fixes (#76, #77)                                                                                                         |
+| 10 No claim without evidence + limitations      | Partial              | Per-adapter READMEs, harness `unsupported` records                                                                                            | Release evidence and known-limitations doc not yet published (#219)                                                                                                |
 
 The 2026-10-18 qualification defects 1 to 11 were fixed in #271 and #279 (export timeout, source and job deletion,
 anonymous raw read, restore triggers, serving after bootstrap, raw spool, lag reporting). Defects 12 (publish
-throughput), 13 (data-plane metrics labelled `unmatched`, no upstream/cache metrics) and 14 (RSS after seeds) remain.
+throughput), 13 (no upstream/cache metrics; data-plane route labels are now `<format>.<class>`) and 14 (RSS after seeds) remain.
 
 ## 4. Known gaps
 
@@ -84,9 +84,9 @@ throughput), 13 (data-plane metrics labelled `unmatched`, no upstream/cache metr
 - Remote sources for apk, git-lfs, p2 and swift (#120, #155, #180, #205); npm mutable dist-tags (#169).
 - Per-format replica integrity checks: only raw and OCI were verified by AC5 (all `-T4` issues).
 - Prewarm jobs and schedules do not exist (#43); cache effectiveness reporting is incomplete (#44).
-- Observability: data-plane route labels and upstream/cache metrics (#22); failure drills (#23).
-- Identity: real-provider evidence for Zitadel, a second OIDC provider, SAML and LDAP; SAML single logout route; LDAP
-  group-to-role mapping; group management (#46 to #50, #61).
+- Observability: upstream/cache metrics (#22); failure drills (#23).
+- Identity: real-provider evidence for Zitadel, a second OIDC provider, SAML and LDAP (procedure in
+  `docs/operations/identity.md`); group management (#46 to #50, #61).
 - Console accessibility audit and capacity/freshness on the overview (#55, #56).
 - AC8 targets (#289); restore throughput and re-runs of restore/upgrade/rollback (#76, #77).
 - Nexus migration and decommissioning (#290).
@@ -127,8 +127,8 @@ All under `~/.kuvryn-ant/` on the operator workstation, never committed: `azrty-
 1. Deploy main to both sites and run the fresh 26-format conformance (#288); close the format T2/T3 issues it clears.
 2. AC8: fix the publish throughput bottleneck and re-run the benchmarks, including W2 1M-asset and W3 10 GiB (#289).
 3. Re-run restore, upgrade and rollback on kw without workarounds; write RTO/RPO (#76, #77).
-4. Real-provider identity evidence (Zitadel plus one more OIDC provider, SAML, LDAP) and the SAML SLO and LDAP group
-   mapping gaps (#45 to #50).
+4. Real-provider identity evidence (Zitadel plus one more OIDC provider, SAML, LDAP) (the SAML SLO and LDAP/SAML role mapping
+   gaps are closed in code; #45 to #50).
 5. Remote support for apk, git-lfs, p2, swift and npm mutable dist-tags.
 6. Prewarm (#43) and cache/upstream metrics (#22, #44).
 7. Nexus migration and decommissioning (#290); kw-owned feeds (#291); owner decision on #292.

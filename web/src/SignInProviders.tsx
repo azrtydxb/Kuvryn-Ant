@@ -179,7 +179,10 @@ export function PreviewResult({ preview }: { preview: MappingPreview }) {
         {preview.proposed_roles.length > 0 && (
           <>
             <dt>Mapping proposes</dt>
-            <dd>{preview.proposed_roles.join(", ")} (informational)</dd>
+            <dd>
+              {preview.proposed_roles.join(", ")} (applied to claim-managed
+              users; explicit bindings keep their own roles)
+            </dd>
           </>
         )}
       </dl>
@@ -262,6 +265,15 @@ export function ProviderEditor({
   const [metadata, setMetadata] = useState(c.idp_metadata_xml ?? "");
   const [groupsAttr, setGroupsAttr] = useState(c.groups_attribute ?? "");
   const [emailAttr, setEmailAttr] = useState(c.email_attribute ?? "");
+  const [rolesAttr, setRolesAttr] = useState(c.roles_attribute ?? "");
+  const [samlClaimRoles, setSamlClaimRoles] = useState(
+    (kind === "saml" ? (c.claim_roles ?? []) : [])
+      .map((m) => `${m.value}=${m.role_ids.join(",")}`)
+      .join("\n"),
+  );
+  const [groupNesting, setGroupNesting] = useState<string>(
+    c.group_nesting ?? "nested",
+  );
   const [rotate, setRotate] = useState(false);
   const [providerId, setProviderId] = useState(c.provider_id ?? "");
   const [url, setUrl] = useState(c.url ?? "ldaps://");
@@ -311,6 +323,10 @@ export function ProviderEditor({
             idp_metadata_xml: metadata,
             ...(groupsAttr ? { groups_attribute: groupsAttr } : {}),
             ...(emailAttr ? { email_attribute: emailAttr } : {}),
+            ...(rolesAttr ? { roles_attribute: rolesAttr } : {}),
+            ...(lines(samlClaimRoles).length
+              ? { claim_roles: parseClaimRoles(samlClaimRoles) }
+              : {}),
           }
         : {
             provider_id: providerId,
@@ -326,6 +342,7 @@ export function ProviderEditor({
             group_class: groupClass,
             member_attribute: memberAttr,
             group_roles: parseGroupRoles(groupRoles),
+            group_nesting: groupNesting as "nested" | "direct",
           };
 
   return (
@@ -557,6 +574,21 @@ export function ProviderEditor({
               value={emailAttr}
               onChange={val(setEmailAttr)}
             />
+            <Input
+              label="Roles attribute"
+              mono
+              value={rolesAttr}
+              onChange={val(setRolesAttr)}
+              hint="Assertion attribute to map to roles, e.g. groups or memberOf."
+            />
+            <Textarea
+              label="Attribute to role mapping"
+              mono
+              rows={3}
+              value={samlClaimRoles}
+              onChange={val(setSamlClaimRoles)}
+              hint="One per line: attribute value=role ID[,role ID]. Users with no explicit binding are created at first login; explicit bindings always win."
+            />
             {existing && (
               <>
                 <Certificates items={existing.certificates} />
@@ -699,12 +731,24 @@ export function ProviderEditor({
               />
             </div>
             <Textarea
-              label="Group to role proposals"
+              label="Group to role mapping"
               mono
               rows={3}
               value={groupRoles}
               onChange={val(setGroupRoles)}
-              hint="One per line: base64url-group-id=role-id,role-id. Informational: access still comes from identity bindings."
+              hint="One per line: base64url-group-id=role ID[,role ID]. Users with no explicit binding are created at first login; explicit bindings always win."
+            />
+            <Select
+              label="Group nesting"
+              options={[
+                { value: "nested", label: "Nested: include groups of groups" },
+                {
+                  value: "direct",
+                  label: "Direct: only the user's own groups",
+                },
+              ]}
+              value={groupNesting}
+              onChange={val(setGroupNesting)}
             />
           </>
         )}

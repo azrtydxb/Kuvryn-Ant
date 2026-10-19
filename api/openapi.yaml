@@ -22451,7 +22451,7 @@
             }
           }
         },
-        "description": "Maps one value of an OIDC ID-token claim to existing local role IDs. Applied at login to users with no explicit identity binding (just-in-time provisioning) and to users previously provisioned this way."
+        "description": "Maps one value of an OIDC ID-token claim or SAML assertion attribute to existing local role IDs. Applied at login to users with no explicit identity binding (just-in-time provisioning) and to users previously provisioned this way; an explicit binding's memberships are never touched."
       },
       "GroupRoleMapping": {
         "type": "object",
@@ -22471,7 +22471,7 @@
             }
           }
         },
-        "description": "Maps a base64url-encoded immutable LDAP group ID to proposed role IDs. Proposals are informational; effective roles come from identity bindings."
+        "description": "Maps a base64url-encoded immutable LDAP group ID to existing local role IDs. Applied at login to users with no explicit identity binding (just-in-time provisioning) and to users previously provisioned this way; an explicit binding's memberships are never touched."
       },
       "IdentityProviderConfig": {
         "type": "object",
@@ -22522,6 +22522,10 @@
           "email_attribute": {
             "type": "string"
           },
+          "roles_attribute": {
+            "type": "string",
+            "description": "SAML assertion attribute whose values claim_roles map to roles."
+          },
           "provider_id": {
             "type": "string"
           },
@@ -22569,6 +22573,14 @@
             "items": {
               "$ref": "#/components/schemas/GroupRoleMapping"
             }
+          },
+          "group_nesting": {
+            "type": "string",
+            "enum": [
+              "nested",
+              "direct"
+            ],
+            "description": "LDAP group resolution policy: nested (default) follows groups of groups up to the depth limit, so a role mapped to an outer group is inherited; direct uses only the user's direct group memberships."
           }
         },
         "description": "Union of the OIDC, SAML and LDAP settings; only the members for the provider kind apply. sp_certificate_pem is server-managed for SAML."

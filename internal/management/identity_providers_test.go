@@ -60,6 +60,9 @@ func newIDPFixture(t *testing.T) *idpFixture {
 			return idpConn{}, nil
 		},
 	})
+	if _, err := o.db.Exec(context.Background(), `INSERT INTO roles(instance_id,id,name) VALUES($1,$2,'ldap-fixture-role')`, o.instance, ldapTestRole); err != nil {
+		t.Fatal(err)
+	}
 	o.handler = WithRequestID(mux)
 	return f
 }
@@ -72,8 +75,11 @@ func (idpConn) Search(_ context.Context, r *ldap.SearchRequest) (*ldap.SearchRes
 }
 func (idpConn) Close() error { return nil }
 
+// ldapTestRole is a local role the fixture creates, referenced by LDAP group mappings.
+const ldapTestRole = "11111111-1111-4111-8111-111111111111"
+
 func ldapBody(name string, enabled bool, secret string) string {
-	return fmt.Sprintf(`{"kind":"ldap","name":%q,"enabled":%v,"secret":%q,"config":{"provider_id":"https://ldap.example","url":"ldaps://directory.example","bind_dn":"cn=reader,dc=example","user_base_dn":"ou=users,dc=example","group_base_dn":"ou=groups,dc=example","login_attribute":"uid","user_id_attribute":"entryUUID","group_id_attribute":"entryUUID","user_class":"person","group_class":"groupOfNames","member_attribute":"member","group_roles":[{"group_id":"ZGV2","role_ids":["reader"]}]}}`, name, enabled, secret)
+	return fmt.Sprintf(`{"kind":"ldap","name":%q,"enabled":%v,"secret":%q,"config":{"provider_id":"https://ldap.example","url":"ldaps://directory.example","bind_dn":"cn=reader,dc=example","user_base_dn":"ou=users,dc=example","group_base_dn":"ou=groups,dc=example","login_attribute":"uid","user_id_attribute":"entryUUID","group_id_attribute":"entryUUID","user_class":"person","group_class":"groupOfNames","member_attribute":"member","group_roles":[{"group_id":"ZGV2","role_ids":["%s"]}]}}`, name, enabled, secret, ldapTestRole)
 }
 
 func etag(w *httptest.ResponseRecorder) string { return w.Header().Get("ETag") }
@@ -384,5 +390,55 @@ func TestIdentityProviderOIDCClaimRoleMapping(t *testing.T) {
 	got := decodeJSON[IdentityProvider](t, w).Config
 	if str(got.RolesClaim) != "urn:zitadel:iam:org:project:1:roles" || len(got.ClaimRoles) != 1 || got.ClaimRoles[0].Value != "ant-user" || got.ClaimRoles[0].RoleIDs[0] != role || len(got.Scopes) != 1 {
 		t.Fatalf("mapping not round-tripped: %+v", got)
+	}
+}
+
+func TestIdentityProviderSAMLAndLDAPRoleMapping(t *testing.T) {
+	f := newIDPFixture(t)
+	xmlDoc := idpMetadataXML(t, "https://idp.example/", time.Now().AddDate(0, 0, 90))
+	saml := func(attr string, mappings []map[string]any) string {
+		c := map[string]any{"entity_id": "https://ant.example.test/auth/saml/metadata", "idp_entity_id": "https://idp.example/", "idp_metadata_xml": xmlDoc}
+		if attr != "" {
+			c["roles_attribute"] = attr
+		}
+		if mappings != nil {
+			c["claim_roles"] = mappings
+		}
+		b, _ := json.Marshal(map[string]any{"kind": "saml", "name": "okta", "enabled": false, "config": c})
+		return string(b)
+	}
+	good := []map[string]any{{"value": "ant-admins", "role_ids": []string{ldapTestRole}}}
+	for name, bad := range map[string]string{
+		"attribute without mapping": saml("roles", nil),
+		"mapping without attribute": saml("", good),
+		"unknown role":              saml("roles", []map[string]any{{"value": "x", "role_ids": []string{"00000000-0000-4000-8000-000000000000"}}}),
+		"not a role id":             saml("roles", []map[string]any{{"value": "x", "role_ids": []string{"reader"}}}),
+		"duplicate value":           saml("roles", append(good, good...)),
+	} {
+		if w := f.request("POST", "/api/v1/identity-providers", bad, "", ""); w.Code < 400 || w.Code >= 500 {
+			t.Fatalf("%s accepted: %d %s", name, w.Code, w.Body.String())
+		}
+	}
+	w := f.request("POST", "/api/v1/identity-providers", saml("roles", good), "", "")
+	expectSourceStatus(t, w, 201)
+	got := decodeJSON[IdentityProvider](t, w).Config
+	if str(got.RolesAttribute) != "roles" || len(got.ClaimRoles) != 1 || got.ClaimRoles[0].Value != "ant-admins" || got.ClaimRoles[0].RoleIDs[0] != ldapTestRole {
+		t.Fatalf("SAML mapping not round-tripped: %+v", got)
+	}
+
+	// LDAP: unknown roles are refused; the nesting policy is validated and round-trips.
+	withConfig := func(nesting, role string) string {
+		return strings.Replace(ldapBody("corp", false, "bind-password-xyz"), `"member_attribute":"member",`, `"member_attribute":"member",`+nesting, 1)
+	}
+	if w = f.request("POST", "/api/v1/identity-providers", strings.Replace(ldapBody("corp", false, "bind-password-xyz"), ldapTestRole, "00000000-0000-4000-8000-000000000000", 1), "", ""); w.Code != 400 {
+		t.Fatalf("unknown LDAP role accepted: %d", w.Code)
+	}
+	if w = f.request("POST", "/api/v1/identity-providers", withConfig(`"group_nesting":"sideways",`, ""), "", ""); w.Code < 400 || w.Code >= 500 {
+		t.Fatalf("bad nesting policy accepted: %d %s", w.Code, w.Body.String())
+	}
+	w = f.request("POST", "/api/v1/identity-providers", withConfig(`"group_nesting":"direct",`, ""), "", "")
+	expectSourceStatus(t, w, 201)
+	if got = decodeJSON[IdentityProvider](t, w).Config; str(got.GroupNesting) != "direct" || len(got.GroupRoles) != 1 || got.GroupRoles[0].RoleIDs[0] != ldapTestRole {
+		t.Fatalf("LDAP mapping not round-tripped: %+v", got)
 	}
 }

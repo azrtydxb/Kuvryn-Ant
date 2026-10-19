@@ -79,7 +79,7 @@ func (h *HTTP) Wrap(logger *slog.Logger, resolve func(*http.Request) string, nex
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		route := "unmatched"
 		if resolve != nil {
-			route = Route(resolve(r))
+			route = RouteFor(resolve(r), r)
 		}
 		verb := method(r.Method)
 		started := time.Now()
