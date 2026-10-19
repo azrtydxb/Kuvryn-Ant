@@ -129,6 +129,7 @@ mandatory; only break-glass is exempt.
 
   Creates the account (with `--admin`, also the full-grant `local-administrator`
   role) or, if it exists, resets its password and prints it once.
+
 - Deleting an account removes its password, sign-in binding and sessions and
   disables the principal; the username cannot be reused.
 
