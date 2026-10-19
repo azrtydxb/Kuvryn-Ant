@@ -329,3 +329,145 @@ func isChainMismatch(err error) bool {
 	var rej *RejectedError
 	return errors.As(err, &rej) && rej.Reason == "chain_mismatch"
 }
+
+// fetchTopology returns up to 50 authority topology documents after a generation.
+func (s *Service) fetchTopology(ctx context.Context, id peer.Identity, src Member, after int64) ([]TopologyDocument, error) {
+	raw, err := s.client.Do(ctx, id, src.FederationURL, "GET", "/federation/v1/documents/topology?after="+strconv.FormatInt(after, 10)+"&limit=50", nil, src.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	var docs struct {
+		Documents []TopologyDocument `json:"documents"`
+	}
+	if err := json.Unmarshal(raw, &docs); err != nil {
+		return nil, &RejectedError{Reason: "malformed", Err: ErrMalformed}
+	}
+	return docs.Documents, nil
+}
+
+// resyncTopology is resyncMembership for the topology chain. Topology documents
+// verify against the applied membership, so the authority segment must be
+// signed in the current authority epoch.
+func (s *Service) resyncTopology(ctx context.Context, id peer.Identity, src Member, confirmed time.Time) error {
+	st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil {
+		return err
+	}
+	ps, err := loadTopologyState(ctx, s.cfg.DB, s.cfg.InstanceID)
+	if err != nil {
+		return err
+	}
+	if st.State != "active" || ps.Generation == 0 {
+		return ErrNotConfigured
+	}
+	local := func(g int64) (*TopologyDocument, error) {
+		return loadTopology(ctx, s.cfg.DB, s.cfg.InstanceID, st.FederationID, g)
+	}
+	const window = 50
+	var fork int64
+	var segment []TopologyDocument
+	for after := max(0, ps.Generation-window); ; after = max(0, after-window) {
+		docs, err := s.fetchTopology(ctx, id, src, after)
+		if err != nil {
+			return err
+		}
+		if len(docs) == 0 || docs[0].Generation != after+1 {
+			return &RejectedError{Reason: "generation_gap", Err: ErrGap}
+		}
+		fork = 0
+		for i := range docs {
+			g := docs[i].Generation
+			if g != after+1+int64(i) {
+				return &RejectedError{Reason: "generation_gap", Err: ErrGap}
+			}
+			if g > ps.Generation {
+				break
+			}
+			mine, err := local(g)
+			if err != nil {
+				return err
+			}
+			if mine == nil || TopologyHash(mine) != TopologyHash(&docs[i]) {
+				fork, segment = g, docs[i:]
+				break
+			}
+		}
+		if fork == 0 {
+			if docs[len(docs)-1].Generation >= ps.Generation {
+				return errNoDivergence
+			}
+			return &RejectedError{Reason: "generation_gap", Err: ErrGap}
+		}
+		if fork > after+1 || after == 0 {
+			break
+		}
+	}
+	for len(segment) < maxChain {
+		next, err := s.fetchTopology(ctx, id, src, segment[len(segment)-1].Generation)
+		if err != nil {
+			return err
+		}
+		if len(next) == 0 {
+			break
+		}
+		segment = append(segment, next...)
+	}
+	head := &segment[len(segment)-1]
+	if head.Generation < ps.Generation {
+		return &RejectedError{Reason: "stale_generation", Err: ErrStaleGen}
+	}
+	membership, err := loadDocument(ctx, s.cfg.DB, s.cfg.InstanceID, st.FederationID, st.AppliedGeneration)
+	if err != nil {
+		return err
+	}
+	var applied *TopologyDocument
+	if fork > 1 {
+		if applied, err = local(fork - 1); err != nil {
+			return err
+		}
+	}
+	for i := range segment {
+		if err := VerifyTopology(&segment[i], applied, membership); err != nil {
+			reason := RejectReason(err)
+			s.recordTopologyRejection(ctx, &segment[i], src.Name, reason)
+			return &RejectedError{Reason: reason, Err: err}
+		}
+		applied = &segment[i]
+	}
+	err = s.tx(ctx, func(tx pgx.Tx) error {
+		cur, err := lockState(ctx, tx, s.cfg.InstanceID)
+		if err != nil {
+			return err
+		}
+		now, err := loadTopologyState(ctx, tx, s.cfg.InstanceID)
+		if err != nil {
+			return err
+		}
+		if cur.State != "active" || now.Generation != ps.Generation || now.Hash != ps.Hash {
+			return errors.New("federation: topology changed during resync; retrying later")
+		}
+		if _, err := tx.Exec(ctx, `SELECT set_config('ant.federation_resync','on',true)`); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM federation_documents WHERE instance_id=$1 AND federation_id=$2 AND kind='topology' AND generation>=$3`, s.cfg.InstanceID, st.FederationID, fork); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `SELECT set_config('ant.federation_resync','off',true)`); err != nil {
+			return err
+		}
+		// Topology effects (transfers, bindings) are applied in order.
+		for i := range segment {
+			if err := s.storeTopology(ctx, tx, st.FederationID, &segment[i], confirmed); err != nil {
+				return err
+			}
+		}
+		return audit(ctx, tx, s.cfg.InstanceID, "", "federation.document.resynced", st.FederationID, "success", map[string]any{"kind": "topology",
+			"from_generation": fork, "previous_generation": ps.Generation, "previous_hash": ps.Hash, "generation": head.Generation, "hash": TopologyHash(head), "source": src.Name})
+	})
+	if err != nil {
+		return err
+	}
+	s.topologyCache.Store(nil)
+	s.ReconcileReplication()
+	return nil
+}

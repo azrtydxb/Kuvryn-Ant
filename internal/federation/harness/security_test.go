@@ -58,6 +58,11 @@ func (in *instance) respell(kind string, gen int64) string {
 		_ = json.Unmarshal(body, &d)
 		d.Signature.Value = malleate(d.Signature.Value)
 		sig, hash = d.Signature.Value, federation.Hash(&d)
+	case "topology":
+		var d federation.TopologyDocument
+		_ = json.Unmarshal(body, &d)
+		d.Signature.Value = malleate(d.Signature.Value)
+		sig, hash = d.Signature.Value, federation.TopologyHash(&d)
 	default:
 		var d federation.PolicyDocument
 		_ = json.Unmarshal(body, &d)
@@ -80,10 +85,7 @@ func (in *instance) respell(kind string, gen int64) string {
 			in.t.Fatal(err)
 		}
 	}
-	column := "applied_hash"
-	if kind == "policy" {
-		column = "policy_hash"
-	}
+	column := map[string]string{"membership": "applied_hash", "policy": "policy_hash", "topology": "topology_hash"}[kind]
 	if _, err := tx.Exec(ctx, `UPDATE federation_state SET `+column+`=$2 WHERE instance_id=$1`, in.id, hash); err != nil {
 		in.t.Fatal(err)
 	}
@@ -149,6 +151,27 @@ func TestFederationSnapshotResync(t *testing.T) {
 	}
 	if beta.policyGeneration() != 2 || beta.policyView().Status.Hash != alpha.policyView().Status.Hash {
 		t.Fatalf("beta policy did not recover: %+v", beta.policyView().Status)
+	}
+
+	// And for the topology chain.
+	for i, slug := range []string{"release", "tools"} {
+		feed, _ := alpha.localFeed(slug)
+		alpha.bind("lab/"+slug, feed)
+		if code := alpha.call("POST", "/api/v1/federation/feeds", map[string]any{"feed_key": "lab/" + slug, "home_member_id": alpha.id}, nil); code != 201 {
+			t.Fatalf("feed key %s: %d", slug, code)
+		}
+		if i == 0 {
+			if err := beta.svc.SyncOnce(ctx); err != nil || beta.topology().Generation != 1 {
+				t.Fatalf("topology on beta: %v", err)
+			}
+			beta.respell("topology", 1)
+		}
+	}
+	if err := beta.svc.SyncOnce(ctx); err != nil {
+		t.Fatalf("topology resync: %v", err)
+	}
+	if tb, ta := beta.topology(), alpha.topology(); tb.Generation != 2 || tb.Hash != ta.Hash {
+		t.Fatalf("beta topology did not recover: %d %s, authority %s", tb.Generation, tb.Hash, ta.Hash)
 	}
 }
 

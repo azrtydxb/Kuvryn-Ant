@@ -9,7 +9,7 @@ import (
 // NonceTTL. A member that exceeds it is refused (429 rate_limited) instead of
 // growing the cache; the per-member request rate limit keeps honest members
 // far below it.
-const MaxNoncesPerMember = 32768
+const MaxNoncesPerMember = 65536
 
 type nonceEntry struct {
 	nonce string

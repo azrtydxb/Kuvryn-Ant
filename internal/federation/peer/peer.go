@@ -132,8 +132,8 @@ const (
 
 // Default per-member limit of signed peer requests (all routes).
 const (
-	DefaultMemberRate  = 100.0
-	DefaultMemberBurst = 200
+	DefaultMemberRate  = 200.0
+	DefaultMemberBurst = 400
 )
 
 func (h *Handler) refuse(w http.ResponseWriter, r *http.Request, status int, member, reason string) {

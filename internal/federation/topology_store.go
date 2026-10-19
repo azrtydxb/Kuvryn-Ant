@@ -315,7 +315,8 @@ func (s *Service) localTopologyHead(ctx context.Context, role string) (policyHea
 }
 
 // syncTopologyFrom brings the topology up to the source's head.
-func (s *Service) syncTopologyFrom(ctx context.Context, id peer.Identity, src Member, head policyHead) error {
+func (s *Service) syncTopologyFrom(ctx context.Context, id peer.Identity, src Member, head policyHead, authority bool) error {
+	resynced := false
 	for range 100 {
 		ts, err := loadTopologyState(ctx, s.cfg.DB, s.cfg.InstanceID)
 		if err != nil {
@@ -324,6 +325,14 @@ func (s *Service) syncTopologyFrom(ctx context.Context, id peer.Identity, src Me
 		confirmed := time.UnixMilli(head.ConfirmedUnixMS).UTC()
 		if head.ConfirmedUnixMS <= 0 || confirmed.After(s.now()) {
 			confirmed = s.now()
+		}
+		if authority && !resynced && head.Generation == ts.Generation && ts.Generation > 0 && head.Hash != ts.Hash {
+			// Same generation, another document: the chains diverged (§6.4 rule 6).
+			resynced = true
+			if err := s.resyncTopology(ctx, id, src, confirmed); err != nil && !errors.Is(err, errNoDivergence) {
+				return err
+			}
+			continue
 		}
 		if head.Generation <= ts.Generation {
 			if head.Generation == ts.Generation && ts.Generation > 0 && head.Hash == ts.Hash && (ts.ConfirmedAt == nil || confirmed.After(*ts.ConfirmedAt) || ts.Error != "") {
@@ -346,6 +355,13 @@ func (s *Service) syncTopologyFrom(ctx context.Context, id peer.Identity, src Me
 			return &RejectedError{Reason: "generation_gap", Err: ErrGap}
 		}
 		n, err := s.applyTopologyDocuments(ctx, docs.Documents, src.Name, confirmed)
+		if err != nil && authority && !resynced && isChainMismatch(err) {
+			resynced = true
+			if rerr := s.resyncTopology(ctx, id, src, confirmed); rerr != nil && !errors.Is(rerr, errNoDivergence) {
+				return rerr
+			}
+			continue
+		}
 		if err != nil {
 			return err
 		}

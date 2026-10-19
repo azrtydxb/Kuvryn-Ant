@@ -202,7 +202,7 @@ func (s *Service) syncFrom(ctx context.Context, id peer.Identity, src Member) er
 			if err := s.syncPolicyFrom(ctx, id, src, h.Policy, authority); err != nil {
 				return err
 			}
-			return s.syncTopologyFrom(ctx, id, src, h.Topology)
+			return s.syncTopologyFrom(ctx, id, src, h.Topology, authority)
 		}
 		raw, err = s.client.Do(ctx, id, src.FederationURL, "GET", "/federation/v1/documents/membership?after="+strconv.FormatInt(st.AppliedGeneration, 10)+"&limit=100", nil, src.InstanceID)
 		if err != nil {
