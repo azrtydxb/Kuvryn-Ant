@@ -134,8 +134,12 @@ type Membership struct {
 	Signature          *Signature        `json:"signature,omitempty"`
 }
 
-// Member returns the entry for an instance ID.
+// Member returns the entry for an instance ID. A nil Membership (no applied
+// document loaded) has no members.
 func (m *Membership) Member(id string) (Member, bool) {
+	if m == nil {
+		return Member{}, false
+	}
 	for _, x := range m.Members {
 		if x.InstanceID == id {
 			return x, true
@@ -146,6 +150,9 @@ func (m *Membership) Member(id string) (Member, bool) {
 
 // Revoked reports whether a certificate serial is revoked.
 func (m *Membership) Revoked(serial string) bool {
+	if m == nil {
+		return false
+	}
 	for _, s := range m.RevokedCertSerials {
 		if s == serial {
 			return true
