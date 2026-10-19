@@ -986,7 +986,7 @@ export function ProviderAdmin({
       </p>
       {data.items.length === 0 && data.file_items.length === 0 && (
         <Alert tone="info" title="No sign-in providers configured">
-          Add one above. Until then, sign in with a service token or the
+          Add one above. Until then, sign in with an API token or the
           break-glass account.
         </Alert>
       )}

@@ -268,6 +268,7 @@ func RegisterIdentityProviders(mux *http.ServeMux, d IdentityAdminDeps) {
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
+	RegisterLocalUsers(mux, d)
 }
 
 func (h idpHandlers) ctx(r *http.Request) (context.Context, context.CancelFunc) {

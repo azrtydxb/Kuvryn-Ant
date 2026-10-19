@@ -51,7 +51,7 @@ it("keeps tokens out of browser storage and removes protected data on sign-out",
   fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
   expect(screen.queryByRole("button", { name: /production/ })).toBeNull();
   await screen.findByRole("heading", { name: "Sign in" });
-  expect(screen.queryByLabelText("Short-lived bearer token")).toBeNull();
+  expect(screen.queryByLabelText("Short-lived API token")).toBeNull();
   expect(document.body.textContent).not.toContain("private-token");
 });
 it("loads feed details and saves with the returned ETag", async () => {

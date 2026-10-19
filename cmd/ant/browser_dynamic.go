@@ -334,3 +334,33 @@ func (b *browserRuntime) localLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	s.enterprise.issue(w, r, "local", localadmin.Issuer, res.Subject, nil)
 }
+
+// labels returns the administrator-chosen display names of the enabled stored
+// providers whose protocol is currently active, keyed by protocol ("oidc",
+// "saml", "ldap"). Names are not secret; they let the sign-in page say "Sign in
+// with Zitadel". A lookup failure just yields no labels.
+func (d *dynamicProviders) labels(ctx context.Context, active []string) map[string]string {
+	out := map[string]string{}
+	if d == nil || d.pool == nil || len(active) == 0 {
+		return out
+	}
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	rows, err := d.pool.Query(ctx, `SELECT kind,name FROM identity_providers WHERE instance_id=$1 AND enabled ORDER BY kind`, d.instance)
+	if err != nil {
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var kind, name string
+		if rows.Scan(&kind, &name) != nil {
+			return map[string]string{}
+		}
+		for _, a := range active {
+			if a == kind {
+				out[kind] = name
+			}
+		}
+	}
+	return out
+}

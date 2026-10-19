@@ -317,10 +317,11 @@ it("signs in with the break-glass account, asking for the TOTP code only after t
   );
   const onSession = vi.fn();
   render(<SignIn onSession={onSession} onToken={() => undefined} />);
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Emergency access" }),
-  );
-  expect(screen.getByText(/SSO is mandatory/)).toBeTruthy();
+  await screen.findByLabelText("Username");
+  expect(screen.getByText(/Single sign-on is required/)).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Username"), {
+    target: { value: "break-glass" },
+  });
   fireEvent.change(screen.getByLabelText("Password"), {
     target: { value: "emergency passphrase 42" },
   });
@@ -345,4 +346,39 @@ it("signs in with the break-glass account, asking for the TOTP code only after t
     },
   ]);
   expect(document.body.textContent).not.toContain("emergency passphrase 42");
+});
+
+it("offers the named provider and password form first, with the API token behind a link", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (url === "/auth/providers")
+        return json({
+          providers: ["oidc"],
+          local: true,
+          sso_mandatory: false,
+          labels: { oidc: "Zitadel" },
+        });
+      if (url === "/auth/session") return new Response(null, { status: 401 });
+      return json({});
+    }),
+  );
+  const onToken = vi.fn();
+  render(<SignIn onSession={() => undefined} onToken={onToken} />);
+  expect(
+    (
+      await screen.findByRole("link", { name: "Sign in with Zitadel" })
+    ).getAttribute("href"),
+  ).toBe("/auth/oidc/login");
+  // The password form is visible without any toggle; the token field is not.
+  expect(screen.getByLabelText("Username")).toBeTruthy();
+  expect(screen.getByLabelText("Password")).toBeTruthy();
+  expect(screen.queryByLabelText("Short-lived API token")).toBeNull();
+  expect(screen.queryByText(/Emergency access/)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Use an API token" }));
+  fireEvent.change(screen.getByLabelText("Short-lived API token"), {
+    target: { value: "tok" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Use token" }));
+  expect(onToken).toHaveBeenCalledWith("tok");
 });

@@ -103,9 +103,9 @@ export function mockAPI(
 
 export async function signInWithToken(token = "private-token") {
   fireEvent.click(
-    await screen.findByRole("button", { name: "Use a service token" }),
+    await screen.findByRole("button", { name: "Use an API token" }),
   );
-  fireEvent.change(screen.getByLabelText("Short-lived bearer token"), {
+  fireEvent.change(screen.getByLabelText("Short-lived API token"), {
     target: { value: token },
   });
   fireEvent.click(screen.getByRole("button", { name: "Use token" }));

@@ -26,8 +26,7 @@ export function SignIn({
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
-  const [showLocal, setShowLocal] = useState(false);
-  const [localUser, setLocalUser] = useState("break-glass");
+  const [localUser, setLocalUser] = useState("");
   const [localPassword, setLocalPassword] = useState("");
   const [localCode, setLocalCode] = useState("");
   const [needCode, setNeedCode] = useState(false);
@@ -50,7 +49,13 @@ export function SignIn({
     };
   }, [retry, controller]);
   const none =
-    providers && !providers.oidc && !providers.saml && !providers.ldap;
+    providers &&
+    !providers.oidc &&
+    !providers.saml &&
+    !providers.ldap &&
+    !providers.local;
+  const sso = providers && (providers.oidc || providers.saml);
+  const passwordForms = providers && (providers.local || providers.ldap);
   return (
     <div className="az-card signin">
       <ProductLogo
@@ -89,7 +94,7 @@ export function SignIn({
               className="az-btn az-btn--primary signin__sso"
               href="/auth/oidc/login"
             >
-              Sign in with OIDC
+              Sign in with {providers.labels?.oidc || "OIDC"}
             </a>
           )}
           {providers.saml && (
@@ -97,17 +102,94 @@ export function SignIn({
               className="az-btn az-btn--secondary signin__sso"
               href="/auth/saml/login"
             >
-              Sign in with SAML
+              Sign in with {providers.labels?.saml || "SAML"}
             </a>
           )}
+          {sso && passwordForms && <div className="divider">or</div>}
           {none && (
             <p className="muted small">
               No browser sign-in providers are configured on this server.
             </p>
           )}
+          {providers.local && (
+            <form
+              className="stack"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (busy) return;
+                let submitted = localPassword;
+                setLocalPassword("");
+                setBusy(true);
+                setError(undefined);
+                try {
+                  const request = localLogin(
+                    localUser,
+                    submitted,
+                    localCode,
+                    controller.signal,
+                  );
+                  submitted = "";
+                  const session = await request;
+                  if (!controller.signal.aborted) onSession(session);
+                } catch (e) {
+                  if (e instanceof MfaRequired) setNeedCode(true);
+                  if (!controller.signal.aborted) setError(e);
+                } finally {
+                  if (!controller.signal.aborted) setBusy(false);
+                }
+              }}
+            >
+              {providers.ssoMandatory && (
+                <p className="muted small">
+                  Single sign-on is required; only the break-glass account may
+                  use a password.
+                </p>
+              )}
+              <fieldset disabled={busy} className="plain">
+                <Input
+                  label="Username"
+                  required
+                  autoComplete="username"
+                  maxLength={64}
+                  value={localUser}
+                  onChange={(e: { target: { value: string } }) =>
+                    setLocalUser(e.target.value)
+                  }
+                />
+                <Input
+                  label="Password"
+                  required
+                  type="password"
+                  autoComplete="current-password"
+                  maxLength={256}
+                  value={localPassword}
+                  onChange={(e: { target: { value: string } }) =>
+                    setLocalPassword(e.target.value)
+                  }
+                />
+                {needCode && (
+                  <Input
+                    label="Authenticator code"
+                    required
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={localCode}
+                    onChange={(e: { target: { value: string } }) =>
+                      setLocalCode(e.target.value)
+                    }
+                  />
+                )}
+                <Button type="submit" variant={sso ? "secondary" : "primary"}>
+                  {busy ? "Signing in…" : "Sign in"}
+                </Button>
+              </fieldset>
+              <Failure error={error} />
+            </form>
+          )}
           {providers.ldap && (
             <>
-              <div className="divider">LDAP</div>
+              {providers.local && <div className="divider">LDAP</div>}
               <form
                 className="stack"
                 onSubmit={async (e) => {
@@ -165,101 +247,13 @@ export function SignIn({
           )}
         </>
       )}
-      {providers?.local && (
-        <>
-          <button
-            type="button"
-            className="linkbtn"
-            aria-expanded={showLocal}
-            onClick={() => setShowLocal((v) => !v)}
-          >
-            {showLocal ? "Hide emergency access" : "Emergency access"}
-          </button>
-          {showLocal && (
-            <form
-              className="stack"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (busy) return;
-                let submitted = localPassword;
-                setLocalPassword("");
-                setBusy(true);
-                setError(undefined);
-                try {
-                  const request = localLogin(
-                    localUser,
-                    submitted,
-                    localCode,
-                    controller.signal,
-                  );
-                  submitted = "";
-                  const session = await request;
-                  if (!controller.signal.aborted) onSession(session);
-                } catch (e) {
-                  if (e instanceof MfaRequired) setNeedCode(true);
-                  if (!controller.signal.aborted) setError(e);
-                } finally {
-                  if (!controller.signal.aborted) setBusy(false);
-                }
-              }}
-            >
-              <p className="muted small">
-                For the break-glass administrator when single sign-on is
-                unavailable.
-                {providers.ssoMandatory &&
-                  " SSO is mandatory; only this account may use a password."}
-              </p>
-              <fieldset disabled={busy} className="plain">
-                <Input
-                  label="Username"
-                  required
-                  autoComplete="username"
-                  maxLength={64}
-                  value={localUser}
-                  onChange={(e: { target: { value: string } }) =>
-                    setLocalUser(e.target.value)
-                  }
-                />
-                <Input
-                  label="Password"
-                  required
-                  type="password"
-                  autoComplete="current-password"
-                  maxLength={256}
-                  value={localPassword}
-                  onChange={(e: { target: { value: string } }) =>
-                    setLocalPassword(e.target.value)
-                  }
-                />
-                {needCode && (
-                  <Input
-                    label="Authenticator code"
-                    required
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={localCode}
-                    onChange={(e: { target: { value: string } }) =>
-                      setLocalCode(e.target.value)
-                    }
-                  />
-                )}
-                <Button type="submit" variant="secondary">
-                  {busy ? "Signing in…" : "Sign in"}
-                </Button>
-              </fieldset>
-              <Failure error={error} />
-            </form>
-          )}
-        </>
-      )}
       <button
         type="button"
         className="linkbtn"
         aria-expanded={showToken}
         onClick={() => setShowToken((v) => !v)}
       >
-        {showToken ? "Hide service token" : "Use a service token"}
+        {showToken ? "Hide API token" : "Use an API token"}
       </button>
       {showToken && (
         <form
@@ -273,13 +267,13 @@ export function SignIn({
           }}
         >
           <p className="muted small">
-            Development and administration fallback. Use an already short-lived
-            service token. It stays in memory for at most 15 minutes and is
+            For applications and CI. People sign in above. Use an already
+            short-lived token. It stays in memory for at most 15 minutes and is
             cleared on sign-out or leaving this page. This does not revoke the
             server token.
           </p>
           <Input
-            label="Short-lived bearer token"
+            label="Short-lived API token"
             type="password"
             mono
             required
