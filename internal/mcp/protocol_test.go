@@ -94,14 +94,14 @@ func TestInitializeAndListing(t *testing.T) {
 		m := x.(map[string]any)
 		names[m["name"].(string)] = m
 	}
-	for _, n := range []string{"list_feeds", "get_feed", "list_sources", "get_source", "search_packages", "list_package_versions", "list_package_assets", "lookup_checksum", "get_health", "get_cache_insight", "create_feed", "attach_source", "set_publish_policy", "rotate_webhook_secret", "detach_source", "disable_webhook", "delete_package_version", "get_federation_status", "list_federation_members", "get_federation_policy", "publish_federation_policy", "check_federation_access", "list_federated_principals", "federated_search", "federated_lookup_checksum"} {
+	for _, n := range []string{"list_feeds", "get_feed", "list_sources", "get_source", "search_packages", "list_package_versions", "list_package_assets", "lookup_checksum", "get_health", "get_cache_insight", "create_feed", "attach_source", "set_publish_policy", "rotate_webhook_secret", "detach_source", "disable_webhook", "delete_package_version", "get_federation_status", "list_federation_members", "get_federation_policy", "publish_federation_policy", "check_federation_access", "list_federated_principals", "federated_search", "federated_lookup_checksum", "get_federation_topology", "list_replication_rules", "get_replication_rule_compliance", "get_federation_replication_status", "set_replication_rule", "adopt_replication_job", "start_feed_transfer"} {
 		if names[n] == nil {
 			t.Fatalf("missing tool %s", n)
 		}
 	}
 	for n, m := range names {
 		ann := m["annotations"].(map[string]any)
-		destructive := map[string]bool{"detach_source": true, "disable_webhook": true, "delete_package_version": true, "start_retention_run": true, "start_storage_job": true, "revoke_service_token": true, "purge_source_cache": true, "publish_federation_policy": true}[n]
+		destructive := map[string]bool{"detach_source": true, "disable_webhook": true, "delete_package_version": true, "start_retention_run": true, "start_storage_job": true, "revoke_service_token": true, "purge_source_cache": true, "publish_federation_policy": true, "start_feed_transfer": true}[n]
 		if got, _ := ann["destructiveHint"].(bool); got != destructive && !ann["readOnlyHint"].(bool) {
 			t.Fatalf("%s destructiveHint=%v", n, got)
 		}

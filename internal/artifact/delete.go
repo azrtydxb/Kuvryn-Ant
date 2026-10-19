@@ -212,6 +212,9 @@ func MutateTx(ctx context.Context, tx pgx.Tx, p identity.Principal, policy ident
 	if p.PrincipalID == "" || !validTarget(t) || (action != ActionDelete && action != ActionUnlist && action != ActionRelist) {
 		return Outcome{}, ErrInput
 	}
+	if err := frozenFeed(ctx, tx, p.InstanceID, t.FeedID); err != nil {
+		return Outcome{}, err
+	}
 	out := Outcome{Action: action}
 	var kind, nsActual string
 	find := func(lock bool) error {

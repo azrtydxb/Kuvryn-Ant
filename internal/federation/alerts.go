@@ -28,7 +28,7 @@ type PolicyStatus struct {
 // outbox events (federation.alert.raised / federation.alert.cleared), so
 // webhooks and audit sinks deliver them.
 type Alert struct {
-	Code     string `json:"code"`     // policy_stale | policy_rejected | membership_stale | policy_conflicts
+	Code     string `json:"code"`     // policy_stale | policy_rejected | membership_stale | policy_conflicts | topology_rejected | feed_home_conflict
 	Severity string `json:"severity"` // warning | critical
 	Message  string `json:"message"`
 }
@@ -90,7 +90,26 @@ func computeAlerts(st State, ps PolicyState, pol *PolicyStatus, now time.Time) [
 	if pol != nil && len(pol.Report.Conflicts) > 0 {
 		out = append(out, Alert{Code: "policy_conflicts", Severity: "warning", Message: "federated bindings match local principals; adopt or resolve them"})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Code < out[j].Code })
+	sortAlerts(out)
+	return out
+}
+
+func sortAlerts(a []Alert) { sort.Slice(a, func(i, j int) bool { return a[i].Code < a[j].Code }) }
+
+// topologyAlerts derives coordinated-replication alerts: a rejected topology
+// document (the last known good stays applied) and quarantined content after
+// a forced home transfer (feed_home_conflict, §13).
+func topologyAlerts(t *TopologyStatus) []Alert {
+	out := []Alert{}
+	if t == nil {
+		return out
+	}
+	if t.Error != "" {
+		out = append(out, Alert{Code: "topology_rejected", Severity: "warning", Message: t.Error + "; the last known good topology stays applied"})
+	}
+	if t.Quarantines > 0 {
+		out = append(out, Alert{Code: "feed_home_conflict", Severity: "critical", Message: "content written on an old home after a forced transfer is quarantined; review and resolve it"})
+	}
 	return out
 }
 
@@ -110,6 +129,10 @@ func (s *Service) EvaluateAlerts(ctx context.Context) ([]Alert, error) {
 		pol := s.policyStatus(st, ps)
 		s.policyHeadGauge.Store(pol)
 		active = computeAlerts(st, ps, pol, s.now())
+		if topo, err := s.topologyStatus(ctx, st); err == nil {
+			active = append(active, topologyAlerts(topo)...)
+			sortAlerts(active)
+		}
 		next := map[string]string{}
 		for _, a := range active {
 			next[a.Code] = a.Severity

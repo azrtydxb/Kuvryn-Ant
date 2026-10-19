@@ -286,6 +286,66 @@ func catalog() []*tool {
 				}
 				return c.api(http.MethodPost, "/api/v1/federation/policy/publish", nil, body, map[string]string{"Idempotency-Key": c.idempotencyKey()}).result()
 			}},
+		{name: "get_federation_topology", title: "Federation topology", desc: "The applied signed topology: federated feed keys with their single home member, descriptor and home-transfer state, the replication rules, and the local role (home, replica, unbound) and freeze state of each key on this member. Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/topology", nil) }},
+		{name: "list_replication_rules", title: "List federation replication rules", desc: "Federation replication rules (feed key, targets by labels or members, mode, interval, filters, deletion policy, read-only destination, adopt_existing, lag budget, revision). Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/replication/rules", nil) }},
+		{name: "get_replication_rule_compliance", title: "Replication rule compliance", desc: "State of one federation replication rule on every target member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled; unknown when unreachable) with job, phase, lag and adoption. Requires read on the instance.", readOnly: true,
+			params: []param{{name: "rule_id", typ: "uuid", required: true, desc: "Replication rule ID."}},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("rule_id")
+				return c.get("/api/v1/federation/replication/rules/"+c.str("rule_id")+"/compliance", nil)
+			}},
+		{name: "get_federation_replication_status", title: "Federation replication status", desc: "Local view of the federation replication rules that target this member (job, phase, checkpoint, lag, adopted) and quarantined sources from forced home transfers. Requires read on the instance.", readOnly: true,
+			run: func(c *call) *toolResult { return c.get("/api/v1/federation/replication/status", nil) }},
+		{name: "set_replication_rule", title: "Create or change a federation replication rule", desc: "On the authority: create a replication rule (feed_key and targets required) or, with rule_id and revision, change one. Target members create or adopt the destination job (existing matching jobs are adopted without reseed) and apply changes on their next reconcile. Requires instance admin on the authority.", idempotent: true,
+			params: []param{{name: "rule_id", typ: "uuid", desc: "Existing rule to change; omit to create."}, {name: "revision", typ: "integer", desc: "Current rule revision (required with rule_id)."},
+				{name: "feed_key", typ: "string", desc: "<federation>/<feed-slug> (create only)."}, {name: "targets", typ: "object", desc: `{"labels":{"site":"kw"}} or {"members":["<instance id>"]}; never the home member.`},
+				{name: "mode", typ: "string", desc: "continuous, scheduled or manual.", enum: []string{"continuous", "scheduled", "manual"}}, {name: "interval_seconds", typ: "integer", desc: "Poll or schedule interval."},
+				{name: "include_cached", typ: "boolean", desc: "Also copy the home's pull-through cache."}, {name: "filters", typ: "object", desc: `{"namespaces":[],"packages":[],"version_prefixes":[]}`},
+				{name: "deletion_policy", typ: "string", desc: "ignore or propagate.", enum: []string{"ignore", "propagate"}}, {name: "destination_read_only", typ: "boolean", desc: "Destination rejects publishes."},
+				{name: "create_destination_feed", typ: "boolean", desc: "Create the destination feed from the descriptor when none is bound."}, {name: "adopt_existing", typ: "boolean", desc: "Adopt a matching existing local job in place."},
+				{name: "max_lag_seconds", typ: "integer", desc: "Lag budget before the rule reports lagging."}},
+			run: func(c *call) *toolResult {
+				body := map[string]any{}
+				for _, k := range []string{"targets", "mode", "interval_seconds", "include_cached", "filters", "deletion_policy", "destination_read_only", "create_destination_feed", "adopt_existing", "max_lag_seconds"} {
+					if v, ok := c.args[k]; ok {
+						body[k] = v
+					}
+				}
+				hdr := map[string]string{"Idempotency-Key": c.idempotencyKey()}
+				if id := c.str("rule_id"); id != "" {
+					c.resourceID = id
+					body["revision"] = c.args["revision"]
+					return c.api(http.MethodPatch, "/api/v1/federation/replication/rules/"+id, nil, body, hdr).result()
+				}
+				body["feed_key"] = c.args["feed_key"]
+				return c.api(http.MethodPost, "/api/v1/federation/replication/rules", nil, body, hdr).result()
+			}},
+		{name: "adopt_replication_job", title: "Adopt a replication job into a federation rule", desc: "Switch an existing local replication job to a federation rule in place: checkpoint, phase and replica source are kept (no reseed). The job must already replicate the home feed of the rule's key into the bound destination feed. Requires instance admin on this member.", idempotent: true,
+			params: []param{{name: "job_id", typ: "uuid", required: true, desc: "Local replication job."}, {name: "rule_id", typ: "uuid", required: true, desc: "Federation replication rule."}},
+			run: func(c *call) *toolResult {
+				c.resourceID = c.str("job_id")
+				return c.api(http.MethodPost, "/api/v1/federation/replication/adopt", nil, map[string]any{"job_id": c.args["job_id"], "rule_id": c.args["rule_id"]}, map[string]string{"Idempotency-Key": c.idempotencyKey()}).result()
+			}},
+		{name: "start_feed_transfer", title: "Start a feed home transfer", desc: "DESTRUCTIVE: move the home of a federated feed key to another member that holds a replica. planned freezes the home (publishes answer 503 feed_transferring), waits for the target to drain to the frozen head, promotes it and demotes the old home to a replica; it aborts on drain timeout. forced skips freeze and drain for a lost home and needs accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there. Requires instance admin on the authority and confirm: true.", destructive: true, idempotent: true,
+			params: []param{{name: "feed_key", typ: "string", required: true, desc: "<federation>/<feed-slug>."}, {name: "to_member_id", typ: "uuid", required: true, desc: "New home member."},
+				{name: "mode", typ: "string", desc: "planned (default) or forced.", enum: []string{"planned", "forced"}}, {name: "accept_data_loss", typ: "boolean", desc: "Required for forced transfers."},
+				{name: "drain_timeout_seconds", typ: "integer", desc: "Planned transfers abort after this (default 900)."}},
+			run: func(c *call) *toolResult {
+				key := c.str("feed_key")
+				fed, slug, ok := strings.Cut(key, "/")
+				if !ok || fed == "" || slug == "" || strings.Contains(slug, "/") {
+					return errResult("invalid_request: feed_key must be <federation>/<feed-slug>")
+				}
+				body := map[string]any{"to_member_id": c.args["to_member_id"], "confirm": true}
+				for _, k := range []string{"mode", "accept_data_loss", "drain_timeout_seconds"} {
+					if v, ok := c.args[k]; ok {
+						body[k] = v
+					}
+				}
+				return c.api(http.MethodPost, "/api/v1/federation/feeds/"+url.PathEscape(fed)+"/"+url.PathEscape(slug)+"/transfer", nil, body, map[string]string{"Idempotency-Key": c.idempotencyKey()}).result()
+			}},
 		{name: "list_webhooks", title: "List webhooks", desc: "List webhook subscriptions (secrets are never returned).", readOnly: true,
 			params: []param{{name: "after", typ: "uuid", desc: "Return items after this webhook ID."}, pageParams[0]},
 			run: func(c *call) *toolResult {

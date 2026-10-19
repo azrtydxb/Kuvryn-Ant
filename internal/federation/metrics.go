@@ -23,6 +23,9 @@ func (s *Service) WriteMetrics(w io.Writer) {
 	if p := s.policyHeadGauge.Load(); p != nil {
 		fmt.Fprintf(w, "ant_federation_document_generation{kind=\"policy\"} %d\n", p.Generation)
 	}
+	if tp := s.topologyGauge.Load(); tp != nil {
+		fmt.Fprintf(w, "ant_federation_document_generation{kind=\"topology\"} %d\n", tp.Generation)
+	}
 	fmt.Fprintln(w, "# HELP ant_federation_authority_epoch Applied authority epoch.\n# TYPE ant_federation_authority_epoch gauge")
 	fmt.Fprintf(w, "ant_federation_authority_epoch %d\n", t.doc.AuthorityEpoch)
 	counts := map[string]int{"active": 0, "suspended": 0, "removed": 0}
@@ -38,6 +41,16 @@ func (s *Service) WriteMetrics(w io.Writer) {
 		fmt.Fprintf(w, "ant_federation_document_age_seconds{kind=\"policy\"} %d\n", p.AgeSeconds)
 		fmt.Fprintln(w, "# HELP ant_federation_policy_unresolved_feed_keys Policy feed keys not bound to a local feed (inert grants).\n# TYPE ant_federation_policy_unresolved_feed_keys gauge")
 		fmt.Fprintf(w, "ant_federation_policy_unresolved_feed_keys %d\n", len(p.Report.UnresolvedFeedKeys))
+	}
+	if tp := s.topologyGauge.Load(); tp != nil {
+		fmt.Fprintln(w, "# HELP ant_federation_topology_rules_targeting_self Replication rules that target this member.\n# TYPE ant_federation_topology_rules_targeting_self gauge")
+		fmt.Fprintf(w, "ant_federation_topology_rules_targeting_self %d\n", tp.Targeted)
+		fmt.Fprintln(w, "# HELP ant_federation_topology_home_feeds Federated feeds this member is home of.\n# TYPE ant_federation_topology_home_feeds gauge")
+		fmt.Fprintf(w, "ant_federation_topology_home_feeds %d\n", tp.HomeFeeds)
+		fmt.Fprintln(w, "# HELP ant_federation_transfers_active Home transfers in progress.\n# TYPE ant_federation_transfers_active gauge")
+		fmt.Fprintf(w, "ant_federation_transfers_active %d\n", tp.Transfers)
+		fmt.Fprintln(w, "# HELP ant_federation_quarantines_unresolved Quarantined old-home sources awaiting review.\n# TYPE ant_federation_quarantines_unresolved gauge")
+		fmt.Fprintf(w, "ant_federation_quarantines_unresolved %d\n", tp.Quarantines)
 	}
 	fmt.Fprintln(w, "# HELP ant_federation_alert Active federation alerts (1 per code and severity).\n# TYPE ant_federation_alert gauge")
 	if a := s.alerts.Load(); a != nil {

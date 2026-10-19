@@ -1,9 +1,9 @@
 # Multi-site topology: OKE and kw
 
 Two independent Kuvryn Ant instances run side by side and are joined with Phase 1
-replication (spec 6.7, `internal/replication/README.md`). Phase 2 federation
-(`docs/planning/phase-2-federation.md`) is not deployed yet; when it is, the
-jobs below are the ones it takes over.
+replication (spec 6.7, `internal/replication/README.md`). Phase 2 coordinated
+replication (`docs/planning/phase-2-federation.md`, P2-M3) adopts the jobs below
+in place once both sites are federated; see the last section.
 
 | Site | URL                                                                      | Storage            | Role                                                                      |
 | ---- | ------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------- |
@@ -106,8 +106,35 @@ OKE `10.244.0.0/16` (Envoy). kw's ingress Service has
 `externalTrafficPolicy: Cluster`, so LAN clients still arrive SNAT'd to a node
 address; set it to `Local` to preserve true client IPs.
 
-## Federation
+## Federation: adopting the oke-* jobs (P2-M3)
 
-`internal/federation` has not merged, so kw has not joined a federation. When M1
-ships, join kw with OKE as authority per the Phase 2 document and let the
-reconciler adopt the jobs above.
+Coordinated replication (`docs/operations/federation.md`, "Coordinated
+replication") takes over the nine jobs in place, without a reseed. With OKE as
+authority and kw joined with label `site=kw`:
+
+1. On OKE, bind each of the nine OKE feeds to its key
+   (`POST /api/v1/federation/feed-bindings {"feed_key":"watteel/<slug>","feed_id":…}`)
+   and publish the key with OKE as home
+   (`POST /api/v1/federation/feeds {"feed_key":"watteel/<slug>","home_member_id":<OKE>}`).
+2. On kw, bind the existing kw feed of the same slug to the same key. The
+   reconciler never takes over an unbound feed (status `conflict` until bound).
+3. On OKE, create one rule per key that reproduces today's job settings, so
+   adoption changes nothing but the transport:
+   `{"feed_key":"watteel/<slug>","targets":{"labels":{"site":"kw"}},"mode":"continuous","interval_seconds":30,"include_cached":false,"deletion_policy":"propagate","destination_read_only":true}`
+   (`adopt_existing` defaults to true).
+4. kw's reconciler matches each `oke-<slug>` job: its peer `oke-prod` URL is
+   OKE's API URL in the membership (`https://ant.azrty.com`, which must equal
+   OKE's `ANT_PUBLIC_URL`), its remote feed is OKE's home feed and its
+   destination is the bound kw feed. The job keeps its name, checkpoint, phase,
+   counters and replica source; `origin` becomes `federation`, the peer becomes
+   the federation-mode peer `fed-oke` (mTLS on the federation listener, no
+   token). `GET /api/v1/federation/replication/status` on kw shows each rule
+   `in_sync` and `adopted: true`; `reseeds` stays unchanged on the job status.
+5. After all nine are adopted, `oke-prod` and the `kw-replicator` token are no
+   longer used. Keep them until the federation path has run for a while, then
+   revoke the token on OKE and delete the peer on kw.
+
+The kw → OKE federation path must work (it is the one kw already uses to
+sync documents). If adoption is not wanted yet, create the rules with
+`"adopt_existing": false`: kw reports `conflict` and keeps the Phase 1 jobs
+untouched; adopt them one at a time with `POST /api/v1/federation/replication/adopt`.

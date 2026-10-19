@@ -50,3 +50,28 @@ func readOnlyReplicaPeer(ctx context.Context, q rowQuerier, instance, feed strin
 	}
 	return url, true, nil
 }
+
+// FeedTransferringError reports that the feed is frozen by a federation home
+// transfer (planned freeze, or an old home demoting after the home moved).
+// Publishes and deletes are refused until the transfer completes or aborts.
+// It satisfies errors.Is(err, ErrUnavailable), so adapters answer 503.
+type FeedTransferringError struct{}
+
+func (*FeedTransferringError) Error() string {
+	return "feed_transferring: the feed is moving to another federation member; retry against the new home"
+}
+func (*FeedTransferringError) Is(target error) bool { return target == ErrUnavailable }
+
+// frozenFeed reports a federation transfer freeze on the feed.
+func frozenFeed(ctx context.Context, q rowQuerier, instance, feed string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var frozen bool
+	if err := q.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM federation_feed_freezes WHERE instance_id=$1 AND feed_id=$2)`, instance, feed).Scan(&frozen); err != nil {
+		return ErrUnavailable
+	}
+	if frozen {
+		return &FeedTransferringError{}
+	}
+	return nil
+}

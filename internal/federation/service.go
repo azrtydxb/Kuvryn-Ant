@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -112,6 +113,16 @@ type Service struct {
 	// search is the cross-instance search runtime (search.go).
 	search   searchState
 	searcher atomic.Pointer[PackageSearcher]
+
+	// topologyCache holds the applied topology document; nil means reload.
+	topologyCache atomic.Pointer[TopologyDocument]
+	// replication is the coordinated-replication backend (internal/replication),
+	// wired after construction; nil when replication is not serving.
+	replication   atomic.Pointer[ReplicationHooks]
+	reconcile     chan struct{}
+	peerRoutes    map[string]http.Handler
+	peerMu        sync.Mutex
+	topologyGauge atomic.Pointer[TopologyStatus]
 }
 
 type trust struct {
@@ -140,7 +151,7 @@ func New(cfg Config) (*Service, error) {
 		cfg.SoftwareVersion = "unknown"
 	}
 	s := &Service{cfg: cfg, store: secrets.Store{DB: cfg.DB, Keys: cfg.Keys}, client: peer.Client{Timeout: cfg.PeerTimeout, Now: cfg.Now},
-		nudge: make(chan struct{}, 1), logged: map[string]time.Time{}}
+		nudge: make(chan struct{}, 1), logged: map[string]time.Time{}, reconcile: make(chan struct{}, 1), peerRoutes: map[string]http.Handler{}}
 	s.trust.Store(&trust{state: State{State: "none"}})
 	return s, nil
 }
@@ -315,6 +326,7 @@ type Status struct {
 	SoftwareVersion        string             `json:"software_version"`
 	Protocol               ProtocolRange      `json:"protocol"`
 	Policy                 *PolicyStatus      `json:"policy,omitempty"`
+	Topology               *TopologyStatus    `json:"topology,omitempty"`
 	Alerts                 []Alert            `json:"alerts"`
 }
 
@@ -391,7 +403,12 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 				return Status{}, err
 			}
 			out.Policy = s.policyStatus(st, ps)
+			if out.Topology, err = s.topologyStatus(ctx, st); err != nil {
+				return Status{}, err
+			}
 			out.Alerts = computeAlerts(st, ps, out.Policy, s.now())
+			out.Alerts = append(out.Alerts, topologyAlerts(out.Topology)...)
+			sortAlerts(out.Alerts)
 			if len(out.Alerts) > 0 {
 				out.Health = "degraded"
 			}
@@ -485,7 +502,7 @@ type StoredDocument struct {
 // Document returns the applied document of a kind (generation 0) or a
 // specific generation from the local log.
 func (s *Service) Document(ctx context.Context, kind string, generation int64) (StoredDocument, error) {
-	if kind != "membership" && kind != "policy" {
+	if kind != "membership" && kind != "policy" && kind != "topology" {
 		return StoredDocument{}, ErrNotFound
 	}
 	st, err := loadState(ctx, s.cfg.DB, s.cfg.InstanceID)
@@ -502,6 +519,13 @@ func (s *Service) Document(ctx context.Context, kind string, generation int64) (
 			return StoredDocument{}, err
 		}
 		current = ps.Generation
+	}
+	if kind == "topology" {
+		ts, err := loadTopologyState(ctx, s.cfg.DB, s.cfg.InstanceID)
+		if err != nil {
+			return StoredDocument{}, err
+		}
+		current = ts.Generation
 	}
 	if generation == 0 {
 		generation = current
@@ -521,6 +545,11 @@ func (s *Service) Document(ctx context.Context, kind string, generation int64) (
 	}
 	out.Kind = kind
 	out.Applied = generation == current
+	if kind == "topology" {
+		d := &TopologyDocument{}
+		out.Document = d
+		return out, json.Unmarshal(body, d)
+	}
 	if kind == "policy" {
 		d := &PolicyDocument{}
 		out.Document = d

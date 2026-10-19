@@ -470,6 +470,9 @@ func dropFederatedIdentity(ctx context.Context, tx pgx.Tx, instance string) erro
 			return err
 		}
 	}
+	if err := dropFederatedReplication(ctx, tx, instance); err != nil {
+		return err
+	}
 	return disableApply(ctx, tx)
 }
 

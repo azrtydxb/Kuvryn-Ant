@@ -491,3 +491,130 @@ it("toggles the package search scope to the federation and reports partial resul
     true,
   );
 });
+
+it("shows federated feeds, rule compliance and starts a planned home transfer", async () => {
+  const ruleID = "99999999-8888-4777-8666-555555555555";
+  install((url, init) => {
+    if (url === "/api/v1/federation/status") return json(active);
+    if (url === "/api/v1/federation/members")
+      return json({
+        items: [
+          member(alpha, "alpha", { authority: true, self: true }),
+          member(beta, "beta"),
+        ],
+      });
+    if (url === "/api/v1/federation/invitations") return json({ items: [] });
+    if (url === "/api/v1/federation/topology")
+      return json({
+        generation: 4,
+        authority: true,
+        feeds: [
+          {
+            key: "lab/release",
+            home: alpha,
+            home_name: "alpha",
+            descriptor: { format: "npm", anonymous_read: false },
+            revision: 1,
+            local_role: "home",
+            frozen: false,
+          },
+        ],
+        rules: [
+          {
+            id: ruleID,
+            feed_key: "lab/release",
+            targets: { labels: { site: "beta" } },
+            mode: "continuous",
+            interval_seconds: 300,
+            include_cached: true,
+            filters: {},
+            deletion_policy: "ignore",
+            destination_read_only: true,
+            create_destination_feed: true,
+            adopt_existing: true,
+            max_lag_seconds: 900,
+            revision: 1,
+          },
+        ],
+      });
+    if (url === "/api/v1/federation/replication/status")
+      return json({ items: [], quarantines: [] });
+    if (url === `/api/v1/federation/replication/rules/${ruleID}/compliance`)
+      return json({
+        rule: { id: ruleID, feed_key: "lab/release", revision: 1 },
+        home: alpha,
+        members: [
+          {
+            rule_id: ruleID,
+            feed_key: "lab/release",
+            member_id: beta,
+            member_name: "beta",
+            state: "in_sync",
+            adopted: true,
+            checkpoint: 42,
+            consecutive_failures: 0,
+          },
+        ],
+        summary: { in_sync: 1 },
+      });
+    if (
+      url === "/api/v1/federation/feeds/lab/release/transfer" &&
+      init.method === "POST"
+    )
+      return json(
+        {
+          id: ruleID,
+          from: alpha,
+          to: beta,
+          mode: "planned",
+          state: "freeze",
+          head: 0,
+          checkpoint: 0,
+          baseline: 0,
+          started_at: "2026-10-19T10:00:00Z",
+          updated_at: "2026-10-19T10:00:00Z",
+        },
+        202,
+      );
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Federation");
+  await screen.findByText("Federated feeds");
+  await waitFor(() =>
+    expect(screen.getAllByText("site=beta").length).toBeGreaterThan(1),
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "Compliance" }));
+  const comp = await screen.findByRole("dialog", { name: "Rule compliance" });
+  await within(comp).findByText("in_sync");
+  fireEvent.click(within(comp).getByRole("button", { name: "Done" }));
+  fireEvent.click(screen.getByRole("button", { name: "Transfer home" }));
+  const dialog = await screen.findByRole("dialog", {
+    name: "Transfer the home of lab/release",
+  });
+  const start = within(dialog).getByRole("button", { name: "Start transfer" });
+  fireEvent.change(within(dialog).getByLabelText("New home"), {
+    target: { value: beta },
+  });
+  expect((start as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(
+    within(dialog).getByLabelText("Move the home of lab/release"),
+  );
+  fireEvent.click(start);
+  await waitFor(() =>
+    expect(posts("/api/v1/federation/feeds/lab/release/transfer")).toHaveLength(
+      1,
+    ),
+  );
+  const sent = JSON.parse(
+    posts("/api/v1/federation/feeds/lab/release/transfer")[0].init
+      .body as string,
+  );
+  expect(sent).toEqual({
+    to_member_id: beta,
+    mode: "planned",
+    confirm: true,
+    accept_data_loss: false,
+  });
+});

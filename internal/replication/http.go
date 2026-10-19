@@ -79,6 +79,8 @@ func fail(w http.ResponseWriter, r *http.Request, err error) {
 		management.Error(w, r, http.StatusNotFound, api.ErrorCodeNotFound, "replication resource not found")
 	case errors.Is(err, ErrConflict):
 		management.Error(w, r, http.StatusConflict, api.ErrorCodeConflict, "replication resource conflicts with current state")
+	case errors.Is(err, ErrManaged):
+		management.Error(w, r, http.StatusConflict, api.ErrorCodeFederationManaged, "federation-managed: change the federation replication rule on the authority")
 	case errors.Is(err, ErrDenied):
 		management.Error(w, r, http.StatusForbidden, api.ErrorCodeForbidden, "replication access denied")
 	case errors.Is(err, ErrPeer):

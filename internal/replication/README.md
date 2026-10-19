@@ -174,6 +174,33 @@ are fingerprinted with an HMAC keyed from the root key (never a plain hash of
 the token) and responses never contain it. Authorization is checked on every
 call, including replays.
 
+## Federation mode (Phase 2, P2-M3)
+
+When the instance is a federation member, `AttachFederation` (wired in
+`cmd/ant/replication.go`) adds coordinated replication on top of the same jobs:
+
+- **Federation-mode peers** (`auth_mode=federation`, `member_instance_id`) have
+  no token. The client connects to the member's federation listener from the
+  applied membership with mTLS (member certificate, server CN pinned to the
+  member) and signs every request with the member key; the export API is
+  served there as `/federation/v1/replication/export/feeds/{feed}/…`
+  (`FederationExport`, same handlers and wire format). The home authorizes from
+  the applied topology: the caller must be targeted by a rule for the feed's
+  key, or be the other side of its transfer.
+- **Reconciler** (`federated.go`, run by the federation worker under the writer
+  lease): rule → destination feed (bound, or created from the descriptor) →
+  federation peer → one job with `origin=federation`; rule changes patch the
+  job; removed rules release it (disabled, `origin=local`); jobs whose feed
+  changed home are re-pointed with a reseed; the transfer target promotes its
+  replica source to local; the old home demotes (planned: its local source
+  becomes the replica source, provenance re-stamped, manifest walk with blob
+  dedup) or quarantines (forced). Existing matching jobs are **adopted in
+  place**: checkpoint, phase, counters and replica source are kept.
+- Federation-managed peers and jobs are read-only through this API (409
+  `federation_managed`); runs can still be triggered.
+
+See `docs/operations/federation.md` ("Coordinated replication").
+
 ## Wiring
 
 `cmd/ant/replication.go` builds the runtime; `startWorkers` hosts `Service.Run`

@@ -35,33 +35,48 @@ func RegisterFederation(mux *http.ServeMux, pool *pgxpool.Pool, svc *federation.
 	h := federationHandlers{identityHandlers{feedHandlers{db: pool}}, svc}
 	bearer := identity.NewBearer(identity.Tokens{DB: pool})
 	for pattern, handler := range map[string]http.HandlerFunc{
-		"GET /api/v1/federation/status":                        h.status,
-		"POST /api/v1/federation":                              h.found,
-		"POST /api/v1/federation/join":                         h.join,
-		"POST /api/v1/federation/leave":                        h.leave,
-		"GET /api/v1/federation/members":                       h.members,
-		"GET /api/v1/federation/members/{id}":                  h.member,
-		"POST /api/v1/federation/members/{id}/{action}":        h.memberAction,
-		"DELETE /api/v1/federation/members/{id}":               h.removeMember,
-		"GET /api/v1/federation/invitations":                   h.invitations,
-		"POST /api/v1/federation/invitations":                  h.createInvitation,
-		"DELETE /api/v1/federation/invitations/{id}":           h.revokeInvitation,
-		"GET /api/v1/federation/documents/{kind}":              h.document,
-		"GET /api/v1/federation/documents/{kind}/{generation}": h.document,
-		"POST /api/v1/federation/recovery-key/rotate":          h.rotateRecovery,
-		"GET /api/v1/federation/policy":                        h.getPolicy,
-		"GET /api/v1/federation/policy/draft":                  h.getDraft,
-		"PUT /api/v1/federation/policy/draft":                  h.putDraft,
-		"POST /api/v1/federation/policy/publish":               h.publishPolicy,
-		"GET /api/v1/federation/policy/diff":                   h.policyDiff,
-		"GET /api/v1/federation/feed-bindings":                 h.feedBindings,
-		"POST /api/v1/federation/feed-bindings":                h.bindFeed,
-		"DELETE /api/v1/federation/feed-bindings/{fed}/{slug}": h.unbindFeed,
-		"GET /api/v1/federation/principals":                    h.principals,
-		"POST /api/v1/federation/principals/{id}/adopt":        h.adoptPrincipal,
-		"GET /api/v1/federation/settings":                      h.getSettings,
-		"PUT /api/v1/federation/settings":                      h.putSettings,
-		"POST /api/v1/federation/access-check":                 h.accessCheck,
+		"GET /api/v1/federation/status":                             h.status,
+		"POST /api/v1/federation":                                   h.found,
+		"POST /api/v1/federation/join":                              h.join,
+		"POST /api/v1/federation/leave":                             h.leave,
+		"GET /api/v1/federation/members":                            h.members,
+		"GET /api/v1/federation/members/{id}":                       h.member,
+		"POST /api/v1/federation/members/{id}/{action}":             h.memberAction,
+		"DELETE /api/v1/federation/members/{id}":                    h.removeMember,
+		"GET /api/v1/federation/invitations":                        h.invitations,
+		"POST /api/v1/federation/invitations":                       h.createInvitation,
+		"DELETE /api/v1/federation/invitations/{id}":                h.revokeInvitation,
+		"GET /api/v1/federation/documents/{kind}":                   h.document,
+		"GET /api/v1/federation/documents/{kind}/{generation}":      h.document,
+		"POST /api/v1/federation/recovery-key/rotate":               h.rotateRecovery,
+		"GET /api/v1/federation/policy":                             h.getPolicy,
+		"GET /api/v1/federation/policy/draft":                       h.getDraft,
+		"PUT /api/v1/federation/policy/draft":                       h.putDraft,
+		"POST /api/v1/federation/policy/publish":                    h.publishPolicy,
+		"GET /api/v1/federation/policy/diff":                        h.policyDiff,
+		"GET /api/v1/federation/feed-bindings":                      h.feedBindings,
+		"POST /api/v1/federation/feed-bindings":                     h.bindFeed,
+		"DELETE /api/v1/federation/feed-bindings/{fed}/{slug}":      h.unbindFeed,
+		"GET /api/v1/federation/principals":                         h.principals,
+		"POST /api/v1/federation/principals/{id}/adopt":             h.adoptPrincipal,
+		"GET /api/v1/federation/settings":                           h.getSettings,
+		"PUT /api/v1/federation/settings":                           h.putSettings,
+		"POST /api/v1/federation/access-check":                      h.accessCheck,
+		"GET /api/v1/federation/topology":                           h.topology,
+		"POST /api/v1/federation/feeds":                             h.createFeed,
+		"DELETE /api/v1/federation/feeds/{fed}/{slug}":              h.deleteFeed,
+		"POST /api/v1/federation/feeds/{fed}/{slug}/transfer":       h.startTransfer,
+		"POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort": h.abortTransfer,
+		"GET /api/v1/federation/replication/rules":                  h.listRules,
+		"POST /api/v1/federation/replication/rules":                 h.createRule,
+		"GET /api/v1/federation/replication/rules/{id}":             h.getRule,
+		"PATCH /api/v1/federation/replication/rules/{id}":           h.patchRule,
+		"DELETE /api/v1/federation/replication/rules/{id}":          h.deleteRule,
+		"GET /api/v1/federation/replication/rules/{id}/compliance":  h.ruleCompliance,
+		"GET /api/v1/federation/replication/status":                 h.replicationStatus,
+		"POST /api/v1/federation/replication/adopt":                 h.adoptJob,
+		"GET /api/v1/federation/quarantines":                        h.quarantines,
+		"POST /api/v1/federation/quarantines/{id}/resolve":          h.resolveQuarantine,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
@@ -121,13 +136,21 @@ func federationError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, federation.ErrRecoveryMismatch):
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "recovery key does not match the federation recovery key")
 	case errors.Is(err, federation.ErrRevisionMismatch):
-		Error(w, r, 412, api.ErrorCodePreconditionFailed, "policy draft revision changed")
+		Error(w, r, 412, api.ErrorCodePreconditionFailed, "revision changed; reload and retry")
 	case errors.Is(err, federation.ErrStaleBase):
 		Error(w, r, 409, api.ErrorCodeStaleGeneration, "base_generation is not the applied policy generation; review the latest policy and retry")
 	case errors.Is(err, federation.ErrNotFederated):
 		Error(w, r, 403, api.ErrorCodeNotFederated, "only federated principals can be asserted to other members")
 	case errors.Is(err, federation.ErrConflict):
 		Error(w, r, 409, api.ErrorCodeConflict, "the feed key or the feed is already bound")
+	case errors.Is(err, federation.ErrFeedHomeElsewhere):
+		Error(w, r, 409, api.ErrorCodeFeedHomeElsewhere, "the feed key already has a home; move it with a home transfer")
+	case errors.Is(err, federation.ErrTransferActive):
+		Error(w, r, 409, api.ErrorCodeFeedTransferring, "a home transfer is in progress for this feed key")
+	case errors.Is(err, federation.ErrTransferState):
+		Error(w, r, 409, api.ErrorCodeConflict, "the transfer is past promotion and can no longer be aborted")
+	case errors.Is(err, federation.ErrReplicationOff):
+		Error(w, r, 503, api.ErrorCodeUnavailable, "replication is not serving on this instance")
 	case errors.Is(err, federation.ErrProtocol):
 		Error(w, r, 409, api.ErrorCodeConflict, "no common federation protocol version")
 	case errors.As(err, &un):

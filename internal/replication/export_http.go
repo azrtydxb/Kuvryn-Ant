@@ -1,14 +1,17 @@
 package replication
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/federation/peer"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -26,7 +29,10 @@ const exportBase = "/api/v1/replication/export/feeds/{feed}"
 //	GET {base}/template         (non-secret feed configuration template)
 func RegisterExport(mux *http.ServeMux, pool *pgxpool.Pool, e Exporter) {
 	bearer := identity.NewBearer(identity.Tokens{DB: pool})
-	h := exportHandlers{e: e, roles: identity.Roles{DB: pool}}
+	roles := identity.Roles{DB: pool}
+	h := exportHandlers{e: e, authz: func(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+		return bearerAuthorize(roles, w, r)
+	}}
 	mux.Handle("GET "+exportBase+"/head", bearer.Wrap(http.HandlerFunc(h.head)))
 	mux.Handle("GET "+exportBase+"/manifest", bearer.Wrap(http.HandlerFunc(h.manifest)))
 	mux.Handle("GET "+exportBase+"/changes", bearer.Wrap(http.HandlerFunc(h.changes)))
@@ -35,27 +41,67 @@ func RegisterExport(mux *http.ServeMux, pool *pgxpool.Pool, e Exporter) {
 }
 
 type exportHandlers struct {
-	e     Exporter
-	roles identity.Roles
+	e Exporter
+	// authz authenticates and authorizes "replicate" on the feed and returns
+	// the exporting instance and the feed.
+	authz func(w http.ResponseWriter, r *http.Request) (instance, feed string, ok bool)
+	// longWrites extends the write deadline of blob responses (the federation
+	// listener has a short default write timeout).
+	longWrites bool
 }
 
-func (h exportHandlers) authorize(w http.ResponseWriter, r *http.Request) (identity.Principal, string, bool) {
+func (h exportHandlers) authorize(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+	return h.authz(w, r)
+}
+
+func bearerAuthorize(roles identity.Roles, w http.ResponseWriter, r *http.Request) (string, string, bool) {
 	p, ok := identity.PrincipalFromContext(r.Context())
 	feed := r.PathValue("feed")
 	if !ok || !uuidPattern.MatchString(feed) {
 		management.Error(w, r, http.StatusNotFound, api.ErrorCodeNotFound, "feed not found")
-		return p, "", false
+		return "", "", false
 	}
-	policy, err := h.roles.Resolve(r.Context(), p)
+	policy, err := roles.Resolve(r.Context(), p)
 	if err != nil {
 		management.Error(w, r, http.StatusServiceUnavailable, api.ErrorCodeUnavailable, "authorization unavailable")
-		return p, "", false
+		return "", "", false
 	}
 	if !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: feed, Kind: identity.FeedResource}, identity.Replicate) {
 		management.Error(w, r, http.StatusForbidden, api.ErrorCodeForbidden, "replication access denied")
-		return p, "", false
+		return "", "", false
 	}
-	return p, feed, true
+	return p.InstanceID, feed, true
+}
+
+// FederationExportPrefix is the export API path on the federation listener.
+const FederationExportPrefix = "/federation/v1/replication/export/feeds/"
+
+// FederationExport serves the export API on the federation mTLS listener for
+// federation-mode peers (same handlers and wire format as the bearer API).
+// The caller is already an authenticated, active member (peer.Handler);
+// authorize decides from the applied, authority-signed topology.
+func FederationExport(e Exporter, instance string, authorize func(ctx context.Context, member, feed string) bool) http.Handler {
+	h := exportHandlers{e: e, longWrites: true, authz: func(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+		caller, ok := peer.Caller(r)
+		feed := r.PathValue("feed")
+		if !ok || !uuidPattern.MatchString(feed) {
+			management.Error(w, r, http.StatusNotFound, api.ErrorCodeNotFound, "feed not found")
+			return "", "", false
+		}
+		if !authorize(r.Context(), caller.InstanceID, feed) {
+			management.Error(w, r, http.StatusForbidden, api.ErrorCodeForbidden, "replication access denied")
+			return "", "", false
+		}
+		return instance, feed, true
+	}}
+	mux := http.NewServeMux()
+	base := FederationExportPrefix + "{feed}"
+	mux.HandleFunc("GET "+base+"/head", h.head)
+	mux.HandleFunc("GET "+base+"/manifest", h.manifest)
+	mux.HandleFunc("GET "+base+"/changes", h.changes)
+	mux.HandleFunc("GET "+base+"/blobs/{digest}", h.blob)
+	mux.HandleFunc("GET "+base+"/template", h.template)
+	return mux
 }
 func exportError(w http.ResponseWriter, r *http.Request, err error) {
 	var purged *HistoryPurgedError
@@ -86,11 +132,11 @@ func queryInt(r *http.Request, name string, def int64) (int64, bool) {
 func includeCached(r *http.Request) bool { return r.URL.Query().Get("include_cached") != "false" }
 
 func (h exportHandlers) head(w http.ResponseWriter, r *http.Request) {
-	p, feed, ok := h.authorize(w, r)
+	instance, feed, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
-	head, err := h.e.Head(r.Context(), p.InstanceID, feed)
+	head, err := h.e.Head(r.Context(), instance, feed)
 	if err != nil {
 		exportError(w, r, err)
 		return
@@ -98,7 +144,7 @@ func (h exportHandlers) head(w http.ResponseWriter, r *http.Request) {
 	management.JSON(w, http.StatusOK, head)
 }
 func (h exportHandlers) manifest(w http.ResponseWriter, r *http.Request) {
-	p, feed, ok := h.authorize(w, r)
+	instance, feed, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
@@ -108,7 +154,7 @@ func (h exportHandlers) manifest(w http.ResponseWriter, r *http.Request) {
 		exportError(w, r, ErrInput)
 		return
 	}
-	page, err := h.e.Manifest(r.Context(), p.InstanceID, feed, ManifestQuery{
+	page, err := h.e.Manifest(r.Context(), instance, feed, ManifestQuery{
 		Kind: q.Get("kind"), After: q.Get("after"), Limit: int(limit), IncludeCached: includeCached(r), SourceID: q.Get("source"),
 		Filters: Filters{Namespaces: q["namespace"], Packages: q["package"], VersionPrefixes: q["version_prefix"]},
 	})
@@ -119,7 +165,7 @@ func (h exportHandlers) manifest(w http.ResponseWriter, r *http.Request) {
 	management.JSON(w, http.StatusOK, page)
 }
 func (h exportHandlers) changes(w http.ResponseWriter, r *http.Request) {
-	p, feed, ok := h.authorize(w, r)
+	instance, feed, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
@@ -130,7 +176,7 @@ func (h exportHandlers) changes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	page, err := h.e.Changes(r.Context(), p.InstanceID, feed, ChangeQuery{
+	page, err := h.e.Changes(r.Context(), instance, feed, ChangeQuery{
 		After: after, Limit: int(limit), IncludeCached: includeCached(r),
 		Filters: Filters{Namespaces: q["namespace"], Packages: q["package"], VersionPrefixes: q["version_prefix"]},
 	})
@@ -141,7 +187,7 @@ func (h exportHandlers) changes(w http.ResponseWriter, r *http.Request) {
 	management.JSON(w, http.StatusOK, page)
 }
 func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
-	p, feed, ok := h.authorize(w, r)
+	instance, feed, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
@@ -151,12 +197,15 @@ func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
 		management.Error(w, r, http.StatusRequestedRangeNotSatisfiable, api.ErrorCodeInvalidRequest, "unsupported range")
 		return
 	}
-	info, body, err := h.e.OpenBlob(r.Context(), p.InstanceID, feed, r.PathValue("digest"), includeCached(r), offset, length)
+	info, body, err := h.e.OpenBlob(r.Context(), instance, feed, r.PathValue("digest"), includeCached(r), offset, length)
 	if err != nil {
 		exportError(w, r, err)
 		return
 	}
 	defer body.Close()
+	if h.longWrites {
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(time.Hour))
+	}
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("X-Content-Digest", "sha256:"+string(info.Digest))
 	w.Header().Set("Accept-Ranges", "bytes")
@@ -206,11 +255,11 @@ func parseRange(v string) (offset, length int64, ranged, valid bool) {
 }
 
 func (h exportHandlers) template(w http.ResponseWriter, r *http.Request) {
-	p, feed, ok := h.authorize(w, r)
+	instance, feed, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
-	t, err := h.e.Template(r.Context(), p.InstanceID, feed)
+	t, err := h.e.Template(r.Context(), instance, feed)
 	if err != nil {
 		exportError(w, r, err)
 		return

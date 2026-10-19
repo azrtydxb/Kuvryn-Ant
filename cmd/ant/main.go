@@ -226,6 +226,8 @@ func execute(ctx context.Context, logger *slog.Logger, args []string, output io.
 		// Federated principals and group bindings are evaluated at sign-in.
 		oidclogin.SetLoginHook(svc)
 	}
+	// Coordinated replication rides on federation (export over mTLS, rules).
+	replicationRT.attachFederation(fed.service())
 	workers.StartFederation(fed)
 	fed.serve(serveCtx)
 	logger.Info("service listening", "address", listener.Addr().String())

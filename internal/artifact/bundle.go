@@ -82,6 +82,9 @@ func (s *Service) PublishBundle(ctx context.Context, p identity.Principal, publi
 			return nil, err
 		}
 	}
+	if err = frozenFeed(ctx, s.DB, p.InstanceID, base.FeedID); err != nil {
+		return nil, err
+	}
 	// A replica feed rejects bundle publishes too unless an explicit publish rule
 	// routed every item (same contract as publish).
 	for _, item := range publications {

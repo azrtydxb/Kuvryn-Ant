@@ -126,25 +126,25 @@ func (e CertificateStatusStatus) Valid() bool {
 
 // Defines values for ClientAuthMethod.
 const (
-	Anonymous      ClientAuthMethod = "anonymous"
-	BasicDirectory ClientAuthMethod = "basic-directory"
-	GithubOidc     ClientAuthMethod = "github-oidc"
-	Pat            ClientAuthMethod = "pat"
-	Token          ClientAuthMethod = "token"
+	ClientAuthMethodAnonymous      ClientAuthMethod = "anonymous"
+	ClientAuthMethodBasicDirectory ClientAuthMethod = "basic-directory"
+	ClientAuthMethodGithubOidc     ClientAuthMethod = "github-oidc"
+	ClientAuthMethodPat            ClientAuthMethod = "pat"
+	ClientAuthMethodToken          ClientAuthMethod = "token"
 )
 
 // Valid indicates whether the value is a known member of the ClientAuthMethod enum.
 func (e ClientAuthMethod) Valid() bool {
 	switch e {
-	case Anonymous:
+	case ClientAuthMethodAnonymous:
 		return true
-	case BasicDirectory:
+	case ClientAuthMethodBasicDirectory:
 		return true
-	case GithubOidc:
+	case ClientAuthMethodGithubOidc:
 		return true
-	case Pat:
+	case ClientAuthMethodPat:
 		return true
-	case Token:
+	case ClientAuthMethodToken:
 		return true
 	default:
 		return false
@@ -169,6 +169,45 @@ func (e ComponentStatusStatus) Valid() bool {
 	case ComponentStatusStatusUnavailable:
 		return true
 	case ComponentStatusStatusUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateFederationRuleDeletionPolicy.
+const (
+	CreateFederationRuleDeletionPolicyIgnore    CreateFederationRuleDeletionPolicy = "ignore"
+	CreateFederationRuleDeletionPolicyPropagate CreateFederationRuleDeletionPolicy = "propagate"
+)
+
+// Valid indicates whether the value is a known member of the CreateFederationRuleDeletionPolicy enum.
+func (e CreateFederationRuleDeletionPolicy) Valid() bool {
+	switch e {
+	case CreateFederationRuleDeletionPolicyIgnore:
+		return true
+	case CreateFederationRuleDeletionPolicyPropagate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateFederationRuleMode.
+const (
+	CreateFederationRuleModeContinuous CreateFederationRuleMode = "continuous"
+	CreateFederationRuleModeManual     CreateFederationRuleMode = "manual"
+	CreateFederationRuleModeScheduled  CreateFederationRuleMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the CreateFederationRuleMode enum.
+func (e CreateFederationRuleMode) Valid() bool {
+	switch e {
+	case CreateFederationRuleModeContinuous:
+		return true
+	case CreateFederationRuleModeManual:
+		return true
+	case CreateFederationRuleModeScheduled:
 		return true
 	default:
 		return false
@@ -601,6 +640,8 @@ const (
 	ErrorCodeDocumentRejected        ErrorCode = "document_rejected"
 	ErrorCodeFederationManaged       ErrorCode = "federation_managed"
 	ErrorCodeFederationNotConfigured ErrorCode = "federation_not_configured"
+	ErrorCodeFeedHomeElsewhere       ErrorCode = "feed_home_elsewhere"
+	ErrorCodeFeedTransferring        ErrorCode = "feed_transferring"
 	ErrorCodeForbidden               ErrorCode = "forbidden"
 	ErrorCodeInternalError           ErrorCode = "internal_error"
 	ErrorCodeInvalidRequest          ErrorCode = "invalid_request"
@@ -626,6 +667,10 @@ func (e ErrorCode) Valid() bool {
 	case ErrorCodeFederationManaged:
 		return true
 	case ErrorCodeFederationNotConfigured:
+		return true
+	case ErrorCodeFeedHomeElsewhere:
+		return true
+	case ErrorCodeFeedTransferring:
 		return true
 	case ErrorCodeForbidden:
 		return true
@@ -729,15 +774,19 @@ func (e FederationAccessCheckKind) Valid() bool {
 
 // Defines values for FederationAlertCode.
 const (
-	MembershipStale FederationAlertCode = "membership_stale"
-	PolicyConflicts FederationAlertCode = "policy_conflicts"
-	PolicyRejected  FederationAlertCode = "policy_rejected"
-	PolicyStale     FederationAlertCode = "policy_stale"
+	FeedHomeConflict FederationAlertCode = "feed_home_conflict"
+	MembershipStale  FederationAlertCode = "membership_stale"
+	PolicyConflicts  FederationAlertCode = "policy_conflicts"
+	PolicyRejected   FederationAlertCode = "policy_rejected"
+	PolicyStale      FederationAlertCode = "policy_stale"
+	TopologyRejected FederationAlertCode = "topology_rejected"
 )
 
 // Valid indicates whether the value is a known member of the FederationAlertCode enum.
 func (e FederationAlertCode) Valid() bool {
 	switch e {
+	case FeedHomeConflict:
+		return true
 	case MembershipStale:
 		return true
 	case PolicyConflicts:
@@ -745,6 +794,8 @@ func (e FederationAlertCode) Valid() bool {
 	case PolicyRejected:
 		return true
 	case PolicyStale:
+		return true
+	case TopologyRejected:
 		return true
 	default:
 		return false
@@ -802,6 +853,51 @@ func (e FederationDocumentMemberStatus) Valid() bool {
 	case FederationDocumentMemberStatusRemoved:
 		return true
 	case FederationDocumentMemberStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationFeedTransferMode.
+const (
+	FederationFeedTransferModeForced  FederationFeedTransferMode = "forced"
+	FederationFeedTransferModePlanned FederationFeedTransferMode = "planned"
+)
+
+// Valid indicates whether the value is a known member of the FederationFeedTransferMode enum.
+func (e FederationFeedTransferMode) Valid() bool {
+	switch e {
+	case FederationFeedTransferModeForced:
+		return true
+	case FederationFeedTransferModePlanned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationFeedTransferState.
+const (
+	Aborted  FederationFeedTransferState = "aborted"
+	Complete FederationFeedTransferState = "complete"
+	Drain    FederationFeedTransferState = "drain"
+	Freeze   FederationFeedTransferState = "freeze"
+	Promote  FederationFeedTransferState = "promote"
+)
+
+// Valid indicates whether the value is a known member of the FederationFeedTransferState enum.
+func (e FederationFeedTransferState) Valid() bool {
+	switch e {
+	case Aborted:
+		return true
+	case Complete:
+		return true
+	case Drain:
+		return true
+	case Freeze:
+		return true
+	case Promote:
 		return true
 	default:
 		return false
@@ -1033,6 +1129,87 @@ func (e FederationPrincipalConflictReason) Valid() bool {
 	}
 }
 
+// Defines values for FederationReplicationRuleDeletionPolicy.
+const (
+	FederationReplicationRuleDeletionPolicyIgnore    FederationReplicationRuleDeletionPolicy = "ignore"
+	FederationReplicationRuleDeletionPolicyPropagate FederationReplicationRuleDeletionPolicy = "propagate"
+)
+
+// Valid indicates whether the value is a known member of the FederationReplicationRuleDeletionPolicy enum.
+func (e FederationReplicationRuleDeletionPolicy) Valid() bool {
+	switch e {
+	case FederationReplicationRuleDeletionPolicyIgnore:
+		return true
+	case FederationReplicationRuleDeletionPolicyPropagate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationReplicationRuleMode.
+const (
+	FederationReplicationRuleModeContinuous FederationReplicationRuleMode = "continuous"
+	FederationReplicationRuleModeManual     FederationReplicationRuleMode = "manual"
+	FederationReplicationRuleModeScheduled  FederationReplicationRuleMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the FederationReplicationRuleMode enum.
+func (e FederationReplicationRuleMode) Valid() bool {
+	switch e {
+	case FederationReplicationRuleModeContinuous:
+		return true
+	case FederationReplicationRuleModeManual:
+		return true
+	case FederationReplicationRuleModeScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationRuleStatusState.
+const (
+	FederationRuleStatusStateConflict    FederationRuleStatusState = "conflict"
+	FederationRuleStatusStateDisabled    FederationRuleStatusState = "disabled"
+	FederationRuleStatusStateFailed      FederationRuleStatusState = "failed"
+	FederationRuleStatusStateInSync      FederationRuleStatusState = "in_sync"
+	FederationRuleStatusStateLagging     FederationRuleStatusState = "lagging"
+	FederationRuleStatusStateMissingFeed FederationRuleStatusState = "missing_feed"
+	FederationRuleStatusStatePending     FederationRuleStatusState = "pending"
+	FederationRuleStatusStateReady       FederationRuleStatusState = "ready"
+	FederationRuleStatusStateSeeding     FederationRuleStatusState = "seeding"
+	FederationRuleStatusStateUnknown     FederationRuleStatusState = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the FederationRuleStatusState enum.
+func (e FederationRuleStatusState) Valid() bool {
+	switch e {
+	case FederationRuleStatusStateConflict:
+		return true
+	case FederationRuleStatusStateDisabled:
+		return true
+	case FederationRuleStatusStateFailed:
+		return true
+	case FederationRuleStatusStateInSync:
+		return true
+	case FederationRuleStatusStateLagging:
+		return true
+	case FederationRuleStatusStateMissingFeed:
+		return true
+	case FederationRuleStatusStatePending:
+		return true
+	case FederationRuleStatusStateReady:
+		return true
+	case FederationRuleStatusStateSeeding:
+		return true
+	case FederationRuleStatusStateUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FederationSearchCopyOrigin.
 const (
 	FederationSearchCopyOriginLocal   FederationSearchCopyOrigin = "local"
@@ -1169,6 +1346,7 @@ func (e FederationStatusState) Valid() bool {
 const (
 	FederationStoredDocumentKindMembership FederationStoredDocumentKind = "membership"
 	FederationStoredDocumentKindPolicy     FederationStoredDocumentKind = "policy"
+	FederationStoredDocumentKindTopology   FederationStoredDocumentKind = "topology"
 )
 
 // Valid indicates whether the value is a known member of the FederationStoredDocumentKind enum.
@@ -1177,6 +1355,29 @@ func (e FederationStoredDocumentKind) Valid() bool {
 	case FederationStoredDocumentKindMembership:
 		return true
 	case FederationStoredDocumentKindPolicy:
+		return true
+	case FederationStoredDocumentKindTopology:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FederationTopologyFeedViewLocalRole.
+const (
+	FederationTopologyFeedViewLocalRoleHome    FederationTopologyFeedViewLocalRole = "home"
+	FederationTopologyFeedViewLocalRoleReplica FederationTopologyFeedViewLocalRole = "replica"
+	FederationTopologyFeedViewLocalRoleUnbound FederationTopologyFeedViewLocalRole = "unbound"
+)
+
+// Valid indicates whether the value is a known member of the FederationTopologyFeedViewLocalRole enum.
+func (e FederationTopologyFeedViewLocalRole) Valid() bool {
+	switch e {
+	case FederationTopologyFeedViewLocalRoleHome:
+		return true
+	case FederationTopologyFeedViewLocalRoleReplica:
+		return true
+	case FederationTopologyFeedViewLocalRoleUnbound:
 		return true
 	default:
 		return false
@@ -1771,6 +1972,45 @@ func (e PackageSearchResultOrigin) Valid() bool {
 	}
 }
 
+// Defines values for PatchFederationRuleDeletionPolicy.
+const (
+	PatchFederationRuleDeletionPolicyIgnore    PatchFederationRuleDeletionPolicy = "ignore"
+	PatchFederationRuleDeletionPolicyPropagate PatchFederationRuleDeletionPolicy = "propagate"
+)
+
+// Valid indicates whether the value is a known member of the PatchFederationRuleDeletionPolicy enum.
+func (e PatchFederationRuleDeletionPolicy) Valid() bool {
+	switch e {
+	case PatchFederationRuleDeletionPolicyIgnore:
+		return true
+	case PatchFederationRuleDeletionPolicyPropagate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PatchFederationRuleMode.
+const (
+	PatchFederationRuleModeContinuous PatchFederationRuleMode = "continuous"
+	PatchFederationRuleModeManual     PatchFederationRuleMode = "manual"
+	PatchFederationRuleModeScheduled  PatchFederationRuleMode = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the PatchFederationRuleMode enum.
+func (e PatchFederationRuleMode) Valid() bool {
+	switch e {
+	case PatchFederationRuleModeContinuous:
+		return true
+	case PatchFederationRuleModeManual:
+		return true
+	case PatchFederationRuleModeScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PolicyTemplateKind.
 const (
 	PolicyTemplateKindPublish PolicyTemplateKind = "publish"
@@ -2002,6 +2242,24 @@ func (e ReplicationJobMode) Valid() bool {
 	}
 }
 
+// Defines values for ReplicationJobOrigin.
+const (
+	ReplicationJobOriginFederation ReplicationJobOrigin = "federation"
+	ReplicationJobOriginLocal      ReplicationJobOrigin = "local"
+)
+
+// Valid indicates whether the value is a known member of the ReplicationJobOrigin enum.
+func (e ReplicationJobOrigin) Valid() bool {
+	switch e {
+	case ReplicationJobOriginFederation:
+		return true
+	case ReplicationJobOriginLocal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReplicationJobInputDeletionPolicy.
 const (
 	ReplicationJobInputDeletionPolicyIgnore    ReplicationJobInputDeletionPolicy = "ignore"
@@ -2092,6 +2350,24 @@ func (e ReplicationManifestPageKind) Valid() bool {
 	case ReplicationManifestPageKindAsset:
 		return true
 	case ReplicationManifestPageKindTag:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReplicationPeerAuthMode.
+const (
+	ReplicationPeerAuthModeFederation ReplicationPeerAuthMode = "federation"
+	ReplicationPeerAuthModeToken      ReplicationPeerAuthMode = "token"
+)
+
+// Valid indicates whether the value is a known member of the ReplicationPeerAuthMode enum.
+func (e ReplicationPeerAuthMode) Valid() bool {
+	switch e {
+	case ReplicationPeerAuthModeFederation:
+		return true
+	case ReplicationPeerAuthModeToken:
 		return true
 	default:
 		return false
@@ -2563,6 +2839,24 @@ func (e SourceHealthStatus) Valid() bool {
 	case SourceHealthStatusNotApplicable:
 		return true
 	case SourceHealthStatusUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StartFederationTransferMode.
+const (
+	StartFederationTransferModeForced  StartFederationTransferMode = "forced"
+	StartFederationTransferModePlanned StartFederationTransferMode = "planned"
+)
+
+// Valid indicates whether the value is a known member of the StartFederationTransferMode enum.
+func (e StartFederationTransferMode) Valid() bool {
+	switch e {
+	case StartFederationTransferModeForced:
+		return true
+	case StartFederationTransferModePlanned:
 		return true
 	default:
 		return false
@@ -3050,6 +3344,7 @@ func (e GetApiV1AuditExportParamsFormat) Valid() bool {
 const (
 	GetFederationDocumentParamsKindMembership GetFederationDocumentParamsKind = "membership"
 	GetFederationDocumentParamsKindPolicy     GetFederationDocumentParamsKind = "policy"
+	GetFederationDocumentParamsKindTopology   GetFederationDocumentParamsKind = "topology"
 )
 
 // Valid indicates whether the value is a known member of the GetFederationDocumentParamsKind enum.
@@ -3058,6 +3353,8 @@ func (e GetFederationDocumentParamsKind) Valid() bool {
 	case GetFederationDocumentParamsKindMembership:
 		return true
 	case GetFederationDocumentParamsKindPolicy:
+		return true
+	case GetFederationDocumentParamsKindTopology:
 		return true
 	default:
 		return false
@@ -3068,6 +3365,7 @@ func (e GetFederationDocumentParamsKind) Valid() bool {
 const (
 	GetFederationDocumentGenerationParamsKindMembership GetFederationDocumentGenerationParamsKind = "membership"
 	GetFederationDocumentGenerationParamsKindPolicy     GetFederationDocumentGenerationParamsKind = "policy"
+	GetFederationDocumentGenerationParamsKindTopology   GetFederationDocumentGenerationParamsKind = "topology"
 )
 
 // Valid indicates whether the value is a known member of the GetFederationDocumentGenerationParamsKind enum.
@@ -3076,6 +3374,8 @@ func (e GetFederationDocumentGenerationParamsKind) Valid() bool {
 	case GetFederationDocumentGenerationParamsKindMembership:
 		return true
 	case GetFederationDocumentGenerationParamsKindPolicy:
+		return true
+	case GetFederationDocumentGenerationParamsKindTopology:
 		return true
 	default:
 		return false
@@ -3370,6 +3670,12 @@ func (e ListWebhookFailuresParamsState) Valid() bool {
 	}
 }
 
+// AbortFederationTransfer defines model for AbortFederationTransfer.
+type AbortFederationTransfer struct {
+	Confirm bool    `json:"confirm"`
+	Reason  *string `json:"reason,omitempty"`
+}
+
 // ActiveIdentityProvider defines model for ActiveIdentityProvider.
 type ActiveIdentityProvider struct {
 	Kind       ActiveIdentityProviderKind   `json:"kind"`
@@ -3386,6 +3692,12 @@ type ActiveIdentityProviderSource string
 // AdoptFederatedPrincipal defines model for AdoptFederatedPrincipal.
 type AdoptFederatedPrincipal struct {
 	Confirm bool `json:"confirm"`
+}
+
+// AdoptFederationReplicationJob defines model for AdoptFederationReplicationJob.
+type AdoptFederationReplicationJob struct {
+	JobId  openapi_types.UUID `json:"job_id"`
+	RuleId openapi_types.UUID `json:"rule_id"`
 }
 
 // AttachSource defines model for AttachSource.
@@ -3486,6 +3798,13 @@ type ComponentStatus struct {
 // ComponentStatusStatus defines model for ComponentStatus.Status.
 type ComponentStatusStatus string
 
+// CreateFederationFeed defines model for CreateFederationFeed.
+type CreateFederationFeed struct {
+	Descriptor   *FederationFeedDescriptor `json:"descriptor,omitempty"`
+	FeedKey      string                    `json:"feed_key"`
+	HomeMemberId openapi_types.UUID        `json:"home_member_id"`
+}
+
 // CreateFederationInvitation defines model for CreateFederationInvitation.
 type CreateFederationInvitation struct {
 	// Labels Free-form member labels (key ^[a-z0-9][a-z0-9_.-]{0,62}$).
@@ -3497,6 +3816,27 @@ type CreateFederationInvitation struct {
 	// TtlSeconds Default 3600; minimum 60.
 	TtlSeconds *int64 `json:"ttl_seconds,omitempty"`
 }
+
+// CreateFederationRule defines model for CreateFederationRule.
+type CreateFederationRule struct {
+	AdoptExisting         *bool                               `json:"adopt_existing,omitempty"`
+	CreateDestinationFeed *bool                               `json:"create_destination_feed,omitempty"`
+	DeletionPolicy        *CreateFederationRuleDeletionPolicy `json:"deletion_policy,omitempty"`
+	DestinationReadOnly   *bool                               `json:"destination_read_only,omitempty"`
+	FeedKey               string                              `json:"feed_key"`
+	Filters               *FederationRuleFilters              `json:"filters,omitempty"`
+	IncludeCached         *bool                               `json:"include_cached,omitempty"`
+	IntervalSeconds       *int32                              `json:"interval_seconds,omitempty"`
+	MaxLagSeconds         *int32                              `json:"max_lag_seconds,omitempty"`
+	Mode                  *CreateFederationRuleMode           `json:"mode,omitempty"`
+	Targets               FederationRuleTargets               `json:"targets"`
+}
+
+// CreateFederationRuleDeletionPolicy defines model for CreateFederationRule.DeletionPolicy.
+type CreateFederationRuleDeletionPolicy string
+
+// CreateFederationRuleMode defines model for CreateFederationRule.Mode.
+type CreateFederationRuleMode string
 
 // CreateFeed defines model for CreateFeed.
 type CreateFeed struct {
@@ -3820,6 +4160,17 @@ type FederationAccessCheckResult struct {
 	Reason           *string            `json:"reason,omitempty"`
 }
 
+// FederationAdoptResult defines model for FederationAdoptResult.
+type FederationAdoptResult struct {
+	Checkpoint     int64              `json:"checkpoint"`
+	FeedKey        string             `json:"feed_key"`
+	JobId          openapi_types.UUID `json:"job_id"`
+	PeerId         openapi_types.UUID `json:"peer_id"`
+	Phase          string             `json:"phase"`
+	PreviousPeerId openapi_types.UUID `json:"previous_peer_id"`
+	RuleId         openapi_types.UUID `json:"rule_id"`
+}
+
 // FederationAlert defines model for FederationAlert.
 type FederationAlert struct {
 	Code     FederationAlertCode     `json:"code"`
@@ -3893,6 +4244,34 @@ type FederationFeedBinding struct {
 type FederationFeedBindingList struct {
 	Items []FederationFeedBinding `json:"items"`
 }
+
+// FederationFeedDescriptor defines model for FederationFeedDescriptor.
+type FederationFeedDescriptor struct {
+	AnonymousRead bool   `json:"anonymous_read"`
+	Format        string `json:"format"`
+}
+
+// FederationFeedTransfer defines model for FederationFeedTransfer.
+type FederationFeedTransfer struct {
+	Baseline   int64                       `json:"baseline"`
+	Checkpoint int64                       `json:"checkpoint"`
+	Deadline   *string                     `json:"deadline,omitempty"`
+	From       openapi_types.UUID          `json:"from"`
+	Head       int64                       `json:"head"`
+	Id         openapi_types.UUID          `json:"id"`
+	Mode       FederationFeedTransferMode  `json:"mode"`
+	Reason     *string                     `json:"reason,omitempty"`
+	StartedAt  string                      `json:"started_at"`
+	State      FederationFeedTransferState `json:"state"`
+	To         openapi_types.UUID          `json:"to"`
+	UpdatedAt  string                      `json:"updated_at"`
+}
+
+// FederationFeedTransferMode defines model for FederationFeedTransfer.Mode.
+type FederationFeedTransferMode string
+
+// FederationFeedTransferState defines model for FederationFeedTransfer.State.
+type FederationFeedTransferState string
 
 // FederationFoundResult defines model for FederationFoundResult.
 type FederationFoundResult struct {
@@ -4198,12 +4577,64 @@ type FederationProtocolRange struct {
 	Min int32 `json:"min"`
 }
 
+// FederationQuarantine defines model for FederationQuarantine.
+type FederationQuarantine struct {
+	CreatedAt        time.Time           `json:"created_at"`
+	DivergentChanges *int64              `json:"divergent_changes,omitempty"`
+	FeedId           *openapi_types.UUID `json:"feed_id,omitempty"`
+	FeedKey          string              `json:"feed_key"`
+	Id               openapi_types.UUID  `json:"id"`
+	ResolvedAt       *time.Time          `json:"resolved_at,omitempty"`
+	SourceId         openapi_types.UUID  `json:"source_id"`
+	SourceName       string              `json:"source_name"`
+	TransferId       *openapi_types.UUID `json:"transfer_id,omitempty"`
+}
+
+// FederationQuarantineList defines model for FederationQuarantineList.
+type FederationQuarantineList struct {
+	Items []FederationQuarantine `json:"items"`
+}
+
 // FederationRecoveryRotation defines model for FederationRecoveryRotation.
 type FederationRecoveryRotation struct {
 	Generation  int64  `json:"generation"`
 	NewKey      string `json:"new_key"`
 	PreviousKey string `json:"previous_key"`
 	Signature   string `json:"signature"`
+}
+
+// FederationReplicationRule defines model for FederationReplicationRule.
+type FederationReplicationRule struct {
+	AdoptExisting         bool                                    `json:"adopt_existing"`
+	CreateDestinationFeed bool                                    `json:"create_destination_feed"`
+	DeletionPolicy        FederationReplicationRuleDeletionPolicy `json:"deletion_policy"`
+	DestinationReadOnly   bool                                    `json:"destination_read_only"`
+	FeedKey               string                                  `json:"feed_key"`
+	Filters               FederationRuleFilters                   `json:"filters"`
+	Id                    openapi_types.UUID                      `json:"id"`
+	IncludeCached         bool                                    `json:"include_cached"`
+	IntervalSeconds       int32                                   `json:"interval_seconds"`
+	MaxLagSeconds         int32                                   `json:"max_lag_seconds"`
+	Mode                  FederationReplicationRuleMode           `json:"mode"`
+	Revision              int64                                   `json:"revision"`
+	Targets               FederationRuleTargets                   `json:"targets"`
+}
+
+// FederationReplicationRuleDeletionPolicy defines model for FederationReplicationRule.DeletionPolicy.
+type FederationReplicationRuleDeletionPolicy string
+
+// FederationReplicationRuleMode defines model for FederationReplicationRule.Mode.
+type FederationReplicationRuleMode string
+
+// FederationReplicationRuleList defines model for FederationReplicationRuleList.
+type FederationReplicationRuleList struct {
+	Items []FederationReplicationRule `json:"items"`
+}
+
+// FederationReplicationStatus defines model for FederationReplicationStatus.
+type FederationReplicationStatus struct {
+	Items       []FederationRuleStatus `json:"items"`
+	Quarantines []FederationQuarantine `json:"quarantines"`
 }
 
 // FederationRevocation defines model for FederationRevocation.
@@ -4213,6 +4644,49 @@ type FederationRevocation struct {
 	Reason         *string `json:"reason,omitempty"`
 	ServiceAccount *string `json:"service_account,omitempty"`
 	Subject        *string `json:"subject,omitempty"`
+}
+
+// FederationRuleCompliance defines model for FederationRuleCompliance.
+type FederationRuleCompliance struct {
+	Home    openapi_types.UUID        `json:"home"`
+	Members []FederationRuleStatus    `json:"members"`
+	Rule    FederationReplicationRule `json:"rule"`
+	Summary map[string]int            `json:"summary"`
+}
+
+// FederationRuleFilters defines model for FederationRuleFilters.
+type FederationRuleFilters struct {
+	Namespaces      *[]string `json:"namespaces,omitempty"`
+	Packages        *[]string `json:"packages,omitempty"`
+	VersionPrefixes *[]string `json:"version_prefixes,omitempty"`
+}
+
+// FederationRuleStatus defines model for FederationRuleStatus.
+type FederationRuleStatus struct {
+	Adopted             bool                      `json:"adopted"`
+	ChangesBehind       *int64                    `json:"changes_behind,omitempty"`
+	Checkpoint          int64                     `json:"checkpoint"`
+	ConsecutiveFailures int32                     `json:"consecutive_failures"`
+	Detail              *string                   `json:"detail,omitempty"`
+	FeedKey             string                    `json:"feed_key"`
+	JobId               *openapi_types.UUID       `json:"job_id,omitempty"`
+	LagSeconds          *float32                  `json:"lag_seconds,omitempty"`
+	LastSuccessAt       *time.Time                `json:"last_success_at,omitempty"`
+	MemberId            openapi_types.UUID        `json:"member_id"`
+	MemberName          *string                   `json:"member_name,omitempty"`
+	Phase               *string                   `json:"phase,omitempty"`
+	RuleId              openapi_types.UUID        `json:"rule_id"`
+	State               FederationRuleStatusState `json:"state"`
+	UpdatedAt           *time.Time                `json:"updated_at,omitempty"`
+}
+
+// FederationRuleStatusState defines model for FederationRuleStatus.State.
+type FederationRuleStatusState string
+
+// FederationRuleTargets defines model for FederationRuleTargets.
+type FederationRuleTargets struct {
+	Labels  *map[string]string    `json:"labels,omitempty"`
+	Members *[]openapi_types.UUID `json:"members,omitempty"`
 }
 
 // FederationSearchCopy defines model for FederationSearchCopy.
@@ -4320,19 +4794,20 @@ type FederationStatus struct {
 	FederationUrl       *string                      `json:"federation_url,omitempty"`
 
 	// Health Federation problems are reported as degraded and never make the instance unready.
-	Health                 FederationStatusHealth  `json:"health"`
-	InstanceId             openapi_types.UUID      `json:"instance_id"`
-	ListenAddress          *string                 `json:"listen_address,omitempty"`
-	ListenerConfigured     bool                    `json:"listener_configured"`
-	Members                FederationMemberCounts  `json:"members"`
-	Membership             *FederationDocumentHead `json:"membership,omitempty"`
-	Policy                 *FederationPolicyStatus `json:"policy,omitempty"`
-	Protocol               FederationProtocolRange `json:"protocol"`
-	RecoveryKeyFingerprint *string                 `json:"recovery_key_fingerprint,omitempty"`
-	Role                   *FederationStatusRole   `json:"role,omitempty"`
-	SoftwareVersion        string                  `json:"software_version"`
-	State                  FederationStatusState   `json:"state"`
-	Sync                   FederationSyncStatus    `json:"sync"`
+	Health                 FederationStatusHealth    `json:"health"`
+	InstanceId             openapi_types.UUID        `json:"instance_id"`
+	ListenAddress          *string                   `json:"listen_address,omitempty"`
+	ListenerConfigured     bool                      `json:"listener_configured"`
+	Members                FederationMemberCounts    `json:"members"`
+	Membership             *FederationDocumentHead   `json:"membership,omitempty"`
+	Policy                 *FederationPolicyStatus   `json:"policy,omitempty"`
+	Protocol               FederationProtocolRange   `json:"protocol"`
+	RecoveryKeyFingerprint *string                   `json:"recovery_key_fingerprint,omitempty"`
+	Role                   *FederationStatusRole     `json:"role,omitempty"`
+	SoftwareVersion        string                    `json:"software_version"`
+	State                  FederationStatusState     `json:"state"`
+	Sync                   FederationSyncStatus      `json:"sync"`
+	Topology               *FederationTopologyStatus `json:"topology,omitempty"`
 }
 
 // FederationStatusHealth Federation problems are reported as degraded and never make the instance unready.
@@ -4363,6 +4838,57 @@ type FederationSyncStatus struct {
 	LastError     *string    `json:"last_error,omitempty"`
 	LastSuccessAt *time.Time `json:"last_success_at,omitempty"`
 	Source        *string    `json:"source,omitempty"`
+}
+
+// FederationTopologyFeed defines model for FederationTopologyFeed.
+type FederationTopologyFeed struct {
+	Descriptor FederationFeedDescriptor `json:"descriptor"`
+	Home       openapi_types.UUID       `json:"home"`
+	Key        string                   `json:"key"`
+	Revision   int64                    `json:"revision"`
+	Transfer   *FederationFeedTransfer  `json:"transfer,omitempty"`
+}
+
+// FederationTopologyFeedView defines model for FederationTopologyFeedView.
+type FederationTopologyFeedView struct {
+	Descriptor  FederationFeedDescriptor            `json:"descriptor"`
+	Frozen      bool                                `json:"frozen"`
+	Home        openapi_types.UUID                  `json:"home"`
+	HomeName    string                              `json:"home_name"`
+	Key         string                              `json:"key"`
+	LocalFeedId *openapi_types.UUID                 `json:"local_feed_id,omitempty"`
+	LocalRole   FederationTopologyFeedViewLocalRole `json:"local_role"`
+	Revision    int64                               `json:"revision"`
+	Transfer    *FederationFeedTransfer             `json:"transfer,omitempty"`
+}
+
+// FederationTopologyFeedViewLocalRole defines model for FederationTopologyFeedView.LocalRole.
+type FederationTopologyFeedViewLocalRole string
+
+// FederationTopologyStatus defines model for FederationTopologyStatus.
+type FederationTopologyStatus struct {
+	ActiveTransfers       int32      `json:"active_transfers"`
+	AgeSeconds            int64      `json:"age_seconds"`
+	AppliedAt             *time.Time `json:"applied_at,omitempty"`
+	Error                 *string    `json:"error,omitempty"`
+	Feeds                 int32      `json:"feeds"`
+	Generation            int64      `json:"generation"`
+	Hash                  *string    `json:"hash,omitempty"`
+	HomeFeeds             int32      `json:"home_feeds"`
+	Rules                 int32      `json:"rules"`
+	RulesTargetingSelf    int32      `json:"rules_targeting_self"`
+	UnresolvedQuarantines int32      `json:"unresolved_quarantines"`
+}
+
+// FederationTopologyView defines model for FederationTopologyView.
+type FederationTopologyView struct {
+	AppliedAt  *time.Time                   `json:"applied_at,omitempty"`
+	Authority  bool                         `json:"authority"`
+	Error      *string                      `json:"error,omitempty"`
+	Feeds      []FederationTopologyFeedView `json:"feeds"`
+	Generation int64                        `json:"generation"`
+	Hash       *string                      `json:"hash,omitempty"`
+	Rules      []FederationReplicationRule  `json:"rules"`
 }
 
 // Feed defines model for Feed.
@@ -5024,6 +5550,27 @@ type PageInfo struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// PatchFederationRule defines model for PatchFederationRule.
+type PatchFederationRule struct {
+	AdoptExisting         *bool                              `json:"adopt_existing,omitempty"`
+	CreateDestinationFeed *bool                              `json:"create_destination_feed,omitempty"`
+	DeletionPolicy        *PatchFederationRuleDeletionPolicy `json:"deletion_policy,omitempty"`
+	DestinationReadOnly   *bool                              `json:"destination_read_only,omitempty"`
+	Filters               *FederationRuleFilters             `json:"filters,omitempty"`
+	IncludeCached         *bool                              `json:"include_cached,omitempty"`
+	IntervalSeconds       *int32                             `json:"interval_seconds,omitempty"`
+	MaxLagSeconds         *int32                             `json:"max_lag_seconds,omitempty"`
+	Mode                  *PatchFederationRuleMode           `json:"mode,omitempty"`
+	Revision              *int64                             `json:"revision,omitempty"`
+	Targets               *FederationRuleTargets             `json:"targets,omitempty"`
+}
+
+// PatchFederationRuleDeletionPolicy defines model for PatchFederationRule.DeletionPolicy.
+type PatchFederationRuleDeletionPolicy string
+
+// PatchFederationRuleMode defines model for PatchFederationRule.Mode.
+type PatchFederationRuleMode string
+
 // PatchFeed defines model for PatchFeed.
 type PatchFeed struct {
 	AnonymousRead *bool   `json:"anonymous_read,omitempty"`
@@ -5470,24 +6017,30 @@ type ReplicationItem struct {
 
 // ReplicationJob defines model for ReplicationJob.
 type ReplicationJob struct {
+	AdoptedAt      *time.Time                   `json:"adopted_at,omitempty"`
 	CreatedAt      time.Time                    `json:"created_at"`
 	DeletionPolicy ReplicationJobDeletionPolicy `json:"deletion_policy"`
 	DestFeedId     openapi_types.UUID           `json:"dest_feed_id"`
 
 	// DestinationReadOnly When true the destination feed rejects publishes with 409 (replica feed, publish to the peer) unless an explicit publish rule routes them to a separate local source.
-	DestinationReadOnly bool               `json:"destination_read_only"`
-	Enabled             bool               `json:"enabled"`
-	Filters             ReplicationFilters `json:"filters"`
-	Id                  openapi_types.UUID `json:"id"`
-	IncludeCached       bool               `json:"include_cached"`
-	IntervalSeconds     int32              `json:"interval_seconds"`
-	Mode                ReplicationJobMode `json:"mode"`
-	Name                string             `json:"name"`
-	PeerId              openapi_types.UUID `json:"peer_id"`
-	RemoteFeedId        openapi_types.UUID `json:"remote_feed_id"`
-	ReplicaSourceId     openapi_types.UUID `json:"replica_source_id"`
-	Revision            int64              `json:"revision"`
-	Status              ReplicationStatus  `json:"status"`
+	DestinationReadOnly bool                `json:"destination_read_only"`
+	Enabled             bool                `json:"enabled"`
+	FederationFeedKey   *string             `json:"federation_feed_key,omitempty"`
+	FederationRuleId    *openapi_types.UUID `json:"federation_rule_id,omitempty"`
+	Filters             ReplicationFilters  `json:"filters"`
+	Id                  openapi_types.UUID  `json:"id"`
+	IncludeCached       bool                `json:"include_cached"`
+	IntervalSeconds     int32               `json:"interval_seconds"`
+	Mode                ReplicationJobMode  `json:"mode"`
+	Name                string              `json:"name"`
+
+	// Origin federation for jobs created, adopted or re-pointed by a federation replication rule; those are read-only through this API (409 federation_managed).
+	Origin          ReplicationJobOrigin `json:"origin"`
+	PeerId          openapi_types.UUID   `json:"peer_id"`
+	RemoteFeedId    openapi_types.UUID   `json:"remote_feed_id"`
+	ReplicaSourceId openapi_types.UUID   `json:"replica_source_id"`
+	Revision        int64                `json:"revision"`
+	Status          ReplicationStatus    `json:"status"`
 }
 
 // ReplicationJobDeletionPolicy defines model for ReplicationJob.DeletionPolicy.
@@ -5495,6 +6048,9 @@ type ReplicationJobDeletionPolicy string
 
 // ReplicationJobMode defines model for ReplicationJob.Mode.
 type ReplicationJobMode string
+
+// ReplicationJobOrigin federation for jobs created, adopted or re-pointed by a federation replication rule; those are read-only through this API (409 federation_managed).
+type ReplicationJobOrigin string
 
 // ReplicationJobInput defines model for ReplicationJobInput.
 type ReplicationJobInput struct {
@@ -5565,14 +6121,20 @@ type ReplicationOrigin struct {
 
 // ReplicationPeer defines model for ReplicationPeer.
 type ReplicationPeer struct {
-	CaRef     *string            `json:"ca_ref,omitempty"`
-	CreatedAt time.Time          `json:"created_at"`
-	Id        openapi_types.UUID `json:"id"`
-	Name      string             `json:"name"`
-	Revision  int64              `json:"revision"`
-	UpdatedAt time.Time          `json:"updated_at"`
-	Url       string             `json:"url"`
+	// AuthMode token (bearer token) or federation (member mTLS on the federation listener, managed by the federation reconciler; read-only here).
+	AuthMode         ReplicationPeerAuthMode `json:"auth_mode"`
+	CaRef            *string                 `json:"ca_ref,omitempty"`
+	CreatedAt        time.Time               `json:"created_at"`
+	Id               openapi_types.UUID      `json:"id"`
+	MemberInstanceId *openapi_types.UUID     `json:"member_instance_id,omitempty"`
+	Name             string                  `json:"name"`
+	Revision         int64                   `json:"revision"`
+	UpdatedAt        time.Time               `json:"updated_at"`
+	Url              string                  `json:"url"`
 }
+
+// ReplicationPeerAuthMode token (bearer token) or federation (member mTLS on the federation listener, managed by the federation reconciler; read-only here).
+type ReplicationPeerAuthMode string
 
 // ReplicationPeerInput defines model for ReplicationPeerInput.
 type ReplicationPeerInput struct {
@@ -5789,6 +6351,11 @@ type ResolveExplanation struct {
 
 // ResolveExplanationStatus defines model for ResolveExplanation.Status.
 type ResolveExplanationStatus string
+
+// ResolveFederationQuarantine defines model for ResolveFederationQuarantine.
+type ResolveFederationQuarantine struct {
+	Confirm bool `json:"confirm"`
+}
 
 // ResolveSource defines model for ResolveSource.
 type ResolveSource struct {
@@ -6132,6 +6699,18 @@ type SourceTestResult struct {
 	SourceId   openapi_types.UUID `json:"source_id"`
 	StatusCode *int32             `json:"status_code,omitempty"`
 }
+
+// StartFederationTransfer defines model for StartFederationTransfer.
+type StartFederationTransfer struct {
+	AcceptDataLoss      *bool                        `json:"accept_data_loss,omitempty"`
+	Confirm             bool                         `json:"confirm"`
+	DrainTimeoutSeconds *int32                       `json:"drain_timeout_seconds,omitempty"`
+	Mode                *StartFederationTransferMode `json:"mode,omitempty"`
+	ToMemberId          openapi_types.UUID           `json:"to_member_id"`
+}
+
+// StartFederationTransferMode defines model for StartFederationTransfer.Mode.
+type StartFederationTransferMode string
 
 // StartRetentionRun defines model for StartRetentionRun.
 type StartRetentionRun struct {
@@ -6615,6 +7194,26 @@ type UnbindFederationFeedParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
+// CreateFederationFeedParams defines parameters for CreateFederationFeed.
+type CreateFederationFeedParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// DeleteFederationFeedParams defines parameters for DeleteFederationFeed.
+type DeleteFederationFeedParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// StartFederationFeedTransferParams defines parameters for StartFederationFeedTransfer.
+type StartFederationFeedTransferParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// AbortFederationFeedTransferParams defines parameters for AbortFederationFeedTransfer.
+type AbortFederationFeedTransferParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
 // RevokeFederationInvitationParams defines parameters for RevokeFederationInvitation.
 type RevokeFederationInvitationParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
@@ -6659,6 +7258,32 @@ type PublishFederationPolicyParams struct {
 // AdoptFederatedPrincipalParams defines parameters for AdoptFederatedPrincipal.
 type AdoptFederatedPrincipalParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// ResolveFederationQuarantineParams defines parameters for ResolveFederationQuarantine.
+type ResolveFederationQuarantineParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// AdoptFederationReplicationJobParams defines parameters for AdoptFederationReplicationJob.
+type AdoptFederationReplicationJobParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// CreateFederationReplicationRuleParams defines parameters for CreateFederationReplicationRule.
+type CreateFederationReplicationRuleParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// DeleteFederationReplicationRuleParams defines parameters for DeleteFederationReplicationRule.
+type DeleteFederationReplicationRuleParams struct {
+	IdempotencyKey string `json:"Idempotency-Key"`
+}
+
+// UpdateFederationReplicationRuleParams defines parameters for UpdateFederationReplicationRule.
+type UpdateFederationReplicationRuleParams struct {
+	IdempotencyKey string  `json:"Idempotency-Key"`
+	IfMatch        *string `json:"If-Match,omitempty"`
 }
 
 // FederatedSearchParams defines parameters for FederatedSearch.
@@ -7287,6 +7912,15 @@ type CheckFederationAccessJSONRequestBody = FederationAccessCheck
 // BindFederationFeedJSONRequestBody defines body for BindFederationFeed for application/json ContentType.
 type BindFederationFeedJSONRequestBody = BindFederationFeed
 
+// CreateFederationFeedJSONRequestBody defines body for CreateFederationFeed for application/json ContentType.
+type CreateFederationFeedJSONRequestBody = CreateFederationFeed
+
+// StartFederationFeedTransferJSONRequestBody defines body for StartFederationFeedTransfer for application/json ContentType.
+type StartFederationFeedTransferJSONRequestBody = StartFederationTransfer
+
+// AbortFederationFeedTransferJSONRequestBody defines body for AbortFederationFeedTransfer for application/json ContentType.
+type AbortFederationFeedTransferJSONRequestBody = AbortFederationTransfer
+
 // CreateFederationInvitationJSONRequestBody defines body for CreateFederationInvitation for application/json ContentType.
 type CreateFederationInvitationJSONRequestBody = CreateFederationInvitation
 
@@ -7305,8 +7939,20 @@ type PublishFederationPolicyJSONRequestBody = PublishFederationPolicy
 // AdoptFederatedPrincipalJSONRequestBody defines body for AdoptFederatedPrincipal for application/json ContentType.
 type AdoptFederatedPrincipalJSONRequestBody = AdoptFederatedPrincipal
 
+// ResolveFederationQuarantineJSONRequestBody defines body for ResolveFederationQuarantine for application/json ContentType.
+type ResolveFederationQuarantineJSONRequestBody = ResolveFederationQuarantine
+
 // RotateFederationRecoveryKeyJSONRequestBody defines body for RotateFederationRecoveryKey for application/json ContentType.
 type RotateFederationRecoveryKeyJSONRequestBody = RotateFederationRecoveryKey
+
+// AdoptFederationReplicationJobJSONRequestBody defines body for AdoptFederationReplicationJob for application/json ContentType.
+type AdoptFederationReplicationJobJSONRequestBody = AdoptFederationReplicationJob
+
+// CreateFederationReplicationRuleJSONRequestBody defines body for CreateFederationReplicationRule for application/json ContentType.
+type CreateFederationReplicationRuleJSONRequestBody = CreateFederationRule
+
+// UpdateFederationReplicationRuleJSONRequestBody defines body for UpdateFederationReplicationRule for application/json ContentType.
+type UpdateFederationReplicationRuleJSONRequestBody = PatchFederationRule
 
 // SetFederationSettingsJSONRequestBody defines body for SetFederationSettings for application/json ContentType.
 type SetFederationSettingsJSONRequestBody = FederationSettings
@@ -7931,6 +8577,47 @@ type ClientInterface interface {
 	// Removes a feed-key binding; grants on the key become inert. Requires instance admin. Replay-safe with Idempotency-Key.
 	UnbindFederationFeed(ctx context.Context, fed string, slug string, params *UnbindFederationFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateFederationFeedWithBody performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	CreateFederationFeedWithBody(ctx context.Context, params *CreateFederationFeedParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFederationFeed performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	CreateFederationFeed(ctx context.Context, params *CreateFederationFeedParams, body CreateFederationFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFederationFeed performs a DELETE /api/v1/federation/feeds/{fed}/{slug} (the `DeleteFederationFeed` operationId) request.
+	//
+	// Removes a feed key without rules or an active transfer. Local content on every member is untouched. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	DeleteFederationFeed(ctx context.Context, fed string, slug string, params *DeleteFederationFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartFederationFeedTransferWithBody performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	StartFederationFeedTransferWithBody(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartFederationFeedTransfer performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	StartFederationFeedTransfer(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, body StartFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AbortFederationFeedTransferWithBody performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	AbortFederationFeedTransferWithBody(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AbortFederationFeedTransfer performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	AbortFederationFeedTransfer(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, body AbortFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListFederationInvitations performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
 	//
 	// Join invitations issued by this authority (secrets are never returned). Requires instance admin.
@@ -8058,6 +8745,23 @@ type ClientInterface interface {
 	// Resolves conflict_local_principal: the local principal owning a federated identity becomes federation-managed (ID, tokens and local memberships are kept). Requires instance admin and confirm: true. Replay-safe with Idempotency-Key.
 	AdoptFederatedPrincipal(ctx context.Context, id openapi_types.UUID, params *AdoptFederatedPrincipalParams, body AdoptFederatedPrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListFederationQuarantines performs a GET /api/v1/federation/quarantines (the `ListFederationQuarantines` operationId) request.
+	//
+	// Sources an old home kept after a forced transfer (detached, never merged) with the number of changes the new home may not have. Requires read on the instance.
+	ListFederationQuarantines(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResolveFederationQuarantineWithBody performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	ResolveFederationQuarantineWithBody(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResolveFederationQuarantine performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	ResolveFederationQuarantine(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, body ResolveFederationQuarantineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RotateFederationRecoveryKeyWithBody performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -8069,6 +8773,67 @@ type ClientInterface interface {
 	//
 	// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
 	RotateFederationRecoveryKey(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdoptFederationReplicationJobWithBody performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+	AdoptFederationReplicationJobWithBody(ctx context.Context, params *AdoptFederationReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AdoptFederationReplicationJob performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+	AdoptFederationReplicationJob(ctx context.Context, params *AdoptFederationReplicationJobParams, body AdoptFederationReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListFederationReplicationRules performs a GET /api/v1/federation/replication/rules (the `ListFederationReplicationRules` operationId) request.
+	//
+	// Replication rules of the applied topology. Requires read on the instance.
+	ListFederationReplicationRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFederationReplicationRuleWithBody performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	CreateFederationReplicationRuleWithBody(ctx context.Context, params *CreateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFederationReplicationRule performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	CreateFederationReplicationRule(ctx context.Context, params *CreateFederationReplicationRuleParams, body CreateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFederationReplicationRule performs a DELETE /api/v1/federation/replication/rules/{id} (the `DeleteFederationReplicationRule` operationId) request.
+	//
+	// Removes a rule. Targets disable the job and release it to local management; replicated content and the replica source stay. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	DeleteFederationReplicationRule(ctx context.Context, id openapi_types.UUID, params *DeleteFederationReplicationRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationReplicationRule performs a GET /api/v1/federation/replication/rules/{id} (the `GetFederationReplicationRule` operationId) request.
+	//
+	// One replication rule. Requires read on the instance.
+	GetFederationReplicationRule(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateFederationReplicationRuleWithBody performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	UpdateFederationReplicationRuleWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateFederationReplicationRule performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request.
+	// Takes a body of the `application/json` content type.
+	//
+	// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	UpdateFederationReplicationRule(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, body UpdateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationReplicationRuleCompliance performs a GET /api/v1/federation/replication/rules/{id}/compliance (the `GetFederationReplicationRuleCompliance` operationId) request.
+	//
+	// The rule's state on every target member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled); unreachable members are reported unknown. Requires read on the instance.
+	GetFederationReplicationRuleCompliance(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationReplicationStatus performs a GET /api/v1/federation/replication/status (the `GetFederationReplicationStatus` operationId) request.
+	//
+	// Local view of the rules that target this member (job, phase, lag, adoption) and quarantined sources. Requires read on the instance.
+	GetFederationReplicationStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// FederatedSearch performs a GET /api/v1/federation/search (the `FederatedSearch` operationId) request.
 	//
@@ -8096,6 +8861,11 @@ type ClientInterface interface {
 	//
 	// Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.
 	GetFederationStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetFederationTopology performs a GET /api/v1/federation/topology (the `GetFederationTopology` operationId) request.
+	//
+	// The applied signed topology: feed keys with their single home member, descriptors and transfer state, replication rules, and the local role of each feed key on this member. Requires read on the instance.
+	GetFederationTopology(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListFeeds performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 	ListFeeds(ctx context.Context, params *ListFeedsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9766,6 +10536,117 @@ func (c *Client) UnbindFederationFeed(ctx context.Context, fed string, slug stri
 	return c.Client.Do(req)
 }
 
+// CreateFederationFeedWithBody performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request,
+// with any type of body and a specified content type.
+//
+// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) CreateFederationFeedWithBody(ctx context.Context, params *CreateFederationFeedParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFederationFeedRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFederationFeed performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) CreateFederationFeed(ctx context.Context, params *CreateFederationFeedParams, body CreateFederationFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFederationFeedRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteFederationFeed performs a DELETE /api/v1/federation/feeds/{fed}/{slug} (the `DeleteFederationFeed` operationId) request.
+//
+// Removes a feed key without rules or an active transfer. Local content on every member is untouched. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) DeleteFederationFeed(ctx context.Context, fed string, slug string, params *DeleteFederationFeedParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFederationFeedRequest(c.Server, fed, slug, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartFederationFeedTransferWithBody performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request,
+// with any type of body and a specified content type.
+//
+// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *Client) StartFederationFeedTransferWithBody(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartFederationFeedTransferRequestWithBody(c.Server, fed, slug, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartFederationFeedTransfer performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *Client) StartFederationFeedTransfer(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, body StartFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartFederationFeedTransferRequest(c.Server, fed, slug, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AbortFederationFeedTransferWithBody performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request,
+// with any type of body and a specified content type.
+//
+// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *Client) AbortFederationFeedTransferWithBody(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAbortFederationFeedTransferRequestWithBody(c.Server, fed, slug, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AbortFederationFeedTransfer performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *Client) AbortFederationFeedTransfer(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, body AbortFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAbortFederationFeedTransferRequest(c.Server, fed, slug, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListFederationInvitations performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
 //
 // Join invitations issued by this authority (secrets are never returned). Requires instance admin.
@@ -10123,6 +11004,53 @@ func (c *Client) AdoptFederatedPrincipal(ctx context.Context, id openapi_types.U
 	return c.Client.Do(req)
 }
 
+// ListFederationQuarantines performs a GET /api/v1/federation/quarantines (the `ListFederationQuarantines` operationId) request.
+//
+// Sources an old home kept after a forced transfer (detached, never merged) with the number of changes the new home may not have. Requires read on the instance.
+func (c *Client) ListFederationQuarantines(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFederationQuarantinesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ResolveFederationQuarantineWithBody performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request,
+// with any type of body and a specified content type.
+//
+// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *Client) ResolveFederationQuarantineWithBody(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveFederationQuarantineRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ResolveFederationQuarantine performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *Client) ResolveFederationQuarantine(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, body ResolveFederationQuarantineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResolveFederationQuarantineRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // RotateFederationRecoveryKeyWithBody performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -10145,6 +11073,177 @@ func (c *Client) RotateFederationRecoveryKeyWithBody(ctx context.Context, conten
 // Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
 func (c *Client) RotateFederationRecoveryKey(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRotateFederationRecoveryKeyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdoptFederationReplicationJobWithBody performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request,
+// with any type of body and a specified content type.
+//
+// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+func (c *Client) AdoptFederationReplicationJobWithBody(ctx context.Context, params *AdoptFederationReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdoptFederationReplicationJobRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AdoptFederationReplicationJob performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+func (c *Client) AdoptFederationReplicationJob(ctx context.Context, params *AdoptFederationReplicationJobParams, body AdoptFederationReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAdoptFederationReplicationJobRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListFederationReplicationRules performs a GET /api/v1/federation/replication/rules (the `ListFederationReplicationRules` operationId) request.
+//
+// Replication rules of the applied topology. Requires read on the instance.
+func (c *Client) ListFederationReplicationRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFederationReplicationRulesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFederationReplicationRuleWithBody performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) CreateFederationReplicationRuleWithBody(ctx context.Context, params *CreateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFederationReplicationRuleRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFederationReplicationRule performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) CreateFederationReplicationRule(ctx context.Context, params *CreateFederationReplicationRuleParams, body CreateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFederationReplicationRuleRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteFederationReplicationRule performs a DELETE /api/v1/federation/replication/rules/{id} (the `DeleteFederationReplicationRule` operationId) request.
+//
+// Removes a rule. Targets disable the job and release it to local management; replicated content and the replica source stay. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) DeleteFederationReplicationRule(ctx context.Context, id openapi_types.UUID, params *DeleteFederationReplicationRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFederationReplicationRuleRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationReplicationRule performs a GET /api/v1/federation/replication/rules/{id} (the `GetFederationReplicationRule` operationId) request.
+//
+// One replication rule. Requires read on the instance.
+func (c *Client) GetFederationReplicationRule(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationReplicationRuleRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateFederationReplicationRuleWithBody performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) UpdateFederationReplicationRuleWithBody(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateFederationReplicationRuleRequestWithBody(c.Server, id, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateFederationReplicationRule performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request.
+// Takes a body of the `application/json` content type.
+//
+// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *Client) UpdateFederationReplicationRule(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, body UpdateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateFederationReplicationRuleRequest(c.Server, id, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationReplicationRuleCompliance performs a GET /api/v1/federation/replication/rules/{id}/compliance (the `GetFederationReplicationRuleCompliance` operationId) request.
+//
+// The rule's state on every target member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled); unreachable members are reported unknown. Requires read on the instance.
+func (c *Client) GetFederationReplicationRuleCompliance(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationReplicationRuleComplianceRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationReplicationStatus performs a GET /api/v1/federation/replication/status (the `GetFederationReplicationStatus` operationId) request.
+//
+// Local view of the rules that target this member (job, phase, lag, adoption) and quarantined sources. Requires read on the instance.
+func (c *Client) GetFederationReplicationStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationReplicationStatusRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -10222,6 +11321,21 @@ func (c *Client) SetFederationSettings(ctx context.Context, params *SetFederatio
 // Local federation view: state, role, epoch, applied membership generation and age, certificate, sync outcome and member counts. Requires read on the instance.
 func (c *Client) GetFederationStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetFederationStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFederationTopology performs a GET /api/v1/federation/topology (the `GetFederationTopology` operationId) request.
+//
+// The applied signed topology: feed keys with their single home member, descriptors and transfer state, replication rules, and the local role of each feed key on this member. Requires read on the instance.
+func (c *Client) GetFederationTopology(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFederationTopologyRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -14523,6 +15637,247 @@ func NewUnbindFederationFeedRequest(server string, fed string, slug string, para
 	return req, nil
 }
 
+// NewCreateFederationFeedRequest calls the generic CreateFederationFeed builder with application/json body
+func NewCreateFederationFeedRequest(server string, params *CreateFederationFeedParams, body CreateFederationFeedJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFederationFeedRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateFederationFeedRequestWithBody constructs an http.Request for the CreateFederationFeed method, with any body, and a specified content type
+func NewCreateFederationFeedRequestWithBody(server string, params *CreateFederationFeedParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/feeds")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteFederationFeedRequest constructs an http.Request for the DeleteFederationFeed method
+func NewDeleteFederationFeedRequest(server string, fed string, slug string, params *DeleteFederationFeedParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "fed", fed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/feeds/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewStartFederationFeedTransferRequest calls the generic StartFederationFeedTransfer builder with application/json body
+func NewStartFederationFeedTransferRequest(server string, fed string, slug string, params *StartFederationFeedTransferParams, body StartFederationFeedTransferJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewStartFederationFeedTransferRequestWithBody(server, fed, slug, params, "application/json", bodyReader)
+}
+
+// NewStartFederationFeedTransferRequestWithBody constructs an http.Request for the StartFederationFeedTransfer method, with any body, and a specified content type
+func NewStartFederationFeedTransferRequestWithBody(server string, fed string, slug string, params *StartFederationFeedTransferParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "fed", fed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/feeds/%s/%s/transfer", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewAbortFederationFeedTransferRequest calls the generic AbortFederationFeedTransfer builder with application/json body
+func NewAbortFederationFeedTransferRequest(server string, fed string, slug string, params *AbortFederationFeedTransferParams, body AbortFederationFeedTransferJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAbortFederationFeedTransferRequestWithBody(server, fed, slug, params, "application/json", bodyReader)
+}
+
+// NewAbortFederationFeedTransferRequestWithBody constructs an http.Request for the AbortFederationFeedTransfer method, with any body, and a specified content type
+func NewAbortFederationFeedTransferRequestWithBody(server string, fed string, slug string, params *AbortFederationFeedTransferParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "fed", fed, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "slug", slug, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/feeds/%s/%s/transfer/abort", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
 // NewListFederationInvitationsRequest constructs an http.Request for the ListFederationInvitations method
 func NewListFederationInvitationsRequest(server string) (*http.Request, error) {
 	var err error
@@ -15266,6 +16621,93 @@ func NewAdoptFederatedPrincipalRequestWithBody(server string, id openapi_types.U
 	return req, nil
 }
 
+// NewListFederationQuarantinesRequest constructs an http.Request for the ListFederationQuarantines method
+func NewListFederationQuarantinesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/quarantines")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResolveFederationQuarantineRequest calls the generic ResolveFederationQuarantine builder with application/json body
+func NewResolveFederationQuarantineRequest(server string, id openapi_types.UUID, params *ResolveFederationQuarantineParams, body ResolveFederationQuarantineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewResolveFederationQuarantineRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewResolveFederationQuarantineRequestWithBody constructs an http.Request for the ResolveFederationQuarantine method, with any body, and a specified content type
+func NewResolveFederationQuarantineRequestWithBody(server string, id openapi_types.UUID, params *ResolveFederationQuarantineParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/quarantines/%s/resolve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
 // NewRotateFederationRecoveryKeyRequest calls the generic RotateFederationRecoveryKey builder with application/json body
 func NewRotateFederationRecoveryKeyRequest(server string, body RotateFederationRecoveryKeyJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -15302,6 +16744,352 @@ func NewRotateFederationRecoveryKeyRequestWithBody(server string, contentType st
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAdoptFederationReplicationJobRequest calls the generic AdoptFederationReplicationJob builder with application/json body
+func NewAdoptFederationReplicationJobRequest(server string, params *AdoptFederationReplicationJobParams, body AdoptFederationReplicationJobJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAdoptFederationReplicationJobRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewAdoptFederationReplicationJobRequestWithBody constructs an http.Request for the AdoptFederationReplicationJob method, with any body, and a specified content type
+func NewAdoptFederationReplicationJobRequestWithBody(server string, params *AdoptFederationReplicationJobParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/adopt")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewListFederationReplicationRulesRequest constructs an http.Request for the ListFederationReplicationRules method
+func NewListFederationReplicationRulesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/rules")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateFederationReplicationRuleRequest calls the generic CreateFederationReplicationRule builder with application/json body
+func NewCreateFederationReplicationRuleRequest(server string, params *CreateFederationReplicationRuleParams, body CreateFederationReplicationRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFederationReplicationRuleRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateFederationReplicationRuleRequestWithBody constructs an http.Request for the CreateFederationReplicationRule method, with any body, and a specified content type
+func NewCreateFederationReplicationRuleRequestWithBody(server string, params *CreateFederationReplicationRuleParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/rules")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteFederationReplicationRuleRequest constructs an http.Request for the DeleteFederationReplicationRule method
+func NewDeleteFederationReplicationRuleRequest(server string, id openapi_types.UUID, params *DeleteFederationReplicationRuleParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/rules/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGetFederationReplicationRuleRequest constructs an http.Request for the GetFederationReplicationRule method
+func NewGetFederationReplicationRuleRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/rules/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateFederationReplicationRuleRequest calls the generic UpdateFederationReplicationRule builder with application/json body
+func NewUpdateFederationReplicationRuleRequest(server string, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, body UpdateFederationReplicationRuleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateFederationReplicationRuleRequestWithBody(server, id, params, "application/json", bodyReader)
+}
+
+// NewUpdateFederationReplicationRuleRequestWithBody constructs an http.Request for the UpdateFederationReplicationRule method, with any body, and a specified content type
+func NewUpdateFederationReplicationRuleRequestWithBody(server string, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/rules/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+		if params.IfMatch != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "If-Match", *params.IfMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-Match", headerParam1)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetFederationReplicationRuleComplianceRequest constructs an http.Request for the GetFederationReplicationRuleCompliance method
+func NewGetFederationReplicationRuleComplianceRequest(server string, id openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/rules/%s/compliance", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetFederationReplicationStatusRequest constructs an http.Request for the GetFederationReplicationStatus method
+func NewGetFederationReplicationStatusRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/replication/status")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -15534,6 +17322,33 @@ func NewGetFederationStatusRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/federation/status")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetFederationTopologyRequest constructs an http.Request for the GetFederationTopology method
+func NewGetFederationTopologyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/federation/topology")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -23314,6 +25129,55 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	UnbindFederationFeedWithResponse(ctx context.Context, fed string, slug string, params *UnbindFederationFeedParams, reqEditors ...RequestEditorFn) (*UnbindFederationFeedResponse, error)
 
+	// CreateFederationFeedWithBodyWithResponse performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateFederationFeedWithBodyWithResponse(ctx context.Context, params *CreateFederationFeedParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFederationFeedResponse, error)
+
+	// CreateFederationFeedWithResponse performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	CreateFederationFeedWithResponse(ctx context.Context, params *CreateFederationFeedParams, body CreateFederationFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationFeedResponse, error)
+
+	// DeleteFederationFeedWithResponse performs a DELETE /api/v1/federation/feeds/{fed}/{slug} (the `DeleteFederationFeed` operationId) request.
+	//
+	// Removes a feed key without rules or an active transfer. Local content on every member is untouched. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteFederationFeedWithResponse(ctx context.Context, fed string, slug string, params *DeleteFederationFeedParams, reqEditors ...RequestEditorFn) (*DeleteFederationFeedResponse, error)
+
+	// StartFederationFeedTransferWithBodyWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	StartFederationFeedTransferWithBodyWithResponse(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartFederationFeedTransferResponse, error)
+
+	// StartFederationFeedTransferWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	StartFederationFeedTransferWithResponse(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, body StartFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*StartFederationFeedTransferResponse, error)
+
+	// AbortFederationFeedTransferWithBodyWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	AbortFederationFeedTransferWithBodyWithResponse(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AbortFederationFeedTransferResponse, error)
+
+	// AbortFederationFeedTransferWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	AbortFederationFeedTransferWithResponse(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, body AbortFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*AbortFederationFeedTransferResponse, error)
+
 	// ListFederationInvitationsWithResponse performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
 	//
 	// Join invitations issued by this authority (secrets are never returned). Requires instance admin.
@@ -23475,6 +25339,27 @@ type ClientWithResponsesInterface interface {
 	// Resolves conflict_local_principal: the local principal owning a federated identity becomes federation-managed (ID, tokens and local memberships are kept). Requires instance admin and confirm: true. Replay-safe with Idempotency-Key.
 	AdoptFederatedPrincipalWithResponse(ctx context.Context, id openapi_types.UUID, params *AdoptFederatedPrincipalParams, body AdoptFederatedPrincipalJSONRequestBody, reqEditors ...RequestEditorFn) (*AdoptFederatedPrincipalResponse, error)
 
+	// ListFederationQuarantinesWithResponse performs a GET /api/v1/federation/quarantines (the `ListFederationQuarantines` operationId) request.
+	//
+	// Sources an old home kept after a forced transfer (detached, never merged) with the number of changes the new home may not have. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListFederationQuarantinesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationQuarantinesResponse, error)
+
+	// ResolveFederationQuarantineWithBodyWithResponse performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ResolveFederationQuarantineWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResolveFederationQuarantineResponse, error)
+
+	// ResolveFederationQuarantineWithResponse performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+	ResolveFederationQuarantineWithResponse(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, body ResolveFederationQuarantineJSONRequestBody, reqEditors ...RequestEditorFn) (*ResolveFederationQuarantineResponse, error)
+
 	// RotateFederationRecoveryKeyWithBodyWithResponse performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
 	// with any type of body and a specified content type.
 	//
@@ -23488,6 +25373,83 @@ type ClientWithResponsesInterface interface {
 	//
 	// Replaces the offline recovery key (authority only). The caller proves possession of the current key; the next membership generation carries a rotation statement signed by it. The new private key is returned once. Requires instance admin. Returns a secret once: Idempotency-Key is rejected.
 	RotateFederationRecoveryKeyWithResponse(ctx context.Context, body RotateFederationRecoveryKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateFederationRecoveryKeyResponse, error)
+
+	// AdoptFederationReplicationJobWithBodyWithResponse performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	AdoptFederationReplicationJobWithBodyWithResponse(ctx context.Context, params *AdoptFederationReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdoptFederationReplicationJobResponse, error)
+
+	// AdoptFederationReplicationJobWithResponse performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+	AdoptFederationReplicationJobWithResponse(ctx context.Context, params *AdoptFederationReplicationJobParams, body AdoptFederationReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*AdoptFederationReplicationJobResponse, error)
+
+	// ListFederationReplicationRulesWithResponse performs a GET /api/v1/federation/replication/rules (the `ListFederationReplicationRules` operationId) request.
+	//
+	// Replication rules of the applied topology. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	ListFederationReplicationRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationReplicationRulesResponse, error)
+
+	// CreateFederationReplicationRuleWithBodyWithResponse performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	CreateFederationReplicationRuleWithBodyWithResponse(ctx context.Context, params *CreateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFederationReplicationRuleResponse, error)
+
+	// CreateFederationReplicationRuleWithResponse performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	CreateFederationReplicationRuleWithResponse(ctx context.Context, params *CreateFederationReplicationRuleParams, body CreateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationReplicationRuleResponse, error)
+
+	// DeleteFederationReplicationRuleWithResponse performs a DELETE /api/v1/federation/replication/rules/{id} (the `DeleteFederationReplicationRule` operationId) request.
+	//
+	// Removes a rule. Targets disable the job and release it to local management; replicated content and the replica source stay. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	DeleteFederationReplicationRuleWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteFederationReplicationRuleParams, reqEditors ...RequestEditorFn) (*DeleteFederationReplicationRuleResponse, error)
+
+	// GetFederationReplicationRuleWithResponse performs a GET /api/v1/federation/replication/rules/{id} (the `GetFederationReplicationRule` operationId) request.
+	//
+	// One replication rule. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationReplicationRuleWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFederationReplicationRuleResponse, error)
+
+	// UpdateFederationReplicationRuleWithBodyWithResponse performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request,
+	// with any type of body and a specified content type.
+	//
+	// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	UpdateFederationReplicationRuleWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFederationReplicationRuleResponse, error)
+
+	// UpdateFederationReplicationRuleWithResponse performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request.
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+	UpdateFederationReplicationRuleWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, body UpdateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFederationReplicationRuleResponse, error)
+
+	// GetFederationReplicationRuleComplianceWithResponse performs a GET /api/v1/federation/replication/rules/{id}/compliance (the `GetFederationReplicationRuleCompliance` operationId) request.
+	//
+	// The rule's state on every target member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled); unreachable members are reported unknown. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationReplicationRuleComplianceWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFederationReplicationRuleComplianceResponse, error)
+
+	// GetFederationReplicationStatusWithResponse performs a GET /api/v1/federation/replication/status (the `GetFederationReplicationStatus` operationId) request.
+	//
+	// Local view of the rules that target this member (job, phase, lag, adoption) and quarantined sources. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationReplicationStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationReplicationStatusResponse, error)
 
 	// FederatedSearchWithResponse performs a GET /api/v1/federation/search (the `FederatedSearch` operationId) request.
 	//
@@ -23523,6 +25485,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns a wrapper object for the known response body format(s).
 	GetFederationStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationStatusResponse, error)
+
+	// GetFederationTopologyWithResponse performs a GET /api/v1/federation/topology (the `GetFederationTopology` operationId) request.
+	//
+	// The applied signed topology: feed keys with their single home member, descriptors and transfer state, replication rules, and the local role of each feed key on this member. Requires read on the instance.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetFederationTopologyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationTopologyResponse, error)
 
 	// ListFeedsWithResponse performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
 	//
@@ -29893,6 +31862,639 @@ func (r UnbindFederationFeedResponse) ContentType() string {
 	return ""
 }
 
+// CreateFederationFeedResponse201Headers the declared response headers of an HTTP 201 response for CreateFederationFeed
+type CreateFederationFeedResponse201Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse400Headers the declared response headers of an HTTP 400 response for CreateFederationFeed
+type CreateFederationFeedResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse401Headers the declared response headers of an HTTP 401 response for CreateFederationFeed
+type CreateFederationFeedResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse403Headers the declared response headers of an HTTP 403 response for CreateFederationFeed
+type CreateFederationFeedResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse404Headers the declared response headers of an HTTP 404 response for CreateFederationFeed
+type CreateFederationFeedResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse409Headers the declared response headers of an HTTP 409 response for CreateFederationFeed
+type CreateFederationFeedResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse429Headers the declared response headers of an HTTP 429 response for CreateFederationFeed
+type CreateFederationFeedResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse500Headers the declared response headers of an HTTP 500 response for CreateFederationFeed
+type CreateFederationFeedResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationFeedResponse503Headers the declared response headers of an HTTP 503 response for CreateFederationFeed
+type CreateFederationFeedResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateFederationFeedResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *FederationTopologyFeed
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateFederationFeedResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateFederationFeedResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateFederationFeedResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateFederationFeedResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreateFederationFeedResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateFederationFeedResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateFederationFeedResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateFederationFeedResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateFederationFeedResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON201() *FederationTopologyFeed {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateFederationFeedResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFederationFeedResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFederationFeedResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFederationFeedResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFederationFeedResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteFederationFeedResponse204Headers the declared response headers of an HTTP 204 response for DeleteFederationFeed
+type DeleteFederationFeedResponse204Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse400Headers the declared response headers of an HTTP 400 response for DeleteFederationFeed
+type DeleteFederationFeedResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse401Headers the declared response headers of an HTTP 401 response for DeleteFederationFeed
+type DeleteFederationFeedResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse403Headers the declared response headers of an HTTP 403 response for DeleteFederationFeed
+type DeleteFederationFeedResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse404Headers the declared response headers of an HTTP 404 response for DeleteFederationFeed
+type DeleteFederationFeedResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse409Headers the declared response headers of an HTTP 409 response for DeleteFederationFeed
+type DeleteFederationFeedResponse409Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse429Headers the declared response headers of an HTTP 429 response for DeleteFederationFeed
+type DeleteFederationFeedResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse500Headers the declared response headers of an HTTP 500 response for DeleteFederationFeed
+type DeleteFederationFeedResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationFeedResponse503Headers the declared response headers of an HTTP 503 response for DeleteFederationFeed
+type DeleteFederationFeedResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteFederationFeedResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DeleteFederationFeedResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteFederationFeedResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteFederationFeedResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteFederationFeedResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteFederationFeedResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteFederationFeedResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteFederationFeedResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteFederationFeedResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteFederationFeedResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteFederationFeedResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteFederationFeedResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFederationFeedResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFederationFeedResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteFederationFeedResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// StartFederationFeedTransferResponse202Headers the declared response headers of an HTTP 202 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse202Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse400Headers the declared response headers of an HTTP 400 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse400Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse401Headers the declared response headers of an HTTP 401 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse401Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse403Headers the declared response headers of an HTTP 403 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse403Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse404Headers the declared response headers of an HTTP 404 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse404Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse409Headers the declared response headers of an HTTP 409 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse409Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse429Headers the declared response headers of an HTTP 429 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse429Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse500Headers the declared response headers of an HTTP 500 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse500Headers struct {
+	XRequestID *string
+}
+
+// StartFederationFeedTransferResponse503Headers the declared response headers of an HTTP 503 response for StartFederationFeedTransfer
+type StartFederationFeedTransferResponse503Headers struct {
+	XRequestID *string
+}
+
+type StartFederationFeedTransferResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *FederationFeedTransfer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers202 the parsed response headers for an HTTP 202 response
+	Headers202 *StartFederationFeedTransferResponse202Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *StartFederationFeedTransferResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *StartFederationFeedTransferResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *StartFederationFeedTransferResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *StartFederationFeedTransferResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *StartFederationFeedTransferResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *StartFederationFeedTransferResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *StartFederationFeedTransferResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *StartFederationFeedTransferResponse503Headers
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON202() *FederationFeedTransfer {
+	return r.JSON202
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r StartFederationFeedTransferResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r StartFederationFeedTransferResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r StartFederationFeedTransferResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartFederationFeedTransferResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StartFederationFeedTransferResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// AbortFederationFeedTransferResponse200Headers the declared response headers of an HTTP 200 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse200Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse400Headers the declared response headers of an HTTP 400 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse400Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse401Headers the declared response headers of an HTTP 401 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse401Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse403Headers the declared response headers of an HTTP 403 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse403Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse404Headers the declared response headers of an HTTP 404 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse404Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse409Headers the declared response headers of an HTTP 409 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse409Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse429Headers the declared response headers of an HTTP 429 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse429Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse500Headers the declared response headers of an HTTP 500 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse500Headers struct {
+	XRequestID *string
+}
+
+// AbortFederationFeedTransferResponse503Headers the declared response headers of an HTTP 503 response for AbortFederationFeedTransfer
+type AbortFederationFeedTransferResponse503Headers struct {
+	XRequestID *string
+}
+
+type AbortFederationFeedTransferResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationFeedTransfer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *AbortFederationFeedTransferResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *AbortFederationFeedTransferResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *AbortFederationFeedTransferResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *AbortFederationFeedTransferResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *AbortFederationFeedTransferResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *AbortFederationFeedTransferResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *AbortFederationFeedTransferResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *AbortFederationFeedTransferResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *AbortFederationFeedTransferResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON200() *FederationFeedTransfer {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r AbortFederationFeedTransferResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r AbortFederationFeedTransferResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AbortFederationFeedTransferResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AbortFederationFeedTransferResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AbortFederationFeedTransferResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListFederationInvitationsResponse200Headers the declared response headers of an HTTP 200 response for ListFederationInvitations
 type ListFederationInvitationsResponse200Headers struct {
 	XRequestID *string
@@ -32620,6 +35222,326 @@ func (r AdoptFederatedPrincipalResponse) ContentType() string {
 	return ""
 }
 
+// ListFederationQuarantinesResponse200Headers the declared response headers of an HTTP 200 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse400Headers the declared response headers of an HTTP 400 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse401Headers the declared response headers of an HTTP 401 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse403Headers the declared response headers of an HTTP 403 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse404Headers the declared response headers of an HTTP 404 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse409Headers the declared response headers of an HTTP 409 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse409Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse429Headers the declared response headers of an HTTP 429 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse500Headers the declared response headers of an HTTP 500 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListFederationQuarantinesResponse503Headers the declared response headers of an HTTP 503 response for ListFederationQuarantines
+type ListFederationQuarantinesResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListFederationQuarantinesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationQuarantineList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListFederationQuarantinesResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListFederationQuarantinesResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListFederationQuarantinesResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListFederationQuarantinesResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListFederationQuarantinesResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ListFederationQuarantinesResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListFederationQuarantinesResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListFederationQuarantinesResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListFederationQuarantinesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON200() *FederationQuarantineList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListFederationQuarantinesResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListFederationQuarantinesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListFederationQuarantinesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListFederationQuarantinesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListFederationQuarantinesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ResolveFederationQuarantineResponse200Headers the declared response headers of an HTTP 200 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse200Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse400Headers the declared response headers of an HTTP 400 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse400Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse401Headers the declared response headers of an HTTP 401 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse401Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse403Headers the declared response headers of an HTTP 403 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse403Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse404Headers the declared response headers of an HTTP 404 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse404Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse409Headers the declared response headers of an HTTP 409 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse409Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse429Headers the declared response headers of an HTTP 429 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse429Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse500Headers the declared response headers of an HTTP 500 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse500Headers struct {
+	XRequestID *string
+}
+
+// ResolveFederationQuarantineResponse503Headers the declared response headers of an HTTP 503 response for ResolveFederationQuarantine
+type ResolveFederationQuarantineResponse503Headers struct {
+	XRequestID *string
+}
+
+type ResolveFederationQuarantineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationQuarantine
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ResolveFederationQuarantineResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ResolveFederationQuarantineResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ResolveFederationQuarantineResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ResolveFederationQuarantineResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ResolveFederationQuarantineResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ResolveFederationQuarantineResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ResolveFederationQuarantineResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ResolveFederationQuarantineResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ResolveFederationQuarantineResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON200() *FederationQuarantine {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ResolveFederationQuarantineResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ResolveFederationQuarantineResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ResolveFederationQuarantineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResolveFederationQuarantineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResolveFederationQuarantineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // RotateFederationRecoveryKeyResponse200Headers the declared response headers of an HTTP 200 response for RotateFederationRecoveryKey
 type RotateFederationRecoveryKeyResponse200Headers struct {
 	XRequestID *string
@@ -32774,6 +35696,1293 @@ func (r RotateFederationRecoveryKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RotateFederationRecoveryKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// AdoptFederationReplicationJobResponse200Headers the declared response headers of an HTTP 200 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse200Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse400Headers the declared response headers of an HTTP 400 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse400Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse401Headers the declared response headers of an HTTP 401 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse401Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse403Headers the declared response headers of an HTTP 403 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse403Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse404Headers the declared response headers of an HTTP 404 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse404Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse409Headers the declared response headers of an HTTP 409 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse409Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse429Headers the declared response headers of an HTTP 429 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse429Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse500Headers the declared response headers of an HTTP 500 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse500Headers struct {
+	XRequestID *string
+}
+
+// AdoptFederationReplicationJobResponse503Headers the declared response headers of an HTTP 503 response for AdoptFederationReplicationJob
+type AdoptFederationReplicationJobResponse503Headers struct {
+	XRequestID *string
+}
+
+type AdoptFederationReplicationJobResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationAdoptResult
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *AdoptFederationReplicationJobResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *AdoptFederationReplicationJobResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *AdoptFederationReplicationJobResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *AdoptFederationReplicationJobResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *AdoptFederationReplicationJobResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *AdoptFederationReplicationJobResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *AdoptFederationReplicationJobResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *AdoptFederationReplicationJobResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *AdoptFederationReplicationJobResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON200() *FederationAdoptResult {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r AdoptFederationReplicationJobResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r AdoptFederationReplicationJobResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AdoptFederationReplicationJobResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AdoptFederationReplicationJobResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AdoptFederationReplicationJobResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListFederationReplicationRulesResponse200Headers the declared response headers of an HTTP 200 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse200Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse400Headers the declared response headers of an HTTP 400 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse400Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse401Headers the declared response headers of an HTTP 401 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse401Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse403Headers the declared response headers of an HTTP 403 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse403Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse404Headers the declared response headers of an HTTP 404 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse404Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse409Headers the declared response headers of an HTTP 409 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse409Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse429Headers the declared response headers of an HTTP 429 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse429Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse500Headers the declared response headers of an HTTP 500 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse500Headers struct {
+	XRequestID *string
+}
+
+// ListFederationReplicationRulesResponse503Headers the declared response headers of an HTTP 503 response for ListFederationReplicationRules
+type ListFederationReplicationRulesResponse503Headers struct {
+	XRequestID *string
+}
+
+type ListFederationReplicationRulesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationReplicationRuleList
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListFederationReplicationRulesResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *ListFederationReplicationRulesResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListFederationReplicationRulesResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *ListFederationReplicationRulesResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *ListFederationReplicationRulesResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *ListFederationReplicationRulesResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *ListFederationReplicationRulesResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *ListFederationReplicationRulesResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *ListFederationReplicationRulesResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON200() *FederationReplicationRuleList {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListFederationReplicationRulesResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListFederationReplicationRulesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListFederationReplicationRulesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListFederationReplicationRulesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListFederationReplicationRulesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateFederationReplicationRuleResponse201Headers the declared response headers of an HTTP 201 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse201Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse400Headers the declared response headers of an HTTP 400 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse401Headers the declared response headers of an HTTP 401 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse403Headers the declared response headers of an HTTP 403 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse404Headers the declared response headers of an HTTP 404 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse409Headers the declared response headers of an HTTP 409 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse409Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse429Headers the declared response headers of an HTTP 429 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse500Headers the declared response headers of an HTTP 500 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// CreateFederationReplicationRuleResponse503Headers the declared response headers of an HTTP 503 response for CreateFederationReplicationRule
+type CreateFederationReplicationRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type CreateFederationReplicationRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *FederationReplicationRule
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateFederationReplicationRuleResponse201Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *CreateFederationReplicationRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *CreateFederationReplicationRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *CreateFederationReplicationRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *CreateFederationReplicationRuleResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *CreateFederationReplicationRuleResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateFederationReplicationRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *CreateFederationReplicationRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *CreateFederationReplicationRuleResponse503Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON201() *FederationReplicationRule {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateFederationReplicationRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFederationReplicationRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFederationReplicationRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFederationReplicationRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFederationReplicationRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DeleteFederationReplicationRuleResponse204Headers the declared response headers of an HTTP 204 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse204Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse400Headers the declared response headers of an HTTP 400 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse401Headers the declared response headers of an HTTP 401 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse403Headers the declared response headers of an HTTP 403 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse404Headers the declared response headers of an HTTP 404 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse409Headers the declared response headers of an HTTP 409 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse409Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse429Headers the declared response headers of an HTTP 429 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse500Headers the declared response headers of an HTTP 500 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// DeleteFederationReplicationRuleResponse503Headers the declared response headers of an HTTP 503 response for DeleteFederationReplicationRule
+type DeleteFederationReplicationRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type DeleteFederationReplicationRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers204 the parsed response headers for an HTTP 204 response
+	Headers204 *DeleteFederationReplicationRuleResponse204Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *DeleteFederationReplicationRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *DeleteFederationReplicationRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *DeleteFederationReplicationRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *DeleteFederationReplicationRuleResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DeleteFederationReplicationRuleResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DeleteFederationReplicationRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *DeleteFederationReplicationRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *DeleteFederationReplicationRuleResponse503Headers
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteFederationReplicationRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteFederationReplicationRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFederationReplicationRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFederationReplicationRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteFederationReplicationRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationReplicationRuleResponse200Headers the declared response headers of an HTTP 200 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse400Headers the declared response headers of an HTTP 400 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse401Headers the declared response headers of an HTTP 401 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse403Headers the declared response headers of an HTTP 403 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse404Headers the declared response headers of an HTTP 404 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse409Headers the declared response headers of an HTTP 409 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse429Headers the declared response headers of an HTTP 429 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse500Headers the declared response headers of an HTTP 500 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleResponse503Headers the declared response headers of an HTTP 503 response for GetFederationReplicationRule
+type GetFederationReplicationRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationReplicationRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationReplicationRule
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationReplicationRuleResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationReplicationRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationReplicationRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationReplicationRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationReplicationRuleResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationReplicationRuleResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationReplicationRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationReplicationRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationReplicationRuleResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON200() *FederationReplicationRule {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationReplicationRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationReplicationRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationReplicationRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationReplicationRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationReplicationRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// UpdateFederationReplicationRuleResponse200Headers the declared response headers of an HTTP 200 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse200Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse400Headers the declared response headers of an HTTP 400 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse400Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse401Headers the declared response headers of an HTTP 401 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse401Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse403Headers the declared response headers of an HTTP 403 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse403Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse404Headers the declared response headers of an HTTP 404 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse404Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse409Headers the declared response headers of an HTTP 409 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse409Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse412Headers the declared response headers of an HTTP 412 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse412Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse429Headers the declared response headers of an HTTP 429 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse429Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse500Headers the declared response headers of an HTTP 500 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse500Headers struct {
+	XRequestID *string
+}
+
+// UpdateFederationReplicationRuleResponse503Headers the declared response headers of an HTTP 503 response for UpdateFederationReplicationRule
+type UpdateFederationReplicationRuleResponse503Headers struct {
+	XRequestID *string
+}
+
+type UpdateFederationReplicationRuleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationReplicationRule
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON412 the response for an HTTP 412 `application/json` response
+	JSON412 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *UpdateFederationReplicationRuleResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *UpdateFederationReplicationRuleResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *UpdateFederationReplicationRuleResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *UpdateFederationReplicationRuleResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *UpdateFederationReplicationRuleResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *UpdateFederationReplicationRuleResponse409Headers
+	// Headers412 the parsed response headers for an HTTP 412 response
+	Headers412 *UpdateFederationReplicationRuleResponse412Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *UpdateFederationReplicationRuleResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *UpdateFederationReplicationRuleResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *UpdateFederationReplicationRuleResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON200() *FederationReplicationRule {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON412 returns the response for an HTTP 412 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON412() *Error {
+	return r.JSON412
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r UpdateFederationReplicationRuleResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateFederationReplicationRuleResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateFederationReplicationRuleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateFederationReplicationRuleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateFederationReplicationRuleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationReplicationRuleComplianceResponse200Headers the declared response headers of an HTTP 200 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse400Headers the declared response headers of an HTTP 400 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse401Headers the declared response headers of an HTTP 401 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse403Headers the declared response headers of an HTTP 403 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse404Headers the declared response headers of an HTTP 404 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse409Headers the declared response headers of an HTTP 409 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse429Headers the declared response headers of an HTTP 429 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse500Headers the declared response headers of an HTTP 500 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationRuleComplianceResponse503Headers the declared response headers of an HTTP 503 response for GetFederationReplicationRuleCompliance
+type GetFederationReplicationRuleComplianceResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationReplicationRuleComplianceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationRuleCompliance
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationReplicationRuleComplianceResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationReplicationRuleComplianceResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationReplicationRuleComplianceResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationReplicationRuleComplianceResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationReplicationRuleComplianceResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationReplicationRuleComplianceResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationReplicationRuleComplianceResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationReplicationRuleComplianceResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationReplicationRuleComplianceResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON200() *FederationRuleCompliance {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationReplicationRuleComplianceResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationReplicationRuleComplianceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationReplicationRuleComplianceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationReplicationRuleComplianceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationReplicationRuleComplianceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationReplicationStatusResponse200Headers the declared response headers of an HTTP 200 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse400Headers the declared response headers of an HTTP 400 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse401Headers the declared response headers of an HTTP 401 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse403Headers the declared response headers of an HTTP 403 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse404Headers the declared response headers of an HTTP 404 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse409Headers the declared response headers of an HTTP 409 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse429Headers the declared response headers of an HTTP 429 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse500Headers the declared response headers of an HTTP 500 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationReplicationStatusResponse503Headers the declared response headers of an HTTP 503 response for GetFederationReplicationStatus
+type GetFederationReplicationStatusResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationReplicationStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationReplicationStatus
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationReplicationStatusResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationReplicationStatusResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationReplicationStatusResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationReplicationStatusResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationReplicationStatusResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationReplicationStatusResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationReplicationStatusResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationReplicationStatusResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationReplicationStatusResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON200() *FederationReplicationStatus {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationReplicationStatusResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationReplicationStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationReplicationStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationReplicationStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationReplicationStatusResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -33400,6 +37609,166 @@ func (r GetFederationStatusResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetFederationStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetFederationTopologyResponse200Headers the declared response headers of an HTTP 200 response for GetFederationTopology
+type GetFederationTopologyResponse200Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse400Headers the declared response headers of an HTTP 400 response for GetFederationTopology
+type GetFederationTopologyResponse400Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse401Headers the declared response headers of an HTTP 401 response for GetFederationTopology
+type GetFederationTopologyResponse401Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse403Headers the declared response headers of an HTTP 403 response for GetFederationTopology
+type GetFederationTopologyResponse403Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse404Headers the declared response headers of an HTTP 404 response for GetFederationTopology
+type GetFederationTopologyResponse404Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse409Headers the declared response headers of an HTTP 409 response for GetFederationTopology
+type GetFederationTopologyResponse409Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse429Headers the declared response headers of an HTTP 429 response for GetFederationTopology
+type GetFederationTopologyResponse429Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse500Headers the declared response headers of an HTTP 500 response for GetFederationTopology
+type GetFederationTopologyResponse500Headers struct {
+	XRequestID *string
+}
+
+// GetFederationTopologyResponse503Headers the declared response headers of an HTTP 503 response for GetFederationTopology
+type GetFederationTopologyResponse503Headers struct {
+	XRequestID *string
+}
+
+type GetFederationTopologyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FederationTopologyView
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *Error
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *Error
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *Error
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *Error
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *Error
+	// JSON500 the response for an HTTP 500 `application/json` response
+	JSON500 *Error
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetFederationTopologyResponse200Headers
+	// Headers400 the parsed response headers for an HTTP 400 response
+	Headers400 *GetFederationTopologyResponse400Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetFederationTopologyResponse401Headers
+	// Headers403 the parsed response headers for an HTTP 403 response
+	Headers403 *GetFederationTopologyResponse403Headers
+	// Headers404 the parsed response headers for an HTTP 404 response
+	Headers404 *GetFederationTopologyResponse404Headers
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GetFederationTopologyResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetFederationTopologyResponse429Headers
+	// Headers500 the parsed response headers for an HTTP 500 response
+	Headers500 *GetFederationTopologyResponse500Headers
+	// Headers503 the parsed response headers for an HTTP 503 response
+	Headers503 *GetFederationTopologyResponse503Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON200() *FederationTopologyView {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON400() *Error {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON401() *Error {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON403() *Error {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON404() *Error {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON429() *Error {
+	return r.JSON429
+}
+
+// GetJSON500 returns the response for an HTTP 500 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON500() *Error {
+	return r.JSON500
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetFederationTopologyResponse) GetJSON503() *Error {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFederationTopologyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFederationTopologyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFederationTopologyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFederationTopologyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -57222,6 +61591,97 @@ func (c *ClientWithResponses) UnbindFederationFeedWithResponse(ctx context.Conte
 	return ParseUnbindFederationFeedResponse(rsp)
 }
 
+// CreateFederationFeedWithBodyWithResponse performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request,
+// with any type of body and a specified content type.
+//
+// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateFederationFeedWithBodyWithResponse(ctx context.Context, params *CreateFederationFeedParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFederationFeedResponse, error) {
+	rsp, err := c.CreateFederationFeedWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFederationFeedResponse(rsp)
+}
+
+// CreateFederationFeedWithResponse performs a POST /api/v1/federation/feeds (the `CreateFederationFeed` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Publishes a feed key with its home member (one home per key; a second claim answers 409 feed_home_elsewhere). The descriptor (format, anonymous read) seeds destination feeds and never overwrites local settings; it defaults from the authority's bound feed when the authority is the home. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) CreateFederationFeedWithResponse(ctx context.Context, params *CreateFederationFeedParams, body CreateFederationFeedJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationFeedResponse, error) {
+	rsp, err := c.CreateFederationFeed(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFederationFeedResponse(rsp)
+}
+
+// DeleteFederationFeedWithResponse performs a DELETE /api/v1/federation/feeds/{fed}/{slug} (the `DeleteFederationFeed` operationId) request.
+//
+// Removes a feed key without rules or an active transfer. Local content on every member is untouched. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteFederationFeedWithResponse(ctx context.Context, fed string, slug string, params *DeleteFederationFeedParams, reqEditors ...RequestEditorFn) (*DeleteFederationFeedResponse, error) {
+	rsp, err := c.DeleteFederationFeed(ctx, fed, slug, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFederationFeedResponse(rsp)
+}
+
+// StartFederationFeedTransferWithBodyWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request,
+// with any type of body and a specified content type.
+//
+// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) StartFederationFeedTransferWithBodyWithResponse(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartFederationFeedTransferResponse, error) {
+	rsp, err := c.StartFederationFeedTransferWithBody(ctx, fed, slug, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartFederationFeedTransferResponse(rsp)
+}
+
+// StartFederationFeedTransferWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer (the `StartFederationFeedTransfer` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// DESTRUCTIVE: starts a home transfer. planned: the home freezes the feed (publishes answer 503 feed_transferring), the target drains to the frozen head, is promoted (its replica source becomes local) and the old home demotes to a replica of the new home; it aborts on drain timeout. forced: skips freeze and drain (old home lost), requires accept_data_loss; whatever the old home accepted after the target's checkpoint is quarantined there when it returns. The target must be an active member that a rule for the key targets. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) StartFederationFeedTransferWithResponse(ctx context.Context, fed string, slug string, params *StartFederationFeedTransferParams, body StartFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*StartFederationFeedTransferResponse, error) {
+	rsp, err := c.StartFederationFeedTransfer(ctx, fed, slug, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartFederationFeedTransferResponse(rsp)
+}
+
+// AbortFederationFeedTransferWithBodyWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request,
+// with any type of body and a specified content type.
+//
+// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AbortFederationFeedTransferWithBodyWithResponse(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AbortFederationFeedTransferResponse, error) {
+	rsp, err := c.AbortFederationFeedTransferWithBody(ctx, fed, slug, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAbortFederationFeedTransferResponse(rsp)
+}
+
+// AbortFederationFeedTransferWithResponse performs a POST /api/v1/federation/feeds/{fed}/{slug}/transfer/abort (the `AbortFederationFeedTransfer` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Aborts a planned transfer before promotion; the home unfreezes. Authority only; requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) AbortFederationFeedTransferWithResponse(ctx context.Context, fed string, slug string, params *AbortFederationFeedTransferParams, body AbortFederationFeedTransferJSONRequestBody, reqEditors ...RequestEditorFn) (*AbortFederationFeedTransferResponse, error) {
+	rsp, err := c.AbortFederationFeedTransfer(ctx, fed, slug, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAbortFederationFeedTransferResponse(rsp)
+}
+
 // ListFederationInvitationsWithResponse performs a GET /api/v1/federation/invitations (the `ListFederationInvitations` operationId) request.
 //
 // Join invitations issued by this authority (secrets are never returned). Requires instance admin.
@@ -57521,6 +61981,45 @@ func (c *ClientWithResponses) AdoptFederatedPrincipalWithResponse(ctx context.Co
 	return ParseAdoptFederatedPrincipalResponse(rsp)
 }
 
+// ListFederationQuarantinesWithResponse performs a GET /api/v1/federation/quarantines (the `ListFederationQuarantines` operationId) request.
+//
+// Sources an old home kept after a forced transfer (detached, never merged) with the number of changes the new home may not have. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListFederationQuarantinesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationQuarantinesResponse, error) {
+	rsp, err := c.ListFederationQuarantines(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListFederationQuarantinesResponse(rsp)
+}
+
+// ResolveFederationQuarantineWithBodyWithResponse performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request,
+// with any type of body and a specified content type.
+//
+// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ResolveFederationQuarantineWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResolveFederationQuarantineResponse, error) {
+	rsp, err := c.ResolveFederationQuarantineWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveFederationQuarantineResponse(rsp)
+}
+
+// ResolveFederationQuarantineWithResponse performs a POST /api/v1/federation/quarantines/{id}/resolve (the `ResolveFederationQuarantine` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Marks a quarantine reviewed (clears the feed_home_conflict alert); the source and its content stay until deleted. Requires instance admin and confirm. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) ResolveFederationQuarantineWithResponse(ctx context.Context, id openapi_types.UUID, params *ResolveFederationQuarantineParams, body ResolveFederationQuarantineJSONRequestBody, reqEditors ...RequestEditorFn) (*ResolveFederationQuarantineResponse, error) {
+	rsp, err := c.ResolveFederationQuarantine(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResolveFederationQuarantineResponse(rsp)
+}
+
 // RotateFederationRecoveryKeyWithBodyWithResponse performs a POST /api/v1/federation/recovery-key/rotate (the `RotateFederationRecoveryKey` operationId) request,
 // with any type of body and a specified content type.
 //
@@ -57545,6 +62044,149 @@ func (c *ClientWithResponses) RotateFederationRecoveryKeyWithResponse(ctx contex
 		return nil, err
 	}
 	return ParseRotateFederationRecoveryKeyResponse(rsp)
+}
+
+// AdoptFederationReplicationJobWithBodyWithResponse performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request,
+// with any type of body and a specified content type.
+//
+// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) AdoptFederationReplicationJobWithBodyWithResponse(ctx context.Context, params *AdoptFederationReplicationJobParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AdoptFederationReplicationJobResponse, error) {
+	rsp, err := c.AdoptFederationReplicationJobWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdoptFederationReplicationJobResponse(rsp)
+}
+
+// AdoptFederationReplicationJobWithResponse performs a POST /api/v1/federation/replication/adopt (the `AdoptFederationReplicationJob` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Switches an existing local job to a rule in place (origin federation, federation-mode peer of the home), keeping checkpoint, phase and replica source, so it does not reseed. The job must already replicate the home feed of the rule's key (federation peer of the home, or a token peer at the home's API URL) into the bound destination feed. Requires instance admin on this member. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) AdoptFederationReplicationJobWithResponse(ctx context.Context, params *AdoptFederationReplicationJobParams, body AdoptFederationReplicationJobJSONRequestBody, reqEditors ...RequestEditorFn) (*AdoptFederationReplicationJobResponse, error) {
+	rsp, err := c.AdoptFederationReplicationJob(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAdoptFederationReplicationJobResponse(rsp)
+}
+
+// ListFederationReplicationRulesWithResponse performs a GET /api/v1/federation/replication/rules (the `ListFederationReplicationRules` operationId) request.
+//
+// Replication rules of the applied topology. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) ListFederationReplicationRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFederationReplicationRulesResponse, error) {
+	rsp, err := c.ListFederationReplicationRules(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListFederationReplicationRulesResponse(rsp)
+}
+
+// CreateFederationReplicationRuleWithBodyWithResponse performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) CreateFederationReplicationRuleWithBodyWithResponse(ctx context.Context, params *CreateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFederationReplicationRuleResponse, error) {
+	rsp, err := c.CreateFederationReplicationRuleWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFederationReplicationRuleResponse(rsp)
+}
+
+// CreateFederationReplicationRuleWithResponse performs a POST /api/v1/federation/replication/rules (the `CreateFederationReplicationRule` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Creates a replication rule: every target member (labels or explicit members; never the home) ensures a destination feed, a federation-mode peer and one job pulling from the home over mTLS, adopting a matching existing job without reseed. Defaults: continuous, 300 s, include cached, ignore deletions, read-only destination, create the destination feed, adopt existing jobs, 900 s lag budget. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) CreateFederationReplicationRuleWithResponse(ctx context.Context, params *CreateFederationReplicationRuleParams, body CreateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFederationReplicationRuleResponse, error) {
+	rsp, err := c.CreateFederationReplicationRule(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFederationReplicationRuleResponse(rsp)
+}
+
+// DeleteFederationReplicationRuleWithResponse performs a DELETE /api/v1/federation/replication/rules/{id} (the `DeleteFederationReplicationRule` operationId) request.
+//
+// Removes a rule. Targets disable the job and release it to local management; replicated content and the replica source stay. Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) DeleteFederationReplicationRuleWithResponse(ctx context.Context, id openapi_types.UUID, params *DeleteFederationReplicationRuleParams, reqEditors ...RequestEditorFn) (*DeleteFederationReplicationRuleResponse, error) {
+	rsp, err := c.DeleteFederationReplicationRule(ctx, id, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFederationReplicationRuleResponse(rsp)
+}
+
+// GetFederationReplicationRuleWithResponse performs a GET /api/v1/federation/replication/rules/{id} (the `GetFederationReplicationRule` operationId) request.
+//
+// One replication rule. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationReplicationRuleWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFederationReplicationRuleResponse, error) {
+	rsp, err := c.GetFederationReplicationRule(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationReplicationRuleResponse(rsp)
+}
+
+// UpdateFederationReplicationRuleWithBodyWithResponse performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request,
+// with any type of body and a specified content type.
+//
+// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) UpdateFederationReplicationRuleWithBodyWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFederationReplicationRuleResponse, error) {
+	rsp, err := c.UpdateFederationReplicationRuleWithBody(ctx, id, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateFederationReplicationRuleResponse(rsp)
+}
+
+// UpdateFederationReplicationRuleWithResponse performs a PATCH /api/v1/federation/replication/rules/{id} (the `UpdateFederationReplicationRule` operationId) request.
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Changes a rule at its revision (If-Match "N" or body revision); targets patch their jobs (filter changes affect future changes only). Authority only; requires instance admin. Replay-safe with Idempotency-Key.
+func (c *ClientWithResponses) UpdateFederationReplicationRuleWithResponse(ctx context.Context, id openapi_types.UUID, params *UpdateFederationReplicationRuleParams, body UpdateFederationReplicationRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFederationReplicationRuleResponse, error) {
+	rsp, err := c.UpdateFederationReplicationRule(ctx, id, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateFederationReplicationRuleResponse(rsp)
+}
+
+// GetFederationReplicationRuleComplianceWithResponse performs a GET /api/v1/federation/replication/rules/{id}/compliance (the `GetFederationReplicationRuleCompliance` operationId) request.
+//
+// The rule's state on every target member (in_sync, lagging, seeding, failed, pending, missing_feed, conflict, disabled); unreachable members are reported unknown. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationReplicationRuleComplianceWithResponse(ctx context.Context, id openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFederationReplicationRuleComplianceResponse, error) {
+	rsp, err := c.GetFederationReplicationRuleCompliance(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationReplicationRuleComplianceResponse(rsp)
+}
+
+// GetFederationReplicationStatusWithResponse performs a GET /api/v1/federation/replication/status (the `GetFederationReplicationStatus` operationId) request.
+//
+// Local view of the rules that target this member (job, phase, lag, adoption) and quarantined sources. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationReplicationStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationReplicationStatusResponse, error) {
+	rsp, err := c.GetFederationReplicationStatus(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationReplicationStatusResponse(rsp)
 }
 
 // FederatedSearchWithResponse performs a GET /api/v1/federation/search (the `FederatedSearch` operationId) request.
@@ -57610,6 +62252,19 @@ func (c *ClientWithResponses) GetFederationStatusWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseGetFederationStatusResponse(rsp)
+}
+
+// GetFederationTopologyWithResponse performs a GET /api/v1/federation/topology (the `GetFederationTopology` operationId) request.
+//
+// The applied signed topology: feed keys with their single home member, descriptors and transfer state, replication rules, and the local role of each feed key on this member. Requires read on the instance.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetFederationTopologyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetFederationTopologyResponse, error) {
+	rsp, err := c.GetFederationTopology(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFederationTopologyResponse(rsp)
 }
 
 // ListFeedsWithResponse performs a GET /api/v1/feeds (the `ListFeeds` operationId) request.
@@ -65615,6 +70270,702 @@ func ParseUnbindFederationFeedResponse(rsp *http.Response) (*UnbindFederationFee
 	return response, nil
 }
 
+// ParseCreateFederationFeedResponse parses an HTTP response from a CreateFederationFeedWithResponse call
+func ParseCreateFederationFeedResponse(rsp *http.Response) (*CreateFederationFeedResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFederationFeedResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FederationTopologyFeed
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateFederationFeedResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateFederationFeedResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateFederationFeedResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateFederationFeedResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreateFederationFeedResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateFederationFeedResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateFederationFeedResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateFederationFeedResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateFederationFeedResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFederationFeedResponse parses an HTTP response from a DeleteFederationFeedWithResponse call
+func ParseDeleteFederationFeedResponse(rsp *http.Response) (*DeleteFederationFeedResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFederationFeedResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DeleteFederationFeedResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteFederationFeedResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteFederationFeedResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteFederationFeedResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteFederationFeedResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteFederationFeedResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteFederationFeedResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteFederationFeedResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteFederationFeedResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseStartFederationFeedTransferResponse parses an HTTP response from a StartFederationFeedTransferWithResponse call
+func ParseStartFederationFeedTransferResponse(rsp *http.Response) (*StartFederationFeedTransferResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartFederationFeedTransferResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest FederationFeedTransfer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 202:
+		var headers StartFederationFeedTransferResponse202Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers202 = &headers
+	case rsp.StatusCode == 400:
+		var headers StartFederationFeedTransferResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers StartFederationFeedTransferResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers StartFederationFeedTransferResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers StartFederationFeedTransferResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers StartFederationFeedTransferResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers StartFederationFeedTransferResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers StartFederationFeedTransferResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers StartFederationFeedTransferResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseAbortFederationFeedTransferResponse parses an HTTP response from a AbortFederationFeedTransferWithResponse call
+func ParseAbortFederationFeedTransferResponse(rsp *http.Response) (*AbortFederationFeedTransferResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AbortFederationFeedTransferResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationFeedTransfer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers AbortFederationFeedTransferResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers AbortFederationFeedTransferResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers AbortFederationFeedTransferResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers AbortFederationFeedTransferResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers AbortFederationFeedTransferResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers AbortFederationFeedTransferResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers AbortFederationFeedTransferResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers AbortFederationFeedTransferResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers AbortFederationFeedTransferResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseListFederationInvitationsResponse parses an HTTP response from a ListFederationInvitationsWithResponse call
 func ParseListFederationInvitationsResponse(rsp *http.Response) (*ListFederationInvitationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -68603,6 +73954,356 @@ func ParseAdoptFederatedPrincipalResponse(rsp *http.Response) (*AdoptFederatedPr
 	return response, nil
 }
 
+// ParseListFederationQuarantinesResponse parses an HTTP response from a ListFederationQuarantinesWithResponse call
+func ParseListFederationQuarantinesResponse(rsp *http.Response) (*ListFederationQuarantinesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListFederationQuarantinesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationQuarantineList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListFederationQuarantinesResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListFederationQuarantinesResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListFederationQuarantinesResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListFederationQuarantinesResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListFederationQuarantinesResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ListFederationQuarantinesResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListFederationQuarantinesResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListFederationQuarantinesResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListFederationQuarantinesResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseResolveFederationQuarantineResponse parses an HTTP response from a ResolveFederationQuarantineWithResponse call
+func ParseResolveFederationQuarantineResponse(rsp *http.Response) (*ResolveFederationQuarantineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResolveFederationQuarantineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationQuarantine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ResolveFederationQuarantineResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ResolveFederationQuarantineResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ResolveFederationQuarantineResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ResolveFederationQuarantineResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ResolveFederationQuarantineResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ResolveFederationQuarantineResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers ResolveFederationQuarantineResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ResolveFederationQuarantineResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ResolveFederationQuarantineResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseRotateFederationRecoveryKeyResponse parses an HTTP response from a RotateFederationRecoveryKeyWithResponse call
 func ParseRotateFederationRecoveryKeyResponse(rsp *http.Response) (*RotateFederationRecoveryKeyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -68765,6 +74466,1419 @@ func ParseRotateFederationRecoveryKeyResponse(rsp *http.Response) (*RotateFedera
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers RotateFederationRecoveryKeyResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseAdoptFederationReplicationJobResponse parses an HTTP response from a AdoptFederationReplicationJobWithResponse call
+func ParseAdoptFederationReplicationJobResponse(rsp *http.Response) (*AdoptFederationReplicationJobResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AdoptFederationReplicationJobResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationAdoptResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers AdoptFederationReplicationJobResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers AdoptFederationReplicationJobResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers AdoptFederationReplicationJobResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers AdoptFederationReplicationJobResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers AdoptFederationReplicationJobResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers AdoptFederationReplicationJobResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers AdoptFederationReplicationJobResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers AdoptFederationReplicationJobResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers AdoptFederationReplicationJobResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseListFederationReplicationRulesResponse parses an HTTP response from a ListFederationReplicationRulesWithResponse call
+func ParseListFederationReplicationRulesResponse(rsp *http.Response) (*ListFederationReplicationRulesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListFederationReplicationRulesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationReplicationRuleList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListFederationReplicationRulesResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers ListFederationReplicationRulesResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers ListFederationReplicationRulesResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers ListFederationReplicationRulesResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers ListFederationReplicationRulesResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers ListFederationReplicationRulesResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers ListFederationReplicationRulesResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers ListFederationReplicationRulesResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers ListFederationReplicationRulesResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreateFederationReplicationRuleResponse parses an HTTP response from a CreateFederationReplicationRuleWithResponse call
+func ParseCreateFederationReplicationRuleResponse(rsp *http.Response) (*CreateFederationReplicationRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFederationReplicationRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FederationReplicationRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateFederationReplicationRuleResponse201Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 400:
+		var headers CreateFederationReplicationRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers CreateFederationReplicationRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers CreateFederationReplicationRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers CreateFederationReplicationRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers CreateFederationReplicationRuleResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers CreateFederationReplicationRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers CreateFederationReplicationRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers CreateFederationReplicationRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFederationReplicationRuleResponse parses an HTTP response from a DeleteFederationReplicationRuleWithResponse call
+func ParseDeleteFederationReplicationRuleResponse(rsp *http.Response) (*DeleteFederationReplicationRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFederationReplicationRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		var headers DeleteFederationReplicationRuleResponse204Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers204 = &headers
+	case rsp.StatusCode == 400:
+		var headers DeleteFederationReplicationRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers DeleteFederationReplicationRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers DeleteFederationReplicationRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers DeleteFederationReplicationRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers DeleteFederationReplicationRuleResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers DeleteFederationReplicationRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers DeleteFederationReplicationRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers DeleteFederationReplicationRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationReplicationRuleResponse parses an HTTP response from a GetFederationReplicationRuleWithResponse call
+func ParseGetFederationReplicationRuleResponse(rsp *http.Response) (*GetFederationReplicationRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationReplicationRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationReplicationRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationReplicationRuleResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationReplicationRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationReplicationRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationReplicationRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationReplicationRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationReplicationRuleResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationReplicationRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationReplicationRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationReplicationRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseUpdateFederationReplicationRuleResponse parses an HTTP response from a UpdateFederationReplicationRuleWithResponse call
+func ParseUpdateFederationReplicationRuleResponse(rsp *http.Response) (*UpdateFederationReplicationRuleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateFederationReplicationRuleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationReplicationRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 412:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON412 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers UpdateFederationReplicationRuleResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers UpdateFederationReplicationRuleResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers UpdateFederationReplicationRuleResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers UpdateFederationReplicationRuleResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers UpdateFederationReplicationRuleResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers UpdateFederationReplicationRuleResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 412:
+		var headers UpdateFederationReplicationRuleResponse412Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers412 = &headers
+	case rsp.StatusCode == 429:
+		var headers UpdateFederationReplicationRuleResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers UpdateFederationReplicationRuleResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers UpdateFederationReplicationRuleResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationReplicationRuleComplianceResponse parses an HTTP response from a GetFederationReplicationRuleComplianceWithResponse call
+func ParseGetFederationReplicationRuleComplianceResponse(rsp *http.Response) (*GetFederationReplicationRuleComplianceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationReplicationRuleComplianceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationRuleCompliance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationReplicationRuleComplianceResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationReplicationRuleComplianceResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationReplicationRuleComplianceResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationReplicationRuleComplianceResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationReplicationRuleComplianceResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationReplicationRuleComplianceResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationReplicationRuleComplianceResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationReplicationRuleComplianceResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationReplicationRuleComplianceResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationReplicationStatusResponse parses an HTTP response from a GetFederationReplicationStatusWithResponse call
+func ParseGetFederationReplicationStatusResponse(rsp *http.Response) (*GetFederationReplicationStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationReplicationStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationReplicationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationReplicationStatusResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationReplicationStatusResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationReplicationStatusResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationReplicationStatusResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationReplicationStatusResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationReplicationStatusResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationReplicationStatusResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationReplicationStatusResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationReplicationStatusResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -69448,6 +76562,181 @@ func ParseGetFederationStatusResponse(rsp *http.Response) (*GetFederationStatusR
 		response.Headers500 = &headers
 	case rsp.StatusCode == 503:
 		var headers GetFederationStatusResponse503Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers503 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetFederationTopologyResponse parses an HTTP response from a GetFederationTopologyWithResponse call
+func ParseGetFederationTopologyResponse(rsp *http.Response) (*GetFederationTopologyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFederationTopologyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FederationTopologyView
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetFederationTopologyResponse200Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 400:
+		var headers GetFederationTopologyResponse400Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers400 = &headers
+	case rsp.StatusCode == 401:
+		var headers GetFederationTopologyResponse401Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 403:
+		var headers GetFederationTopologyResponse403Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers403 = &headers
+	case rsp.StatusCode == 404:
+		var headers GetFederationTopologyResponse404Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers404 = &headers
+	case rsp.StatusCode == 409:
+		var headers GetFederationTopologyResponse409Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetFederationTopologyResponse429Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers429 = &headers
+	case rsp.StatusCode == 500:
+		var headers GetFederationTopologyResponse500Headers
+		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		response.Headers500 = &headers
+	case rsp.StatusCode == 503:
+		var headers GetFederationTopologyResponse503Headers
 		if values := rsp.Header.Values("X-Request-ID"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-ID", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -95413,611 +102702,664 @@ func ParseRotateWebhookSecretResponse(rsp *http.Response) (*RotateWebhookSecretR
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"DJD+58TC75+mcLj+/vHzx8//zwA=",
+	"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",
+	"XP949+Hdh///AA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

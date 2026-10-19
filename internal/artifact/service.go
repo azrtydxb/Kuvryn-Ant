@@ -206,6 +206,10 @@ func (s *Service) publish(ctx context.Context, p identity.Principal, r Publicati
 	if err = s.authorize(ctx, p, r, source); err != nil {
 		return Record{}, false, err
 	}
+	// A feed frozen by a federation home transfer accepts no writes at all.
+	if err = frozenFeed(ctx, s.DB, p.InstanceID, r.FeedID); err != nil {
+		return Record{}, false, err
+	}
 	// A replica feed rejects publishes unless an explicit publish rule routed
 	// this one to a (separate) local source. The default route never qualifies.
 	if decision.RuleID == "" {
