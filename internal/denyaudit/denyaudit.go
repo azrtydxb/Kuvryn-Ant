@@ -239,4 +239,3 @@ func (r *Recorder) Middleware(next http.Handler) http.Handler {
 		r.Record(surface, sw.status, note.Principal(), identity.ClientKey(req), req.Method, path)
 	})
 }
-

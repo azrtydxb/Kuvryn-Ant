@@ -90,4 +90,3 @@ No regressions or remaining console/backend integration failures observed in the
 ## Console design and optional endpoints
 
 The look comes from the vendored Azrty design system in `src/ds/` (tokens, components.css, self-hosted fonts and icon font, and `bundle.js` with a few local accessibility patches). Every screen uses generated operations. A server older than this console may lack some; a GET that answers 404, 405 or 501 renders "Not available on this server yet" instead of an error (`src/gaps.ts`). Admin-only areas (Access, Webhooks, Settings) are hidden when `GET /permissions/effective` says the browser session's principal lacks admin. Settings, About has a "Show backend notes" switch.
-
