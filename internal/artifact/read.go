@@ -81,7 +81,7 @@ func (s *Service) ResolveTag(ctx context.Context, p identity.Principal, r Public
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	var source, version string
-	err := s.DB.QueryRow(ctx, `WITH owner AS(SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN tags t ON t.component_id=o.id JOIN versions v ON v.id=t.version_id WHERE t.name=$4 AND o.namespace=$5`, p.InstanceID, r.FeedID, r.Coordinate, tag, r.Namespace).Scan(&source, &version)
+	err := s.DB.QueryRow(ctx, `WITH owner AS(SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1) SELECT o.source_id::text,v.version FROM owner o JOIN tags t ON t.component_id=o.id JOIN versions v ON v.id=t.version_id WHERE t.name=$4 AND t.observed_at IS NULL AND o.namespace=$5`, p.InstanceID, r.FeedID, r.Coordinate, tag, r.Namespace).Scan(&source, &version)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", ErrNotFound
 	}

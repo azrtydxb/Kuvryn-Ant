@@ -21,8 +21,9 @@ import (
 // verified before the first byte is served and then cached under the remote
 // source. A tag is a mutable pointer, so a tag read is proxied through the
 // bounded metadata cache (TTL, negative cache, stale-if-error) and the manifest
-// it resolves to is also cached by digest; no tag row is ever written for a
-// remote repository. Upstream authentication is the source's static credential
+// it resolves to is also cached by digest. The tag is also recorded as an
+// observed tag (artifact.ObserveTag) for discovery only; it is never served
+// from the database. Upstream authentication is the source's static credential
 // only: registries that require a bearer-token handshake are not supported.
 
 // manifestAccept lists the manifest types requested upstream (kept under the
@@ -86,9 +87,15 @@ func (r *Registry) remoteTag(w http.ResponseWriter, req *http.Request, p identit
 		return true
 	}
 	pub := rep.publication(digest, "manifest")
+	pub.Children = indexChildren(doc.Body, media)
 	if _, lookupErr := r.service.Lookup(ctx, p, pub); errors.Is(lookupErr, artifact.ErrNotFound) {
 		pub.MediaType = media
 		_ = r.service.CacheDocument(ctx, p, pub, doc.SourceID, doc.Body)
+	}
+	if !doc.Stale {
+		// Remember which version the upstream tag named, so discovery can show
+		// real tags for cached images. Observed tags never serve a request.
+		_ = r.service.ObserveTag(ctx, p, pub, doc.SourceID, tag, pub.Children)
 	}
 	etag := strconv.Quote("sha256:" + digest)
 	h := w.Header()

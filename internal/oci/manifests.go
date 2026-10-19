@@ -29,10 +29,17 @@ func manifestType(value string) bool {
 	return value == imageManifest || value == imageIndex || value == dockerManifest || value == dockerIndex
 }
 
+type platform struct {
+	OS           string `json:"os"`
+	Architecture string `json:"architecture"`
+	Variant      string `json:"variant"`
+}
 type descriptor struct {
-	MediaType string `json:"mediaType"`
-	Digest    string `json:"digest"`
-	Size      *int64 `json:"size"`
+	MediaType   string            `json:"mediaType"`
+	Digest      string            `json:"digest"`
+	Size        *int64            `json:"size"`
+	Platform    *platform         `json:"platform"`
+	Annotations map[string]string `json:"annotations"`
 }
 type manifestDocument struct {
 	SchemaVersion int               `json:"schemaVersion"`
@@ -139,6 +146,7 @@ func (r *Registry) manifest(w http.ResponseWriter, req *http.Request, p identity
 	publication.Info = blob.Info{Digest: digest, Size: int64(len(body))}
 	publication.MediaType = media
 	publication.References = references
+	publication.Children = indexChildren(body, media)
 	if document.Subject != nil {
 		subjectDigest, _ := parseDigest(document.Subject.Digest)
 		publication.Subject = &artifact.Subject{Info: blob.Info{Digest: subjectDigest, Size: *document.Subject.Size}, MediaType: document.Subject.MediaType}
@@ -257,4 +265,36 @@ func uniqueJSON(body []byte) error {
 		return errors.New("trailing manifest data")
 	}
 	return nil
+}
+
+// indexChildren lists the per-platform manifests an image index or manifest
+// list names, so discovery can group them under the index instead of showing
+// each as a separate top-level version. Non-index documents have none.
+func indexChildren(body []byte, media string) []artifact.Child {
+	if media != imageIndex && media != dockerIndex {
+		return nil
+	}
+	var document manifestDocument
+	if json.Unmarshal(body, &document) != nil {
+		return nil
+	}
+	children := make([]artifact.Child, 0, len(document.Manifests))
+	for _, desc := range document.Manifests {
+		digest, ok := parseDigest(desc.Digest)
+		if !ok {
+			continue
+		}
+		label := ""
+		if desc.Platform != nil && desc.Platform.OS != "" {
+			label = desc.Platform.OS + "/" + desc.Platform.Architecture
+			if desc.Platform.Variant != "" {
+				label += "/" + desc.Platform.Variant
+			}
+		}
+		if desc.Annotations["vnd.docker.reference.type"] == "attestation-manifest" {
+			label = "attestation"
+		}
+		children = append(children, artifact.Child{Version: string(digest), Platform: label})
+	}
+	return children
 }

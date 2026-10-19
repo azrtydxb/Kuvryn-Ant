@@ -3106,6 +3106,16 @@
               "type": "string",
               "maxLength": 200
             }
+          },
+          {
+            "name": "top_level",
+            "in": "query",
+            "required": false,
+            "description": "When true, omit per-platform manifests that are grouped under an image index.",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -18675,6 +18685,32 @@
             "type": "object",
             "additionalProperties": true,
             "description": "Format-owned JSON metadata, bounded to 64 KiB."
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Name to show for the package. Equals the coordinate except for Docker Hub official images, stored as library/<name> and shown as <name>."
+          },
+          "latest_version": {
+            "type": "string",
+            "nullable": true,
+            "description": "Format-aware latest version: the highest release by version order for most formats; for OCI the latest tag, else the highest release-looking tag, else the newest tag, else null. Null when nothing names a version (for example a pull-through image never resolved by tag)."
+          },
+          "version_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Versions excluding per-platform manifests grouped under an image index."
+          },
+          "tag_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Creation time of the newest version; null when the package has none."
           }
         }
       },
@@ -18708,6 +18744,16 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "parent_version": {
+            "type": "string",
+            "nullable": true,
+            "description": "For a per-platform manifest grouped under an image index, the index version; otherwise null."
+          },
+          "platform": {
+            "type": "string",
+            "nullable": true,
+            "description": "os/architecture[/variant] this grouped manifest provides, or attestation; null when ungrouped."
           }
         }
       },
@@ -18731,6 +18777,12 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when the tag was recorded from what a remote source answered (last observed time); null for tags published or replicated locally. Observed tags show where a cached tag pointed and never resolve client requests."
           }
         }
       },
@@ -19092,6 +19144,32 @@
             "type": "object",
             "additionalProperties": true,
             "description": "Format-owned JSON metadata, bounded to 64 KiB."
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Name to show for the package. Equals the coordinate except for Docker Hub official images, stored as library/<name> and shown as <name>."
+          },
+          "latest_version": {
+            "type": "string",
+            "nullable": true,
+            "description": "Format-aware latest version: the highest release by version order for most formats; for OCI the latest tag, else the highest release-looking tag, else the newest tag, else null. Null when nothing names a version (for example a pull-through image never resolved by tag)."
+          },
+          "version_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Versions excluding per-platform manifests grouped under an image index."
+          },
+          "tag_count": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Creation time of the newest version; null when the package has none."
           }
         }
       },

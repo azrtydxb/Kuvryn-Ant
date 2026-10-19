@@ -9,6 +9,14 @@ import type { Client } from "./api";
 import { useAllFeeds, useAllSources } from "./data";
 import { useOptionalCall } from "./gaps";
 import { FederatedSearch } from "./FederatedSearch";
+import {
+  VersionName,
+  fullDigest,
+  shortChecksum,
+  shortVersion,
+  isDigestVersion,
+  orderTags,
+} from "./versions";
 import type { DiscoveredAsset, Feed, PackageSearchResult } from "./generated";
 import {
   Alert,
@@ -47,11 +55,15 @@ import {
 export type PackageRef = Partial<PackageSearchResult> & {
   id: string;
   coordinate: string;
-  // Optional list-row extras some servers add.
-  latest_version?: string;
-  version_count?: number;
-  updated_at?: string;
 };
+
+// What a person recognises: Docker Hub official images drop their library/
+// prefix on the server (display_name); the stored coordinate is unchanged.
+export const packageName = (p: PackageRef) => p.display_name || p.coordinate;
+// The namespace line only adds information when the name does not already
+// start with it (a "team/app" package in namespace "team" repeats itself).
+export const extraNamespace = (p: PackageRef) =>
+  p.namespace && !p.coordinate.startsWith(p.namespace + "/") ? p.namespace : "";
 
 function PackageTable({
   rows,
@@ -71,8 +83,8 @@ function PackageTable({
           label: "Package",
           render: (r: PackageRef) => (
             <>
-              {r.coordinate}
-              <small>{r.namespace || "(root namespace)"}</small>
+              {packageName(r)}
+              {extraNamespace(r) && <small>{extraNamespace(r)}</small>}
             </>
           ),
         },
@@ -90,26 +102,27 @@ function PackageTable({
                 mono: true,
                 render: (r: PackageRef) => r.feed_slug ?? "—",
               },
-              {
-                key: "latest_version",
-                label: "Latest",
-                mono: true,
-                render: (r: PackageRef) => r.latest_version ?? "—",
-              },
-              {
-                key: "version_count",
-                label: "Versions",
-                align: "right",
-                render: (r: PackageRef) => count(r.version_count),
-              },
-              {
-                key: "updated_at",
-                label: "Updated",
-                align: "right",
-                render: (r: PackageRef) => when(r.updated_at),
-              },
             ]
           : []),
+        {
+          key: "latest_version",
+          label: "Latest",
+          mono: true,
+          render: (r: PackageRef) =>
+            r.latest_version ? <VersionName version={r.latest_version} /> : "—",
+        },
+        {
+          key: "version_count",
+          label: "Versions",
+          align: "right",
+          render: (r: PackageRef) => count(r.version_count),
+        },
+        {
+          key: "updated_at",
+          label: "Updated",
+          align: "right",
+          render: (r: PackageRef) => when(r.updated_at),
+        },
         {
           key: "source_id",
           label: "Served from",
@@ -505,8 +518,16 @@ export function pullCommand(
   version: string,
 ) {
   const host = location.host;
-  if (format === "oci")
-    return `docker pull ${host}/${feed}/${name}${version ? ":" + version : ""}`;
+  if (format === "oci" || format === "oci-artifacts")
+    return `docker pull ${host}/${feed}/${name}${isDigestVersion(version) ? "@" + fullDigest(version) : version ? ":" + version : ""}`;
+  if (format === "npm")
+    return `npm install ${name}${version ? "@" + version : ""} --registry https://${host}/feeds/${feed}/npm/`;
+  if (format === "pypi")
+    return `pip install ${name}${version ? "==" + version : ""} --index-url https://${host}/feeds/${feed}/pypi/simple/`;
+  if (format === "nuget")
+    return `dotnet add package ${name}${version ? " --version " + version : ""} --source https://${host}/feeds/${feed}/nuget/v3/index.json`;
+  if (format === "rubygems")
+    return `gem install ${name}${version ? " -v " + version : ""} --source https://${host}/feeds/${feed}/rubygems/`;
   if (format === "go")
     return `GOPROXY=https://${host}/feeds/${feed}/go \\\n  go get ${name}${version ? "@" + version : ""}`;
   if (format === "helm")
@@ -564,16 +585,32 @@ function PackageDetail({
     [client, feedId],
   );
   const params = { id: feedId, component: pkg.id };
+  const slug = feed.value?.data?.slug ?? pkg.feed_slug ?? "";
+  const format = feed.value?.data?.format ?? pkg.format ?? "";
+  const isOCI = format === "oci" || format === "oci-artifacts";
+  // Per-platform manifests of an image index are grouped under the index
+  // instead of listed as versions of their own.
   const versions = useResource(
     () =>
       client.call("listPackageVersions", {
         params,
         query: {
           limit: "25",
+          top_level: "true",
           ...(versionCursor ? { cursor: versionCursor } : {}),
         },
       }),
     [client, feedId, pkg.id, versionCursor],
+  );
+  const grouped = useResource(
+    () =>
+      isOCI
+        ? client.call("listPackageVersions", {
+            params,
+            query: { limit: "200" },
+          })
+        : Promise.resolve({ data: undefined, etag: null }),
+    [client, feedId, pkg.id, isOCI],
   );
   const tags = useResource(
     () =>
@@ -587,19 +624,33 @@ function PackageDetail({
   const sourceName =
     sourceNames.items.find((s) => s.id === pkg.source_id)?.name ??
     pkg.source_id;
+  const known = [
+    ...(versions.value?.data.items ?? []),
+    ...(grouped.value?.data?.items ?? []),
+  ];
+  const created = new Map(known.map((v) => [v.id, v.created_at]));
+  const versionName = new Map(known.map((v) => [v.id, v.version]));
+  const platforms = new Map<string, string[]>();
+  for (const v of grouped.value?.data?.items ?? [])
+    if (v.parent_version)
+      platforms.set(v.parent_version, [
+        ...(platforms.get(v.parent_version) ?? []),
+        v.platform || "manifest",
+      ]);
+  const orderedTags = orderTags(tags.value?.data.items ?? [], created);
   const tagsByVersion = new Map<string, string[]>();
-  for (const t of tags.value?.data.items ?? [])
+  for (const t of orderedTags)
     tagsByVersion.set(t.version_id, [
       ...(tagsByVersion.get(t.version_id) ?? []),
       t.name,
     ]);
   const latest = versions.value?.data.items[0];
-  const slug = feed.value?.data?.slug ?? pkg.feed_slug ?? "";
-  const format = feed.value?.data?.format ?? pkg.format ?? "";
+  const installVersion =
+    pkg.latest_version || orderedTags[0]?.name || latest?.version || "";
   return (
     <Drawer
       open
-      title={pkg.coordinate}
+      title={packageName(pkg)}
       description={
         <span className="row">
           {format && <Badge tone="outline">{format}</Badge>}
@@ -625,12 +676,7 @@ function PackageDetail({
       {slug && format && (
         <CodeBlock
           title="Install"
-          code={pullCommand(
-            format,
-            slug,
-            pkg.coordinate,
-            latest?.version ?? "",
-          )}
+          code={pullCommand(format, slug, packageName(pkg), installVersion)}
         />
       )}
       <Tabs
@@ -638,6 +684,7 @@ function PackageDetail({
         onChange={setTab}
         items={[
           { id: "versions", label: "Versions" },
+          { id: "tags", label: "Tags" },
           { id: "details", label: "Details" },
           { id: "provenance", label: "Provenance" },
         ]}
@@ -649,37 +696,45 @@ function PackageDetail({
           {versions.value &&
             (versions.value.data.items.length ? (
               <>
-                <Table
-                  onRowClick={(r: { id: string }) => setVersion(r.id)}
-                  columns={[
-                    {
-                      key: "version",
-                      label: "Version",
-                      render: (r: { id: string; version: string }) => (
-                        <>
-                          <span className="mono">{r.version}</span>
-                          <span className="row tight inline">
-                            {(tagsByVersion.get(r.id) ?? []).map((t) => (
-                              <Badge
-                                key={t}
-                                tone={t === "latest" ? "pillar" : "neutral"}
-                              >
-                                {t}
-                              </Badge>
-                            ))}
-                          </span>
-                        </>
-                      ),
-                    },
-                    {
-                      key: "created_at",
-                      label: "Published",
-                      render: (r: { created_at: string }) => when(r.created_at),
-                    },
-                    { key: "revision", label: "Revision", align: "right" },
-                  ]}
-                  rows={versions.value.data.items}
-                />
+                <div className="pkg-table">
+                  <Table
+                    onRowClick={(r: { id: string }) => setVersion(r.id)}
+                    columns={[
+                      {
+                        key: "version",
+                        label: "Version",
+                        render: (r: { id: string; version: string }) => (
+                          <>
+                            <VersionName version={r.version} copy />
+                            <span className="row tight inline">
+                              {(tagsByVersion.get(r.id) ?? []).map((t) => (
+                                <Badge
+                                  key={t}
+                                  tone={t === "latest" ? "pillar" : "neutral"}
+                                >
+                                  {t}
+                                </Badge>
+                              ))}
+                              {(platforms.get(r.version) ?? []).map((p, i) => (
+                                <Badge key={p + i} tone="outline">
+                                  {p}
+                                </Badge>
+                              ))}
+                            </span>
+                          </>
+                        ),
+                      },
+                      {
+                        key: "created_at",
+                        label: "Published",
+                        render: (r: { created_at: string }) =>
+                          when(r.created_at),
+                      },
+                      { key: "revision", label: "Revision", align: "right" },
+                    ]}
+                    rows={versions.value.data.items}
+                  />
+                </div>
                 <Pager
                   cursor={versionCursor}
                   next={versions.value.data.page.next_cursor}
@@ -687,17 +742,13 @@ function PackageDetail({
                 />
               </>
             ) : (
-              <p className="muted">No visible versions.</p>
+              <p className="muted">
+                No visible versions
+                {isOCI && tags.value?.data.items.length
+                  ? " yet; the tags on the Tags tab were seen upstream and their images are cached when first pulled."
+                  : "."}
+              </p>
             ))}
-          {tags.value?.data.page.next_cursor && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setTagCursor(tags.value!.data.page.next_cursor!)}
-            >
-              More tags
-            </Button>
-          )}
           {version && versions.value && (
             <VersionActions
               key={"act" + version}
@@ -726,15 +777,71 @@ function PackageDetail({
           )}
         </>
       )}
+      {tab === "tags" && (
+        <>
+          <Failure error={tags.error} />
+          {tags.loading && <Loading what="tags" />}
+          {tags.value &&
+            (orderedTags.length ? (
+              <div className="pkg-table">
+                <Table
+                  columns={[
+                    {
+                      key: "name",
+                      label: "Tag",
+                      render: (t: { name: string }) => (
+                        <Badge
+                          tone={t.name === "latest" ? "pillar" : "neutral"}
+                        >
+                          {t.name}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      key: "version_id",
+                      label: "Points to",
+                      render: (t: { version_id: string }) => {
+                        const v = versionName.get(t.version_id);
+                        return v ? <VersionName version={v} copy /> : "—";
+                      },
+                    },
+                    {
+                      key: "observed_at",
+                      label: "Seen upstream",
+                      align: "right",
+                      render: (t: { observed_at?: string | null }) =>
+                        t.observed_at ? when(t.observed_at) : "Published here",
+                    },
+                  ]}
+                  rows={orderedTags}
+                />
+              </div>
+            ) : (
+              <p className="muted">No tags recorded for this package.</p>
+            ))}
+          {tags.value?.data.page.next_cursor && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setTagCursor(tags.value!.data.page.next_cursor!)}
+            >
+              More tags
+            </Button>
+          )}
+        </>
+      )}
       {tab === "details" && (
         <PropertyList
           items={[
+            { label: "Name", value: pkg.coordinate, mono: true },
             {
               label: "Namespace",
               value: pkg.namespace || "(root)",
               mono: true,
             },
             { label: "Served from", value: sourceName ?? "—", mono: true },
+            { label: "Versions", value: count(pkg.version_count) },
+            { label: "Tags", value: count(pkg.tag_count) },
             { label: "Package ID", value: pkg.id, mono: true },
             {
               label: "Metadata",
@@ -792,7 +899,12 @@ function Assets({
                 {
                   key: "digest",
                   label: "Digest",
-                  render: (a: DiscoveredAsset) => <Copyable text={a.digest} />,
+                  render: (a: DiscoveredAsset) => (
+                    <Copyable
+                      text={a.digest}
+                      display={shortChecksum(a.digest)}
+                    />
+                  ),
                 },
                 {
                   key: "size_bytes",
@@ -885,14 +997,32 @@ export function AssetRecord({
     params: { id: item.id },
   });
   const p = prov.state === "ready" ? prov.data : undefined;
+  const sources = useAllSources(client);
+  const sourceName =
+    sources.items.find((s) => s.id === item.source_id)?.name ?? item.source_id;
   return (
     <>
       <PropertyList
         items={[
           { label: "Key", value: item.key, mono: true },
-          { label: "Source", value: item.source_id, mono: true },
-          { label: "Checksum", value: <Copyable text={item.digest} /> },
-          { label: "Size", value: `${item.size_bytes} bytes` },
+          { label: "Source", value: sourceName, mono: true },
+          {
+            label: "Checksum",
+            value: (
+              <Copyable
+                text={item.digest}
+                display={shortChecksum(item.digest)}
+              />
+            ),
+          },
+          {
+            label: "Size",
+            value: (
+              <span title={`${item.size_bytes.toLocaleString()} bytes`}>
+                {bytes(item.size_bytes)}
+              </span>
+            ),
+          },
           { label: "Content type", value: item.media_type, mono: true },
           { label: "Created", value: when(item.created_at) },
           {
@@ -979,7 +1109,7 @@ function VersionActions({
           icon="eye-off"
           onClick={() => setMode("unlist")}
         >
-          Unlist {version}
+          Unlist {shortVersion(version)}
         </Button>
         <Button
           size="sm"
@@ -987,12 +1117,12 @@ function VersionActions({
           icon="trash-2"
           onClick={() => setMode("delete")}
         >
-          Delete {version}
+          Delete {shortVersion(version)}
         </Button>
       </div>
       {mode && (
         <Modal
-          title={`${verb} version ${version}`}
+          title={`${verb} version ${shortVersion(version)}`}
           description={
             mode === "delete"
               ? "Removes this version, its assets and tags from the feed. Stored bytes are reclaimed later by garbage collection. This cannot be undone."

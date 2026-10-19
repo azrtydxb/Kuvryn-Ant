@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Client } from "./api";
+import { APIError, type Client } from "./api";
 import { useOptionalCall } from "./gaps";
 import type { FederationSearchHit, FederationSearchMember } from "./generated";
 import { Alert, Badge, Button, EmptyState, Input, Table } from "./ds/bundle";
@@ -68,7 +68,19 @@ export function FederatedSearch({ client }: { client: Client }) {
           This server does not provide cross-instance search.
         </Alert>
       )}
-      {search.state === "error" && <Failure error={search.error} />}
+      {search.state === "error" &&
+        (search.error instanceof APIError &&
+        search.error.code === "not_federated" ? (
+          <Alert tone="info" title="Federated search needs a federated sign-in">
+            Other members only accept identities from the federation's shared
+            identity provider. You are signed in with a local account (for
+            example the local administrator), which is never asserted to other
+            members. Sign in through the federation's identity provider to
+            search the whole federation; "This instance" search still works.
+          </Alert>
+        ) : (
+          <Failure error={search.error} />
+        ))}
       {search.state === "ready" && (
         <>
           {search.data.partial && (

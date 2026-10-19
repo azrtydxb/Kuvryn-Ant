@@ -26,6 +26,7 @@ type PackageRecord struct {
 	Namespace  string          `json:"namespace"`
 	SourceID   string          `json:"source_id"`
 	Metadata   json.RawMessage `json:"metadata"`
+	PackageStats
 }
 type PackageVersion struct {
 	ID          string    `json:"id"`
@@ -33,11 +34,16 @@ type PackageVersion struct {
 	Version     string    `json:"version"`
 	Revision    int64     `json:"revision"`
 	CreatedAt   time.Time `json:"created_at"`
+	// ParentVersion and Platform are set for a per-platform manifest grouped
+	// under an image index: the index version and the os/arch it provides.
+	ParentVersion *string `json:"parent_version"`
+	Platform      *string `json:"platform"`
 }
 type PackageTag struct {
-	Name      string `json:"name"`
-	VersionID string `json:"version_id"`
-	Revision  int64  `json:"revision"`
+	Name       string     `json:"name"`
+	VersionID  string     `json:"version_id"`
+	Revision   int64      `json:"revision"`
+	ObservedAt *time.Time `json:"observed_at"`
 }
 type PackageAsset struct {
 	ID          string          `json:"id"`
@@ -212,6 +218,7 @@ type packageQuery struct {
 	PageQuery
 	Namespace, Digest string
 	HasNamespace      bool
+	TopLevel          bool
 	After, Scope      string
 }
 
@@ -243,13 +250,21 @@ func (h packageHandlers) query(w http.ResponseWriter, r *http.Request, p identit
 			values.Del("digest")
 		}
 	}
+	if v, ok := values["top_level"]; ok && strings.HasSuffix(r.URL.Path, "/versions") {
+		if len(v) != 1 || (v[0] != "true" && v[0] != "false") {
+			packageInput(w, r)
+			return q, false
+		}
+		q.TopLevel = v[0] == "true"
+		values.Del("top_level")
+	}
 	page, err := ParsePage(values)
 	if err != nil {
 		packageInput(w, r)
 		return q, false
 	}
 	q.PageQuery = page
-	scope, _ := json.Marshal([]any{p.InstanceID, p.PrincipalID, p.TokenID, feed, r.URL.Path, q.Prefix, q.HasNamespace, q.Namespace, q.Digest})
+	scope, _ := json.Marshal([]any{p.InstanceID, p.PrincipalID, p.TokenID, feed, r.URL.Path, q.Prefix, q.HasNamespace, q.Namespace, q.Digest, q.TopLevel})
 	hash := sha256.Sum256(scope)
 	q.Scope = hex.EncodeToString(hash[:])
 	if q.Cursor != "" {
@@ -316,6 +331,18 @@ func (h packageHandlers) listPackages(w http.ResponseWriter, r *http.Request) {
 	if more {
 		items = items[:q.Limit]
 	}
+	ids := make([]string, len(items))
+	for i := range items {
+		ids[i] = items[i].ID
+	}
+	stats, err := loadPackageStats(ctx, h.db, p.InstanceID, ids)
+	if err != nil {
+		packageError(w, r, err)
+		return
+	}
+	for i := range items {
+		items[i].PackageStats = stats[items[i].ID]
+	}
 	last := ""
 	if len(items) > 0 {
 		last = items[len(items)-1].ID
@@ -358,7 +385,7 @@ func (h packageHandlers) listVersions(w http.ResponseWriter, r *http.Request) {
 		packageError(w, r, err)
 		return
 	}
-	rows, err := h.db.Query(ctx, packageComponentSQL+`SELECT v.id::text,v.component_id::text,v.version,v.revision,v.created_at FROM visible o JOIN versions v ON v.component_id=o.id WHERE o.id=$4 AND ($5='' OR v.id>NULLIF($5,'')::uuid) AND starts_with(v.version,$6) ORDER BY v.id LIMIT $7`, p.InstanceID, feed, permissions, component, q.After, q.Prefix, q.Limit+1)
+	rows, err := h.db.Query(ctx, packageComponentSQL+`SELECT v.id::text,v.component_id::text,v.version,v.revision,v.created_at,par.version,par.platform FROM visible o JOIN versions v ON v.component_id=o.id LEFT JOIN LATERAL (SELECT pv.version,NULLIF(vc.platform,'') AS platform FROM version_children vc JOIN versions pv ON pv.id=vc.parent_version_id WHERE vc.component_id=v.component_id AND vc.child_version=v.version ORDER BY pv.created_at,pv.id LIMIT 1) par ON true WHERE o.id=$4 AND (NOT $8 OR par.version IS NULL) AND ($5='' OR v.id>NULLIF($5,'')::uuid) AND starts_with(v.version,$6) ORDER BY v.id LIMIT $7`, p.InstanceID, feed, permissions, component, q.After, q.Prefix, q.Limit+1, q.TopLevel)
 	if err != nil {
 		packageError(w, r, err)
 		return
@@ -367,7 +394,7 @@ func (h packageHandlers) listVersions(w http.ResponseWriter, r *http.Request) {
 	items := []PackageVersion{}
 	for rows.Next() {
 		var item PackageVersion
-		if err = rows.Scan(&item.ID, &item.ComponentID, &item.Version, &item.Revision, &item.CreatedAt); err != nil {
+		if err = rows.Scan(&item.ID, &item.ComponentID, &item.Version, &item.Revision, &item.CreatedAt, &item.ParentVersion, &item.Platform); err != nil {
 			packageError(w, r, err)
 			return
 		}
@@ -406,7 +433,7 @@ func (h packageHandlers) listTags(w http.ResponseWriter, r *http.Request) {
 		packageError(w, r, err)
 		return
 	}
-	rows, err := h.db.Query(ctx, packageComponentSQL+`SELECT t.name,t.version_id::text,t.revision FROM visible o JOIN tags t ON t.component_id=o.id WHERE o.id=$4 AND t.name>$5 AND starts_with(t.name,$6) ORDER BY t.name LIMIT $7`, p.InstanceID, feed, permissions, component, q.After, q.Prefix, q.Limit+1)
+	rows, err := h.db.Query(ctx, packageComponentSQL+`SELECT t.name,t.version_id::text,t.revision,t.observed_at FROM visible o JOIN tags t ON t.component_id=o.id WHERE o.id=$4 AND t.name>$5 AND starts_with(t.name,$6) ORDER BY t.name LIMIT $7`, p.InstanceID, feed, permissions, component, q.After, q.Prefix, q.Limit+1)
 	if err != nil {
 		packageError(w, r, err)
 		return
@@ -415,7 +442,7 @@ func (h packageHandlers) listTags(w http.ResponseWriter, r *http.Request) {
 	items := []PackageTag{}
 	for rows.Next() {
 		var item PackageTag
-		if err = rows.Scan(&item.Name, &item.VersionID, &item.Revision); err != nil {
+		if err = rows.Scan(&item.Name, &item.VersionID, &item.Revision, &item.ObservedAt); err != nil {
 			packageError(w, r, err)
 			return
 		}

@@ -119,6 +119,7 @@ type PackageSearchResult struct {
 	SourceID   string          `json:"source_id"`
 	Origin     string          `json:"origin"`
 	Metadata   json.RawMessage `json:"metadata"`
+	PackageStats
 }
 type PackageSearchPage struct {
 	Items []PackageSearchResult `json:"items"`
@@ -267,8 +268,23 @@ func (h consoleHandlers) searchPackages(w http.ResponseWriter, r *http.Request) 
 		packageError(w, r, rows.Err())
 		return
 	}
-	if len(page.Items) > limit {
+	more := len(page.Items) > limit
+	if more {
 		page.Items = page.Items[:limit]
+	}
+	ids := make([]string, len(page.Items))
+	for i := range page.Items {
+		ids[i] = page.Items[i].ID
+	}
+	stats, err := loadPackageStats(ctx, h.db, p.InstanceID, ids)
+	if err != nil {
+		packageError(w, r, err)
+		return
+	}
+	for i := range page.Items {
+		page.Items[i].PackageStats = stats[page.Items[i].ID]
+	}
+	if more {
 		last := page.Items[limit-1]
 		token, e := h.codec.Encode(scope, last.FeedID+"/"+last.ID)
 		if e != nil {

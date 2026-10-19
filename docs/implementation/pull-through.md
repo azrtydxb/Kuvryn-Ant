@@ -281,3 +281,29 @@ download and listed from the store during an outage.
 The seam gained one small helper for these formats: `Origin.Verify`, a format specific check run on the staged
 object before it is committed or served (Conan manifests, Composer zips, Terraform provider files and module
 archives).
+
+## Observed tags and index grouping (package discovery)
+
+When a client resolves an OCI tag through a remote source, the adapter records
+the answer with `artifact.ObserveTag`: a `tags` row with `observed_at` set, on
+the cached component, pointing at the cached manifest digest. Re-resolving a
+moved tag updates the row (revision bump, audit `artifact.observe_tag`, outbox
+topic of the same name); an unchanged tag is only refreshed every 10 minutes. An
+observed tag is discovery metadata only: `ResolveTag` ignores it (the remote seam
+stays the source of truth for the mutable pointer), and a tag without
+`observed_at` (published or replicated locally) is never overwritten.
+
+Image-index children are recorded in `version_children` (parent version, child
+digest, platform) at publish and at cache time, and are excluded from the package
+`version_count`, `latest_version` and the `top_level=true` version listing. They
+appear in the versions listing with `parent_version` and `platform`.
+
+Docker Hub feeds (any remote source whose origin is `registry-1.docker.io`,
+`docker.io`, `index.docker.io` or `registry.hub.docker.com`) canonicalise
+single-segment read names (`alpine`) to `library/alpine`, unless a component with
+the short name already exists. Writes are never rewritten.
+
+Backfill for data cached or published before this: tags appear on the next
+resolution of each tag; index links are also recorded then. For indexes that are
+not re-resolved, run `ant repair oci-index-children [--dry-run]` (idempotent,
+reads manifest bytes from blob storage, never contacts an upstream).
