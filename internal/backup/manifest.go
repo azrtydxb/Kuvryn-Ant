@@ -63,6 +63,13 @@ type Blob struct {
 	Domain string `json:"domain"`
 	Digest string `json:"digest"`
 	Size   int64  `json:"size"`
+	// BestEffort marks a blob no live artifact needs: it is referenced only by
+	// purpose=cache sources (or by nothing). Its bytes may be missing at backup
+	// time without failing the backup.
+	BestEffort bool `json:"best_effort,omitempty"`
+	// Missing records that a best-effort blob had no bytes when the backup ran.
+	// It is not copied, and restore drops the cache versions that used it.
+	Missing bool `json:"missing,omitempty"`
 }
 
 type Manifest struct {
@@ -99,6 +106,8 @@ func (m Manifest) Mode() string {
 	return BlobsCopy
 }
 
+const cacheNotice = "Some cache-only blobs were missing at backup time (blobs with missing=true). Cache content is disposable: restore drops the cache versions that used them, so those objects are cache misses until clients rebuild them."
+
 const notice = "Root keys are not part of this backup. Restore requires the same external keyring that protected the source deployment."
 
 func tablePath(name string) string { return "tables/" + name + ".copy" }
@@ -106,6 +115,9 @@ func blobPath(b Blob) string       { return "blobs/" + b.Domain + "/" + b.Digest
 
 func (m Manifest) BlobBytes() (n int64) {
 	for _, b := range m.Blobs {
+		if b.Missing {
+			continue
+		}
 		n += b.Size
 	}
 	return n
@@ -145,7 +157,7 @@ func (m Manifest) validate() error {
 	pairs := map[[2]string]bool{}
 	for _, b := range m.Blobs {
 		key := [2]string{b.Domain, b.Digest}
-		if !uuidPattern.MatchString(b.Domain) || !digestPattern.MatchString(b.Digest) || b.Size < 0 || pairs[key] {
+		if !uuidPattern.MatchString(b.Domain) || !digestPattern.MatchString(b.Digest) || b.Size < 0 || (b.Missing && !b.BestEffort) || pairs[key] {
 			return ErrManifest
 		}
 		pairs[key] = true
@@ -175,3 +187,16 @@ func readManifest(ctx context.Context, t Tree) (Manifest, string, error) {
 	sum := sha256.Sum256(data)
 	return m, hex.EncodeToString(sum[:]), nil
 }
+
+// missingBlobs returns the blobs recorded as missing at backup time.
+func (m Manifest) missingBlobs() (out []Blob) {
+	for _, b := range m.Blobs {
+		if b.Missing {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// MissingCount is the number of best-effort blobs recorded as missing.
+func (m Manifest) MissingCount() int { return len(m.missingBlobs()) }

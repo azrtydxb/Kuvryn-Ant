@@ -36,6 +36,9 @@ type RestoreSummary struct {
 	Summary
 	SecretsVerified int  `json:"secrets_verified"`
 	MigratedForward bool `json:"migrated_to_current_schema"`
+	// DroppedCacheVersions counts cache versions removed because a blob they used
+	// was missing when the backup ran (or from the target store, in reference mode).
+	DroppedCacheVersions int `json:"dropped_cache_versions,omitempty"`
 }
 
 // Restore loads a backup into an empty database and blob store.
@@ -82,8 +85,11 @@ func RestoreTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tr
 	if err = checkTarget(ctx, pool, opts.Force); err != nil {
 		return RestoreSummary{}, err
 	}
+	// Best-effort (cache-only) blobs absent from the backup or, in reference mode,
+	// from the target store are tolerated; their cache versions are dropped below.
+	blobs := slices.Clone(m.Blobs)
 	if m.referenced() {
-		if err = checkBlobs(ctx, stores, m.Blobs, opts.Concurrency); err != nil {
+		if err = checkBlobs(ctx, stores, blobs, opts.Concurrency, true); err != nil {
 			return RestoreSummary{}, fmt.Errorf("%w: a reference-mode backup needs its blobs in the target store: %v", ErrTarget, err)
 		}
 	}
@@ -95,7 +101,7 @@ func RestoreTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tr
 		return RestoreSummary{}, err
 	}
 	if !m.referenced() {
-		if err = restoreBlobs(ctx, stores, root, m.Blobs, opts.Concurrency); err != nil {
+		if err = restoreBlobs(ctx, stores, root, blobs, opts.Concurrency); err != nil {
 			return RestoreSummary{}, err
 		}
 	}
@@ -108,6 +114,17 @@ func RestoreTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tr
 		return result, fmt.Errorf("data restored at schema %d but upgrade to current schema failed: %w", m.SchemaVersion, err)
 	}
 	result.MigratedForward = true
+	var missing []Blob
+	for _, b := range blobs {
+		if b.Missing {
+			missing = append(missing, b)
+		}
+	}
+	if len(missing) > 0 {
+		if result.DroppedCacheVersions, err = dropMissingCache(ctx, pool, missing); err != nil {
+			return result, fmt.Errorf("data restored but dropping cache content with missing blobs failed: %w", err)
+		}
+	}
 	return result, nil
 }
 
@@ -222,6 +239,9 @@ func restoreBlobs(ctx context.Context, stores Stores, root Tree, blobs []Blob, w
 	}
 	return forEach(ctx, len(blobs), workers, func(ctx context.Context, i int) error {
 		b := blobs[i]
+		if b.Missing {
+			return nil
+		}
 		if err := copyBlobIn(ctx, resolved[b.Domain], root, b); err != nil {
 			if errors.Is(err, blob.ErrIntegrity) {
 				err = ErrIntegrity
@@ -382,4 +402,55 @@ func verifySecrets(ctx context.Context, tx pgx.Tx, keys *secrets.Keyring) (int, 
 		n++
 	}
 	return n, rows.Err()
+}
+
+// dropMissingCache removes the cache content that depended on blobs whose bytes
+// are gone: every version with an asset on a missing blob, the versions whose
+// manifests name those versions (version_refs, transitively: an index names
+// manifests, a manifest names layers), their tags and assets, and the blob rows
+// themselves. The cache feed then simply has fewer objects, so a client sees a
+// cache miss and rebuilds it. Only best-effort blobs reach this function, so a
+// dropped version never held live (non-cache) content. Bytes of the dropped
+// versions' other blobs become unreferenced and are collected by normal GC.
+func dropMissingCache(ctx context.Context, pool *pgxpool.Pool, missing []Blob) (int, error) {
+	domains := make([]string, len(missing))
+	digests := make([]string, len(missing))
+	for i, b := range missing {
+		domains[i], digests[i] = b.Domain, b.Digest
+	}
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	if _, err = tx.Exec(ctx, `CREATE TEMP TABLE dropped_cache_versions ON COMMIT DROP AS
+ WITH RECURSIVE gone(version_id) AS (
+  SELECT a.version_id FROM assets a JOIN blobs b ON b.id=a.blob_id
+   JOIN unnest($1::uuid[],$2::text[]) m(dom,dig) ON b.dedup_domain_id=m.dom AND b.digest=m.dig
+  UNION
+  SELECT r.parent_version_id FROM version_refs r
+   JOIN versions cv ON cv.component_id=r.component_id AND cv.version=r.ref_version
+   JOIN gone g ON g.version_id=cv.id
+ ) SELECT version_id FROM gone`, domains, digests); err != nil {
+		return 0, err
+	}
+	var n int
+	if err = tx.QueryRow(ctx, "SELECT count(*) FROM dropped_cache_versions").Scan(&n); err != nil {
+		return 0, err
+	}
+	for _, q := range []string{
+		`DELETE FROM tags WHERE version_id IN (SELECT version_id FROM dropped_cache_versions)`,
+		`DELETE FROM assets WHERE version_id IN (SELECT version_id FROM dropped_cache_versions)`,
+		`DELETE FROM versions WHERE id IN (SELECT version_id FROM dropped_cache_versions)`,
+	} {
+		if _, err = tx.Exec(ctx, q); err != nil {
+			return 0, err
+		}
+	}
+	if _, err = tx.Exec(ctx, `DELETE FROM blobs b USING unnest($1::uuid[],$2::text[]) m(dom,dig)
+ WHERE b.dedup_domain_id=m.dom AND b.digest=m.dig
+ AND NOT EXISTS(SELECT 1 FROM assets a WHERE a.blob_id=b.id) AND NOT EXISTS(SELECT 1 FROM federation_route_cache rc WHERE rc.blob_id=b.id)`, domains, digests); err != nil {
+		return 0, err
+	}
+	return n, tx.Commit(ctx)
 }

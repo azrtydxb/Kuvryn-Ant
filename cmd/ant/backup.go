@@ -184,6 +184,9 @@ func backupCommand(ctx context.Context, logger *slog.Logger, args []string, outp
 			logger.Error("backup failed", "reason", err)
 			return 1
 		}
+		for _, w := range res.Warnings {
+			logger.Warn("backup warning", "reason", w)
+		}
 		var removed []string
 		if policy := (backup.RetentionPolicy{Keep: *keep, MaxAge: *maxAge}); policy.Enabled() {
 			// The new backup is complete and durable; a retention failure must not
@@ -196,9 +199,10 @@ func backupCommand(ctx context.Context, logger *slog.Logger, args []string, outp
 		return emit(logger, output, struct {
 			Created bool `json:"created"`
 			backup.Summary
-			Removed []string `json:"removed_old_backups"`
-			Notice  string   `json:"notice"`
-		}{true, summaryOf(res), nonNil(removed), res.Manifest.Notice})
+			Removed  []string `json:"removed_old_backups"`
+			Warnings []string `json:"warnings"`
+			Notice   string   `json:"notice"`
+		}{true, summaryOf(res), nonNil(removed), nonNil(res.Warnings), res.Manifest.Notice})
 	}
 	res, err := backup.RestoreTree(ctx, pool, stores, loc.tree, backup.RestoreOptions{Force: *force, Keys: cfg.SecretKeys, ExpectManifestSHA256: *expect, Concurrency: *workers})
 	if err != nil {
@@ -207,6 +211,9 @@ func backupCommand(ctx context.Context, logger *slog.Logger, args []string, outp
 			logger.Error("mount the keyring (ANT_ROOT_KEY_FILE, ANT_PREVIOUS_ROOT_KEYS_FILE) that protected the source deployment")
 		}
 		return 1
+	}
+	if res.DroppedCacheVersions > 0 {
+		logger.Warn("restore dropped cache versions whose blobs were missing", "versions", res.DroppedCacheVersions, "missing_blobs", res.MissingBlobs)
 	}
 	return emit(logger, output, struct {
 		Restored bool `json:"restored"`
@@ -234,7 +241,7 @@ func verifyAndEmit(ctx context.Context, logger *slog.Logger, output io.Writer, l
 }
 
 func summaryOf(r backup.Result) backup.Summary {
-	s := backup.Summary{ManifestSHA256: r.ManifestSHA256, SchemaVersion: r.Manifest.SchemaVersion, Tables: len(r.Manifest.Tables), Blobs: len(r.Manifest.Blobs), BlobBytes: r.Manifest.BlobBytes(), BlobMode: r.Manifest.Mode()}
+	s := backup.Summary{ManifestSHA256: r.ManifestSHA256, SchemaVersion: r.Manifest.SchemaVersion, Tables: len(r.Manifest.Tables), Blobs: len(r.Manifest.Blobs), BlobBytes: r.Manifest.BlobBytes(), BlobMode: r.Manifest.Mode(), MissingBlobs: r.Manifest.MissingCount()}
 	for _, t := range r.Manifest.Tables {
 		s.Rows += t.Rows
 	}

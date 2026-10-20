@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/backupfence"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/jackc/pgx/v5"
 )
@@ -30,9 +31,15 @@ type GCReport struct {
 	// StaleUploadsAborted counts abandoned multipart uploads (idle longer than
 	// Options.StaleUploadAge) that were aborted, or in dry-run would be.
 	StaleUploadsAborted int `json:"stale_uploads_aborted"`
+	// Fenced counts sweeps deferred because a backup holds a fence; the candidates
+	// stay marked and are swept on the first run after the fence is gone.
+	Fenced int `json:"fenced,omitempty"`
 }
 
 const storeTimeout = 2 * time.Minute
+
+// errFenced means a running backup forbids deleting bytes right now.
+var errFenced = errors.New("blob deletion paused by a running backup")
 
 // CollectGarbage runs the unmark, sweep and mark phases.
 //
@@ -118,6 +125,10 @@ func (s *Service) sweep(ctx context.Context, runStart time.Time, dryRun, expedit
 		}
 		deleted, err := s.sweepOne(ctx, c)
 		switch {
+		case errors.Is(err, errFenced):
+			// Byte deletion is paused for every blob; leave the rest of the batch marked.
+			report.Fenced += len(candidates) - i
+			return errors.Join(errs...)
 		case err != nil:
 			report.Failed++
 			errs = append(errs, err)
@@ -156,6 +167,19 @@ func (s *Service) sweepOne(ctx context.Context, c BlobRef) (bool, error) {
 	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
 	if _, err = tx.Exec(ctx, "SET LOCAL lock_timeout='10s'"); err != nil {
 		return false, err
+	}
+	// A backup fence (see internal/backupfence) pauses all byte deletion: the shared
+	// lock orders this sweep against fence acquisition, so a sweep that passes the
+	// check below commits before any later backup snapshot is taken.
+	if err = backupfence.LockShared(ctx, tx); err != nil {
+		return false, err
+	}
+	fenced, err := backupfence.Live(ctx, tx)
+	if err != nil {
+		return false, err
+	}
+	if fenced {
+		return false, errFenced
 	}
 	if _, err = tx.Exec(ctx, `INSERT INTO blobs(instance_id,dedup_domain_id,digest,size_bytes,storage_key) VALUES($1,$2,$3,0,$3) ON CONFLICT(dedup_domain_id,digest_algorithm,digest) DO NOTHING`, s.InstanceID, c.Domain, c.Digest); err != nil {
 		return false, err

@@ -90,13 +90,21 @@ Excluded by design (short-lived security state, rebuilt in normal operation): `b
 
 - All tables are read in one `REPEATABLE READ`, read-only transaction, so the metadata is a single point-in-time snapshot. The running service is neither blocked nor paused.
 - The blob list comes from the same snapshot. Blobs not referenced at that moment (uploads in flight, orphans) are skipped; blobs committed afterwards are not part of the backup.
-- Every copied blob is hashed while it is copied and must match the snapshot's digest and size. A missing or corrupt blob fails the backup (no partial backup is left behind).
+- Every copied blob is hashed while it is copied and must match the snapshot's digest and size. A missing or corrupt blob fails the backup (except best-effort cache blobs, below; no partial backup is left behind).
 - Restore loads all tables in a single transaction, verifies each table file's digest and row count, then commits: either all metadata is restored or none.
 - Metadata is committed only after every blob has been written and verified, so a restored database never references a missing blob. If a restore fails first, the blobs already written are harmless unreferenced objects.
 
-::: warning
-Do not run garbage collection or blob deletion while a backup is running. If a concurrent delete removes a blob the snapshot references, the backup fails (it never skips silently) and must be repeated.
-:::
+### Garbage-collection fence
+
+A running backup holds a _fence_: a row in the `backup_fences` table, inserted before the snapshot is taken and renewed by a heartbeat every 15 seconds. While any unexpired fence exists, garbage collection, the expedited cache and pressure sweep and the byte deletion of cache eviction do not delete blob bytes. Marking and metadata eviction continue; candidates stay marked and are swept by the first run after the fence is gone. The fence lives in PostgreSQL, so it also works when `ant backup` is a separate process or job from the serving process that runs the sweeps.
+
+The fence is released when the backup finishes or fails. A backup that crashes stops heartbeating and its fence expires after 2 minutes. A backup that cannot renew its fence aborts instead of continuing unprotected. Deletion is paused for the whole backup, so a very long backup delays space reclamation by that long.
+
+### Cache content is best-effort
+
+Blobs used only by `purpose=cache` feeds are disposable. If such a blob has no bytes when the backup runs, the backup does not fail: the manifest records it with `missing: true`, the command logs a warning and lists it in `warnings`, and the summary shows `missing_blobs`. Any other missing or corrupt blob, including one nothing references, still fails the backup.
+
+Restore skips the missing blobs and drops the cache content that used them: the versions with an asset on a missing blob, the versions whose manifests name them (an image index and manifest go with a lost layer), their tags, assets and blob rows. Clients see a cache miss and rebuild the objects. The summary reports `dropped_cache_versions`. In `reference` mode a best-effort blob absent from the target store is handled the same way. If bytes vanish behind live cache metadata some other way, reads answer 404 (a cache miss) rather than a server error, and uploading the content again heals it.
 
 ## Procedure
 

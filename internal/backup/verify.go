@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
@@ -21,10 +22,14 @@ type Summary struct {
 	BlobBytes      int64  `json:"blob_bytes"`
 	// BlobMode is "copy" or "reference" (blob bytes are not in the backup).
 	BlobMode string `json:"blob_mode"`
+	// MissingBlobs counts best-effort (cache-only) blobs whose bytes were missing
+	// when the backup ran; they are not in the backup and restore drops the cache
+	// versions that used them.
+	MissingBlobs int `json:"missing_blobs,omitempty"`
 }
 
 func summarize(m Manifest, sum string) Summary {
-	s := Summary{ManifestSHA256: sum, SchemaVersion: m.SchemaVersion, Tables: len(m.Tables), Blobs: len(m.Blobs), BlobBytes: m.BlobBytes(), BlobMode: m.Mode()}
+	s := Summary{ManifestSHA256: sum, SchemaVersion: m.SchemaVersion, Tables: len(m.Tables), Blobs: len(m.Blobs), BlobBytes: m.BlobBytes(), BlobMode: m.Mode(), MissingBlobs: len(m.missingBlobs())}
 	for _, t := range m.Tables {
 		s.Rows += t.Rows
 	}
@@ -73,13 +78,16 @@ func VerifyTree(ctx context.Context, root Tree, opts VerifyOptions) (Summary, er
 	}
 	if m.referenced() {
 		if opts.Stores != nil {
-			if err = checkBlobs(ctx, opts.Stores, m.Blobs, workers); err != nil {
+			if err = checkBlobs(ctx, opts.Stores, slices.Clone(m.Blobs), workers, true); err != nil {
 				return Summary{}, err
 			}
 		}
 	} else {
 		err = forEach(ctx, len(m.Blobs), workers, func(ctx context.Context, i int) error {
 			b := m.Blobs[i]
+			if b.Missing {
+				return nil
+			}
 			got, n, err := hashFile(ctx, root, blobPath(b))
 			if err != nil || n != b.Size || got != b.Digest {
 				return fmt.Errorf("%w: blob %s (domain %s)", ErrIntegrity, b.Digest, b.Domain)
@@ -135,6 +143,9 @@ func rejectUnlisted(ctx context.Context, root Tree, m Manifest) error {
 	}
 	if !m.referenced() {
 		for _, b := range m.Blobs {
+			if b.Missing {
+				continue
+			}
 			allowed[blobPath(b)] = true
 		}
 	}

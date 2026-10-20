@@ -14,6 +14,7 @@ import (
 // backup would be a liability, and they are rebuilt by normal operation. Any
 // table not listed here is included automatically, so new migrations are safe.
 var ephemeral = map[string]bool{
+	"backup_fences":           true,
 	"browser_sessions":        true,
 	"enterprise_login_states": true,
 	"instance_writer_leases":  true,
