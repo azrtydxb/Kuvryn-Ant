@@ -80,9 +80,11 @@ it("shows readiness, a failing upstream and storage on the overview", async () =
   });
   render(<App />);
   await signInWithToken();
-  await screen.findByText("oci-local cannot reach its upstream");
+  await screen.findByRole("heading", { name: "Failing sources" });
+  await screen.findByText(/HTTP 401/);
+  expect(screen.getByRole("button", { name: "Open source" })).toBeTruthy();
   await screen.findByText(/Ready · 3 ms/);
-  await screen.findByText(/deduplication saved/);
+  await screen.findByText(/dedup saved/);
 });
 it("tests a remote source connection and shows the result", async () => {
   install((url, init) => {

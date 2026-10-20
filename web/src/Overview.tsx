@@ -4,19 +4,23 @@ import type { Go } from "./App";
 import { useAllFeeds, useAllSources, useNames, useOpsMaps } from "./data";
 import { useOptionalCall } from "./gaps";
 import {
-  Alert,
   Badge,
   Button,
   ChartLegend,
+  Icon,
   LineChart,
   Meter,
   SegmentedControl,
-  StatCard,
   Table,
+  Tabs,
 } from "./ds/bundle";
 import type {
   AuditEvent,
   ComponentStatus,
+  Feed,
+  ReplicationStatusEntry,
+  Source,
+  SourceHealth,
   WriterLeaseStatus,
 } from "./generated";
 import type { PackageRef } from "./Packages";
@@ -26,7 +30,6 @@ import {
   Loading,
   Mono,
   PageHeading,
-  SectionHead,
   Unavailable,
   bytes,
   count,
@@ -60,6 +63,61 @@ function LeaseBadge({ l }: { l: WriterLeaseStatus }) {
   );
 }
 
+const CAP = 5;
+
+function Kpi({
+  label,
+  value,
+  unit,
+  sub,
+  icon,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  sub: string;
+  icon: string;
+}) {
+  return (
+    <div className="az-card ov-kpi">
+      <div className="ov-kpi__label">
+        <Icon name={icon} size={14} />
+        {label}
+      </div>
+      <div className="ov-kpi__value">
+        {value}
+        {unit && <span>{unit}</span>}
+      </div>
+      <div className="ov-kpi__sub" title={sub}>
+        {sub}
+      </div>
+    </div>
+  );
+}
+
+function More({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <Button size="sm" variant="ghost" iconRight="arrow-right" onClick={onClick}>
+      {label}
+    </Button>
+  );
+}
+
+function healthTone(s?: SourceHealth["status"]) {
+  return s === "healthy"
+    ? "good"
+    : s === "degraded"
+      ? "warn"
+      : s === "failing"
+        ? "bad"
+        : "neutral";
+}
+const healthRank = { failing: 0, degraded: 1, unknown: 2, healthy: 3 } as const;
+
+function Empty({ children }: { children: string }) {
+  return <p className="muted small ov-empty">{children}</p>;
+}
+
 export function Overview({
   client,
   go,
@@ -79,6 +137,7 @@ export function Overview({
   const sources = useAllSources(client);
   const ops = useOpsMaps(client);
   const [range, setRange] = useState<keyof typeof ranges>("24h");
+  const [tab, setTab] = useState("activity");
   const window = useMemo(() => {
     const to = new Date();
     return {
@@ -96,11 +155,12 @@ export function Overview({
   });
   const storage = useOptionalCall(client, "getStorageUsage");
   const recent = useOptionalCall(client, "searchPackages", {
-    query: { limit: "4", origin: "local" },
+    query: { limit: String(CAP), origin: "local" },
   });
   const audit = useOptionalCall(client, "listAuditEvents", {
-    query: { limit: "4" },
+    query: { limit: String(CAP) },
   });
+  const replication = useOptionalCall(client, "listReplicationStatus");
   const readiness = status.value?.data.readiness;
   const failing = sources.items.filter(
     (s) => ops.health.get(s.id)?.status === "failing",
@@ -114,13 +174,31 @@ export function Overview({
     storage.reload();
     recent.reload();
     audit.reload();
+    replication.reload();
   };
   const t = traffic.state === "ready" ? traffic.data : undefined;
   const st = storage.state === "ready" ? storage.data : undefined;
+  const pressure = st?.pressure;
   const packages = [...ops.feeds.values()].reduce((n, f) => n + f.packages, 0);
   const hit = t?.totals.cache_hit_ratio;
+  const topFeeds = [...feeds.items]
+    .sort(
+      (a, b) =>
+        (ops.feeds.get(b.id)?.pulls ?? 0) - (ops.feeds.get(a.id)?.pulls ?? 0) ||
+        a.slug.localeCompare(b.slug),
+    )
+    .slice(0, CAP);
+  const topSources = [...sources.items]
+    .sort(
+      (a, b) =>
+        healthRank[ops.health.get(a.id)?.status as keyof typeof healthRank] -
+          healthRank[ops.health.get(b.id)?.status as keyof typeof healthRank] ||
+        a.name.localeCompare(b.name),
+    )
+    .slice(0, CAP);
+  const jobs = replication.state === "ready" ? replication.data.items : [];
   return (
-    <>
+    <div className="ov">
       <PageHeading
         eyebrow="Instance"
         title="Overview"
@@ -133,50 +211,35 @@ export function Overview({
           Create feed
         </Button>
       </PageHeading>
-      {failing.map((s) => {
-        const h = ops.health.get(s.id)!;
-        return (
-          <Alert
-            key={s.id}
-            tone="bad"
-            title={`${s.name} cannot reach its upstream`}
-            className="spaced"
-            action={
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => go("sources", { source: s.id })}
-              >
-                Open source
-              </Button>
-            }
-          >
-            {h.last_status_code ? `HTTP ${h.last_status_code}. ` : ""}
-            {h.last_error_at && `Since ${when(h.last_error_at)}. `}
-            Cached content is still served.
-          </Alert>
-        );
-      })}
-      <div className="grid-auto grid-auto--210">
+      <Failure error={feeds.error ?? sources.error} className="spaced" />
+      <div className="ov-grid ov-grid--kpi">
         <Card
+          className="ov-service"
           title="Service"
           actions={
-            <Badge
-              tone={
-                status.error
-                  ? "bad"
+            <>
+              {status.value && (
+                <Mono muted>
+                  {status.value.data.name} · API {status.value.data.api_version}
+                </Mono>
+              )}
+              <Badge
+                tone={
+                  status.error
+                    ? "bad"
+                    : readiness?.ready === false
+                      ? "warn"
+                      : "good"
+                }
+                dot
+              >
+                {status.error
+                  ? "Unreachable"
                   : readiness?.ready === false
-                    ? "warn"
-                    : "good"
-              }
-              dot
-            >
-              {status.error
-                ? "Unreachable"
-                : readiness?.ready === false
-                  ? "Degraded"
-                  : "Reachable"}
-            </Badge>
+                    ? "Degraded"
+                    : "Reachable"}
+              </Badge>
+            </>
           }
         >
           <Failure error={status.error} />
@@ -184,13 +247,9 @@ export function Overview({
             <Loading what="service status" />
           ) : (
             status.value && (
-              <dl className="kv">
-                <dt>Service</dt>
-                <dd>{status.value.data.name}</dd>
-                <dt>API version</dt>
-                <dd>{status.value.data.api_version}</dd>
-                <dt>Last successful check</dt>
-                <dd>{checked}</dd>
+              <dl className="kv kv--compact">
+                <dt className="ov-opt">Last check</dt>
+                <dd className="ov-opt">{checked}</dd>
                 {readiness && (
                   <>
                     <dt>PostgreSQL</dt>
@@ -216,30 +275,36 @@ export function Overview({
             </p>
           )}
         </Card>
-        <StatCard
+        <Kpi
           label="Packages"
-          value={ops.feeds.size ? count(packages) : "—"}
           icon="package"
-          sub={`across ${feeds.items.length} feeds · ${sources.items.length} sources`}
+          value={ops.feeds.size ? count(packages) : "—"}
+          sub={`${feeds.items.length} feeds · ${sources.items.length} sources`}
         />
-        <StatCard
+        <Kpi
           label="Requests"
+          icon="arrow-down-up"
           value={t ? count(t.totals.pulls + t.totals.publishes) : "—"}
           unit={t ? `/ ${range}` : undefined}
-          icon="arrow-down-up"
           sub={t ? "pulls + publishes" : "Metrics not available"}
         />
-        <StatCard
+        <Kpi
           label="Cache hit ratio"
+          icon="zap"
           value={hit != null ? (hit * 100).toFixed(1) : "—"}
           unit={hit != null ? "%" : undefined}
-          icon="zap"
           sub={t ? `remote sources, ${range}` : "Metrics not available"}
         />
+        <Kpi
+          label="Failing sources"
+          icon="triangle-alert"
+          value={String(failing.length)}
+          sub={failing.length ? "Cached content still served" : "All reachable"}
+        />
       </div>
-      <Failure error={feeds.error ?? sources.error} />
-      <div className="grid-auto grid-auto--380 spaced">
+      <div className="ov-grid ov-grid--mid">
         <Card
+          className="ov-traffic"
           title="Traffic"
           actions={
             <SegmentedControl
@@ -259,7 +324,7 @@ export function Overview({
           {t && (
             <>
               <LineChart
-                height={170}
+                height={110}
                 series={[
                   { data: t.points.map((p) => p.pulls) },
                   { data: t.points.map((p) => p.publishes) },
@@ -289,7 +354,12 @@ export function Overview({
         </Card>
         <Card
           title="Storage"
-          actions={st ? <Mono muted>{st.backend}</Mono> : undefined}
+          actions={
+            <>
+              {st && <Mono muted>{st.backend}</Mono>}
+              <More label="Details" onClick={() => go("settings")} />
+            </>
+          }
         >
           {storage.state === "loading" && <Loading what="storage usage" />}
           {storage.state === "unavailable" && (
@@ -307,78 +377,244 @@ export function Overview({
                     : 0
                 }
               />
-              {st.staging_bytes != null && (
-                <p className="muted small">
-                  Upload staging: {bytes(st.staging_bytes)}
-                </p>
+              {pressure?.enabled && pressure.capacity_bytes > 0 && (
+                <Meter
+                  label={`Pressure (${pressure.state})`}
+                  valueLabel={`${bytes(pressure.used_bytes)} / ${bytes(pressure.capacity_bytes)}`}
+                  value={Math.min(100, Math.round(pressure.usage_ratio * 100))}
+                />
               )}
-              <p className="muted small">
-                {count(st.blob_count)} blobs · deduplication saved{" "}
+              <p className="muted small ov-clamp">
+                {count(st.blob_count)} blobs · dedup saved{" "}
                 {bytes(st.dedup_saved_bytes)} · {bytes(st.unreferenced_bytes)}{" "}
-                unreferenced ({count(st.gc_candidates)} collectable) · measured{" "}
-                {when(st.measured_at)}
+                unreferenced ({count(st.gc_candidates)} collectable)
+                {st.staging_bytes != null &&
+                  ` · staging ${bytes(st.staging_bytes)}`}
               </p>
             </>
           )}
         </Card>
+        <Card
+          title="Replication"
+          actions={<More label="View all" onClick={() => go("replication")} />}
+        >
+          {replication.state === "loading" && <Loading what="replication" />}
+          {replication.state === "unavailable" && (
+            <Unavailable what="Replication" />
+          )}
+          {replication.state === "error" && (
+            <Failure error={replication.error} />
+          )}
+          {replication.state === "ready" &&
+            (jobs.length ? (
+              <Table
+                onRowClick={() => go("replication")}
+                columns={[
+                  { key: "name", label: "Job" },
+                  {
+                    key: "state",
+                    label: "State",
+                    render: (r: ReplicationStatusEntry) => (
+                      <Badge
+                        dot
+                        tone={
+                          !r.enabled
+                            ? "neutral"
+                            : r.status.last_error
+                              ? "bad"
+                              : r.status.running
+                                ? "info"
+                                : "good"
+                        }
+                      >
+                        {!r.enabled
+                          ? "Paused"
+                          : r.status.last_error
+                            ? "Failing"
+                            : r.status.running
+                              ? "Running"
+                              : r.status.phase.replace("_", " ")}
+                      </Badge>
+                    ),
+                  },
+                  {
+                    key: "lag",
+                    label: "Behind",
+                    render: (r: ReplicationStatusEntry) =>
+                      r.status.changes_behind != null
+                        ? count(r.status.changes_behind)
+                        : "—",
+                  },
+                ]}
+                rows={jobs.slice(0, 3)}
+              />
+            ) : (
+              <Empty>No replication jobs configured.</Empty>
+            ))}
+        </Card>
       </div>
-      <div className="grid-auto grid-auto--380">
-        <div>
-          <SectionHead title="Recently published">
-            <Button
-              size="sm"
-              variant="ghost"
-              iconRight="arrow-right"
-              onClick={() => go("packages")}
-            >
-              All packages
-            </Button>
-          </SectionHead>
-          {recent.state === "ready" ? (
+      <div
+        className={`ov-grid ov-grid--low${failing.length ? "" : " ov-grid--low3"}`}
+      >
+        <Card
+          title="Feeds"
+          actions={<More label="View all" onClick={() => go("feeds")} />}
+        >
+          {feeds.items.length ? (
             <Table
-              onRowClick={(r: PackageRef) => openPackage(r)}
+              onRowClick={(r: Feed) => go("feeds", { feed: r.id })}
               columns={[
                 {
-                  key: "coordinate",
-                  label: "Package",
-                  render: (r: PackageRef) => (
-                    <>
-                      {r.coordinate}
-                      <small>{r.feed_slug}</small>
-                    </>
-                  ),
+                  key: "slug",
+                  label: "Feed",
+                  render: (r: Feed) => <Mono>{r.slug}</Mono>,
                 },
                 { key: "format", label: "Format" },
+                {
+                  key: "packages",
+                  label: "Pkgs",
+                  render: (r: Feed) => {
+                    const n = ops.feeds.get(r.id)?.packages;
+                    return n == null ? "—" : count(n);
+                  },
+                },
               ]}
-              rows={recent.data.items.slice(0, 4)}
+              rows={topFeeds}
             />
-          ) : recent.state === "loading" ? (
-            <Loading what="recent packages" />
-          ) : recent.state === "error" ? (
-            <Failure error={recent.error} />
           ) : (
-            <Unavailable what="Cross-feed package search" />
+            <Empty>No feeds yet.</Empty>
           )}
-        </div>
-        <div>
-          <SectionHead title="Recent activity">
-            <Button
-              size="sm"
-              variant="ghost"
-              iconRight="arrow-right"
-              onClick={() => go("audit")}
-            >
-              Audit log
-            </Button>
-          </SectionHead>
-          {audit.state === "ready" ? (
+        </Card>
+        <Card
+          title="Sources"
+          actions={<More label="View all" onClick={() => go("sources")} />}
+        >
+          {topSources.length ? (
+            <Table
+              onRowClick={(r: Source) => go("sources", { source: r.id })}
+              columns={[
+                { key: "name", label: "Source" },
+                { key: "kind", label: "Kind" },
+                {
+                  key: "health",
+                  label: "Health",
+                  render: (r: Source) => {
+                    const h = ops.health.get(r.id)?.status;
+                    return (
+                      <Badge tone={healthTone(h)} dot>
+                        {h && h !== "not_applicable" ? h : "n/a"}
+                      </Badge>
+                    );
+                  },
+                },
+              ]}
+              rows={topSources}
+            />
+          ) : (
+            <Empty>No sources yet.</Empty>
+          )}
+        </Card>
+        {failing.length > 0 && (
+          <Card
+            title="Failing sources"
+            actions={
+              <Badge tone={failing.length ? "bad" : "good"} dot>
+                {failing.length ? failing.length : "None"}
+              </Badge>
+            }
+          >
+            {failing.length ? (
+              <ul className="ov-list">
+                {failing.slice(0, 3).map((s) => {
+                  const h = ops.health.get(s.id)!;
+                  return (
+                    <li key={s.id}>
+                      <div>
+                        <b>{s.name}</b>
+                        <small>
+                          {h.last_status_code
+                            ? `HTTP ${h.last_status_code} · `
+                            : ""}
+                          {h.last_error_at
+                            ? `since ${when(h.last_error_at)}`
+                            : "no successful check"}
+                        </small>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => go("sources", { source: s.id })}
+                      >
+                        Open source
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <Empty>Every upstream source is reachable.</Empty>
+            )}
+            {failing.length > 3 && (
+              <More
+                label={`${failing.length - 3} more`}
+                onClick={() => go("sources")}
+              />
+            )}
+          </Card>
+        )}
+        <Card
+          className="ov-recent"
+          title="Recent"
+          actions={
+            <More
+              label={tab === "activity" ? "Audit log" : "All packages"}
+              onClick={() => go(tab === "activity" ? "audit" : "packages")}
+            />
+          }
+        >
+          <Tabs
+            value={tab}
+            onChange={setTab}
+            className="ov-tabs"
+            items={[
+              { id: "activity", label: "Activity" },
+              { id: "published", label: "Published" },
+            ]}
+          />
+          {tab === "published" ? (
+            recent.state === "ready" ? (
+              <Table
+                onRowClick={(r: PackageRef) => openPackage(r)}
+                columns={[
+                  {
+                    key: "coordinate",
+                    label: "Package",
+                    render: (r: PackageRef) => (
+                      <span className="ov-trunc">
+                        {r.coordinate}
+                        <small>{r.feed_slug}</small>
+                      </span>
+                    ),
+                  },
+                  { key: "format", label: "Format" },
+                ]}
+                rows={recent.data.items.slice(0, 4)}
+              />
+            ) : recent.state === "loading" ? (
+              <Loading what="recent packages" />
+            ) : recent.state === "error" ? (
+              <Failure error={recent.error} />
+            ) : (
+              <Unavailable what="Cross-feed package search" />
+            )
+          ) : audit.state === "ready" ? (
             <Table
               columns={[
                 {
                   key: "action",
                   label: "Event",
                   render: (r: AuditEvent) => (
-                    <>
+                    <span className="ov-trunc">
                       <Mono>{r.action}</Mono>
                       <small>
                         {r.principal_id
@@ -388,7 +624,7 @@ export function Overview({
                         {" · "}
                         {when(r.created_at)}
                       </small>
-                    </>
+                    </span>
                   ),
                 },
                 {
@@ -419,8 +655,8 @@ export function Overview({
           ) : (
             <Unavailable what="The audit log" />
           )}
-        </div>
+        </Card>
       </div>
-    </>
+    </div>
   );
 }
