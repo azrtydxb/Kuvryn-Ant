@@ -62,4 +62,4 @@ Root encryption keys support `ANT_ROOT_KEY_VERSION` (default `v1`) and an option
 
 ## Remaining work
 
-The entire Phase1 scope remains required: the remaining format adapters and certification, replication, retention/GC, backups and restore, provider administration, release packaging/qualification and deployment evidence. OKE plus existing MinIO on TrueNAS SCALE is the primary deployment target. AWS and other compatible providers remain supported targets without a separate environment fleet. Licensing remains deliberately undecided.
+The entire Phase1 scope remains required: the remaining format adapters and certification, replication, retention/GC, backups and restore, provider administration, release packaging/qualification and deployment evidence. OKE plus existing MinIO on TrueNAS SCALE is the primary deployment target. AWS and other compatible providers remain supported targets without a separate environment fleet. Licensed under Apache-2.0 since 2026-10-20.

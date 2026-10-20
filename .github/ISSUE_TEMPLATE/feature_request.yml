@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an improvement or a new capability.
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what makes it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should it work? API, console, CLI or configuration changes.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Package formats
+        - Pull-through caching
+        - Identity and access
+        - Replication and federation
+        - Storage and maintenance
+        - Console
+        - Management API or MCP
+        - Deployment (Helm, Compose)
+        - Documentation
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this.

@@ -7,11 +7,12 @@ image:
 imagePullSecrets: []
 # Static name-to-address entries for the pod (/etc/hosts), for example the
 # federation endpoint of a member whose name only its own site resolves:
-# - ip: 192.168.10.150
-#   hostnames: [ant-federation.kw.watteel.lab]
+# - ip: 10.0.0.50
+#   hostnames: [ant-federation.site-b.example.com]
 hostAliases: []
 # Annotations for the pod template, for example a backup tool opting a volume out
-# (azrty-oke sets `backup.velero.io/backup-volumes-excludes: data`).
+# (for example `backup.velero.io/backup-volumes-excludes: data` to keep the data
+# volume out of Velero file-system backups).
 podAnnotations: {}
 replicaCount: 1 # This release enforces exactly one writer.
 publicURL: https://ant.example.invalid

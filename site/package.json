@@ -1,0 +1,22 @@
+{
+  "name": "kuvryn-ant-docs",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepare-api": "node scripts/copy-openapi.mjs",
+    "docs:dev": "npm run prepare-api && vitepress dev",
+    "docs:build": "npm run prepare-api && vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "vitepress": "1.6.4",
+    "vue": "3.5.43"
+  },
+  "overrides": {
+    "vite": "6.4.3",
+    "@vue/server-renderer": "3.5.43"
+  }
+}

@@ -1,0 +1,146 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560" width="1000" height="560" role="img" aria-labelledby="t d">
+  <title id="t">Kuvryn Ant architecture</title>
+  <desc id="d">Package clients talk to protocol adapters, which call one artifact core for publication, resolution and policies. The core stores metadata in PostgreSQL and content-addressed blobs on disk or S3, fetches from upstreams through the remote runtime, and exchanges data with replication and federation peers. The management API, console and MCP sit on top of the same core.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: #0f172a; }
+      .h { font-size: 15px; font-weight: 600; }
+      .b { font-size: 14px; font-weight: 600; }
+      .s { font-size: 13px; fill: #334155; }
+      .box { fill: #ffffff; stroke: #94a3b8; stroke-width: 1.2; }
+      .core { fill: #dbeafe; stroke: #2563eb; stroke-width: 1.6; }
+      .inner { fill: #ffffff; stroke: #60a5fa; stroke-width: 1.2; }
+      .mgmt { fill: #ede9fe; stroke: #7c3aed; stroke-width: 1.4; }
+      .ext { fill: #f1f5f9; stroke: #94a3b8; stroke-width: 1.2; stroke-dasharray: 5 3; }
+      .store { fill: #dcfce7; stroke: #16a34a; stroke-width: 1.4; }
+      .lease { fill: #fef3c7; stroke: #d97706; stroke-width: 1.2; }
+      .a { stroke: #475569; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+      .a2 { stroke: #475569; stroke-width: 1.6; fill: none; marker-end: url(#arrow); marker-start: url(#arrow); }
+      .col { font-size: 13px; font-weight: 600; fill: #475569; letter-spacing: 0.04em; }
+    </style>
+  </defs>
+
+  <!-- card -->
+  <rect x="2" y="2" width="996" height="556" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- title -->
+  <text x="24" y="70" style="font-size:20px;font-weight:700">Kuvryn Ant</text>
+  <text x="24" y="92" class="s">one artifact core,</text>
+  <text x="24" y="109" class="s">many protocol adapters</text>
+
+  <!-- management plane -->
+  <rect x="300" y="24" width="480" height="88" rx="10" class="mgmt"/>
+  <text x="540" y="48" text-anchor="middle" class="h">Management plane</text>
+  <text x="540" y="70" text-anchor="middle" class="s">/api/v1 (OpenAPI) · web console · MCP over /mcp</text>
+  <text x="540" y="92" text-anchor="middle" class="s">identity: OIDC · SAML · LDAP · local users · GitHub OIDC</text>
+  <path d="M539,112 L539,138" class="a"/>
+
+  <!-- column labels -->
+  <text x="114" y="132" text-anchor="middle" class="col">CLIENTS</text>
+  <text x="319" y="132" text-anchor="middle" class="col">ADAPTERS</text>
+  <text x="825" y="132" text-anchor="middle" class="col">BACKENDS AND PEERS</text>
+
+  <!-- clients -->
+  <rect x="24" y="140" width="180" height="62" rx="8" class="box"/>
+  <text x="114" y="166" text-anchor="middle" class="b">containerd · CRI-O</text>
+  <text x="114" y="186" text-anchor="middle" class="s">Docker · Podman</text>
+
+  <rect x="24" y="222" width="180" height="62" rx="8" class="box"/>
+  <text x="114" y="248" text-anchor="middle" class="b">npm · pip · Maven</text>
+  <text x="114" y="268" text-anchor="middle" class="s">Go · Cargo · NuGet</text>
+
+  <rect x="24" y="304" width="180" height="62" rx="8" class="box"/>
+  <text x="114" y="330" text-anchor="middle" class="b">Helm · APT · RPM</text>
+  <text x="114" y="350" text-anchor="middle" class="s">and other clients</text>
+
+  <rect x="24" y="386" width="180" height="62" rx="8" class="box"/>
+  <text x="114" y="412" text-anchor="middle" class="b">CI and BuildKit</text>
+  <text x="114" y="432" text-anchor="middle" class="s">sccache · layer caches</text>
+
+  <path d="M204,171 L232,171" class="a"/>
+  <path d="M204,253 L232,253" class="a"/>
+  <path d="M204,335 L232,335" class="a"/>
+  <path d="M204,417 L232,417" class="a"/>
+
+  <!-- adapters -->
+  <rect x="234" y="140" width="170" height="62" rx="8" class="box"/>
+  <text x="319" y="166" text-anchor="middle" class="b">OCI registry</text>
+  <text x="319" y="186" text-anchor="middle" class="s">/v2/&lt;feed&gt;/…</text>
+
+  <rect x="234" y="222" width="170" height="62" rx="8" class="box"/>
+  <text x="319" y="248" text-anchor="middle" class="b">npm · PyPI · Maven</text>
+  <text x="319" y="268" text-anchor="middle" class="s">/feeds/&lt;slug&gt;/&lt;fmt&gt;/</text>
+
+  <rect x="234" y="304" width="170" height="62" rx="8" class="box"/>
+  <text x="319" y="330" text-anchor="middle" class="b">Go · Cargo · Helm …</text>
+  <text x="319" y="350" text-anchor="middle" class="s">26 formats in total</text>
+
+  <rect x="234" y="386" width="170" height="62" rx="8" class="box"/>
+  <text x="319" y="412" text-anchor="middle" class="b">Client auth</text>
+  <text x="319" y="432" text-anchor="middle" class="s">token · PAT · OIDC</text>
+
+  <path d="M404,171 L432,171" class="a"/>
+  <path d="M404,253 L432,253" class="a"/>
+  <path d="M404,335 L432,335" class="a"/>
+  <path d="M404,417 L432,417" class="a"/>
+
+  <!-- artifact core -->
+  <rect x="434" y="140" width="210" height="308" rx="12" class="core"/>
+  <text x="539" y="166" text-anchor="middle" class="h">Artifact core</text>
+
+  <rect x="446" y="180" width="186" height="56" rx="7" class="inner"/>
+  <text x="539" y="202" text-anchor="middle" class="b">Publication</text>
+  <text x="539" y="222" text-anchor="middle" class="s">staged · verified · atomic</text>
+
+  <rect x="446" y="244" width="186" height="56" rx="7" class="inner"/>
+  <text x="539" y="266" text-anchor="middle" class="b">Read resolution</text>
+  <text x="539" y="286" text-anchor="middle" class="s">read order · owner-first</text>
+
+  <rect x="446" y="308" width="186" height="56" rx="7" class="inner"/>
+  <text x="539" y="330" text-anchor="middle" class="b">Policies</text>
+  <text x="539" y="350" text-anchor="middle" class="s">publish · delete · retention</text>
+
+  <rect x="446" y="372" width="186" height="64" rx="7" class="inner"/>
+  <text x="539" y="396" text-anchor="middle" class="b">Audit and outbox</text>
+  <text x="539" y="416" text-anchor="middle" class="s">same transaction,</text>
+  <text x="539" y="431" text-anchor="middle" class="s">webhooks</text>
+
+  <!-- remote runtime and upstreams -->
+  <rect x="674" y="140" width="136" height="96" rx="8" class="box"/>
+  <text x="742" y="163" text-anchor="middle" class="b">Remote runtime</text>
+  <text x="742" y="183" text-anchor="middle" class="s">coalesced misses</text>
+  <text x="742" y="201" text-anchor="middle" class="s">metadata cache</text>
+  <text x="742" y="219" text-anchor="middle" class="s">stale-if-error</text>
+
+  <rect x="840" y="140" width="136" height="96" rx="8" class="ext"/>
+  <text x="908" y="163" text-anchor="middle" class="b">Upstreams</text>
+  <text x="908" y="183" text-anchor="middle" class="s">docker.io · ghcr.io</text>
+  <text x="908" y="201" text-anchor="middle" class="s">npmjs · PyPI</text>
+  <text x="908" y="219" text-anchor="middle" class="s">Maven Central …</text>
+
+  <path d="M644,188 L672,188" class="a"/>
+  <path d="M810,188 L838,188" class="a"/>
+
+  <!-- replication -->
+  <rect x="674" y="258" width="302" height="74" rx="8" class="ext"/>
+  <text x="825" y="280" text-anchor="middle" class="b">Replication and federation peers</text>
+  <text x="825" y="300" text-anchor="middle" class="s">pull change sequence, verify digests,</text>
+  <text x="825" y="318" text-anchor="middle" class="s">serve through replica sources</text>
+  <path d="M646,295 L672,295" class="a2"/>
+
+  <!-- storage -->
+  <rect x="674" y="354" width="302" height="42" rx="8" class="store"/>
+  <text x="825" y="380" text-anchor="middle" class="s"><tspan style="font-weight:600;fill:#0f172a">PostgreSQL</tspan>  metadata · audit · outbox</text>
+  <rect x="674" y="406" width="302" height="42" rx="8" class="store"/>
+  <text x="825" y="432" text-anchor="middle" class="s"><tspan style="font-weight:600;fill:#0f172a">Blob storage</tspan>  disk or S3 · sha256-addressed</text>
+  <path d="M644,375 L672,375" class="a"/>
+  <path d="M644,427 L672,427" class="a"/>
+
+  <!-- writer lease -->
+  <rect x="24" y="474" width="952" height="62" rx="10" class="lease"/>
+  <text x="500" y="499" text-anchor="middle" class="b">Instance writer lease</text>
+  <text x="500" y="521" text-anchor="middle" class="s">One process per instance holds the database lease; background workers (GC and retention, webhooks, replication, audit sink) run only under it.</text>
+</svg>

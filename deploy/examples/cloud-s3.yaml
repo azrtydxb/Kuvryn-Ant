@@ -1,0 +1,128 @@
+# Kuvryn Ant on a managed (cloud) Kubernetes cluster with AWS S3 or any
+# S3-compatible object storage, ingress-nginx and cert-manager.
+#
+# All names below are placeholders. Replace them with your own registry,
+# hostname, bucket and Secret names. The chart creates no buckets, databases,
+# DNS records, issuers or Secrets.
+#
+#   helm upgrade --install ant deploy/chart -n ant -f deploy/examples/cloud-s3.yaml --wait
+#   kubectl -n ant exec deploy/ant-ant -- ant bootstrap
+
+# Image you built and pushed yourself (no published image exists yet).
+# Pin the digest for production rollouts.
+image:
+  repository: registry.example.com/myorg/kuvryn-ant
+  tag: "0.1.0"
+  digest: "" # e.g. sha256:<64 hex characters>
+imagePullSecrets: [] # e.g. [{name: regcred}] for a private registry
+
+# External HTTPS origin. Must equal https://<ingress.host>.
+publicURL: https://ant.example.com
+
+# Existing Secrets (create them first, see install/helm in the docs):
+#   ant-postgres  key dsn       postgres://ant:<pw>@db.example.com:5432/ant?sslmode=verify-full&sslrootcert=/run/ant/postgres/ca.crt
+#   ant-postgres-tls key ca.crt CA of the database server (omit if it uses a public CA)
+#   ant-root-key  key root.key  32 random raw bytes, backed up separately
+#   ant-s3        key credentials.json  {"access_key_id":"...","secret_access_key":"..."}
+postgres:
+  existingSecret: ant-postgres
+  dsnKey: dsn
+  tlsExistingSecret: ant-postgres-tls
+rootKey:
+  existingSecret: ant-root-key
+  key: root.key
+  activeVersion: v1
+
+# Blobs in S3. An empty endpoint uses AWS endpoint resolution for the region;
+# set it for another S3-compatible provider.
+storage:
+  backend: s3
+  s3:
+    endpoint: ""
+    region: eu-west-1
+    bucket: myorg-ant-blobs
+    prefix: ant/
+    pathStyle: false # AWS virtual-host addressing
+    credentialsExistingSecret: ant-s3
+    credentialsKey: credentials.json
+
+# The data volume is still required with S3: upload staging and multipart
+# resume state live here. Use a block-storage class (ext4/XFS, not NFS).
+persistence:
+  storageClass: "" # cluster default, e.g. your cloud's SSD block class
+  size: 50Gi
+  accessModes: [ReadWriteOnce]
+
+# Default requests/limits; the CPU limit also drives the concurrency defaults
+# (requests, DB connections, upload slots). Keep dbMaxConns below the
+# database's max_connections.
+resources:
+  requests:
+    cpu: "2"
+    memory: 4Gi
+  limits:
+    cpu: "4"
+    memory: 8Gi
+maxRequests: 0 # 0 = 32 per CPU (128..1024)
+dbMaxConns: 0 # 0 = 8 per CPU (16..64)
+uploadSlots: 0 # 0 = 2 per CPU per format (4..32)
+
+# ingress-nginx with a cert-manager ClusterIssuer you already created. The chart
+# sets no body-size or timeout annotations itself; these allow large, streamed
+# uploads and downloads.
+ingress:
+  enabled: true
+  className: nginx
+  host: ant.example.com
+  tlsSecret: ant-example-com-tls # cert-manager writes the certificate here
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+# Pod CIDR of the ingress-nginx controller pods, so the real client address
+# from X-Forwarded-For is used for throttling, limits and audit.
+trustedProxies:
+  - 10.0.0.0/16
+
+# Maintenance: scheduled GC and storage-pressure eviction of remote-cached
+# content. Object storage has no native capacity, so set a quota.
+maintenance:
+  gcInterval: 6h
+  gcGrace: 24h
+  defaultPolicy:
+    maxIdle: 720h # evict cached upstream content unused for 30 days
+    maxAge: ""
+  pressure:
+    enabled: true
+    highPercent: 85
+    lowPercent: 75
+    capacity: 500GiB
+    interval: 5m
+    sweepGrace: 15m
+
+auditRetention:
+  retain: 9600h # 400 days
+  purgeInterval: 1h
+
+# Optional: unprefixed /v2/<name> mirror routes for containerd/dockerd. Create
+# the dockerhub and ghcr feeds first.
+extraEnv:
+  ANT_OCI_DEFAULT_FEED: dockerhub
+  ANT_OCI_MIRROR_MAP: docker.io=dockerhub,ghcr.io=ghcr
+
+# Optional: Prometheus scraping through a headless Service on port 8080.
+metrics:
+  headlessService: true
+
+# Optional tracing to an in-cluster OpenTelemetry collector.
+observability:
+  tracing:
+    enabled: false
+    endpoint: http://otel-collector.observability:4318
+    protocol: http/protobuf
+    serviceName: kuvryn-ant
+    sampleRatio: 0.1

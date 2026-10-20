@@ -1,0 +1,17 @@
+Kuvryn Ant
+Copyright 2026 The Kuvryn Ant Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software developed by third parties, distributed under
+their own licenses:
+
+- Go module dependencies listed in go.mod and go.sum.
+- JavaScript dependencies of the web console listed in web/package.json and
+  web/package-lock.json, compiled into internal/console/dist.
+- The Geist and Instrument Sans fonts and the Lucide icon font vendored in
+  web/src/ds/assets, under the SIL Open Font License 1.1 and the ISC License
+  respectively.
+
+The Kuvryn Ant name and logo are not licensed under the Apache License; see
+GOVERNANCE.md for trademark use.
