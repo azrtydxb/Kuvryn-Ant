@@ -1,8 +1,12 @@
 package oidclogin
 
 import (
+	"encoding/hex"
+	"encoding/json"
+
 	"context"
 	"errors"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"net/url"
 	"strings"
 	"time"
@@ -44,7 +48,7 @@ func clip(s string, max int) string {
 // sanitize drops anything unfit to store or render; a picture must be an
 // absolute https URL.
 func (p Profile) sanitize() Profile {
-	out := Profile{Name: clip(p.Name, 256), Email: clip(p.Email, 320), IDToken: clip(p.IDToken, 16384)}
+	out := Profile{Name: clip(p.Name, 256), Email: clip(p.Email, 320), IDToken: clip(p.IDToken, 8192)}
 	if pic := clip(p.Picture, 2048); pic != "" {
 		if u, err := url.Parse(pic); err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil {
 			out.Picture = pic
@@ -84,20 +88,6 @@ func (s Sessions) Describe(ctx context.Context, raw string) (Details, error) {
 	return d, nil
 }
 
-// IDTokenHint returns the stored OIDC ID token of a session, or "".
-func (s Sessions) IDTokenHint(ctx context.Context, raw string) string {
-	if !validSecret(raw) {
-		return ""
-	}
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	var t string
-	if s.DB.QueryRow(ctx, `SELECT COALESCE(idp_id_token,'') FROM browser_sessions WHERE verifier=$1 AND instance_id=$2`, hash(raw), s.InstanceID).Scan(&t) != nil {
-		return ""
-	}
-	return t
-}
-
 // RevokeOthers ends every browser session of the principal except the one
 // presented, returning how many were ended.
 func (s Sessions) RevokeOthers(ctx context.Context, principal, keepRaw string) (int, error) {
@@ -120,4 +110,61 @@ func VerifierHash(raw string) []byte {
 		return nil
 	}
 	return hash(raw)
+}
+
+const idTokenPurpose = "oidc-id-token"
+
+// idTokenContext binds a sealed ID token to one instance and one session row
+// (the verifier hash), so a ciphertext copied to another row does not open.
+func (s Sessions) idTokenContext(verifier []byte) secrets.Context {
+	return secrets.Context{RecordID: s.InstanceID + "/" + hex.EncodeToString(verifier), Purpose: idTokenPurpose}
+}
+
+// sealIDToken returns the encrypted envelope (JSON) of the ID token, or "" when
+// there is no token or no keyring. Only OIDC logins carry a token.
+func (s Sessions) sealIDToken(verifier []byte, token string) string {
+	if token == "" || s.Keys == nil {
+		return ""
+	}
+	env, err := s.Keys.Seal(s.idTokenContext(verifier), []byte(token))
+	if err != nil {
+		return ""
+	}
+	out, err := json.Marshal(env)
+	if err != nil || len(out) > 16384 {
+		return ""
+	}
+	return string(out)
+}
+
+// openIDToken decrypts the stored token of a session. Tampered data, another
+// session's ciphertext or a missing key all fail.
+func (s Sessions) openIDToken(ctx context.Context, raw string) (string, error) {
+	if !validSecret(raw) || s.Keys == nil {
+		return "", ErrAuthentication
+	}
+	verifier := hash(raw)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	var stored string
+	if s.DB.QueryRow(ctx, `SELECT COALESCE(idp_id_token,'') FROM browser_sessions WHERE verifier=$1 AND instance_id=$2`, verifier, s.InstanceID).Scan(&stored) != nil || stored == "" {
+		return "", ErrAuthentication
+	}
+	var env secrets.Envelope
+	if json.Unmarshal([]byte(stored), &env) != nil {
+		return "", ErrAuthentication
+	}
+	plain, err := s.Keys.Open(s.idTokenContext(verifier), env)
+	if err != nil {
+		return "", ErrAuthentication
+	}
+	defer clear(plain)
+	return string(plain), nil
+}
+
+// IDTokenHint returns the session's ID token for RP-initiated logout, decrypted
+// only here, or "" when none is stored or it does not authenticate.
+func (s Sessions) IDTokenHint(ctx context.Context, raw string) string {
+	t, _ := s.openIDToken(ctx, raw)
+	return t
 }
