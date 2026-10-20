@@ -976,6 +976,7 @@ details > summary {
   min-width: 0;
 }
 
+<<<<<<< HEAD
 /* ---------- upstream logos ---------- */
 .uicon {
   --ic-d: var(--az-text-2);
@@ -1101,6 +1102,13 @@ details > summary {
     display: block;
     margin-top: 6px;
   }
+=======
+/* The design system renders an absolutely positioned sr-only label in empty
+   table headers; without a positioned wrapper it escapes the scroll container
+   and widens the whole page on narrow screens. */
+.az-table-wrap {
+  position: relative;
+>>>>>>> 761886a (fix(console): single URL and secret display, keep table sr-only labels inside the scroll wrapper)
 }
 .flow-filters .az-input {
   padding-block: 7px;

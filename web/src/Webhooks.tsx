@@ -75,8 +75,11 @@ export function UrlPreview({ base, slug }: { base: string; slug: string }) {
     <div className="stack" data-testid="url-preview">
       <span className="muted small">Delivery URL</span>
       <div className="row spread">
-        <Mono>{url}</Mono>
-        {slug && !error && <Copyable text={url} label="Copy delivery URL" />}
+        {slug && !error ? (
+          <Copyable text={url} label="Copy delivery URL" />
+        ) : (
+          <Mono muted>{url}</Mono>
+        )}
       </div>
       {error && (
         <small role="alert" className="bad">

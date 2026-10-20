@@ -83,9 +83,10 @@ export function SigningSecretModal({
           <div className="stack">
             <span className="muted small">Signing secret value</span>
             <div className="row spread" data-testid="secret-value">
-              <Mono>{result.value ?? "(not available on replay)"}</Mono>
-              {result.value && (
+              {result.value ? (
                 <Copyable text={result.value} label="Copy signing secret" />
+              ) : (
+                <Mono muted>(not available on replay)</Mono>
               )}
             </div>
           </div>
