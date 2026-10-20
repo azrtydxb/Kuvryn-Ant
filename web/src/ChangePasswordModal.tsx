@@ -113,6 +113,8 @@ export function ChangePasswordModal({
             setConfirm(e.target.value)
           }
         />
+        {/* Lets Enter submit: the visible buttons live in the dialog footer. */}
+        <button type="submit" hidden />
         <ul className="pw-policy" aria-label="Password requirements">
           {[
             [
