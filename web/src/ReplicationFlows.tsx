@@ -31,6 +31,10 @@ export type Flow = {
   peer: string;
   /** Federation member name when the other side is a federation member. */
   member?: string;
+  /** Small second line under the peer name. */
+  peerNote?: string;
+  /** Full id of the remote feed when only a short id could be shown. */
+  remoteId?: string;
   mode: string;
   status: FlowStatus;
   statusLabel: string;
@@ -61,6 +65,7 @@ export const statusFilters: { value: "all" | FlowStatus; label: string }[] = [
 
 function lagText(changes?: number, seconds?: number | null) {
   if (changes == null) return "—";
+  if (changes === 0) return "in sync";
   const secs = seconds ? ` · ${Math.round(seconds)} s` : "";
   return `${count(changes)} changes${secs}`;
 }
@@ -92,7 +97,14 @@ export function buildFlows(input: {
       key: `in:${j.id}`,
       direction: "in",
       localFeed: input.feedSlug(j.dest_feed_id),
-      remote: j.federation_feed_key ?? shortId(j.remote_feed_id, 12),
+      remote:
+        j.remote_feed_slug ??
+        j.federation_feed_key ??
+        shortId(j.remote_feed_id, 12),
+      remoteId:
+        j.remote_feed_slug || j.federation_feed_key
+          ? undefined
+          : j.remote_feed_id,
       jobName: j.name,
       peer: peer?.name ?? shortId(j.peer_id),
       member: memberName(peer?.member_instance_id),
@@ -116,10 +128,9 @@ export function buildFlows(input: {
     key: `out:${o.id}`,
     direction: "out",
     localFeed: o.feed_slug,
-    remote: "",
+    remote: o.remote_job ?? "",
     jobName: o.remote_job,
-    peer: o.consumer_name,
-    member: o.consumer_kind === "member" ? o.consumer_name : undefined,
+    ...outgoingPeer(o, input.peers),
     mode: "pulled by peer",
     status: o.status === "active" ? "ok" : o.status,
     statusLabel:
@@ -162,22 +173,31 @@ export function DirectionCell({ flow }: { flow: Flow }) {
 /** Both ends of a row: this instance's feed and the other side's feed or job. */
 export function FeedsCell({ flow }: { flow: Flow }) {
   const incoming = flow.direction === "in";
+  const remote = (
+    <span title={flow.remoteId ? `Remote feed id ${flow.remoteId}` : undefined}>
+      {flow.remote}
+    </span>
+  );
   return (
     <span className="flow-feeds">
       <span className="mono">
-        {incoming
-          ? `${flow.remote} \u2192 ${flow.localFeed}`
-          : `${flow.localFeed} \u2192 ${flow.peer}`}
-      </span>
-      <small>
-        {flow.jobName ? (
+        {incoming ? (
           <>
-            Job <span>{flow.jobName}</span>
+            {remote} → {flow.localFeed}
+          </>
+        ) : flow.remote ? (
+          <>
+            {flow.localFeed} → {remote}
           </>
         ) : (
-          "Job name not reported"
+          flow.localFeed
         )}
-      </small>
+      </span>
+      {incoming && flow.jobName && (
+        <small>
+          Job <span>{flow.jobName}</span>
+        </small>
+      )}
     </span>
   );
 }
@@ -189,8 +209,8 @@ export function PeerCell({ flow }: { flow: Flow }) {
       {flow.member && flow.direction === "in" && (
         <Badge tone="info">member</Badge>
       )}
-      {flow.direction === "out" && (
-        <small>{flow.member ? "federation member" : "peer token"}</small>
+      {flow.direction === "out" && flow.peerNote && (
+        <small>{flow.peerNote}</small>
       )}
     </>
   );
@@ -312,4 +332,28 @@ export function OutgoingDrawer({
       )}
     </Drawer>
   );
+}
+
+/**
+ * Who the consumer is, best first: the federation member name; a local
+ * replication peer whose name appears in the token's principal (a peer called
+ * "kw" for the principal "kw-replicate"); the principal itself as a token.
+ */
+function outgoingPeer(
+  o: ReplicationOutgoing,
+  peers: ReplicationPeer[],
+): { peer: string; member?: string; peerNote: string } {
+  if (o.consumer_kind === "member")
+    return {
+      peer: o.consumer_name,
+      member: o.consumer_name,
+      peerNote: "federation member",
+    };
+  const subject = o.consumer_name.toLowerCase();
+  const match = peers
+    .filter((p) => p.name.length >= 2 && subject.includes(p.name.toLowerCase()))
+    .sort((a, b) => b.name.length - a.name.length)[0];
+  return match
+    ? { peer: match.name, peerNote: `token ${o.consumer_name}` }
+    : { peer: o.consumer_name, peerNote: "token" };
 }

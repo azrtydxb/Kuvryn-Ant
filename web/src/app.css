@@ -1102,3 +1102,7 @@ details > summary {
     margin-top: 6px;
   }
 }
+.flow-filters .az-input {
+  padding-block: 7px;
+  font-size: var(--az-text-sm);
+}

@@ -198,3 +198,23 @@ func TestOutgoingMemberRowAndTrackerBounds(t *testing.T) {
 		t.Fatalf("member row: %+v", got)
 	}
 }
+
+// A job learns the remote feed's slug from the peer's head on every run.
+func TestJobRecordsRemoteFeedSlug(t *testing.T) {
+	ctx := context.Background()
+	src, dst := newSite(t, "src", "artifacts"), newSite(t, "dst", "mirror")
+	src.publish(src.publisher, src.feed, "team", "team/app", "1.0", "app.bin", "", data("x"))
+	srv := src.serve(t)
+	svc := dst.service(t, srv, nil)
+	job := link(t, src, dst, srv, svc, src.feed, dst.feed, JobInput{Name: "slug-job"})
+	if job.RemoteFeedSlug != "" {
+		t.Fatalf("slug known before any run: %q", job.RemoteFeedSlug)
+	}
+	if err := svc.RunNow(ctx, job.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, err := svc.GetJob(ctx, dst.instance, job.ID)
+	if err != nil || got.RemoteFeedSlug != "artifacts" {
+		t.Fatalf("remote feed slug %q %v", got.RemoteFeedSlug, err)
+	}
+}

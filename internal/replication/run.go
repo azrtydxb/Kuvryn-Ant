@@ -315,7 +315,7 @@ func (s *Service) refreshHead(ctx context.Context, rt *run) error {
 	if head.Format != destFormat {
 		return fmt.Errorf("%w: feed format %q does not match destination format %q", ErrConflict, head.Format, destFormat)
 	}
-	_, err = s.cfg.DB.Exec(ctx, `UPDATE replication_jobs SET remote_head=$3,remote_head_at=$4,remote_checked_at=clock_timestamp(),source_low_water=$5 WHERE id=$1 AND lease_owner=$2`, rt.job.ID, s.owner, head.Seq, head.ChangedAt, head.LowWater)
+	_, err = s.cfg.DB.Exec(ctx, `UPDATE replication_jobs SET remote_head=$3,remote_head_at=$4,remote_checked_at=clock_timestamp(),source_low_water=$5,remote_feed_slug=COALESCE(NULLIF($6,''),remote_feed_slug) WHERE id=$1 AND lease_owner=$2`, rt.job.ID, s.owner, head.Seq, head.ChangedAt, head.LowWater, head.FeedSlug)
 	if err != nil {
 		return ErrUnavailable
 	}

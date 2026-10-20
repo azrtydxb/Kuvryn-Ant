@@ -399,10 +399,12 @@ type Status struct {
 
 // Job is a replication job for one destination feed.
 type Job struct {
-	ID              string  `json:"id"`
-	Name            string  `json:"name"`
-	PeerID          string  `json:"peer_id"`
-	RemoteFeedID    string  `json:"remote_feed_id"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	PeerID       string `json:"peer_id"`
+	RemoteFeedID string `json:"remote_feed_id"`
+	// RemoteFeedSlug is the remote feed's slug as the peer last reported it; empty when unknown.
+	RemoteFeedSlug  string  `json:"remote_feed_slug,omitempty"`
 	DestFeedID      string  `json:"dest_feed_id"`
 	ReplicaSourceID string  `json:"replica_source_id"`
 	Mode            string  `json:"mode"`
@@ -450,7 +452,7 @@ const jobColumns = `j.id::text,j.name,j.peer_id::text,j.remote_feed_id::text,j.d
  (SELECT count(*) FROM replication_held_deletions h WHERE h.job_id=j.id),clock_timestamp(),
  j.seed_generation,j.reseeding,j.reseeds,j.last_reseed_at,j.source_low_water,j.failures_total,j.backfills_completed,j.resumed_bytes,(SELECT count(*) FROM replication_backfills b WHERE b.job_id=j.id),j.destination_read_only,
  j.origin,COALESCE(j.federation_rule_id::text,''),COALESCE(j.federation_feed_key,''),j.adopted_at,COALESCE(j.federation_rule_revision,0),
- j.last_apply_lag_seconds,j.last_apply_lag_at`
+ j.last_apply_lag_seconds,j.last_apply_lag_at,COALESCE(j.remote_feed_slug,'')`
 
 func scanJob(row pgx.Row) (jobRow, error) {
 	var j jobRow
@@ -462,7 +464,7 @@ func scanJob(row pgx.Row) (jobRow, error) {
 		&st.LastAttemptAt, &st.LastSuccessAt, &st.LastError, &st.ConsecutiveFailures, &st.AssetsApplied, &st.BlobsTransferred, &st.BlobsDeduplicated, &st.BytesTransferred, &st.DeletionsApplied, &st.Conflicts,
 		&j.held, &now,
 		&j.seedGeneration, &j.reseeding, &st.Reseeds, &st.LastReseedAt, &st.SourceLowWater, &st.FailuresTotal, &st.BackfillsCompleted, &st.ResumedBytes, &j.backfillsPending, &j.DestinationReadOnly,
-		&j.Origin, &j.FederationRuleID, &j.FederationFeedKey, &j.AdoptedAt, &j.ruleRevision, &j.applyLag, &j.applyLagAt)
+		&j.Origin, &j.FederationRuleID, &j.FederationFeedKey, &j.AdoptedAt, &j.ruleRevision, &j.applyLag, &j.applyLagAt, &j.RemoteFeedSlug)
 	if err != nil {
 		return jobRow{}, err
 	}
