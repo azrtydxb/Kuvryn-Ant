@@ -43,13 +43,12 @@ func TestWebhookSigningSecretMigrationPreservesInlineSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 	var name, ref, subRef string
-	var custom bool
 	var signing string
-	if err = pool.QueryRow(ctx, `SELECT w.name,w.secret_id::text,COALESCE(s.secret_ref,''),s.custom_endpoint,s.signing_secret_id::text FROM event_subscriptions s JOIN webhook_signing_secrets w ON w.id=s.signing_secret_id WHERE s.id=$1`, linked).Scan(&name, &ref, &subRef, &custom, &signing); err != nil {
+	if err = pool.QueryRow(ctx, `SELECT w.name,w.secret_id::text,COALESCE(s.secret_ref,''),s.signing_secret_id::text FROM event_subscriptions s JOIN webhook_signing_secrets w ON w.id=s.signing_secret_id WHERE s.id=$1`, linked).Scan(&name, &ref, &subRef, &signing); err != nil {
 		t.Fatal(err)
 	}
-	if name != "webhook-"+linked[:8] || ref != secret || subRef != "" || !custom || signing != linked {
-		t.Fatalf("migrated webhook: name=%s ref=%s sub_ref=%q custom=%v", name, ref, subRef, custom)
+	if name != "webhook-"+linked[:8] || ref != secret || subRef != "" || signing != linked {
+		t.Fatalf("migrated webhook: name=%s ref=%s sub_ref=%q", name, ref, subRef)
 	}
 	// A subscription whose reference is not an encrypted webhook secret keeps working as legacy.
 	var legacyRef string

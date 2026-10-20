@@ -16,7 +16,7 @@ func TestConfigurationEndpointPolicy(t *testing.T) {
 	}
 }
 
-func TestSlugAndBaseURLResolution(t *testing.T) {
+func TestSlugValidation(t *testing.T) {
 	for _, bad := range []string{"", "Up", "a_b", "a/b", "a b", strings.Repeat("a", 64)} {
 		if ValidSlug(bad) {
 			t.Fatalf("slug accepted: %q", bad)
@@ -27,21 +27,13 @@ func TestSlugAndBaseURLResolution(t *testing.T) {
 			t.Fatalf("slug rejected: %q", good)
 		}
 	}
-	for _, base := range []string{"https://hooks.example.com/ant", "https://hooks.example.com/ant/", "https://hooks.example.com/ant//"} {
-		got, err := ResolveEndpoint(base, "deploys", false)
-		if err != nil || got != "https://hooks.example.com/ant/deploys" {
-			t.Fatalf("%s -> %q %v", base, got, err)
-		}
-	}
-	if got, _ := ResolveEndpoint("https://hooks.example.com", "x", false); got != "https://hooks.example.com/x" {
-		t.Fatalf("root base: %q", got)
-	}
-	for _, base := range []string{"http://hooks.example.com/", "https://u:p@hooks.example.com/", "https://hooks.example.com/?q=1", "https://localhost/", "https://10.0.0.1/", ""} {
-		if _, err := NormalizeBaseURL(base, false); err == nil {
-			t.Fatalf("base accepted: %q", base)
-		}
-	}
-	if _, err := NormalizeBaseURL("http://hooks.example.com/", true); err != nil {
+}
+
+func TestEndpointAllowHTTP(t *testing.T) {
+	if _, err := ValidateEndpointFor("http://hooks.example.com/x", true); err != nil {
 		t.Fatal("http refused although allowed")
+	}
+	if _, err := ValidateEndpointFor("http://hooks.example.com/x", false); err == nil {
+		t.Fatal("http accepted although not allowed")
 	}
 }

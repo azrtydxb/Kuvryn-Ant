@@ -3,14 +3,14 @@
 ## Model
 
 - A **signing secret** (`/api/v1/webhook-secrets`, console: Access, Signing secrets) is a named HMAC key: id, unique name, description, created/rotated times, revision and the webhooks using it. The value is encrypted at rest through `internal/secrets` (purpose `webhook`, key bound to instance and record id), is returned once by the create or rotate call that produced it, and is never readable again. An idempotent replay of create or rotate returns the metadata without the value.
-- A **webhook** references one signing secret. Named webhooks have a slug (`[a-z0-9-]`, 1 to 63 characters) and deliver to `webhook base URL + slug`. The resolved URL is stored in `endpoint`. **Custom-endpoint** webhooks keep a free-form HTTPS URL (administrator escape hatch, and every webhook that existed before migration 050).
+- An **outgoing webhook** has a unique display **name** (a label, 1 to 100 printable characters, unique per instance ignoring case), the full target **URL**, one signing secret and an enabled switch. It is configured in the console only (Webhooks, Outgoing); nothing is read from deployment configuration.
 - Rotating a secret affects every webhook that uses it. Deleting one is refused with 409 while any webhook references it.
 
-## Base URL
+## Target URL
 
-`webhook_base_url` is an instance setting (Settings, General; `PUT /api/v1/settings/webhook-base-url`, its own route so it never interacts with the replace-all semantics of `PUT /api/v1/settings`). `ANT_WEBHOOK_BASE_URL` overrides it and makes it read-only. It must be https (`ANT_WEBHOOK_ALLOW_HTTP=true` also permits http), without credentials, query or fragment; one trailing slash is enforced so joining never doubles or drops a slash. Existing outbound rules still apply: no localhost or private/special-use address literals, and DNS answers are checked on every delivery connection.
+The URL must be https (`ANT_WEBHOOK_ALLOW_HTTP=true` also permits http), without credentials, query or fragment. Outbound rules apply on configuration and again on every delivery: no localhost or private/special-use address literals, and DNS answers are checked on every delivery connection. Configuration never makes a network request.
 
-Changing the base URL **re-resolves every named webhook in the same transaction**: the stored endpoint is rewritten, the webhook revision increases and each change is audited as `webhook.reresolve`. Custom endpoints are never touched. Clearing the base URL leaves existing endpoints as they are. When `ANT_WEBHOOK_BASE_URL` changes, the same re-resolution runs at startup.
+`ANT_WEBHOOK_BASE_URL`, the `webhook_base_url` instance setting and `PUT /api/v1/settings/webhook-base-url` were removed. A set `ANT_WEBHOOK_BASE_URL` is ignored with a startup warning.
 
 ## Rotation and signatures
 
@@ -20,4 +20,4 @@ Each delivery is `POST` with `X-Ant-Event-ID`, `X-Ant-Timestamp` and `X-Ant-Sign
 
 ## Upgrade
 
-Migration 050 turns each inline webhook secret into a signing secret named `webhook-<first 8 characters of the webhook id>` that adopts the same ciphertext row, so signatures do not change. Those webhooks are marked custom. The legacy `endpoint` + `secret` create body and `PUT /api/v1/webhooks/{id}/secret` still work (the latter rotates the shared secret the webhook uses, without grace).
+Migration 050 turned each inline webhook secret into a signing secret named `webhook-<first 8 characters of the webhook id>` that adopts the same ciphertext row, so signatures do not change. Migration 057 turns the old slug into the display name and drops the slug-versus-custom distinction: every existing webhook keeps its endpoint, signing secret and delivery history, webhooks that never had a name are labelled `webhook-<first 8 characters of the id>`, and the base URL setting column is dropped. The API stays compatible where cheap: `POST /api/v1/webhooks` still accepts `endpoint` plus `secret_id` (or the legacy inline `secret`) without a `name`, and a name is generated. The legacy `PUT /api/v1/webhooks/{id}/secret` still rotates the shared secret the webhook uses, without grace.

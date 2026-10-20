@@ -349,7 +349,7 @@ func TestDeliverySignsWithReferencedSecretAndGraceWindow(t *testing.T) {
 		t.Fatal(err)
 	}
 	var sub string
-	if err = pool.QueryRow(ctx, `INSERT INTO event_subscriptions(instance_id,name,endpoint,custom_endpoint,signing_secret_id) VALUES($1,'hook',$2,false,$3) RETURNING id::text`, owner, endpoint.URL, signing).Scan(&sub); err != nil {
+	if err = pool.QueryRow(ctx, `INSERT INTO event_subscriptions(instance_id,name,endpoint,signing_secret_id) VALUES($1,'hook',$2,$3) RETURNING id::text`, owner, endpoint.URL, signing).Scan(&sub); err != nil {
 		t.Fatal(err)
 	}
 	deliver := func() string {

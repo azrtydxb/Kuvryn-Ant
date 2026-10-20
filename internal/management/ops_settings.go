@@ -53,7 +53,6 @@ type PutSettings struct {
 type settingsRow struct {
 	maxAge, idle *int32
 	anon         *bool
-	webhookBase  *string
 	tokenDays    *int32
 	revision     int64
 	updated      *time.Time
@@ -68,11 +67,6 @@ func (h opsHandlers) renderSettings(row settingsRow) InstanceSettings {
 		return s
 	}
 	var maxAge, idle, anon, tokenDays *string
-	var webhookBase *string
-	if row.webhookBase != nil && *row.webhookBase != "" {
-		v := *row.webhookBase
-		webhookBase = &v
-	}
 	if row.maxAge != nil {
 		v := strconv.Itoa(int(*row.maxAge))
 		maxAge = &v
@@ -102,7 +96,6 @@ func (h opsHandlers) renderSettings(row settingsRow) InstanceSettings {
 		item("default_anonymous_read", "false", "Suggested anonymous-read default for new feeds in the console.", anon),
 		tokenItem,
 	}}
-	out.Items = append(out.Items, h.webhookBaseItem(webhookBase)...)
 	for _, e := range h.d.Env {
 		out.Items = append(out.Items, SettingItem{Key: e.Key, Value: e.Value, Source: "env", ReadOnly: true, Enforced: true, Description: e.Description})
 	}
@@ -111,7 +104,7 @@ func (h opsHandlers) renderSettings(row settingsRow) InstanceSettings {
 
 func (h opsHandlers) loadSettings(ctx context.Context, instance string) (settingsRow, error) {
 	row := settingsRow{revision: 1}
-	err := h.db.QueryRow(ctx, `SELECT session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,webhook_base_url,token_cleanup_after_days,revision,updated_at FROM instance_settings WHERE instance_id=$1`, instance).Scan(&row.maxAge, &row.idle, &row.anon, &row.webhookBase, &row.tokenDays, &row.revision, &row.updated)
+	err := h.db.QueryRow(ctx, `SELECT session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,token_cleanup_after_days,revision,updated_at FROM instance_settings WHERE instance_id=$1`, instance).Scan(&row.maxAge, &row.idle, &row.anon, &row.tokenDays, &row.revision, &row.updated)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return settingsRow{revision: 1}, nil
 	}
@@ -189,7 +182,7 @@ func (h opsHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 			tokenDays = &v
 		}
 		row := settingsRow{}
-		if err := tx.QueryRow(ctx, `UPDATE instance_settings SET session_max_age_seconds=COALESCE($2,session_max_age_seconds),session_idle_timeout_seconds=COALESCE($3,session_idle_timeout_seconds),default_anonymous_read=COALESCE($4,default_anonymous_read),token_cleanup_after_days=COALESCE($5,token_cleanup_after_days),revision=revision+1,updated_at=now() WHERE instance_id=$1 RETURNING session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,webhook_base_url,token_cleanup_after_days,revision,updated_at`, p.InstanceID, maxAge, idle, in.DefaultAnonymousRead, tokenDays).Scan(&row.maxAge, &row.idle, &row.anon, &row.webhookBase, &row.tokenDays, &row.revision, &row.updated); err != nil {
+		if err := tx.QueryRow(ctx, `UPDATE instance_settings SET session_max_age_seconds=COALESCE($2,session_max_age_seconds),session_idle_timeout_seconds=COALESCE($3,session_idle_timeout_seconds),default_anonymous_read=COALESCE($4,default_anonymous_read),token_cleanup_after_days=COALESCE($5,token_cleanup_after_days),revision=revision+1,updated_at=now() WHERE instance_id=$1 RETURNING session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,token_cleanup_after_days,revision,updated_at`, p.InstanceID, maxAge, idle, in.DefaultAnonymousRead, tokenDays).Scan(&row.maxAge, &row.idle, &row.anon, &row.tokenDays, &row.revision, &row.updated); err != nil {
 			return nil, err
 		}
 		return h.renderSettings(row), identityEvent(ctx, tx, p, p.InstanceID, "settings.put", row.revision)

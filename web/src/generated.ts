@@ -36,10 +36,10 @@ export type IssuedServiceToken = { "id": string; "secret": string; "expires_at":
 export type RevokedServiceToken = { "id": string; "revoked": true };
 export type IdentityPrincipalPage = { "items": Array<IdentityPrincipal>; "next_after"?: string };
 export type IdentityRolePage = { "items": Array<IdentityRole>; "next_after"?: string };
-export type Webhook = { "id": string; "endpoint": string; "enabled": boolean; "revision": number; "created_at": string; "name"?: string; "custom_endpoint": boolean; "secret_id"?: string; "secret_name"?: string };
+export type Webhook = { "id": string; "endpoint": string; "enabled": boolean; "revision": number; "created_at": string; "name": string; "secret_id"?: string; "secret_name"?: string };
 export type WebhookPage = { "items": Array<Webhook>; "next_after"?: string };
 export type CreateWebhook = { "name"?: string; "secret_id"?: string; "endpoint"?: string; "secret"?: string };
-export type PatchWebhook = { "enabled"?: boolean; "name"?: string; "secret_id"?: string; "endpoint"?: string; "custom_endpoint"?: boolean };
+export type PatchWebhook = { "enabled"?: boolean; "name"?: string; "secret_id"?: string; "endpoint"?: string };
 export type RotateWebhookSecret = { "secret": string };
 export type WebhookDelivery = { "event_id": number; "state": "pending" | "delivered" | "dead"; "attempts": number; "available_at": string; "last_failure"?: "invalid_destination" | "invalid_payload" | "secret_unavailable" | "transport_failure" | "http_failure" | "attempts_exhausted" | "delivery_failure"; "delivered_at"?: string };
 export type WebhookDeliveryPage = { "items": Array<WebhookDelivery>; "next_after"?: number };
@@ -381,7 +381,6 @@ export type WebhookSecretPage = { "items": Array<WebhookSecret>; "next_after"?: 
 export type CreateWebhookSecret = { "name": string; "description"?: string; "value"?: string };
 export type RotateWebhookSecretValue = { "value"?: string; "grace_seconds"?: number };
 export type DeletedWebhookSecret = { "id": string; "deleted": boolean };
-export type PutWebhookBaseUrl = { "value": string };
 export type TokenCounts = { "active": number; "expired": number; "revoked": number };
 export type StartTokenCleanup = { "dry_run": boolean };
 export type TokenCleanupResult = { "dry_run": boolean; "after_days": number; "cutoff": string; "service_tokens": number; "personal_access_tokens": number; "total": number; "has_more": boolean };
@@ -635,7 +634,6 @@ createWebhookSecret: { body: CreateWebhookSecret; response: WebhookSecret };
 getWebhookSecret: { body: undefined; response: WebhookSecret };
 deleteWebhookSecret: { body: undefined; response: DeletedWebhookSecret };
 rotateWebhookSecretValue: { body: RotateWebhookSecretValue; response: WebhookSecret };
-putWebhookBaseUrl: { body: PutWebhookBaseUrl; response: InstanceSettings };
 cleanupTokens: { body: StartTokenCleanup; response: TokenCleanupResult };
 cleanupPersonalAccessTokens: { body: undefined; response: PersonalTokenCleanupResult };
 }
@@ -1873,11 +1871,6 @@ export const routes = {
   "rotateWebhookSecretValue": {
     "path": "/api/v1/webhook-secrets/{id}/rotate",
     "method": "POST",
-    "idempotent": true
-  },
-  "putWebhookBaseUrl": {
-    "path": "/api/v1/settings/webhook-base-url",
-    "method": "PUT",
     "idempotent": true
   },
   "cleanupTokens": {
