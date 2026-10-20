@@ -30,6 +30,11 @@ type CachePolicy struct {
 	StaleIfErrorSeconds int   `json:"stale_if_error_seconds"`
 	MaxEntries          int   `json:"max_entries"`
 	MaxBytes            int64 `json:"max_bytes"`
+	// MaxMetadataBytes is the largest metadata document this source holds in the
+	// in-memory cache; larger ones are streamed by adapters that can, or refused.
+	// Zero means the instance default. It cannot exceed MaxBytes in effect, which
+	// is itself bounded by the instance cache.
+	MaxMetadataBytes int64 `json:"max_metadata_bytes,omitempty"`
 }
 type Config struct {
 	Origin          string      `json:"origin"`
@@ -84,7 +89,7 @@ func Normalize(c Config) (Config, error) {
 	}
 	sort.Strings(redirects)
 	c.RedirectOrigins = redirects
-	if c.TimeoutSeconds < 1 || c.TimeoutSeconds > 300 || c.Cache.MetadataTTLSeconds < 1 || c.Cache.MetadataTTLSeconds > 86400 || c.Cache.NegativeTTLSeconds < 1 || c.Cache.NegativeTTLSeconds > 300 || c.Cache.StaleIfErrorSeconds < 0 || c.Cache.StaleIfErrorSeconds > 86400 || c.Cache.MaxEntries < 1 || c.Cache.MaxEntries > 100000 || c.Cache.MaxBytes < 1024 || c.Cache.MaxBytes > 1<<30 {
+	if c.TimeoutSeconds < 1 || c.TimeoutSeconds > 300 || c.Cache.MetadataTTLSeconds < 1 || c.Cache.MetadataTTLSeconds > 86400 || c.Cache.NegativeTTLSeconds < 1 || c.Cache.NegativeTTLSeconds > 300 || c.Cache.StaleIfErrorSeconds < 0 || c.Cache.StaleIfErrorSeconds > 86400 || c.Cache.MaxEntries < 1 || c.Cache.MaxEntries > 100000 || c.Cache.MaxBytes < 1024 || c.Cache.MaxBytes > 1<<30 || c.Cache.MaxMetadataBytes < 0 || c.Cache.MaxMetadataBytes > 1<<30 {
 		return Config{}, ErrInput
 	}
 	return c, nil

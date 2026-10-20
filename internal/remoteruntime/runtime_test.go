@@ -336,3 +336,125 @@ func mustKeyring(t *testing.T) *secrets.Keyring {
 var _ *x509.Certificate
 var _ = secrets.Record{}
 var _ = remoteconfig.Record{}
+
+// Docker Hub answers 401 for a repository that does not exist even after a
+// valid token handshake. That is a negative answer: resolution must see 404
+// and the source's health must not record an authentication failure. A token
+// request the realm refuses is a real credential failure and still counts.
+func TestRemoteRuntimeRegistryScopeDenialIsNotAnAuthenticationFailure(t *testing.T) {
+	pool, boot := runtimeFixture(t)
+	var origin *httptest.Server
+	origin = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		challenge := func(scope, extra string) {
+			w.Header().Set("WWW-Authenticate", `Bearer realm="`+origin.URL+`/token",service="registry",scope="`+scope+`"`+extra)
+		}
+		switch {
+		case r.URL.Path == "/token":
+			if strings.Contains(r.URL.Query().Get("scope"), "credential-refused") {
+				w.WriteHeader(401)
+				return
+			}
+			io.WriteString(w, `{"token":"granted","expires_in":300}`)
+		case strings.HasPrefix(r.URL.Path, "/v2/nobody/missing/"):
+			if r.Header.Get("Authorization") == "Bearer granted" {
+				challenge("repository:nobody/missing:pull", `,error="insufficient_scope"`)
+				w.WriteHeader(401)
+				io.WriteString(w, `{"errors":[{"code":"UNAUTHORIZED","message":"authentication required"}]}`)
+				return
+			}
+			challenge("repository:nobody/missing:pull", "")
+			w.WriteHeader(401)
+		default:
+			challenge("repository:team/credential-refused:pull", "")
+			w.WriteHeader(401)
+		}
+	}))
+	defer origin.Close()
+	source := insertRemoteSource(t, pool, boot.InstanceID, "runtime-scope-denial")
+	keys, err := secrets.New("v1", map[string][]byte{"v1": make([]byte, 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := remoteconfig.DefaultConfig(origin.URL)
+	c.CARef = "runtime-ca"
+	c.AllowPrivate = true
+	c.TimeoutSeconds = 5
+	insertConfig(t, pool, boot.InstanceID, source, 1, c)
+	manager, err := New(pool, boot.InstanceID, keys, Options{CAFiles: map[string]string{"runtime-ca": writeCAPEM(t, origin)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
+
+	response, err := manager.Fetch(context.Background(), Request{SourceID: source, AuthorizationDomain: "scope/1", Path: "v2/nobody/missing/manifests/latest"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusNotFound {
+		t.Fatalf("status %d, want 404", response.StatusCode)
+	}
+	if snap, ok := manager.health.Snapshot(source); !ok || snap.Failures != 0 || snap.LastError != "" {
+		t.Fatalf("scope denial counted as a failure: %+v", snap)
+	}
+
+	response, err = manager.Fetch(context.Background(), Request{SourceID: source, AuthorizationDomain: "scope/1", Path: "v2/team/credential-refused/manifests/latest"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status %d, want 401", response.StatusCode)
+	}
+	if snap, _ := manager.health.Snapshot(source); snap.Failures != 1 || snap.LastError != "authentication" {
+		t.Fatalf("credential failure not counted: %+v", snap)
+	}
+}
+
+// The metadata bound is configurable per source: a lower value makes a
+// document that the instance default would cache "too large" (so streaming
+// adapters take over), and the value is bounded by the source's cache quota.
+func TestRemoteRuntimePerSourceMetadataBound(t *testing.T) {
+	pool, boot := runtimeFixture(t)
+	origin := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, strings.Repeat("x", 4096))
+	}))
+	defer origin.Close()
+	keys, err := secrets.New("v1", map[string][]byte{"v1": make([]byte, 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager, err := New(pool, boot.InstanceID, keys, Options{CAFiles: map[string]string{"runtime-ca": writeCAPEM(t, origin)}, MaxMetadataBytes: 1 << 20})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
+	source := insertRemoteSource(t, pool, boot.InstanceID, "runtime-metadata-bound")
+	configure := func(revision int64, limit int64) {
+		c := remoteconfig.DefaultConfig(origin.URL)
+		c.CARef = "runtime-ca"
+		c.AllowPrivate = true
+		c.Cache.MaxMetadataBytes = limit
+		insertConfig(t, pool, boot.InstanceID, source, revision, c)
+	}
+	request := Request{SourceID: source, AuthorizationDomain: "scope/1", Path: "doc"}
+	configure(1, 0)
+	if v, err := manager.Metadata(context.Background(), request); err != nil || len(v.Body) != 4096 {
+		t.Fatalf("instance default: %v", err)
+	}
+	configure(2, 1024)
+	if _, err := manager.Metadata(context.Background(), request); !errors.Is(err, ErrTooLarge) {
+		t.Fatalf("per-source bound not applied: %v", err)
+	}
+	configure(3, 8192)
+	if v, err := manager.Metadata(context.Background(), request); err != nil || len(v.Body) != 4096 {
+		t.Fatalf("raised bound: %v", err)
+	}
+	if _, err := remoteconfig.Normalize(func() remoteconfig.Config {
+		c := remoteconfig.DefaultConfig(origin.URL)
+		c.Cache.MaxMetadataBytes = -1
+		return c
+	}()); err == nil {
+		t.Fatal("negative bound accepted")
+	}
+}

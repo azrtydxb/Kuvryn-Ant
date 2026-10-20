@@ -32,6 +32,8 @@ type Repository struct {
 	instance  string
 	base      atomic.Value
 	transfers chan struct{}
+	// indexes holds the spooled digest indexes of remote repodata too large to cache.
+	indexes indexSet
 }
 
 func New(db *pgxpool.Pool, s *artifact.Service) (*Repository, error) {
@@ -125,8 +127,8 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(a) == 5 && validSubdir(a[3]) {
-		if a[4] == "repodata.json" {
-			s.index(w, r, p, feed, a[3])
+		if a[4] == "repodata.json" || a[4] == "current_repodata.json" {
+			s.index(w, r, p, feed, a[3], a[4])
 			return
 		}
 		if validFilename(a[4]) {

@@ -44,8 +44,8 @@ type remotePackage struct {
 }
 
 // remoteRepodata fetches and validates the upstream repodata.json of a subdir.
-func (s *Repository) remoteRepodata(ctx context.Context, p identity.Principal, feed, subdir string) ([]remotePackage, artifact.Document, error) {
-	doc, err := s.service.RemoteMetadata(ctx, p, artifact.Publication{FeedID: feed, Namespace: subdir, Coordinate: "conda/" + subdir}, artifact.Origin{Path: subdir + "/repodata.json", Representation: "application/json"})
+func (s *Repository) remoteRepodata(ctx context.Context, p identity.Principal, feed, subdir, name string) ([]remotePackage, artifact.Document, error) {
+	doc, err := s.service.RemoteMetadata(ctx, p, artifact.Publication{FeedID: feed, Namespace: subdir, Coordinate: "conda/" + subdir}, artifact.Origin{Path: subdir + "/" + name, Representation: "application/json"})
 	if err != nil {
 		return nil, doc, err
 	}
@@ -58,15 +58,10 @@ func (s *Repository) remoteRepodata(ctx context.Context, p identity.Principal, f
 	}
 	var out []remotePackage
 	for i, group := range []map[string]json.RawMessage{in.Packages, in.PackagesConda} {
-		ext := []string{".tar.bz2", ".conda"}[i]
 		for filename, raw := range group {
-			var e struct {
-				Name, Version, Build, Subdir, SHA256 string
+			if e, ok := validateEntry(subdir, filename, i == 1, raw); ok {
+				out = append(out, remotePackage{filename: e.filename, sha256: e.sha256, conda: e.conda, raw: e.raw})
 			}
-			if json.Unmarshal(raw, &e) != nil || !strings.HasSuffix(filename, ext) || !validRemoteFilename(filename) || !sha256RE.MatchString(e.SHA256) || (e.Subdir != "" && e.Subdir != subdir) || e.Name+"-"+e.Version+"-"+e.Build+ext != filename {
-				continue
-			}
-			out = append(out, remotePackage{filename: filename, sha256: e.SHA256, conda: i == 1, raw: raw})
 		}
 	}
 	return out, doc, nil
@@ -89,9 +84,16 @@ func validRemoteFilename(s string) bool {
 // serveRemoteIndex answers a repodata.json request from upstream. It returns
 // true once the response was written; a degraded upstream error is returned so
 // the caller can fall back to the locally cached view.
-func (s *Repository) serveRemoteIndex(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, subdir string) (bool, error) {
-	pkgs, doc, err := s.remoteRepodata(r.Context(), p, feed, subdir)
+func (s *Repository) serveRemoteIndex(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, subdir, name string) (bool, error) {
+	if s.indexes.isLarge(feed + "/" + subdir + "/" + name) {
+		return s.serveLargeIndex(w, r, p, feed, subdir, name)
+	}
+	pkgs, doc, err := s.remoteRepodata(r.Context(), p, feed, subdir, name)
 	switch {
+	case errors.Is(err, artifact.ErrTooLarge):
+		// Above the metadata bound: stream it instead of holding it in memory.
+		s.indexes.markLarge(feed + "/" + subdir + "/" + name)
+		return s.serveLargeIndex(w, r, p, feed, subdir, name)
 	case errors.Is(err, artifact.ErrNotFound):
 		return false, nil
 	case errors.Is(err, artifact.ErrUnavailable):
@@ -123,7 +125,14 @@ func (s *Repository) pullThrough(ctx context.Context, p identity.Principal, pub 
 	if !validRemoteFilename(pub.Version) {
 		return false, artifact.ErrNotFound
 	}
-	pkgs, doc, err := s.remoteRepodata(ctx, p, pub.FeedID, pub.Namespace)
+	if s.indexes.isLarge(pub.FeedID + "/" + pub.Namespace + "/repodata.json") {
+		return s.pullThroughLarge(ctx, p, pub)
+	}
+	pkgs, doc, err := s.remoteRepodata(ctx, p, pub.FeedID, pub.Namespace, "repodata.json")
+	if errors.Is(err, artifact.ErrTooLarge) {
+		s.indexes.markLarge(pub.FeedID + "/" + pub.Namespace + "/repodata.json")
+		return s.pullThroughLarge(ctx, p, pub)
+	}
 	if err != nil {
 		return false, err
 	}
@@ -136,18 +145,8 @@ func (s *Repository) pullThrough(ctx context.Context, p identity.Principal, pub 
 	if found == nil {
 		return false, artifact.ErrNotFound
 	}
-	pub.MediaType = "application/x-bzip2"
-	if found.conda {
-		pub.MediaType = "application/octet-stream"
-	}
-	stream, again, err := s.service.PullThrough(ctx, p, pub, artifact.Origin{Path: pub.Namespace + "/" + artifact.EscapePath(pub.Version), SourceID: doc.SourceID, Digest: blob.Digest(found.sha256)})
-	if err != nil {
+	if err := s.fetchVerified(ctx, p, pub, doc.SourceID, found.sha256, found.conda); err != nil {
 		return false, err
-	}
-	if !again {
-		// Digest is set so the object is normally committed before serving.
-		_, _ = io.Copy(io.Discard, stream.Body)
-		_ = stream.Body.Close()
 	}
 	// Best effort: keep the verified entry so the owner's packages remain
 	// listable while upstream is unavailable (.tar.bz2 only; the local view
@@ -160,4 +159,23 @@ func (s *Repository) pullThrough(ctx context.Context, p identity.Principal, pub 
 		}
 	}
 	return true, nil
+}
+
+// fetchVerified materializes one package from the source whose repodata named
+// it, checked against the repodata sha256 before it is served or cached.
+func (s *Repository) fetchVerified(ctx context.Context, p identity.Principal, pub artifact.Publication, source, sum string, conda bool) error {
+	pub.MediaType = "application/x-bzip2"
+	if conda {
+		pub.MediaType = "application/octet-stream"
+	}
+	stream, again, err := s.service.PullThrough(ctx, p, pub, artifact.Origin{Path: pub.Namespace + "/" + artifact.EscapePath(pub.Version), SourceID: source, Digest: blob.Digest(sum)})
+	if err != nil {
+		return err
+	}
+	if !again {
+		// Digest is set so the object is normally committed before serving.
+		_, _ = io.Copy(io.Discard, stream.Body)
+		_ = stream.Body.Close()
+	}
+	return nil
 }
