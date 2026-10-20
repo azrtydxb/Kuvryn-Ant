@@ -218,3 +218,115 @@ func (s *Service) manifestRefs(ctx context.Context, domain, digest string) (refs
 	}
 	return refs, true
 }
+
+// rowQuerier is what the helpers need from a pool or a transaction.
+type rowQuerier interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+// protectedBlobs returns, among the doomed versions of a component, the
+// blob-only versions that must NOT be deleted: those a remaining visible
+// manifest (top-level or child) names, and all of them when a remaining
+// manifest cannot be read (fail closed). A blob-only version no manifest names
+// is an orphan and may go. Blob-only rows are never deleted on their own
+// timestamps while a manifest still needs them.
+func (s *Service) protectedBlobs(ctx context.Context, q rowQuerier, component string, doomed map[string]bool) (map[string]bool, error) {
+	ids := make([]string, 0, len(doomed))
+	for id := range doomed {
+		ids = append(ids, id)
+	}
+	rows, err := q.Query(ctx, `SELECT id::text,version FROM versions WHERE component_id=$1 AND blob_only AND id=ANY($2::uuid[])`, component, ids)
+	if err != nil {
+		return nil, err
+	}
+	blobVersion := map[string]string{}
+	for rows.Next() {
+		var id, version string
+		if err = rows.Scan(&id, &version); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		blobVersion[id] = version
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	keep := map[string]bool{}
+	if len(blobVersion) == 0 {
+		return keep, nil
+	}
+	named, ok, err := s.namedByManifests(ctx, q, component, doomed)
+	if err != nil {
+		return nil, err
+	}
+	for id, version := range blobVersion {
+		if !ok || named[version] {
+			keep[id] = true
+		}
+	}
+	return keep, nil
+}
+
+// namedByManifests returns the digests (hex) named by the visible manifests of a
+// component that are not in except. ok is false when any of them is unreadable.
+func (s *Service) namedByManifests(ctx context.Context, q rowQuerier, component string, except map[string]bool) (named map[string]bool, ok bool, err error) {
+	rows, err := q.Query(ctx, `SELECT v.id::text,b.digest,b.dedup_domain_id::text,b.size_bytes FROM versions v JOIN assets a ON a.version_id=v.id AND a.asset_key='manifest' JOIN blobs b ON b.id=a.blob_id WHERE v.component_id=$1 AND NOT v.blob_only`, component)
+	if err != nil {
+		return nil, false, err
+	}
+	type manifest struct {
+		id, digest, domain string
+		size               int64
+	}
+	var manifests []manifest
+	for rows.Next() {
+		var m manifest
+		if err = rows.Scan(&m.id, &m.digest, &m.domain, &m.size); err != nil {
+			rows.Close()
+			return nil, false, err
+		}
+		manifests = append(manifests, m)
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, false, err
+	}
+	named = map[string]bool{}
+	for _, m := range manifests {
+		if except[m.id] {
+			continue
+		}
+		if m.size > manifestReadLimit {
+			return nil, false, nil
+		}
+		refs, readable := s.manifestRefs(ctx, m.domain, m.digest)
+		if !readable {
+			return nil, false, nil
+		}
+		for _, r := range refs {
+			named[r] = true
+		}
+	}
+	return named, true, nil
+}
+
+// dropProtected removes the protected blob-only versions from deletions.
+func (s *Service) dropProtected(ctx context.Context, q rowQuerier, component string, deletions []Deletion) ([]Deletion, error) {
+	doomed := map[string]bool{}
+	for _, d := range deletions {
+		doomed[d.VersionID] = true
+	}
+	keep, err := s.protectedBlobs(ctx, q, component, doomed)
+	if err != nil || len(keep) == 0 {
+		return deletions, err
+	}
+	out := deletions[:0:0]
+	for _, d := range deletions {
+		if !keep[d.VersionID] {
+			out = append(out, d)
+		}
+	}
+	return out, nil
+}

@@ -399,6 +399,9 @@ func (s *Service) retainComponent(ctx context.Context, src sourceInfo, component
 		return err
 	}
 	batch = append(batch, extra...)
+	if batch, err = s.dropProtected(ctx, q, component, batch); err != nil {
+		return err
+	}
 	if len(batch) == 0 {
 		return nil
 	}
