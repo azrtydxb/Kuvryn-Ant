@@ -6,8 +6,9 @@
 //	go run ./bench/runner -target kw  -out evidence/2026-10-18/bench/kw.json
 //	go run ./bench/runner -target oke -scenarios warm,fanout -out ...
 //
-// Requires kubectl contexts azrty-oke / kw, Go (cross-builds bench/antbench for the node
-// architecture), and the automation tokens in ~/.kuvryn-ant/. Everything it creates is prefixed evb- and removed
+// Requires the base URLs ANT_OKE_URL and ANT_KW_URL (and, when the kubectl contexts are not
+// the defaults azrty-oke and kw, ANT_OKE_CONTEXT and ANT_KW_CONTEXT), Go (cross-builds
+// bench/antbench for the node architecture), and the automation tokens in ~/.kuvryn-ant/. Everything it creates is prefixed evb- and removed
 // at the end. Concurrency and sizes are capped by flags so a shared cluster is not stressed.
 package main
 
@@ -147,7 +148,8 @@ func bench(sub string, flags ...string) obj {
 // anonymous read). Upstream fetches are counted independently at the origin (stats/feeds "pulls" of the origin
 // feed) and by the proxy itself (metrics/traffic cache_misses of the proxy feed).
 
-const originBase = "https://ant.azrty.com"
+// originBase is the OKE instance URL (ANT_OKE_URL).
+func originBase() string { return antlib.Instances["oke"][0] }
 
 var okeAPI *antlib.Api
 
@@ -189,7 +191,7 @@ func newOrigin(name string) *origin {
 
 var originFeeds []string
 
-func (o *origin) url() string { return originBase + "/feeds/" + o.slug + "/raw" }
+func (o *origin) url() string { return originBase() + "/feeds/" + o.slug + "/raw" }
 
 // put publishes a deterministic object and returns its SHA-256.
 func (o *origin) put(path, seed string, size int) string {
@@ -209,7 +211,7 @@ func (o *origin) put(path, seed string, size int) string {
 // statistic and metrics/traffic cache counters proved unreliable for this (asynchronous, non-exact), so they are
 // not used. When the target is OKE itself the clients' own GETs are in the same counter; adj() subtracts them.
 func (o *origin) pulls() int64 {
-	m, err := antlib.Kubectl("azrty-oke", "-n", ns, "exec", "deploy/ant-ant", "--", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/metrics")
+	m, err := antlib.Kubectl(antlib.Instances["oke"][1], "-n", ns, "exec", "deploy/ant-ant", "--", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/metrics")
 	if err != nil {
 		return -1
 	}
@@ -679,6 +681,12 @@ func main() {
 	if !ok || *out == "" {
 		flag.Usage()
 		os.Exit(2)
+	}
+	for _, name := range []string{*target, "oke"} { // the origin pod always lives on the OKE instance
+		if !antlib.Configured(name) {
+			fmt.Fprintf(os.Stderr, "set ANT_%s_URL to the base URL of the %s instance\n", strings.ToUpper(name), name)
+			os.Exit(2)
+		}
 	}
 	ctx = in[1]
 	api = antlib.Named(*target)

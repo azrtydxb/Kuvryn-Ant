@@ -23,7 +23,7 @@ A cache feed needs a **local** source that no other feed uses (the console creat
 and attaches it in the feed wizard). With the API, using an administrator token:
 
 ```sh
-A=https://ant.azrty.com
+A=https://ant.example.com
 H="Authorization: Bearer $ANT_ADMIN_TOKEN"
 J='Content-Type: application/json'
 
@@ -80,16 +80,16 @@ the cache policy.
 
 ## Endpoints
 
-| Client          | Endpoint                                                                                                                                                                                                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| buildx / docker | `ant.azrty.com/<cache feed slug>/<repository>:<tag>`, for example `ant.azrty.com/buildcache/org/repo:main-amd64` (the first path segment is the feed, the rest is the repository name; the existing hosted feed works the same way: `ant.azrty.com/oci-hosted/team/app:1.0`) |
-| sccache         | `https://ant.azrty.com/feeds/sccache/raw` (WebDAV on the raw feed)                                                                                                                                                                                                           |
+| Client          | Endpoint                                                                                                                                                                                                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| buildx / docker | `ant.example.com/<cache feed slug>/<repository>:<tag>`, for example `ant.example.com/buildcache/org/repo:main-amd64` (the first path segment is the feed, the rest is the repository name; the existing hosted feed works the same way: `ant.example.com/oci-hosted/team/app:1.0`) |
+| sccache         | `https://ant.example.com/feeds/sccache/raw` (WebDAV on the raw feed)                                                                                                                                                                                                               |
 
 ## buildx
 
 ```sh
-echo "$ANT_TOKEN" | docker login ant.azrty.com -u ci --password-stdin
-REF=ant.azrty.com/buildcache/$GITHUB_REPOSITORY
+echo "$ANT_TOKEN" | docker login ant.example.com -u ci --password-stdin
+REF=ant.example.com/buildcache/$GITHUB_REPOSITORY
 TAG=$(echo "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9_.\n-' '-')-$(uname -m | sed s/x86_64/amd64/\;s/aarch64/arm64/)
 docker buildx build \
   --cache-from type=registry,ref=$REF:$TAG \
@@ -124,7 +124,7 @@ Environment (the key prefix selects the sharing scope):
 
 ```sh
 export RUSTC_WRAPPER=sccache CARGO_INCREMENTAL=0
-export SCCACHE_WEBDAV_ENDPOINT=https://ant.azrty.com/feeds/sccache/raw
+export SCCACHE_WEBDAV_ENDPOINT=https://ant.example.com/feeds/sccache/raw
 export SCCACHE_WEBDAV_TOKEN=$ANT_TOKEN                    # bearer token, or:
 # export SCCACHE_WEBDAV_USERNAME=ci SCCACHE_WEBDAV_PASSWORD=$ANT_TOKEN   # Basic, token as password
 export SCCACHE_WEBDAV_KEY_PREFIX=$GITHUB_REPOSITORY       # org/repo
@@ -167,7 +167,7 @@ curl -fsS -X PUT $A/api/v1/principals/$(jq -r .id <<<"$P")/roles -H "$H" -H "$J"
 ```
 
 **GitHub Actions** (no stored secret): configure the audience once
-(`PUT /api/v1/auth/github-oidc/config {"audience":"ant.azrty.com"}`), then add a
+(`PUT /api/v1/auth/github-oidc/config {"audience":"ant.example.com"}`), then add a
 trust rule per repository whose scopes name the two cache feeds:
 
 ```sh

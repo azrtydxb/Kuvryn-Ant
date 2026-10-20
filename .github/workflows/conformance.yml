@@ -15,7 +15,7 @@ on:
         required: false
         default: ""
       base_url:
-        description: "Override base URL (the oke and kw defaults are set in conformance/run.sh)"
+        description: "Base URL of the instance (required for the oke and kw targets)"
         required: false
         default: ""
 

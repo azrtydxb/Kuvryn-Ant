@@ -1,18 +1,17 @@
 # Terraform provider and module registry adapter
 
-Development subset of F25, not full Phase 1 conformance (no pinned-client run yet).
-No migrations or management API changes. Parent wiring: mount the handler at
-`/feeds/{slug}/terraform/` and call `SetPublicURL`.
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/terraform/` for feeds of format `terraform`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/terraform.md`.
 
 ```go
 repo, err := terraform.New(db, service)
 err = repo.SetPublicURL("https://tf.example.com") // HTTPS or literal loopback
 ```
 
-The feed must have format `terraform`. All routes except discovery need a machine
-Bearer token (or Basic with the token as password); browser principals are discarded.
-Terraform sends it from a `credentials "host"` block. Ingestion requires feed Admin
-plus Publish on the pinned local source. Anonymous read is not implemented.
+The feed must have format `terraform`. All routes except discovery need a token
+(Bearer, or Basic with the token as password), verified by the shared
+client-authentication layer; browser principals are discarded. Terraform sends it from
+a `credentials "host"` block. Ingestion requires feed Admin plus Publish on the pinned
+local source.
 
 ## Client setup (feed-scoped mount)
 
@@ -40,8 +39,9 @@ Then use `source = "HOST/ns/name/system"` (modules) or `HOST/ns/type` (providers
   `terraform-provider-{type}_{version}_{os}_{arch}.zip`.
 
 Names are lowercase (`[a-z0-9_-]`, provider type `[a-z0-9-]`), versions semver without
-build metadata. DELETE returns 405: the shared artifact core has no policy-gated
-version deletion primitive and versions are immutable.
+build metadata. `DELETE v1/providers/{ns}/{type}/{version}` and
+`DELETE v1/modules/{ns}/{name}/{system}/{version}` delete a version through the core
+(gated by the feed's delete policy); other methods return 405. Versions are immutable.
 
 ## Validation and atomicity
 
@@ -58,8 +58,7 @@ Identical retries return 201; different bytes for an existing version return 409
 
 ## Known limitations
 
-- Not run against a real `terraform init` (needs a trusted TLS host); protocol shapes
-  follow the official specs and are tested by a client-style flow.
+- Unit tests use a client-style flow; the real Terraform CLI (`terraform init` with a signed provider and a module, and pull-through of registry.terraform.io) is exercised by `conformance/run.sh local terraform`, which needs a TLS host.
 - Terraform sends no credentials when fetching `download_url`, `shasums_url` and
   `shasums_signature_url`. The download document therefore advertises those three URLs
   with an `ant-sig` query parameter: an HMAC (key derived from the root key) over the
@@ -69,4 +68,4 @@ Identical retries return 201; different bytes for an existing version return 409
 - Upstream signature files named `SHA256SUMS.<keyid>.sig` (HashiCorp) are accepted and
   re-served as `SHA256SUMS.sig`.
 - Module closure checks cover archive structure only, not `source = "./..."` references.
-- Remote/replica materialization and deletion/retention are core gaps.
+- Remote sources (pull-through): `versions` and the per-platform `download` document are read through the metadata cache; the feed's `download` answer keeps `shasum` and `signing_keys` exactly as the registry sent them and points the file URLs at the feed, so Terraform verifies the zip, SHA256SUMS and signature itself against the upstream publisher key. Ant also checks what it caches (the zip against `shasum`, SHA256SUMS against the zip line, the detached signature when it parses as a single public key). Release files normally live on another host (releases.hashicorp.com): add it to the source's redirect origins. Module `download` resolves the module detail document (`source` GitHub repository and `tag`) to the GitHub tarball (`codeload.github.com`), cached once as a bounded, safe tar.gz; registries whose modules are not GitHub repositories, and zip archives, are not supported.

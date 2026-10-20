@@ -1,7 +1,9 @@
-# Local Go module adapter
+# Go module adapter
 
 `New(db *pgxpool.Pool, service *artifact.Service) (*Proxy, error)` returns an
-`http.Handler`. Mount `/feeds/{slug}/go/`; the feed format is `go`.
+`http.Handler`. Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/go/`; the feed format is `go`.
+Local modules, pull-through of a remote GOPROXY and the checksum database are described
+below and in `site/formats/go.md`.
 
 GET/HEAD supports `{escaped-module}/@v/list`, `@v/{escaped-version}.info`,
 `.mod`, `.zip`, and `{escaped-module}/@latest`. Escaping uses `x/mod/module`.
@@ -21,20 +23,16 @@ must match it byte-for-byte. `x/mod/zip.CheckZip` checks canonical paths, versio
 collisions and Go's protocol size bounds; every file is additionally drained to
 validate decompression/CRC. The zip is staged to a private temporary file,
 never extracted. Limits are Go's 500 MiB compressed/uncompressed zip and 16 MiB
-go.mod limits, 1 MiB info metadata, four concurrent ingestions, 30-second
+go.mod limits, 1 MiB info metadata, ingestions bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32), 30-second
 transfer idle deadlines and 64 KiB streaming buffers. Version indexes fail closed
 above 10,000 entries rather than return truncated lists.
 
-Basic username/service-token and Bearer service-token map through the shared
-token middleware; anonymous access is disabled. Configure clients with HTTPS,
+Basic username/token and Bearer credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`; the `go` command sends nothing over plain HTTP, so use HTTPS). Configure clients with HTTPS,
 GOPROXY pointing at the feed endpoint, and GONOSUMDB/GOPRIVATE for the private
 module namespace. When GOPRIVATE is set, set GONOPROXY=none to continue using
 this proxy. Public checksum verification remains enabled. This is not a sumdb.
 
-Scope: local ingestion/consumption only. Remote fetch, replica coordination,
-explicit namespace bindings beyond the shared Lookup policy, source-generation
-pinning across separate client requests, and management OpenAPI registration
-are separate integration work. Reads choose the first package owner, never
+Ownership: reads choose the first package owner, never
 merge versions or fall back to another source. Latest checks owner identity
 again before opening bytes; regular downloads check record consistency between
 Lookup and Open. No metadata writes bypass the shared artifact service.
@@ -50,12 +48,8 @@ separately tested directly. The bridge does not bypass adapter authorization.
 Protocol references: https://go.dev/ref/mod#goproxy-protocol and
 https://pkg.go.dev/golang.org/x/mod/zip .
 
-Validation evidence (2026-10-18): `go test -race -count=1 -v
-./internal/goproxy` passed all ten tests against an ephemeral PostgreSQL fixture,
-including the native client download. Toolchain: go1.27.1 darwin/arm64. The F10
-contract's go1.27.2 baseline, transitive-dependency client matrix, MinIO backend,
-remote/replica flows and full format conformance remain unverified; this local
-implementation is not a full F10 conformance claim.
+The real `go` command (module download and pull-through of proxy.golang.org) is
+exercised by `conformance/run.sh local go`.
 
 Checksum database: `/sumdb/sum.golang.org/*` is first requested from the remote
 source under `/sumdb/` (for upstreams that mirror it) and otherwise fetched from

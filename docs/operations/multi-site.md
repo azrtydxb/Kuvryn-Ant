@@ -7,17 +7,17 @@ in place once both sites are federated; see the last section.
 
 | Site | URL                                                                      | Storage            | Role                                                                      |
 | ---- | ------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------- |
-| OKE  | `https://ant.azrty.com` (public certificate)                             | OCI Object Storage | **Authority** for the hosted feeds                                        |
-| kw   | `https://ant.kw.watteel.lab` (private CA `cluster-ca`, LAN 192.168.10.x) | TrueNAS MinIO      | Read-only replica of OKE hosted content, plus its own pull-through caches |
+| OKE  | `https://ant.example.com` (public certificate)                           | OCI Object Storage | **Authority** for the hosted feeds                                        |
+| kw   | `https://ant.site-b.example.com` (private CA `cluster-ca`, LAN 10.0.0.x) | TrueNAS MinIO      | Read-only replica of OKE hosted content, plus its own pull-through caches |
 
 ## Network
 
 Replication is pull-based: the destination calls the authority. So the only
-required path is **kw -> `ant.azrty.com`:443** (public DNS, public certificate,
+required path is **kw -> `ant.example.com`:443** (public DNS, public certificate,
 no `ca_ref` needed). Verified from the kw pod.
 
 The reverse path is not needed and not configured. From an OKE pod the kw ingress
-IP (192.168.10.120) answers on 443, but `ant.kw.watteel.lab` does not resolve
+IP (10.0.0.120) answers on 443, but `ant.site-b.example.com` does not resolve
 there and the certificate is signed by the private CA, which OKE does not trust.
 A kw-authoritative feed would need: DNS (or a host alias) for the name on OKE,
 the `cluster-ca` registered in `ANT_UPSTREAM_CA_MAP_FILE` on OKE, and a peer plus
@@ -115,17 +115,17 @@ replication") takes over the nine jobs in place, without a reseed. With OKE as
 authority and kw joined with label `site=kw`:
 
 1. On OKE, bind each of the nine OKE feeds to its key
-   (`POST /api/v1/federation/feed-bindings {"feed_key":"watteel/<slug>","feed_id":…}`)
+   (`POST /api/v1/federation/feed-bindings {"feed_key":"example/<slug>","feed_id":…}`)
    and publish the key with OKE as home
-   (`POST /api/v1/federation/feeds {"feed_key":"watteel/<slug>","home_member_id":<OKE>}`).
+   (`POST /api/v1/federation/feeds {"feed_key":"example/<slug>","home_member_id":<OKE>}`).
 2. On kw, bind the existing kw feed of the same slug to the same key. The
    reconciler never takes over an unbound feed (status `conflict` until bound).
 3. On OKE, create one rule per key that reproduces today's job settings, so
    adoption changes nothing but the transport:
-   `{"feed_key":"watteel/<slug>","targets":{"labels":{"site":"kw"}},"mode":"continuous","interval_seconds":30,"include_cached":false,"deletion_policy":"propagate","destination_read_only":true}`
+   `{"feed_key":"example/<slug>","targets":{"labels":{"site":"kw"}},"mode":"continuous","interval_seconds":30,"include_cached":false,"deletion_policy":"propagate","destination_read_only":true}`
    (`adopt_existing` defaults to true).
 4. kw's reconciler matches each `oke-<slug>` job: its peer `oke-prod` URL is
-   OKE's API URL in the membership (`https://ant.azrty.com`, which must equal
+   OKE's API URL in the membership (`https://ant.example.com`, which must equal
    OKE's `ANT_PUBLIC_URL`), its remote feed is OKE's home feed and its
    destination is the bound kw feed. The job keeps its name, checkpoint, phase,
    counters and replica source; `origin` becomes `federation`, the peer becomes
@@ -148,15 +148,15 @@ labelled `site=kw`; the nine `oke-*` jobs were adopted in place (see
 `docs/implementation/federation-evidence.md` for the evidence and
 `docs/operations/federation-runbooks.md` for procedures).
 
-- **Both directions must work.** kw -> OKE (`ant-federation.azrty.com:8444`, the
+- **Both directions must work.** kw -> OKE (`ant-federation.example.com:8444`, the
   OKE LoadBalancer, source ranges restricted) carries document sync, replication
   and kw's search and routed reads. OKE -> kw carries OKE's status pings and
   nudges, searches and proxied reads started at OKE, and replication of any feed
   whose home moves to kw (a planned home transfer to kw makes OKE a replica that
   pulls from kw). kw's chart-managed federation Service is ClusterIP, so kw
   publishes a second Service with its own LAN address
-  (`deploy/examples/kw-federation-lan.yaml`, `192.168.10.150:8444`) and OKE's pod
-  resolves `ant-federation.kw.watteel.lab` through `hostAliases`
+  (`deploy/examples/kw-federation-lan.yaml`, `10.0.0.150:8444`) and OKE's pod
+  resolves `ant-federation.site-b.example.com` through `hostAliases`
   (`deploy/examples/azrty-oke.yaml`). OKE reaches the LAN over the site link;
   only port 8444 on that address is added.
 - **Partition drills on kw.** A NetworkPolicy that blocks egress to the OKE

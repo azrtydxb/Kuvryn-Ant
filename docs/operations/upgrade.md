@@ -28,8 +28,8 @@ paths, and the Helm procedure (spec section 6.13, architecture decision A05).
 - Rolling the image back does not undo migrations. A previous binary refuses to
   start on a newer schema. The supported rollback is therefore: stop the
   service, restore the pre-upgrade backup (PostgreSQL metadata and the blobs it
-  references, with `ant restore`) and start the previous image. Anything
-  written after the upgrade is lost.
+  references, with `ant restore` into an **empty** database; see below) and start the
+  previous image. Anything written after the upgrade is lost.
 - Never promise a rollback across a migration marked irreversible in the release
   notes (for example one that drops or rewrites data). Such releases state this
   explicitly and require the backup step below.
@@ -69,6 +69,7 @@ in scope.
    metadata backup are an equivalent pre-upgrade safety net. Store the manifest
    SHA-256 outside the backup. Watch `ant_data_dir_bytes_free` (see
    [observability](observability.md)).
+
 3. Run `ant diagnostics` and confirm database and storage checks pass and the
    applied schema version equals the running binary's version (no half-applied
    state).
@@ -103,10 +104,26 @@ fix the cause (or roll the image back, which is safe because nothing was
 applied) and retry. If it fails with `unsupported schema version`, the database
 is newer than the image: deploy a newer image or restore the backup.
 
-To roll back after a successful migration: `helm rollback` is not sufficient. Scale
-to zero (`kubectl scale deployment/ant-ant --replicas=0`), restore the backup
-with `ant restore --force` into the same PostgreSQL and blob store, then
-`helm rollback ant <revision> --wait`.
+To roll back after a successful migration: `helm rollback` is not sufficient, because
+the older image refuses the newer schema, and `ant restore` never overwrites data:
+without `--force` it refuses any database that already holds tables, and `--force`
+only accepts a Kuvryn schema in which every table has zero rows. The upgraded,
+populated database therefore cannot be restored over. Restore into an empty
+database instead:
+
+1. Scale to zero (`kubectl scale deployment/ant-ant --replicas=0`).
+2. Provision an empty database (a new database on the same PostgreSQL server, or the
+   same one after dropping and recreating it / its schema), and point
+   `ANT_DATABASE_URL` of the restore command at it. Keep the same blob store and the
+   same keyring.
+3. Restore the pre-upgrade backup with the **pre-upgrade** `ant` binary:
+   `ant restore --expect-manifest-sha256 <hex> <backup>`. A `reference` backup needs
+   its blobs to be present in the blob store; a `copy` backup writes them.
+4. Point the release at the restored database (the `postgres.existingSecret` DSN),
+   then `helm rollback ant <revision> --wait`.
+
+This path has not been rehearsed end to end; rehearse it on a copy before relying on it.
+See [backup and restore](backup-restore.md#non-empty-targets-and---force).
 
 ## Docker Compose
 

@@ -18,11 +18,23 @@ import (
 	"time"
 )
 
-// Instances maps a short name to its public URL and kubectl context.
+// Instances maps a short name to its public URL and kubectl context. The URLs come from
+// ANT_OKE_URL and ANT_KW_URL (there is no default: they name deployments, not code), the
+// contexts from ANT_OKE_CONTEXT and ANT_KW_CONTEXT (defaults "azrty-oke" and "kw").
 var Instances = map[string][2]string{
-	"oke": {"https://ant.azrty.com", "azrty-oke"},
-	"kw":  {"https://ant.kw.watteel.lab", "kw"},
+	"oke": {os.Getenv("ANT_OKE_URL"), envOr("ANT_OKE_CONTEXT", "azrty-oke")},
+	"kw":  {os.Getenv("ANT_KW_URL"), envOr("ANT_KW_CONTEXT", "kw")},
 }
+
+func envOr(name, fallback string) string {
+	if v := os.Getenv(name); v != "" {
+		return v
+	}
+	return fallback
+}
+
+// Configured reports whether the named instance has a URL (see Instances).
+func Configured(name string) bool { return Instances[name][0] != "" }
 
 // Obj is a decoded JSON object.
 type Obj map[string]any
@@ -95,6 +107,9 @@ func Named(name string) *Api {
 	in, ok := Instances[name]
 	if !ok {
 		panic("unknown instance " + name)
+	}
+	if in[0] == "" {
+		panic("set ANT_" + strings.ToUpper(name) + "_URL to the base URL of the " + name + " instance")
 	}
 	t, err := TokenFor("~/.kuvryn-ant/" + in[1] + "-automation-token.txt")
 	if err != nil {

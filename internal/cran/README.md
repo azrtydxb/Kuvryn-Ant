@@ -1,22 +1,18 @@
-# R / CRAN local adapter
+# R / CRAN adapter
 
-Development subset of F20, not full Phase 1 conformance. Only this package is
-implemented here; parent integration must mount the handler and configure the
-trusted origin. No migrations, management API, main wiring or dependency changes
-are required by this package.
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/cran/` for feeds of format `cran`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/cran.md`.
 
 ```go
 repo, err := cran.New(db, service)
 // Check err, then configure the externally reachable origin before serving:
 err = repo.SetPublicURL("https://packages.example")
-// Mount at /feeds/{slug}/cran/ using the parent router.
+// Mount at /feeds/{slug}/cran/.
 ```
 
 `SetPublicURL` accepts HTTPS or literal loopback HTTP, with no credentials, path,
 query or fragment. Host, forwarding headers and request TLS never select URLs.
 The feed must have format `cran`; its instance must match the service lease.
-Every request uses a scoped machine Bearer token or HTTP Basic password containing
-that token. Browser principals are discarded. Anonymous access is not implemented.
+Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter.
 The fixed source index channel `src/contrib` is the core namespace for reads and
 writes.
 
@@ -44,12 +40,12 @@ version of each package wins, and enumeration never unions sources by filename.
 
 ## Bounds
 
-Four concurrent uploads, 32 MiB package cap, 128 MiB expanded budget, 10,000 tar
+Concurrent uploads are bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32); 32 MiB package cap, 128 MiB expanded budget, 10,000 tar
 members, 256 KiB DESCRIPTION and 8 MiB of index metadata; index reads fail at
 4,096 candidates. Streams use 64 KiB buffers and 30-second progress deadlines.
 Reads are private/no-store.
 
-## Verification and remaining gates
+## Verification
 
 The integration tests in this package follow `scripts/test-postgres.sh` using an
 isolated temporary schema; run them with:
@@ -61,9 +57,9 @@ sh internal/cran/test-postgres.sh
 Tests cover ingestion, index generation, byte-identical downloads, conflict
 behavior under concurrency, and package-owner isolation.
 
-The package has not been exercised against the real R `install.packages` / `pak`
-client; native client verification with the pinned R baseline, binary packages
-(`bin/...` channels), `PACKAGES` layout parity, remote/replica resolution,
-retention and deployment evidence remain release gates. All 26 formats remain
-Phase 1 scope.
+R's `install.packages` against a feed, and pull-through of CRAN, are exercised by `conformance/run.sh local cran`. Local ingestion covers source packages only.
+
+## Remote sources (pull-through)
+
+Ownership is per package name: a name that exists locally is never fetched from upstream, and the merged `PACKAGES` index takes each name from exactly one side. `src/contrib/PACKAGES` and `PACKAGES.gz` read the upstream `PACKAGES.gz` through the metadata cache and merge it with the local index (`PACKAGES.rds` is not offered; R falls back to `PACKAGES.gz`). Source tarballs (current and `Archive/`) and binary packages under `bin/<platform>/contrib/<rver>/` are cached on first download. CRAN publishes only MD5 sums, which the seam cannot verify, so these fills are length checked but not hash verified.
 Protocol reference: https://cran.r-project.org/doc/manuals/r-release/R-admin.html

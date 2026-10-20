@@ -1,14 +1,14 @@
 # Local Dart Pub adapter
 
-Integration: `New(pool, artifactService)`, configure `SetPublicURL` with the
-trusted external origin, mount `/feeds/{slug}/pub/`, and call `Close` after HTTP
-shutdown. Feed/source format is `pub`. Only this package was added; the parent
-must register the adapter. No dependencies or migrations are added.
+Integration: `New(pool, artifactService)`, `SetPublicURL` with the trusted external
+origin, mounted at `/feeds/{slug}/pub/` by `cmd/ant/artifacts.go`, and `Close` after HTTP
+shutdown. Feed/source format is `pub`. See `site/formats/pub.md`.
 
 Implemented subset:
 
-- Bearer service tokens (`dart pub token add <hosted-url>`); browser principals
-  cannot authenticate protocol requests. No fabricated OAuth endpoints.
+- Bearer tokens (`dart pub token add <hosted-url>`), verified by the shared
+  client-authentication layer; browser principals cannot authenticate protocol
+  requests. No fabricated OAuth endpoints.
 - Native hosted v2 GET session, multipart POST upload, GET finalize flow.
   The random upload URL is a short-lived upload capability; the native client
   does not supply Authorization on that POST. Finalization requires the exact
@@ -22,7 +22,7 @@ Implemented subset:
 - Gzip/tar and YAML validation: valid package/version, root pubspec, no links,
   traversal, duplicate members, YAML aliases, excessive nesting, or corrupted
   gzip. No extraction or execution. Limits: 32 MiB compressed, 128 MiB expanded,
-  10,000 archive members, 256 KiB pubspec, 4 active transfers, 64 sessions,
+  10,000 archive members, 256 KiB pubspec, transfers bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32), 64 sessions,
   4,096 versions and 8 MiB accumulated pubspecs per metadata response.
   Upload/download progress deadlines are 30 seconds with 64 KiB buffers;
   finalization has a 30-second context budget.
@@ -56,16 +56,10 @@ archives, cancellation, failed storage with no visible assets, concurrent
 conflicting publication, immutable retries, higher-owner no-fallback, scoped auth,
 and untrusted Host rejection.
 
-## Remaining F18 / Phase 1 gates
+## Further routes and remote sources
 
-This is not full F18 conformance. Dart 3.13.5 and Flutter 3.47.0 pinned baseline
-runs, multi-package dependency-chain fixtures, MinIO/OKE and AWS-compatible
-backend evidence, remote cold/warm/freshness behavior, replication/offline
-closure, retraction/discontinuation lifecycle, deletion/retention/search,
-namespace bindings, durable staging/restart recovery, download ranges, adapter
-metrics and management integration remain. Anonymous read is not implemented.
-Retraction/discontinuation state is not fabricated. All 26 formats remain in
-Phase 1 scope; this local subset does not reduce that scope or require a provider
-fleet.
+`DELETE api/packages/{name}/versions/{version}` deletes a version through the core (gated by the feed's delete policy); `PUT` and `DELETE` on `/retract` retract and restore it (the package document marks it `retracted`, and `latest` skips it). With a remote source, the upstream package document is read through the metadata cache, validated and re-rendered with every `archive_url` pointing at this feed; archives are fetched on first download from the `archive_url` the upstream names, verified against `archive_sha256` before the first byte is served and cached, with the pubspec beside them so cached versions stay listable during an outage.
+
+Not implemented: durable or resumable staging (sessions are per replica and in memory), download ranges, `discontinued` lifecycle state. The real Dart client (3.13.5 in the conformance harness) is exercised by `conformance/run.sh local pub`.
 
 Protocol reference: https://github.com/dart-lang/pub/blob/master/doc/repository-spec-v2.md

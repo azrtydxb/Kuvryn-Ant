@@ -39,17 +39,17 @@ authority handover and recovery, federated audit, runbooks. Design and per-miles
 
 |                                       | OKE                                                              | kw                                                                                                     |
 | ------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| URL                                   | `https://ant.azrty.com` (public certificate)                     | `https://ant.kw.watteel.lab` (private CA `cluster-ca`)                                                 |
+| URL                                   | `https://ant.example.com` (public certificate)                   | `https://ant.site-b.example.com` (private CA `cluster-ca`)                                             |
 | Role                                  | Federation authority; home of the nine shared feeds              | Federation member (`site=kw`); read-only replica of the shared feeds, plus its own pull-through caches |
 | kube context / namespace              | `azrty-oke` / `kuvryn-ant`, Helm release `ant` (revision 24)     | `kw` / `kuvryn-ant`, Helm release `ant` (revision 20)                                                  |
-| Image                                 | `dxb.ocir.io/axmcgpqk0w0z/azrty/kuvryn-ant`                      | `192.168.10.131/azrtydxb/kuvryn-ant`                                                                   |
+| Image                                 | `ocir.example.com/tenancy/kuvryn-ant`                            | `10.0.0.131/ant/kuvryn-ant`                                                                            |
 | Running digest (2026-10-19 13:14 +04) | `sha256:a89c1dacfdf3...`                                         | same digest                                                                                            |
 | Storage                               | OCI Object Storage (S3 compatibility), CloudNativePG 3 instances | TrueNAS MinIO, CloudNativePG 2 instances                                                               |
 | Values                                | `deploy/examples/azrty-oke.yaml`                                 | `deploy/examples/kw.yaml`, `deploy/examples/kw-federation-lan.yaml`                                    |
 
 - Data plane on OKE goes through the shared Envoy Gateway `edge` (HTTPRoute; `/` redirects to `/console/`, #283).
   Federation traffic uses TLS passthrough on port 8444 of the shared edge gateway (chart TLSRoute, #281). kw exposes
-  its federation listener on the LAN (`192.168.10.150:8444`); OKE reaches it through `hostAliases`.
+  its federation listener on the LAN (`10.0.0.150:8444`); OKE reaches it through `hostAliases`.
 - Shared feeds (`oci-hosted npm go cargo pypi maven helm nuget sccache`) are homed on OKE and replicated to kw by the
   adopted `oke-*` federation jobs (in sync at the end of qualification, `evidence/2026-10-19/federation/13-final-state.md`).
 - Node container mirrors on both clusters pull through Ant (`ANT_OCI_MIRROR_MAP`: docker.io, ghcr.io, quay.io,

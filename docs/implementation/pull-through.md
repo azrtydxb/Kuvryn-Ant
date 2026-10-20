@@ -130,7 +130,7 @@ that host in the source's redirect origins; the source credential is never sent 
   upstream. Archives come from the upstream `archive_url` (pub.dev redirects to a storage host:
   add it as a redirect origin), are verified against `archive_sha256` before the first byte is
   served and cached; the pubspec is cached beside it so cached versions stay listable offline.
-  Documents above the 4 MiB metadata limit (very large packages) cannot be proxied.
+  Documents above the source's metadata bound (24 MiB by default) cannot be proxied.
 - **CocoaPods** (`internal/cocoapods`). Origin is the CDN root (`cdn.cocoapods.org`).
   `all_pods_versions_<a>_<b>_<c>.txt` shards come through the metadata cache and are merged by pod
   name (a pod owned by a local source keeps only its local versions; cached remote pods are
@@ -140,7 +140,7 @@ that host in the source's redirect origins; the source credential is never sent 
   serves locally published archives only. `CocoaPods-version.yml` and
   `deprecated_podspecs.txt` stay local.
 - **CRAN** (`internal/cran`). Origin is the mirror root (`cloud.r-project.org`). Upstream
-  `src/contrib/PACKAGES.gz` is read (compressed, so the 4 MiB limit holds), validated and merged
+  `src/contrib/PACKAGES.gz` is read (compressed, so it stays well below the metadata bound), validated and merged
   into the feed `PACKAGES`/`PACKAGES.gz` by package name: names present in a local source never take
   upstream metadata or archives (local ownership is checked per package name across all versions).
   Source tarballs (`src/contrib/<pkg>_<ver>.tar.gz`, `src/contrib/Archive/<pkg>/...`) share one cache
@@ -205,15 +205,16 @@ The last four formats; per-adapter details are in each `internal/<format>/README
 
 ## Limitations
 
-- Remote registries that require a token handshake (Docker Hub style `WWW-Authenticate`
-  realms) are unsupported; only the source's static `authorization`/`api_key` header is sent.
+- The only token exchange is the OCI/Docker bearer-token handshake (Docker Hub style
+  `WWW-Authenticate: Bearer realm=...` challenges, see `oci-mirror.md`); every other
+  format sends only the source's static `authorization`/`api_key` header.
 - npm tarballs are fetched from `<name>/-/<base>-<version>.tgz`, not from the URL in the
   upstream document; PyPI serves only wheels and `.tar.gz` sdists with a stated sha256, and
   the all-projects `/simple/` index is local only; Maven timestamped snapshots remain unsupported.
-- Remote metadata documents (Helm `index.yaml`, NuGet registration, APT/RPM Release/repomd) are limited to 4 MiB, so very large Helm indexes (for example bitnami) cannot be proxied; large APT/RPM index files are not subject to this limit because they are cached as verified artifacts.
+- Remote metadata documents (Helm `index.yaml`, NuGet registration, APT/RPM Release/repomd) are held in the in-memory metadata cache and limited to 24 MiB by default; the limit can be changed per source with `cache.max_metadata_bytes` (never above the source's cache quota). A larger document is streamed uncached by the adapters that can (Conda repodata, npm packuments, p2 manifests) and refused with 503 by the others, so very large Helm indexes (for example bitnami) cannot be proxied; large APT/RPM index files are not subject to this limit because they are cached as verified artifacts.
 - Signed upstream indexes (APT, RPM) are never rewritten or merged; mixed local/remote feeds answer a distribution or repository from exactly one owner.
 - Metadata and negative caches are in-process (not shared across instances, lost on restart);
-  cached artifacts are durable. Metadata bodies are limited to 4 MiB.
+  cached artifacts are durable. Metadata bodies are limited as described above.
 - Upstream latency/hit-rate metrics and per-source retry budgets beyond the fetcher's
   circuit breaker are not exposed yet.
 - A cache fill is not rolled back if the source's configuration changes mid-stream; the
@@ -242,10 +243,12 @@ download and listed from the store during an outage.
   sha256 required) and re-rendered with `info` reduced to the subdir (a `base_url` would send
   clients around the feed). A subdir is one ownership unit, as for local channels. `.tar.bz2` and
   `.conda` packages are verified against the repodata sha256 before they are served or cached; the
-  verified `.tar.bz2` entry is cached beside it for offline listing. `current_repodata.json`, `.zst`
-  and `.bz2` variants and sharded repodata are not served. **Limit:** repodata is bounded by the
-  runtime metadata limit (at most 8 MiB, default 1 MiB), so very large channels such as
-  conda-forge `linux-64`/`noarch` cannot be proxied today; small channels and mirrors work.
+  verified `.tar.bz2` entry is cached beside it for offline listing. `current_repodata.json` is served;
+  the `.zst` and `.bz2` variants and sharded repodata are not (clients fall back to `repodata.json`).
+  A repodata above the source's metadata bound (conda-forge `linux-64`/`noarch`) is streamed instead:
+  `repodata.json.zst` is preferred upstream, entries are validated one at a time and written to the
+  client, and a spooled digest index verifies later package downloads, so memory does not grow with the
+  document (see `internal/condarepo/README.md`).
 - **Conan** (`internal/conan`). Origin is the server root (`https://center2.conan.io`); the Conan v2
   API has no absolute URLs. `latest`, `revisions`, package-id `search` and `files` listings are
   validated and re-rendered. Revision files are immutable and cached on first download. Conan

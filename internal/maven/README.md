@@ -2,13 +2,14 @@
 
 `New(db, service) (*Repository, error)` returns a handler for
 `/feeds/{slug}/maven/`. Mount it without stripping that prefix. The handler is
-bound to `service.Lease().InstanceID`. No new Go dependencies, migrations, public
-origin setting, or absolute URLs are needed. Parent integration must register the
-handler and retain machine-credential authentication at this route.
+bound to `service.Lease().InstanceID`. It needs no public origin setting and emits no absolute
+URLs. `cmd/ant/artifacts.go` mounts it; credentials are verified by the shared
+client-authentication layer (`internal/identity.ClientAuth`) before the handler runs.
 
 Implemented: immutable local release bundles, Maven2 POM/JAR/classifier paths,
-MD5/SHA-1/SHA-256 sidecars, package metadata, Basic (service token as password) and
-Bearer service authentication, conditional GET/HEAD and byte ranges. Browser
+MD5/SHA-1/SHA-256 sidecars, package metadata, Basic (token as password) and
+Bearer authentication, conditional GET/HEAD and byte ranges, delete of a file or version
+(gated by the feed's delete policy) and pull-through of a remote repository. Browser
 session context alone is rejected. Private responses use `private, no-store`.
 
 ## Publication
@@ -37,7 +38,7 @@ existing versions return 409. Interrupted, malformed and incomplete bundles do
 not advertise a version. Source routing is pinned before reading each asset and
 rechecked by the shared service at commit.
 
-Native `mvn deploy` works (Gradle maven-publish sends the same sequence but has not been run): each file is PUT separately
+Native `mvn deploy` works (Gradle maven-publish sends the same sequence; `site/formats/maven.md` lists what to disable for Gradle): each file is PUT separately
 (jar, pom, their `.sha1`/`.md5`/`.sha256`/`.sha512` files, then the artifact level
 `maven-metadata.xml`). PUT files are staged privately (validated like bundle parts,
 checksum files verified, 15 minute TTL, at most 4 files per version and 16 versions
@@ -51,13 +52,17 @@ PUTs of one deployment may reach different replicas and survive a restart; the m
 leases the staged sets so two replicas never commit one deployment twice. Timestamped snapshots and
 SNAPSHOT metadata return 501; mutable snapshot generation support is not claimed.
 Only releases are supported. Inherited/interpolated POM coordinates, packaging
-other than jar/pom, group plugin-prefix metadata, signatures and remote proxy
-fetching are outside this implementation. Gradle can consume the Maven layout,
-but a native Gradle fixture has not been run.
+other than jar/pom, group plugin-prefix metadata and signatures are outside this
+implementation. Gradle can consume the Maven layout.
+
+Remote sources: an artifact that no local source owns is fetched from the remote
+repository on first download (`artifact.Service.PullThrough`) and cached; the upstream
+`maven-metadata.xml` is read through the metadata cache. A coordinate owned by a local
+source is never completed from upstream.
 
 ## Bounds and ownership
 
-Four concurrent uploads per handler; 256 MiB HTTP body; 128 MiB per JAR; 1 MiB
+Concurrent uploads bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32); 256 MiB HTTP body; 128 MiB per JAR; 1 MiB
 POM; 64 KiB streaming buffers. Temporary files are private and removed on every
 exit. XML DTDs/entities are rejected, depth is capped at 64, and coordinates must
 match the path. JAR entries are CRC-checked with context cancellation every
@@ -84,10 +89,11 @@ concurrent versions, package-owner non-fallback, namespace scope, foreign tokens
 browser-context rejection, ranges, Basic/Bearer and snapshot rejection. An
 installed `mvn` runs a fresh-cache parent-POM resolution and `validate` through
 a local authenticated HTTP fixture; all repositories are mirrored to the fixture
-and no external artifacts/plugins are required. This exercises native Maven
-model resolution, not native deploy, dependency JAR resolution or full format
-conformance. Native Maven 3.9.16 and PostgreSQL integration passed with `-race`.
+and no external artifacts/plugins are required. Native deploy, dependency resolution and
+pull-through of Maven Central with the real client are exercised by
+`conformance/run.sh local maven`.
 
 Protocol references:
+
 - https://maven.apache.org/repositories/layout.html
 - https://maven.apache.org/ref/3.9.9/maven-repository-metadata/repository-metadata.html

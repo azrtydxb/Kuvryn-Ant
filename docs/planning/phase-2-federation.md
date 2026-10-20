@@ -98,7 +98,7 @@ Rejected alternative: Raft or another quorum protocol across members. It would m
 {
   "kind": "membership",
   "federation_id": "uuid",
-  "federation_name": "watteel",
+  "federation_name": "example",
   "generation": 42,
   "authority_epoch": 3,
   "prev_hash": "sha256:…",
@@ -210,13 +210,13 @@ Each request on the federation listener also carries a member request signature 
         {
           "kind": "feed",
           "effect": "allow",
-          "feed_key": "watteel/oci-release",
+          "feed_key": "example/oci-release",
           "actions": ["read"]
         },
         {
           "kind": "artifact",
           "effect": "deny",
-          "feed_key": "watteel/oci-release",
+          "feed_key": "example/oci-release",
           "namespace": "internal",
           "actions": ["read"]
         }
@@ -348,7 +348,7 @@ For each feed key, topology carries a reviewed, non-secret descriptor: format, d
 ### 9.3 Replication rules
 
 ```json
-{"id": "uuid", "feed_key": "watteel/oci-release", "targets": {"labels": {"site": "kw"}} | {"members": ["uuid"]},
+{"id": "uuid", "feed_key": "example/oci-release", "targets": {"labels": {"site": "kw"}} | {"members": ["uuid"]},
  "mode": "continuous", "interval_seconds": 300, "include_cached": true,
  "filters": {"namespace": "", "package": "", "version_prefix": ""},
  "deletion_policy": "ignore|propagate", "create_destination_feed": true, "max_lag_seconds": 900}
