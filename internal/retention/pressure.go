@@ -342,12 +342,13 @@ func (s *Service) selectEvictions(ctx context.Context, sources []pressureSource,
 	rows, err := s.DB.Query(ctx, `WITH cfg AS (SELECT * FROM unnest($2::uuid[],$3::int[],$4::boolean[]) AS t(source_id,min_keep,include_tagged)),
  vs AS (
   SELECT v.id AS vid,v.component_id AS cid,c.source_id,c.coordinate,v.version,
-   COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at) AS last_used,
-   row_number() OVER (PARTITION BY v.component_id ORDER BY v.created_at DESC,v.id DESC) AS rnk,
+   `+lastUsedSQL+` AS last_used,
+   CASE WHEN v.blob_only OR `+childSQL+` THEN 2147483647 ELSE row_number() OVER (PARTITION BY v.component_id,(v.blob_only OR `+childSQL+`) ORDER BY v.created_at DESC,v.id DESC)::int END AS rnk,
+   `+childSQL+` AS is_child,
    EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) AS is_tagged
   FROM versions v JOIN components c ON c.id=v.component_id WHERE v.instance_id=$1 AND c.source_id=ANY($2::uuid[]))
  SELECT vs.vid::text,vs.cid::text,vs.source_id::text,vs.coordinate,vs.version,vs.last_used FROM vs JOIN cfg ON cfg.source_id=vs.source_id
- WHERE vs.rnk>cfg.min_keep AND (NOT vs.is_tagged OR cfg.include_tagged) ORDER BY vs.last_used,vs.vid LIMIT $5`,
+ WHERE NOT vs.is_child AND vs.rnk>cfg.min_keep AND (NOT vs.is_tagged OR cfg.include_tagged) ORDER BY vs.last_used,vs.vid LIMIT $5`,
 		s.InstanceID, ids, minKeeps, tagged, pressureCandidateScan)
 	if err != nil {
 		return nil, 0, false, err
@@ -528,9 +529,9 @@ func (s *Service) evictComponent(ctx context.Context, src pressureSource, group 
 	// Still present, still beyond min_keep, still unprotected and not read since selection.
 	rows, err := tx.Query(ctx, `SELECT vid::text,rnk,is_tagged,last_used FROM (
   SELECT v.id AS vid,
-   row_number() OVER (ORDER BY v.created_at DESC,v.id DESC) AS rnk,
+   `+rankSQL+` AS rnk,
    EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) AS is_tagged,
-   COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at) AS last_used
+   `+lastUsedSQL+` AS last_used
   FROM versions v WHERE v.component_id=$1) x
  WHERE vid=ANY($2::uuid[])`, group[0].ComponentID, ids)
 	if err != nil {
@@ -565,6 +566,13 @@ func (s *Service) evictComponent(ctx context.Context, src pressureSource, group 
 	if len(batch) == 0 {
 		return nil, 0, nil
 	}
+	// Children of a deleted index and the blobs only it named go with it, so
+	// pressure never leaves an index without its platform manifests.
+	extra, err := s.followers(ctx, tx, src.ID, group[0].ComponentID, group[0].Coordinate, batchIDs, src.IncludeTagged)
+	if err != nil {
+		return nil, 0, err
+	}
+	batchIDs = append(batchIDs, deletionIDs(extra)...)
 	if _, err = tx.Exec(ctx, `DELETE FROM tags WHERE component_id=$1 AND version_id=ANY($2::uuid[])`, group[0].ComponentID, batchIDs); err != nil {
 		return nil, 0, err
 	}
@@ -593,6 +601,12 @@ func (s *Service) evictComponent(ctx context.Context, src pressureSource, group 
 		return nil, 0, err
 	}
 	done := make([]Deletion, len(batch))
+	for _, e := range extra {
+		payload := map[string]string{"source_id": e.SourceID, "coordinate": e.Coordinate, "version": e.Version, "reason": e.Reason}
+		if err = events.Emit(ctx, tx, s.InstanceID, "", "retention.pressure.evict", e.VersionID, payload); err != nil {
+			return nil, 0, err
+		}
+	}
 	for i, c := range batch {
 		done[i] = Deletion{SourceID: c.SourceID, Coordinate: c.Coordinate, Version: c.Version, VersionID: c.VersionID, Reason: "pressure_lru"}
 		payload := map[string]string{"source_id": c.SourceID, "coordinate": c.Coordinate, "version": c.Version, "reason": "pressure_lru"}
@@ -606,7 +620,7 @@ func (s *Service) evictComponent(ctx context.Context, src pressureSource, group 
 	if err = tx.Commit(ctx); err != nil {
 		return nil, 0, err
 	}
-	return done, freed, nil
+	return append(done, extra...), freed, nil
 }
 
 func microseconds(d time.Duration) string { return fmt.Sprintf("%d microseconds", d.Microseconds()) }
