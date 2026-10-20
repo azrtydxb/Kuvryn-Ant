@@ -445,3 +445,75 @@ func TestClientAuthMutationsAreIdempotent(t *testing.T) {
 		t.Fatalf("revoke audited %d times", n)
 	}
 }
+
+// Tokens already issued under a GitHub OIDC trust rule must not outlive the
+// rule: deleting it, disabling it or narrowing it revokes them, with audit.
+func TestGitHubOIDCRuleChangesRevokeIssuedTokens(t *testing.T) {
+	f := newAuthFixture(t)
+	ci := createIdentityPrincipal(f.sourceHTTPFixture, "ci-revoke", "service")
+	feed := f.feed("ci-revoke-feed", "raw")
+	mustStatus(t, f.admin("PUT", "/api/v1/auth/github-oidc/config", fmt.Sprintf(`{"audience":%q}`, authAudience)), 200)
+	rule := func(extra string) string {
+		return fmt.Sprintf(`{"name":"revoke-me","org":"Acme","repo":"widg*","ref":"main","principal_id":%q,"scopes":[{"feed_id":%q,"actions":["read","publish"]}],"ttl_seconds":600%s}`, ci.ID, feed.ID, extra)
+	}
+	created := decodeJSON[GitHubTrustRule](t, mustStatus(t, f.admin("POST", "/api/v1/auth/github-oidc/trust-rules", rule("")), 201))
+	tokens := identity.Tokens{DB: f.db}
+	issue := func() (string, string) {
+		t.Helper()
+		out := decodeJSON[GitHubExchangeResponse](t, mustStatus(t, f.as("", "POST", "/api/v1/auth/github-oidc/exchange", fmt.Sprintf(`{"token":%q}`, f.jwt(t, nil, authAudience, time.Hour)), ""), 200))
+		p, err := tokens.Authenticate(context.Background(), out.AccessToken)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out.AccessToken, p.TokenID
+	}
+	alive := func(secret string) bool {
+		_, err := tokens.Authenticate(context.Background(), secret)
+		return err == nil
+	}
+	revokeAudits := func(id string) int {
+		var n int
+		if err := f.db.QueryRow(context.Background(), "SELECT count(*) FROM audit_events WHERE action='token.revoke' AND resource_id=$1", id).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	put := func(body string) {
+		t.Helper()
+		mustStatus(t, f.admin("PUT", "/api/v1/auth/github-oidc/trust-rules/"+created.ID, body), 200)
+	}
+
+	t1, _ := issue()
+	// Edits that neither disable nor narrow the rule keep issued tokens.
+	put(rule("") /* identical */)
+	put(strings.Replace(rule(""), `"ttl_seconds":600`, `"ttl_seconds":900`, 1))
+	put(strings.Replace(rule(""), `"actions":["read","publish"]`, `"actions":["read","publish","delete"]`, 1))
+	if !alive(t1) {
+		t.Fatal("widening or neutral edit must not revoke issued tokens")
+	}
+	// Narrowing the scopes revokes tokens the new rule would not have granted.
+	put(strings.Replace(rule(""), `"actions":["read","publish"]`, `"actions":["read"]`, 1))
+	if alive(t1) {
+		t.Fatal("token survived scope narrowing")
+	}
+	// Disabling revokes.
+	put(rule(""))
+	t2, t2id := issue()
+	put(rule(`,"enabled":false`))
+	if alive(t2) {
+		t.Fatal("token survived rule disable")
+	}
+	if revokeAudits(t2id) != 1 {
+		t.Fatalf("revocation of %s not audited", t2id)
+	}
+	// Deleting revokes.
+	put(rule(`,"enabled":true`))
+	t3, t3id := issue()
+	mustStatus(t, f.admin("DELETE", "/api/v1/auth/github-oidc/trust-rules/"+created.ID, ""), 204)
+	if alive(t3) {
+		t.Fatal("token survived rule delete")
+	}
+	if revokeAudits(t3id) != 1 {
+		t.Fatalf("revocation of %s not audited", t3id)
+	}
+}

@@ -984,6 +984,32 @@ function LocalAccountCard({
             }
           }}
         />
+        <Switch
+          label="Let local users set up their own two-factor (TOTP) sign-in"
+          labelPosition="end"
+          checked={!!data.local_user_totp}
+          disabled={policy.busy}
+          onChange={async (e: { target: { checked: boolean } }) => {
+            const next = e.target.checked;
+            if (
+              await policy.run(() =>
+                client.call("putIdentityPolicy", {
+                  body: {
+                    sso_mandatory: data.sso_mandatory,
+                    local_user_totp: next,
+                  },
+                }),
+              )
+            ) {
+              toast(
+                next
+                  ? "Local users can enrol two-factor"
+                  : "Local user two-factor enrolment is off",
+              );
+              reload();
+            }
+          }}
+        />
         <Failure error={policy.error} />
         {acct.exists && !acct.totp_enabled && !uri && (
           <Button

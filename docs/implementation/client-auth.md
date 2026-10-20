@@ -209,7 +209,8 @@ If you prefer not to call the exchange endpoint, pass the OIDC JWT itself as
 the credential (`$JWT` instead of `$ANT_TOKEN` above): the server validates it
 and applies the same trust rules. The exchange step avoids pasting a long JWT
 into tools with small credential limits, and the issued token is revocable by
-deleting the trust rule.
+deleting, disabling or narrowing the trust rule (the rule id is recorded on each
+issued token).
 
 ## Verification
 

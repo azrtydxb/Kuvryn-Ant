@@ -80,9 +80,20 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		case "v2/users/authenticate":
 			// The machine token is already verified by shared middleware. Conan treats
 			// the returned opaque string as its bearer; no parallel token authority.
+			token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+			// PATs and directory logins reach here as single-use tickets: hand back
+			// a reusable credential instead.
+			secret, ok, err := identity.LoginToken(r.Context(), s.db, p, "conan remote login", 12*time.Hour)
+			if err != nil {
+				failure(w, artifact.ErrUnavailable)
+				return
+			}
+			if ok {
+				token = secret
+			}
 			w.Header().Set("Content-Type", "text/plain")
 			if r.Method != "HEAD" {
-				_, _ = w.Write([]byte(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")))
+				_, _ = w.Write([]byte(token))
 			}
 			return
 		case "v2/users/check_credentials":

@@ -207,7 +207,7 @@ export type UpdateIdentityProvider = { "kind"?: "oidc" | "saml" | "ldap"; "name"
 export type FileIdentityProvider = { "kind": "oidc" | "saml" | "ldap"; "label": string; "detail": string };
 export type ActiveIdentityProvider = { "kind": "oidc" | "saml" | "ldap"; "source": "file" | "database"; "provider_id"?: string };
 export type LocalAccount = { "exists": boolean; "username"?: string; "totp_enabled": boolean; "locked_until"?: string; "last_login_at"?: string };
-export type IdentityProviderList = { "items": Array<IdentityProvider>; "file_items": Array<FileIdentityProvider>; "active": Array<ActiveIdentityProvider>; "sso_mandatory": boolean; "origin": string; "local_account": LocalAccount };
+export type IdentityProviderList = { "items": Array<IdentityProvider>; "file_items": Array<FileIdentityProvider>; "active": Array<ActiveIdentityProvider>; "sso_mandatory": boolean; "local_user_totp"?: boolean; "origin": string; "local_account": LocalAccount };
 export type IdentityProviderTestRequest = { "id"?: string; "kind": "oidc" | "saml" | "ldap"; "config": IdentityProviderConfig; "secret"?: string };
 export type IdentityTestCheck = { "name": string; "ok": boolean; "detail": string };
 export type IdentityProviderTest = { "kind": "oidc" | "saml" | "ldap"; "ok": boolean; "checks": Array<IdentityTestCheck>; "warnings": Array<string>; "clock_skew_seconds"?: number; "suggested_allowed_endpoints"?: Array<string>; "tls_mode"?: "ldaps" | "starttls"; "certificates": Array<CertificateStatus> };
@@ -218,7 +218,7 @@ export type MappingPreviewRequest = { "sample"?: string; "login"?: string };
 export type MappingSubject = { "issuer": string; "subject": string; "email"?: string; "groups": Array<string>; "audience"?: Array<string> };
 export type MappingBinding = { "found": boolean; "principal_id"?: string; "disabled"?: boolean; "roles": Array<string> };
 export type MappingPreview = { "identity": MappingSubject; "signature_verified": boolean; "binding": MappingBinding; "proposed_roles": Array<string>; "would_sign_in": boolean; "problems": Array<string>; "warnings": Array<string>; "clock_skew_seconds"?: number };
-export type IdentityPolicy = { "sso_mandatory": boolean };
+export type IdentityPolicy = { "sso_mandatory": boolean; "local_user_totp"?: boolean };
 export type TotpEnrollment = { "otpauth_uri": string };
 export type TotpConfirm = { "code": string };
 export type SecurityResultInput = { "scanner": string; "status": "passed" | "failed" | "warning"; "summary"?: {  } };
@@ -529,6 +529,7 @@ previewIdentityMapping: { body: MappingPreviewRequest; response: MappingPreview 
 getIdentityPolicy: { body: undefined; response: IdentityPolicy };
 putIdentityPolicy: { body: IdentityPolicy; response: IdentityPolicy };
 getLocalAccount: { body: undefined; response: LocalAccount };
+getOwnLocalAccount: { body: undefined; response: LocalUser };
 unlockLocalAccount: { body: undefined; response: undefined };
 beginLocalTotp: { body: undefined; response: TotpEnrollment };
 disableLocalTotp: { body: undefined; response: undefined };
@@ -615,6 +616,8 @@ verifyFederationRecoveryKey: { body: VerifyFederationRecoveryKey; response: Fede
 federatedAudit: { body: undefined; response: FederationAuditPage };
 listLocalUsers: { body: undefined; response: LocalUserList };
 createLocalUser: { body: LocalUserInput; response: LocalUser };
+unlockLocalUser: { body: undefined; response: undefined };
+resetLocalUserTotp: { body: undefined; response: undefined };
 setLocalUserPassword: { body: LocalUserPassword; response: undefined };
 deleteLocalUser: { body: undefined; response: undefined };
 getRetentionSettings: { body: undefined; response: RetentionSettings };
@@ -1359,6 +1362,11 @@ export const routes = {
     "method": "GET",
     "idempotent": false
   },
+  "getOwnLocalAccount": {
+    "path": "/api/v1/local-account/me",
+    "method": "GET",
+    "idempotent": false
+  },
   "unlockLocalAccount": {
     "path": "/api/v1/local-account/unlock",
     "method": "POST",
@@ -1787,6 +1795,16 @@ export const routes = {
   "createLocalUser": {
     "path": "/api/v1/local-accounts",
     "method": "POST",
+    "idempotent": true
+  },
+  "unlockLocalUser": {
+    "path": "/api/v1/local-accounts/{username}/unlock",
+    "method": "POST",
+    "idempotent": true
+  },
+  "resetLocalUserTotp": {
+    "path": "/api/v1/local-accounts/{username}/totp",
+    "method": "DELETE",
     "idempotent": true
   },
   "setLocalUserPassword": {

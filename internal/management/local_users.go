@@ -46,6 +46,8 @@ func RegisterLocalUsers(mux *http.ServeMux, d IdentityAdminDeps) {
 		"POST /api/v1/local-accounts":                    h.localUserCreate,
 		"PUT /api/v1/local-accounts/{username}/password": h.localUserPassword,
 		"DELETE /api/v1/local-accounts/{username}":       h.localUserDelete,
+		"POST /api/v1/local-accounts/{username}/unlock":  h.localUserUnlock,
+		"DELETE /api/v1/local-accounts/{username}/totp":  h.localUserTOTPReset,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
@@ -143,6 +145,40 @@ func (h idpHandlers) localUserDelete(w http.ResponseWriter, r *http.Request) {
 	username := r.PathValue("username")
 	out, ok := h.idem(w, r, p, "local_account.delete", username, struct{}{}, func(ctx context.Context) (any, error) {
 		if err := h.local(p).DeleteUser(ctx, p.PrincipalID, username); err != nil {
+			return nil, h.localUserError(err)
+		}
+		return struct{}{}, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 204)
+	}
+}
+
+func (h idpHandlers) localUserUnlock(w http.ResponseWriter, r *http.Request) {
+	p, ok := h.admin(w, r)
+	if !ok || !h.ready(w, r) {
+		return
+	}
+	username := r.PathValue("username")
+	out, ok := h.idem(w, r, p, "local_account.unlock", username, struct{}{}, func(ctx context.Context) (any, error) {
+		if err := h.local(p).UnlockUser(ctx, p.PrincipalID, username); err != nil {
+			return nil, h.localUserError(err)
+		}
+		return struct{}{}, nil
+	})
+	if ok {
+		replayWrite(w, r, out, 204)
+	}
+}
+
+func (h idpHandlers) localUserTOTPReset(w http.ResponseWriter, r *http.Request) {
+	p, ok := h.admin(w, r)
+	if !ok || !h.ready(w, r) {
+		return
+	}
+	username := r.PathValue("username")
+	out, ok := h.idem(w, r, p, "local_account.totp_reset", username, struct{}{}, func(ctx context.Context) (any, error) {
+		if err := h.local(p).ResetUserTOTP(ctx, p.PrincipalID, username); err != nil {
 			return nil, h.localUserError(err)
 		}
 		return struct{}{}, nil

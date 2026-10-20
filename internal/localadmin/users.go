@@ -220,3 +220,80 @@ func rollbackTx(ctx context.Context, tx pgx.Tx) {
 	defer cancel()
 	_ = tx.Rollback(c)
 }
+
+// UnlockUser clears one account's failed-attempt counter and lockout without
+// touching its password (administrator action). Unlike a password reset the
+// user keeps their credentials, which is the right fix for a typo storm.
+func (s *Service) UnlockUser(ctx context.Context, actor, username string) error {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return ErrUnavailable
+	}
+	defer rollbackTx(ctx, tx)
+	var principal string
+	err = tx.QueryRow(ctx, `UPDATE local_accounts SET failed_attempts=0,locked_until=NULL WHERE instance_id=$1 AND username=$2 RETURNING principal_id::text`, s.InstanceID, username).Scan(&principal)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return ErrUnavailable
+	}
+	if err = audit(ctx, tx, s.InstanceID, actor, "auth.local.unlocked", "success", map[string]any{"username": username, "principal_id": principal}); err != nil {
+		return ErrUnavailable
+	}
+	return tx.Commit(ctx)
+}
+
+// ResetUserTOTP removes a (non break-glass) account's second factor so a user
+// who lost their device can sign in and enrol again. Their browser sessions
+// are revoked. The break-glass account manages its own factor.
+func (s *Service) ResetUserTOTP(ctx context.Context, actor, username string) error {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return ErrUnavailable
+	}
+	defer rollbackTx(ctx, tx)
+	var principal string
+	var breakGlass bool
+	err = tx.QueryRow(ctx, `SELECT principal_id::text,break_glass FROM local_accounts WHERE instance_id=$1 AND username=$2 FOR UPDATE`, s.InstanceID, username).Scan(&principal, &breakGlass)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return ErrUnavailable
+	}
+	if breakGlass {
+		return ErrReserved
+	}
+	for _, q := range []string{
+		`UPDATE local_accounts SET totp_enabled=false,totp_secret_id=NULL,totp_last_step=0 WHERE instance_id=$1 AND principal_id=$2`,
+		`DELETE FROM encrypted_secrets WHERE instance_id=$1 AND purpose='local-totp:'||$2::text`,
+		`DELETE FROM browser_sessions WHERE instance_id=$1 AND principal_id=$2`,
+	} {
+		if _, err = tx.Exec(ctx, q, s.InstanceID, principal); err != nil {
+			return ErrUnavailable
+		}
+	}
+	if err = audit(ctx, tx, s.InstanceID, actor, "auth.local.totp_reset", "success", map[string]any{"username": username, "principal_id": principal}); err != nil {
+		return ErrUnavailable
+	}
+	return tx.Commit(ctx)
+}
+
+// Account returns the local account behind a principal, if it has one.
+func (s *Service) Account(ctx context.Context, principal string) (User, bool, error) {
+	var u User
+	err := s.DB.QueryRow(ctx, `SELECT username,principal_id::text,break_glass,totp_enabled,CASE WHEN locked_until>now() THEN locked_until END,last_login_at FROM local_accounts WHERE instance_id=$1 AND principal_id=$2`, s.InstanceID, principal).
+		Scan(&u.Username, &u.PrincipalID, &u.BreakGlass, &u.TOTPEnabled, &u.LockedUntil, &u.LastLoginAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return User{}, false, nil
+	}
+	if err != nil {
+		return User{}, false, ErrUnavailable
+	}
+	return u, true, nil
+}

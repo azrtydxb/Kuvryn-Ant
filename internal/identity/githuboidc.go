@@ -329,7 +329,7 @@ func (g *GitHubOIDC) Exchange(ctx context.Context, raw string) (IssuedToken, Tru
 		if !rule.Matches(claims) {
 			continue
 		}
-		issued, err := (Tokens{DB: g.DB}).Issue(ctx, g.InstanceID, rule.PrincipalID, rule.PrincipalID, rule.Scopes, g.now().Add(time.Duration(rule.TTLSeconds)*time.Second))
+		issued, err := (Tokens{DB: g.DB}).IssueForRule(ctx, g.InstanceID, rule.PrincipalID, rule.PrincipalID, rule.Scopes, g.now().Add(time.Duration(rule.TTLSeconds)*time.Second), rule.ID)
 		if err != nil {
 			if errors.Is(err, ErrUnauthenticated) || errors.Is(err, ErrInvalidScope) {
 				return IssuedToken{}, TrustRule{}, ErrNoTrust
@@ -347,11 +347,17 @@ func (g *GitHubOIDC) Exchange(ctx context.Context, raw string) (IssuedToken, Tru
 func (g *GitHubOIDC) tokenForJWT(ctx context.Context, raw string) (string, error) {
 	key := sha256.Sum256([]byte(raw))
 	g.mu.Lock()
-	if e, ok := g.exchanged[key]; ok && g.now().Add(30*time.Second).Before(e.expires) {
-		g.mu.Unlock()
-		return e.raw, nil
-	}
+	e, ok := g.exchanged[key]
 	g.mu.Unlock()
+	if ok && g.now().Add(30*time.Second).Before(e.expires) {
+		// A rule edit, delete or manual revocation may have killed the token.
+		if g.tokenLive(ctx, e.raw) {
+			return e.raw, nil
+		}
+		g.mu.Lock()
+		delete(g.exchanged, key)
+		g.mu.Unlock()
+	}
 	issued, _, err := g.Exchange(ctx, raw)
 	if err != nil {
 		return "", err
@@ -367,3 +373,12 @@ func (g *GitHubOIDC) tokenForJWT(ctx context.Context, raw string) (string, error
 
 // NormalizeScopes canonicalizes feed UUID spelling in scopes.
 func NormalizeScopes(in []Scope) ([]Scope, error) { return normalizeScopes(in) }
+
+// tokenLive reports whether an issued service token is still usable. A
+// database error counts as live so an outage surfaces from the real check.
+func (g *GitHubOIDC) tokenLive(ctx context.Context, raw string) bool {
+	verifier := sha256.Sum256([]byte(raw))
+	var live bool
+	err := g.DB.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM service_tokens WHERE verifier=$1 AND revoked_at IS NULL AND expires_at>clock_timestamp())", verifier[:]).Scan(&live)
+	return err != nil || live
+}

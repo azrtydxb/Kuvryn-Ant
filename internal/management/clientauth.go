@@ -741,6 +741,16 @@ func (h authHandlers) saveRule(w http.ResponseWriter, r *http.Request, id string
 		}
 		encoded := encodeScopes(scopes)
 		g := GitHubTrustRule{Name: in.Name, Org: in.Org, Repo: in.Repo, Ref: in.Ref, Environment: in.Environment, Workflow: in.Workflow, PrincipalID: in.PrincipalID, Scopes: fromIdentityScopes(scopes), TTLSeconds: in.TTLSeconds, Enabled: *in.Enabled}
+		// A rule that is edited away from what it granted must not leave tokens
+		// it already issued behind.
+		revokeAll := false
+		if id != "" {
+			var old GitHubTrustRule
+			if err := tx.QueryRow(ctx, "SELECT org,repo,ref,environment,workflow,principal_id::text,enabled FROM github_oidc_trust_rules WHERE instance_id=$1 AND id=$2 FOR UPDATE", p.InstanceID, id).Scan(&old.Org, &old.Repo, &old.Ref, &old.Environment, &old.Workflow, &old.PrincipalID, &old.Enabled); err != nil {
+				return nil, identityDBError(err)
+			}
+			revokeAll = !g.Enabled || old.PrincipalID != g.PrincipalID || old.Org != g.Org || old.Repo != g.Repo || old.Ref != g.Ref || old.Environment != g.Environment || old.Workflow != g.Workflow
+		}
 		var err error
 		if id == "" {
 			err = tx.QueryRow(ctx, `INSERT INTO github_oidc_trust_rules(instance_id,name,org,repo,ref,environment,workflow,principal_id,scopes,ttl_seconds,enabled) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id::text,revision`,
@@ -754,6 +764,15 @@ func (h authHandlers) saveRule(w http.ResponseWriter, r *http.Request, id string
 		}
 		if err = identityEvent(ctx, tx, p, g.ID, action, g.Revision); err != nil {
 			return nil, err
+		}
+		if id != "" {
+			keep := scopes
+			if revokeAll {
+				keep = nil
+			}
+			if _, err = identity.RevokeRuleTokensTx(ctx, tx, p.InstanceID, p.PrincipalID, g.ID, keep); err != nil {
+				return nil, err
+			}
 		}
 		return g, nil
 	})
@@ -779,6 +798,9 @@ func (h authHandlers) deleteTrustRule(w http.ResponseWriter, r *http.Request) {
 		}
 		if tag.RowsAffected() == 0 {
 			return nil, database.ErrNotFound
+		}
+		if _, err = identity.RevokeRuleTokensTx(ctx, tx, p.InstanceID, p.PrincipalID, id, nil); err != nil {
+			return nil, err
 		}
 		if err = identityEvent(ctx, tx, p, id, "auth.github_oidc.rule.delete", 0); err != nil {
 			return nil, err

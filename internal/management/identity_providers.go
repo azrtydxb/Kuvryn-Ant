@@ -225,12 +225,13 @@ type LocalAccount struct {
 }
 
 type IdentityProviderList struct {
-	Items        []IdentityProvider `json:"items"`
-	FileItems    []FileProvider     `json:"file_items"`
-	Active       []ActiveProvider   `json:"active"`
-	SSOMandatory bool               `json:"sso_mandatory"`
-	Origin       string             `json:"origin"`
-	LocalAccount LocalAccount       `json:"local_account"`
+	Items         []IdentityProvider `json:"items"`
+	FileItems     []FileProvider     `json:"file_items"`
+	Active        []ActiveProvider   `json:"active"`
+	SSOMandatory  bool               `json:"sso_mandatory"`
+	LocalUserTOTP bool               `json:"local_user_totp"`
+	Origin        string             `json:"origin"`
+	LocalAccount  LocalAccount       `json:"local_account"`
 }
 
 type TestCheck struct {
@@ -268,6 +269,9 @@ type MappingPreviewRequest struct {
 
 type IdentityPolicy struct {
 	SSOMandatory bool `json:"sso_mandatory"`
+	// LocalUserTOTP lets ordinary local users enrol their own second factor.
+	// Omitted on write means unchanged; always present on read.
+	LocalUserTOTP *bool `json:"local_user_totp,omitempty"`
 }
 
 type TOTPEnrollment struct {
@@ -298,6 +302,7 @@ func RegisterIdentityProviders(mux *http.ServeMux, d IdentityAdminDeps) {
 		"PUT /api/v1/identity-policy":                          h.putPolicy,
 		"GET /api/v1/local-account":                            h.localStatus,
 		"POST /api/v1/local-account/unlock":                    h.localUnlock,
+		"GET /api/v1/local-account/me":                         h.localMe,
 		"POST /api/v1/local-account/totp":                      h.totpBegin,
 		"POST /api/v1/local-account/totp/confirm":              h.totpConfirm,
 		"DELETE /api/v1/local-account/totp":                    h.totpDisable,
@@ -473,8 +478,9 @@ func (h idpHandlers) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mandatory, _ := h.store(p).SSOMandatory(ctx)
+	localTOTP, _ := h.store(p).LocalUserTOTP(ctx)
 	active, fileKinds, activeList := h.activeSets()
-	out := IdentityProviderList{Items: []IdentityProvider{}, FileItems: h.d.FileProviders, Active: activeList, SSOMandatory: mandatory, Origin: h.d.Origin}
+	out := IdentityProviderList{Items: []IdentityProvider{}, FileItems: h.d.FileProviders, Active: activeList, SSOMandatory: mandatory, LocalUserTOTP: localTOTP, Origin: h.d.Origin}
 	if out.FileItems == nil {
 		out.FileItems = []FileProvider{}
 	}
@@ -958,7 +964,12 @@ func (h idpHandlers) getPolicy(w http.ResponseWriter, r *http.Request) {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "policy unavailable")
 		return
 	}
-	JSON(w, 200, IdentityPolicy{v})
+	localTOTP, err := h.store(p).LocalUserTOTP(ctx)
+	if err != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "policy unavailable")
+		return
+	}
+	JSON(w, 200, IdentityPolicy{SSOMandatory: v, LocalUserTOTP: &localTOTP})
 }
 
 func (h idpHandlers) putPolicy(w http.ResponseWriter, r *http.Request) {
@@ -974,7 +985,16 @@ func (h idpHandlers) putPolicy(w http.ResponseWriter, r *http.Request) {
 		if err := h.store(p).SetSSOMandatory(ctx, p.PrincipalID, in.SSOMandatory); err != nil {
 			return nil, err
 		}
-		return in, nil
+		if in.LocalUserTOTP != nil {
+			if err := h.store(p).SetLocalUserTOTP(ctx, p.PrincipalID, *in.LocalUserTOTP); err != nil {
+				return nil, err
+			}
+		}
+		current, err := h.store(p).LocalUserTOTP(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return IdentityPolicy{SSOMandatory: in.SSOMandatory, LocalUserTOTP: &current}, nil
 	})
 	if ok {
 		replayWrite(w, r, out, 200)
@@ -1013,21 +1033,59 @@ func (h idpHandlers) localUnlock(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// own authorizes TOTP changes: only the break-glass account itself may manage
-// its second factor, so one administrator cannot silently weaken another's.
+// own authorizes second-factor changes: only the signed-in local account
+// itself may manage its own factor, so one administrator cannot silently weaken
+// another's. The break-glass account always may; an ordinary local user may
+// when the local-user TOTP setting is on and the caller is a browser session
+// (not a token). Admins reset a user's lost factor through the local-accounts API.
 func (h idpHandlers) own(w http.ResponseWriter, r *http.Request) (identity.Principal, bool) {
-	p, ok := h.admin(w, r)
+	p, _, ok := h.policy(w, r)
 	if !ok || !h.ready(w, r) {
 		return p, false
 	}
 	ctx, cancel := h.ctx(r)
 	defer cancel()
-	id, err := h.local(p).BreakGlassPrincipal(ctx)
-	if err != nil || id != p.PrincipalID {
-		Error(w, r, 403, api.ErrorCodeForbidden, "only the signed-in break-glass account can manage its own second factor")
+	u, found, err := h.local(p).Account(ctx, p.PrincipalID)
+	if err != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "local account unavailable")
 		return p, false
 	}
+	if !found || (!u.BreakGlass && (p.TokenID != "" || p.Scopes != nil)) {
+		Error(w, r, 403, api.ErrorCodeForbidden, "only the signed-in local account can manage its own second factor")
+		return p, false
+	}
+	if !u.BreakGlass {
+		enabled, err := h.store(p).LocalUserTOTP(ctx)
+		if err != nil {
+			Error(w, r, 503, api.ErrorCodeUnavailable, "local account unavailable")
+			return p, false
+		}
+		if !enabled {
+			Error(w, r, 403, api.ErrorCodeForbidden, "second-factor enrolment is not enabled for local users")
+			return p, false
+		}
+	}
 	return p, true
+}
+
+// localMe reports the signed-in caller's own local account.
+func (h idpHandlers) localMe(w http.ResponseWriter, r *http.Request) {
+	p, _, ok := h.policy(w, r)
+	if !ok || !h.ready(w, r) {
+		return
+	}
+	ctx, cancel := h.ctx(r)
+	defer cancel()
+	u, found, err := h.local(p).Account(ctx, p.PrincipalID)
+	if err != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "local account unavailable")
+		return
+	}
+	if !found {
+		Error(w, r, 404, api.ErrorCodeNotFound, "no local account for this principal")
+		return
+	}
+	JSON(w, 200, LocalUser(u))
 }
 
 func (h idpHandlers) totpBegin(w http.ResponseWriter, r *http.Request) {

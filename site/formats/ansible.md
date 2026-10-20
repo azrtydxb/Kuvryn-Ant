@@ -92,11 +92,7 @@ The Automation Hub row has not been tested. Its path layout differs between vers
 
 ## Client configuration
 
-`ansible-galaxy` sends `Authorization: Token <token>`, which the adapter accepts like `Bearer`. Unauthenticated requests get `401`.
-
-::: warning Gap
-A token sent with the `Token` scheme is checked only as a **service token** (`ant_...`). Personal access tokens, directory passwords and GitHub OIDC JWTs are recognised by Ant's client-auth layer only with the `Bearer` or `Basic` schemes, and `ansible-galaxy` uses neither. Use a service token, or the short-lived service token returned by the GitHub OIDC exchange. This was found by reading the code.
-:::
+`ansible-galaxy` sends `Authorization: Token <token>`, which Ant treats exactly like `Bearer`: service tokens, personal access tokens and GitHub OIDC JWTs all work with it, subject to the feed's client-auth policy. Unauthenticated requests get `401`.
 
 ### Consume and publish
 
@@ -162,7 +158,7 @@ Exchange the OIDC token for a short-lived Ant token (see [GitHub Actions](../ci/
 
 | Symptom                                       | Cause                                                                                                                                                 |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `HTTP Error 401`                              | No token, a token for another server entry, or a PAT or JWT sent with the `Token` scheme (see the gap above).                                         |
+| `HTTP Error 401`                              | No token, an invalid or expired token, or a token for another server entry.                                                                           |
 | `HTTP Error 403`                              | The token lacks read or publish on the feed or the collection namespace.                                                                              |
 | `HTTP Code: 400` on publish                   | The filename does not match the archive identity, `sha256` does not match, or `MANIFEST.json`/`FILES.json` checks failed.                             |
 | `404` while waiting for the import            | The task expired or is held by another replica. Check whether the version is listed.                                                                  |
