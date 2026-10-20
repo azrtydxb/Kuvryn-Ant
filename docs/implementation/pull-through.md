@@ -338,3 +338,11 @@ manifest type or whose bytes parse as a manifest/index, and marks the rest
 blob-only. No asset, blob row or byte changes, so timestamps and references are
 untouched. It is idempotent, batched, reports counts per feed and repository, and
 writes one `repair.oci_blob_versions` audit event.
+
+Retention ranks only visible versions: blob-only rows do not count toward
+`keep_last` or `min_keep` and are never deleted by `keep_last` directly. When a
+policy deletes OCI manifests, blob-only rows named only by those manifests (read
+from the stored manifest bytes) are released in the same transaction and their
+bytes fall to normal GC; rows still named by a remaining manifest stay, and if a
+remaining manifest cannot be read nothing is released. `max_age`, `max_idle` and
+pressure eviction treat blob-only rows as before.
