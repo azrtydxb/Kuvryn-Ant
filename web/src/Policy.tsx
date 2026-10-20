@@ -10,6 +10,7 @@ import type {
   PublishRule,
   SourceAttachmentPage,
 } from "./generated";
+import { SourceIcon } from "./SourceIcon";
 import {
   Alert,
   Badge,
@@ -106,6 +107,8 @@ function PolicyEditor({
       attached.filter((a) => a.source.kind === "local").map((a) => a.source),
     [attached],
   );
+  const attachedSource = (id?: string) =>
+    attached.find((a) => a.source.id === id)?.source;
   const nameOf = (id?: string) =>
     locals.find((s) => s.id === id)?.name ??
     attached.find((a) => a.source.id === id)?.source.name ??
@@ -214,6 +217,12 @@ function PolicyEditor({
                   ) : (
                     <span className="row tight">
                       <Icon name="arrow-right" size={13} />
+                      {attachedSource(r.rule.target_source_id) && (
+                        <SourceIcon
+                          source={attachedSource(r.rule.target_source_id)!}
+                          size="sm"
+                        />
+                      )}
                       <Mono>{nameOf(r.rule.target_source_id) || "—"}</Mono>
                     </span>
                   ),

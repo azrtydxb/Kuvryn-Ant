@@ -416,6 +416,9 @@ func TestTrafficProvenanceAndStats(t *testing.T) {
 	if len(fs.Items) != 1 || fs.Items[0].Packages != 1 || fs.Items[0].Assets != 1 || fs.Items[0].Bytes != 100 || fs.Items[0].Pulls != 3 {
 		t.Fatalf("feed stats %+v", fs.Items)
 	}
+	if len(fs.Items[0].SourceIDs) != 1 || fs.Items[0].SourceIDs[0] != src.ID {
+		t.Fatalf("feed stats source ids %+v", fs.Items[0].SourceIDs)
+	}
 	ss := decodeJSON[SourceStatsPage](t, o.get("/api/v1/stats/sources"))
 	if len(ss.Items) != 1 || ss.Items[0].AttachedFeeds != 1 || ss.Items[0].Bytes != 100 || ss.Items[0].CacheHits != 2 {
 		t.Fatalf("source stats %+v", ss.Items)

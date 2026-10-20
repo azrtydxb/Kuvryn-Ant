@@ -24,6 +24,9 @@ type FeedStats struct {
 	// Bytes counts each distinct blob once, however many assets reference it.
 	Bytes int64 `json:"bytes"`
 	Pulls int64 `json:"pulls"`
+	// SourceIDs lists the attached sources the caller may read, in read order, so
+	// list views can show a feed's upstreams without one request per feed.
+	SourceIDs []string `json:"source_ids"`
 }
 type FeedStatsPage struct {
 	Items []FeedStats  `json:"items"`
@@ -76,10 +79,15 @@ func (h opsHandlers) feedStats(w http.ResponseWriter, r *http.Request) {
 				if err = rows.Scan(&it.FeedID, &it.Slug, &it.Format, &it.Packages, &it.Versions, &it.Assets, &it.Bytes, &it.Pulls); err != nil {
 					break
 				}
+				it.SourceIDs = []string{}
 				items = append(items, it)
 			}
 			if err == nil {
 				err = rows.Err()
+			}
+			if err == nil {
+				rows.Close()
+				err = h.attachFeedSourceIDs(ctx, p, policy, items)
 			}
 		}
 	}
@@ -399,4 +407,33 @@ func (h opsHandlers) traffic(w http.ResponseWriter, r *http.Request) {
 	out.Totals.Bucket = from
 	out.Totals.ratio()
 	JSON(w, 200, out)
+}
+
+// attachFeedSourceIDs fills SourceIDs for a page of feeds with one query. Only
+// sources the caller may read are listed, ordered by feed read priority.
+func (h opsHandlers) attachFeedSourceIDs(ctx context.Context, p identity.Principal, policy identity.Policy, items []FeedStats) error {
+	if len(items) == 0 {
+		return nil
+	}
+	index := make(map[string]int, len(items))
+	ids := make([]string, 0, len(items))
+	for i, it := range items {
+		index[it.FeedID] = i
+		ids = append(ids, it.FeedID)
+	}
+	rows, err := h.db.Query(ctx, `SELECT fs.feed_id::text,fs.source_id::text FROM feed_sources fs WHERE fs.instance_id=$1 AND fs.feed_id=ANY($2::uuid[]) ORDER BY fs.feed_id,fs.priority`, p.InstanceID, ids)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var feed, source string
+		if err = rows.Scan(&feed, &source); err != nil {
+			return err
+		}
+		if i, ok := index[feed]; ok && sourceAllowed(policy, p, source, identity.Read) {
+			items[i].SourceIDs = append(items[i].SourceIDs, source)
+		}
+	}
+	return rows.Err()
 }

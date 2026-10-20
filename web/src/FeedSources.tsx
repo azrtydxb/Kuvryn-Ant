@@ -10,6 +10,8 @@ import type {
   SourceAttachmentPage,
 } from "./generated";
 import { RouteCandidates } from "./FederationRouting";
+import { SourceIcon } from "./SourceIcon";
+import { iconForSource } from "./upstreams";
 import {
   Alert,
   Badge,
@@ -110,6 +112,7 @@ export function FeedSources({
               <li key={a.source.id} className="srcrow">
                 <Icon name="grip-vertical" size={16} className="muted" />
                 <span className="pos">{i + 1}</span>
+                <SourceIcon source={a.source} size="md" />
                 <div className="srcrow__main">
                   <div className="row tight">
                     <Mono>{a.source.name}</Mono>
@@ -117,6 +120,9 @@ export function FeedSources({
                     <Badge tone="outline">{a.source.format}</Badge>
                   </div>
                   <div className="muted small">
+                    {iconForSource(a.source).upstream && (
+                      <>{iconForSource(a.source).upstream?.name} · </>
+                    )}
                     Priority <Mono>{a.priority}</Mono>
                   </div>
                 </div>
@@ -344,15 +350,30 @@ function AttachSource({
           under Sources first.
         </p>
       ) : (
-        <Select
-          label="Source"
-          options={candidates.map((s) => ({
-            value: s.id,
-            label: `${s.name} (${s.kind})`,
-          }))}
-          value={chosen}
-          onChange={val(setSource)}
-        />
+        <>
+          <Select
+            label="Source"
+            options={candidates.map((s) => ({
+              value: s.id,
+              label: `${s.name} (${s.kind})`,
+            }))}
+            value={chosen}
+            onChange={val(setSource)}
+          />
+          {candidates.find((s) => s.id === chosen) && (
+            <div className="titled">
+              <SourceIcon
+                source={candidates.find((s) => s.id === chosen)!}
+                size="sm"
+              />
+              <span className="muted small">
+                {iconForSource(candidates.find((s) => s.id === chosen)!)
+                  .upstream?.name ??
+                  candidates.find((s) => s.id === chosen)?.kind}
+              </span>
+            </div>
+          )}
+        </>
       )}
       <Input
         label="Read priority"

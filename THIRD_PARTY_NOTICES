@@ -1,0 +1,26 @@
+Third-party notices
+===================
+
+Simple Icons
+------------
+The console embeds a subset of brand icons from Simple Icons
+(https://simpleicons.org, https://github.com/simple-icons/simple-icons),
+version 16.35.0, pinned as the devDependency "simple-icons" in web/package.json.
+web/scripts/gen-brand-icons.mjs copies only the icons the upstream catalog
+uses into web/src/brandIcons.ts, so the console works offline and loads
+nothing from a CDN.
+
+Simple Icons is dedicated to the public domain under CC0 1.0 Universal
+(https://creativecommons.org/publicdomain/zero/1.0/). The CC0 dedication
+covers the icon artwork as distributed by that project; it does not grant any
+rights in the trademarks themselves.
+
+Trademarks: all logos are trademarks or registered trademarks of their
+respective owners. Kuvryn Ant uses them only to identify the upstream
+registry or repository a source points at. Their use does not imply
+affiliation with, or endorsement by, those owners.
+
+Lucide
+------
+The console's neutral glyphs (globe, box, sync, cache and others) come from
+the self-hosted Lucide icon font in web/src/ds/assets/icons (ISC license).

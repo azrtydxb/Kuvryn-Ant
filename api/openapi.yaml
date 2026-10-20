@@ -18174,6 +18174,11 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 4096,
+            "description": "Upstream base URL of a remote source that has a stored configuration. Carries no credentials; omitted for other sources. Lets list views brand a source without fetching its remote configuration."
           }
         }
       },
@@ -20618,6 +20623,14 @@
             "type": "integer",
             "format": "int64",
             "description": "Successful pulls since counting began (lags traffic by one flush interval)."
+          },
+          "source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Attached sources the caller may read, in read order. Lets list views show a feed's upstreams without one request per feed."
           }
         }
       },

@@ -10,7 +10,8 @@
     "build": "npm run check:contract && tsc --noEmit && vite build",
     "lint": "tsc --noEmit && prettier --check .",
     "test": "vitest run",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "generate:icons": "node scripts/gen-brand-icons.mjs"
   },
   "dependencies": {
     "react": "19.3.1",
@@ -22,6 +23,7 @@
     "@types/react-dom": "19.3.0",
     "jsdom": "30.1.3",
     "prettier": "3.9.10",
+    "simple-icons": "16.35.0",
     "typescript": "7.0.2",
     "vite": "8.3.4",
     "vitest": "5.0.5"

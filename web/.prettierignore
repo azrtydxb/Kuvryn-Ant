@@ -1,3 +1,4 @@
 node_modules/
 src/generated.ts
 src/ds/
+src/brandIcons.ts

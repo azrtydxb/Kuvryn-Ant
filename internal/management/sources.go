@@ -32,6 +32,9 @@ type Source struct {
 	Kind     string `json:"kind"`
 	Format   string `json:"format"`
 	Revision int64  `json:"revision"`
+	// Origin is the upstream base URL of a configured remote source. It carries no
+	// credentials and is omitted for other sources.
+	Origin string `json:"origin,omitempty"`
 }
 type SourcePage struct {
 	Items []Source     `json:"items"`
@@ -176,7 +179,7 @@ func (s sourceHandlers) listSources(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
-	rows, err := s.db.Query(ctx, `SELECT id,name,kind,format,revision FROM sources WHERE instance_id=$1 AND ($2='' OR id>NULLIF($2,'')::uuid) AND starts_with(name,$3) ORDER BY id`, p.InstanceID, after, q.Prefix)
+	rows, err := s.db.Query(ctx, `SELECT s.id,s.name,s.kind,s.format,s.revision,COALESCE(c.config->>'origin','') FROM sources s LEFT JOIN remote_source_configs c ON c.instance_id=s.instance_id AND c.source_id=s.id WHERE s.instance_id=$1 AND ($2='' OR s.id>NULLIF($2,'')::uuid) AND starts_with(s.name,$3) ORDER BY s.id`, p.InstanceID, after, q.Prefix)
 	if err != nil {
 		sourceMutationError(w, r, err)
 		return
@@ -185,7 +188,7 @@ func (s sourceHandlers) listSources(w http.ResponseWriter, r *http.Request) {
 	page := SourcePage{Items: []Source{}}
 	for rows.Next() {
 		var item Source
-		if err = rows.Scan(&item.ID, &item.Name, &item.Kind, &item.Format, &item.Revision); err != nil {
+		if err = rows.Scan(&item.ID, &item.Name, &item.Kind, &item.Format, &item.Revision, &item.Origin); err != nil {
 			break
 		}
 		if !sourceAllowed(policy, p, item.ID, identity.Read) {
@@ -226,7 +229,7 @@ func (s sourceHandlers) getSource(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	defer cancel()
 	var item Source
-	err := s.db.QueryRow(ctx, `SELECT id,name,kind,format,revision FROM sources WHERE instance_id=$1 AND id=$2`, p.InstanceID, id).Scan(&item.ID, &item.Name, &item.Kind, &item.Format, &item.Revision)
+	err := s.db.QueryRow(ctx, `SELECT s.id,s.name,s.kind,s.format,s.revision,COALESCE(c.config->>'origin','') FROM sources s LEFT JOIN remote_source_configs c ON c.instance_id=s.instance_id AND c.source_id=s.id WHERE s.instance_id=$1 AND s.id=$2`, p.InstanceID, id).Scan(&item.ID, &item.Name, &item.Kind, &item.Format, &item.Revision, &item.Origin)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = database.ErrNotFound
 	}
@@ -411,7 +414,7 @@ func (s sourceHandlers) listAttachments(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 	}
-	rows, err := tx.Query(ctx, `SELECT s.id,s.name,s.kind,s.format,s.revision,fs.priority FROM feed_sources fs JOIN sources s ON s.instance_id=fs.instance_id AND s.id=fs.source_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND fs.priority>$3 AND starts_with(s.name,$4) ORDER BY fs.priority`, p.InstanceID, id, afterPriority, q.Prefix)
+	rows, err := tx.Query(ctx, `SELECT s.id,s.name,s.kind,s.format,s.revision,COALESCE(c.config->>'origin',''),fs.priority FROM feed_sources fs JOIN sources s ON s.instance_id=fs.instance_id AND s.id=fs.source_id LEFT JOIN remote_source_configs c ON c.instance_id=s.instance_id AND c.source_id=s.id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND fs.priority>$3 AND starts_with(s.name,$4) ORDER BY fs.priority`, p.InstanceID, id, afterPriority, q.Prefix)
 	if err != nil {
 		sourceMutationError(w, r, err)
 		return
@@ -419,7 +422,7 @@ func (s sourceHandlers) listAttachments(w http.ResponseWriter, r *http.Request) 
 	defer rows.Close()
 	for rows.Next() {
 		var item Attachment
-		if err = rows.Scan(&item.Source.ID, &item.Source.Name, &item.Source.Kind, &item.Source.Format, &item.Source.Revision, &item.Priority); err != nil {
+		if err = rows.Scan(&item.Source.ID, &item.Source.Name, &item.Source.Kind, &item.Source.Format, &item.Source.Revision, &item.Source.Origin, &item.Priority); err != nil {
 			break
 		}
 		if !sourceAllowed(policy, p, item.Source.ID, identity.Read) {

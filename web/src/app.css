@@ -975,3 +975,130 @@ details > summary {
   flex-direction: column;
   min-width: 0;
 }
+
+/* ---------- upstream logos ---------- */
+.uicon {
+  --ic-d: var(--az-text-2);
+  --ic-l: var(--az-text-2);
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  box-sizing: border-box;
+  border: 1px solid var(--az-border);
+  background: var(--az-raised);
+  color: var(--ic-d);
+  vertical-align: middle;
+}
+[data-theme="light"] .uicon {
+  color: var(--ic-l);
+}
+.uicon svg {
+  width: 62%;
+  height: 62%;
+  fill: currentColor;
+}
+.uicon--sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+.uicon--md {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+.uicon--lg {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+.uicon--glyph {
+  color: var(--az-muted);
+}
+.uicon--local,
+.uicon--replica,
+.uicon--cache {
+  color: var(--az-accent-text);
+}
+.uicons {
+  display: inline-flex;
+  align-items: center;
+}
+.uicons .uicon + .uicon,
+.uicons .uicon + .uicons__more {
+  margin-left: -6px;
+}
+.uicons .uicon {
+  box-shadow: 0 0 0 2px var(--az-surface);
+}
+.uicons__more {
+  font-size: 12px;
+  color: var(--az-muted);
+  padding-left: 10px;
+}
+.titled {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.upgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+  max-height: 232px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.uptile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border: 1px solid var(--az-border);
+  border-radius: 8px;
+  background: var(--az-surface);
+  color: var(--az-text);
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  cursor: pointer;
+}
+.uptile:hover {
+  background: var(--az-hover);
+}
+.uptile:focus-visible {
+  outline: 2px solid var(--az-indicator);
+  outline-offset: 2px;
+}
+.uptile[aria-pressed="true"] {
+  border-color: var(--az-indicator);
+  background: var(--az-selected-bg);
+  color: var(--az-selected-text);
+}
+.uptile__name {
+  line-height: 1.25;
+}
+.reviewsrc {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reviewsrc li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.narrow-only {
+  display: none;
+}
+@media (max-width: 520px) {
+  .narrow-only {
+    display: block;
+    margin-top: 6px;
+  }
+}
