@@ -148,14 +148,12 @@ The adapter accepts a token in three forms:
 
 An unauthenticated request gets `401` with `WWW-Authenticate: Basic realm="RubyGems"`.
 
-::: warning Gap: API key token type
-A raw API key bypasses the client-auth middleware's credential detection and is
-checked directly against service tokens. **Use a service token** (`ant_...`) for
-`gem push` and `gem yank`. Based on reading the code, a personal access token used as
-the raw API key is not accepted; this has not been tested with a client. There is no
-RubyGems.org-style sign-in or key creation API. Create tokens as described in
+Any credential type works as the raw API key: a service token (`ant_...`), a personal
+access token (`antp_...`) or a GitHub Actions JWT. The raw value goes through the same
+resolution as `Bearer`, so scoping, audit, rate limits and the feed's client-auth policy
+apply, and it is never treated as a password login. There is no RubyGems.org-style
+sign-in or key creation API. Create tokens as described in
 [Service accounts and tokens](../identity/tokens.md).
-:::
 
 ### Consume with gem
 
@@ -203,7 +201,7 @@ when several feeds on the same host need different tokens.
 
 ### Publish and yank
 
-`gem push` needs `--host` set to the feed URL. The API key is the service token.
+`gem push` needs `--host` set to the feed URL. The API key is a service token or personal access token.
 
 ::: code-group
 
@@ -267,7 +265,6 @@ returns a service token. See [GitHub Actions](../ci/github-actions.md) and
 | Symptom                                                 | Cause                                                                                                                                 |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `401`                                                   | No credentials for the host, or the token is invalid. For Bundler, check the `BUNDLE_<HOST>` name.                                    |
-| `401` on `gem push` with a valid PAT                    | Push uses the raw API key path, which accepts service tokens only (see the gap above).                                                |
 | `403`                                                   | The token lacks read or publish permission, or the feed's client-auth policy does not accept that credential type.                    |
 | `400` on push                                           | The gem failed validation: signed gem, unsupported platform metadata or version, unsafe archive, missing `metadata.gz`/`data.tar.gz`. |
 | `409` on push                                           | That name, version and platform exist with different bytes.                                                                           |

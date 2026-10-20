@@ -60,7 +60,10 @@ func newLoopbackListener() (*net.TCPListener, error) {
 // Config configures a run.
 type Config struct {
 	Target, Base, Token, CA, AntVersion, ResultsDir string
-	Formats                                         []string
+	// ClientToken optionally replaces Token for package-client traffic (Token then
+	// stays the admin credential for /api/v1).
+	ClientToken string
+	Formats     []string
 }
 
 // Run executes the scenarios and writes <ResultsDir>/<target>/<date>/<format>.json plus SUMMARY.md.
@@ -79,6 +82,9 @@ func Run(cfg Config) error {
 	env, err := NewEnv(cfg.Target, cfg.Base, cfg.Token, cfg.CA, runID)
 	if err != nil {
 		return err
+	}
+	if cfg.ClientToken != "" {
+		env.AdminToken, env.Token = cfg.Token, cfg.ClientToken
 	}
 	api := Api{env}
 	status := map[string]any{}
@@ -142,7 +148,7 @@ func Run(cfg Config) error {
 		c.Cleanup()
 		b, _ := json.MarshalIndent(ev, "", "  ")
 		text := env.Redact(string(b))
-		if strings.Contains(text, cfg.Token) {
+		if strings.Contains(text, cfg.Token) || (cfg.ClientToken != "" && strings.Contains(text, cfg.ClientToken)) {
 			return fmt.Errorf("token present in evidence for %s", f)
 		}
 		if err := os.WriteFile(filepath.Join(outDir, f+".json"), []byte(text+"\n"), 0o644); err != nil {

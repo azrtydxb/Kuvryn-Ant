@@ -4,7 +4,7 @@ Integration: `cargo.New(db, artifactService) (*Registry, error)` implements
 `http.Handler`. Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/cargo/` for feeds of format `cargo`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/cargo.md`. The caller supplies its shared artifact service with writer lease, routing and disk/S3 storage.
 
 Clients configure `sparse+https://HOST/feeds/SLUG/cargo/` and a Cargo token
-credential provider. Raw Authorization tokens (the form `cargo` sends) pass through shared Bearer validation and are accepted as service tokens only: the client-auth layer does not detect a raw value, so a personal access token needs the `Bearer` scheme (see `site/formats/cargo.md`). Config, index and download routes require read authorization;
+credential provider. Raw Authorization tokens (the form `cargo` sends) are resolved by the shared client-authentication layer exactly like Bearer, so service tokens, personal access tokens and GitHub JWTs all work with the feed's policy, scopes and audit; a raw value is never a password login (see `site/formats/cargo.md`). Config, index and download routes require read authorization;
 publication uses Prepare for both keys then PublishBundle. Each immutable version
 contains `crate` and `index` assets. Index composition enumerates one package owner
 and verifies that every shared Open still resolves to that source. Build metadata

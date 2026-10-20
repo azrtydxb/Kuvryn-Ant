@@ -7,9 +7,8 @@ backend.
 ## Implemented routes
 
 - `POST api/v1/gems`: raw `.gem` push; raw Authorization API key, Basic password
-  token or Bearer token. Basic and Bearer credentials are verified by the shared
-  client-authentication layer; a raw API key (what `gem push` sends) is checked directly
-  against service tokens (see `site/formats/rubygems.md`). Returns 201, including identical-byte retries; different
+  token or Bearer token. Basic, Bearer and the raw API key (what `gem push` sends) are verified by the shared
+  client-authentication layer, so service tokens, PATs and GitHub JWTs all work; a raw key is never a password login (see `site/formats/rubygems.md`). Returns 201, including identical-byte retries; different
   bytes at the same name/version/platform conflict with 409.
 - `GET/HEAD names`, `versions`, `info/{name}`: Bundler compact index, runtime
   dependency constraints, Ruby/RubyGems requirements and gem SHA256; versions

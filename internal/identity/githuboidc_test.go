@@ -333,3 +333,59 @@ func TestGlobMatchAndRuleMatching(t *testing.T) {
 		t.Error("disabled rule matched")
 	}
 }
+
+// Cargo sends its token as a bare Authorization value and NuGet only in
+// X-NuGet-ApiKey; both resolve every credential type, and neither location is
+// ever a password login.
+func TestRawCredentialLocations(t *testing.T) {
+	g := newGitHubEnv(t)
+	service := g.f.issue(t)
+	if _, err := g.f.pool.Exec(context.Background(), "UPDATE service_tokens SET scopes='[{\"actions\":[\"read\",\"publish\"]}]'"); err != nil {
+		t.Fatal(err)
+	}
+	_, pat := g.pat(t, Read, Publish)
+	_, ro := g.pat(t, Read)
+	jwtGood := g.issuer.sign(t, tokenOpts{})
+	g.setPolicy(t, g.f.feed, []string{"token", "pat", "github-oidc", "basic-directory"})
+	cargo := func(v string) map[string]string { return map[string]string{"Authorization": v} }
+	nuget := func(v string) map[string]string { return map[string]string{"X-NuGet-ApiKey": v} }
+	for name, c := range map[string]struct {
+		path string
+		h    func(string) map[string]string
+	}{"cargo": {"/feeds/feed/cargo/x", cargo}, "nuget": {"/feeds/feed/nuget/x", nuget}} {
+		for cred, secret := range map[string]string{"service": service.Secret, "pat": pat, "jwt": jwtGood} {
+			if w := g.do("PUT", c.path, lan, c.h(secret)); w.Code != 204 {
+				t.Fatalf("%s %s: %d", name, cred, w.Code)
+			}
+		}
+		if w := g.do("PUT", c.path, lan, c.h(ro)); w.Code != 403 {
+			t.Fatalf("%s out-of-scope PAT: %d", name, w.Code)
+		}
+		if w := g.do("PUT", c.path, lan, c.h("antp_"+strings.Repeat("A", 43))); w.Code != 401 {
+			t.Fatalf("%s invalid PAT: %d", name, w.Code)
+		}
+		// The method must be enabled for the feed.
+		g.setPolicy(t, g.f.feed, []string{"token"})
+		if w := g.do("PUT", c.path, lan, c.h(pat)); w.Code != 403 {
+			t.Fatalf("%s policy bypass: %d", name, w.Code)
+		}
+		g.setPolicy(t, g.f.feed, []string{"token", "pat", "github-oidc", "basic-directory"})
+		// A raw value is never a directory password, even one that would verify.
+		before := g.dir.calls.Load()
+		if w := g.do("PUT", c.path, lan, c.h("correct-horse")); w.Code != 401 {
+			t.Fatalf("%s raw password: %d", name, w.Code)
+		}
+		if g.dir.calls.Load() != before {
+			t.Fatalf("%s raw header reached the directory", name)
+		}
+	}
+	// NuGet ignores Authorization on writes: only the api key counts.
+	h := basic("alice", "correct horse")
+	if w := g.do("PUT", "/feeds/feed/nuget/x", lan, h); w.Code != 401 {
+		t.Fatalf("nuget write via Authorization: %d", w.Code)
+	}
+	// Raw Authorization is Cargo/RubyGems only; elsewhere it stays unrecognised.
+	if w := g.do("PUT", "/feeds/feed/raw/x", lan, cargo(pat)); w.Code != 401 {
+		t.Fatalf("raw header on other format: %d", w.Code)
+	}
+}

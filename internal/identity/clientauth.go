@@ -451,6 +451,30 @@ func parseCredential(header string) (user, secret string, basic, ok bool) {
 	return "", "", false, false
 }
 
+// rawCredentialFormat names the package format of a /feeds/{slug}/{format}/...
+// request when that format sends credentials outside a recognised scheme.
+func rawCredentialFormat(r *http.Request, oci bool) string {
+	if oci {
+		return ""
+	}
+	rest, _ := strings.CutPrefix(r.URL.Path, "/feeds/")
+	parts := strings.SplitN(rest, "/", 3)
+	if len(parts) < 2 {
+		return ""
+	}
+	switch parts[1] {
+	case "cargo", "rubygems", "nuget":
+		return parts[1]
+	}
+	return ""
+}
+
+// rawCredentialValue accepts a bare token with no scheme or whitespace, the
+// same bound the adapters apply before treating it as a bearer credential.
+func rawCredentialValue(v string) bool {
+	return v != "" && len(v) < 1000 && !strings.ContainsAny(v, " \t\r\n")
+}
+
 func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Handler, oci bool, slug string) {
 	enforced := r.WithContext(context.WithValue(r.Context(), enforcedKey{}, true))
 	target, found, err := c.target(r, oci, slug)
@@ -472,6 +496,31 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 		return
 	}
 	headers := r.Header.Values("Authorization")
+	keyHeader := false
+	var raw string
+	switch rawCredentialFormat(r, oci) {
+	case "nuget":
+		// NuGet push/delete carry the credential only in X-NuGet-ApiKey; the
+		// adapter ignores Authorization on those methods.
+		if r.Method == http.MethodPut || r.Method == http.MethodDelete || r.Method == http.MethodPost {
+			keys := r.Header.Values("X-NuGet-ApiKey")
+			headers = nil
+			if len(keys) > 1 {
+				next.ServeHTTP(w, enforced)
+				return
+			}
+			if len(keys) == 1 && rawCredentialValue(keys[0]) {
+				keyHeader, raw = true, keys[0]
+				headers = []string{"Bearer " + raw}
+			}
+		}
+	case "cargo", "rubygems":
+		// Raw "Authorization: <token>" without a scheme. Never a password login.
+		if len(headers) == 1 && rawCredentialValue(headers[0]) {
+			raw = headers[0]
+			headers = []string{"Bearer " + raw}
+		}
+	}
 	if len(headers) > 1 {
 		next.ServeHTTP(w, enforced)
 		return
@@ -488,7 +537,7 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 			c.deny(w, r, http.StatusServiceUnavailable, "authentication unavailable")
 			return
 		}
-		c.forward(w, enforced, next, anon)
+		c.forward(w, enforced, next, anon, false)
 		return
 	}
 	user, secret, basic, ok := parseCredential(headers[0])
@@ -543,13 +592,13 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 			fail()
 			return
 		}
-		c.forward(w, enforced, next, p)
+		c.forward(w, enforced, next, p, keyHeader)
 	case MethodGitHubOIDC:
 		if c.GitHub == nil {
 			fail()
 			return
 		}
-		raw, err := c.GitHub.tokenForJWT(ctx, secret)
+		rawTok, err := c.GitHub.tokenForJWT(ctx, secret)
 		switch {
 		case errors.Is(err, ErrUnavailable):
 			c.deny(w, r, http.StatusServiceUnavailable, "authentication unavailable")
@@ -563,7 +612,10 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 			return
 		}
 		out := enforced.Clone(enforced.Context())
-		out.Header.Set("Authorization", "Bearer "+raw)
+		out.Header.Set("Authorization", "Bearer "+rawTok)
+		if keyHeader {
+			out.Header.Set("X-NuGet-ApiKey", rawTok)
+		}
 		next.ServeHTTP(w, out)
 	case MethodBasicDirectory:
 		if c.Directory == nil || len(user) > 256 || len(secret) > 4096 {
@@ -587,7 +639,7 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 			return
 		}
 		c.users.reset(ukey)
-		c.forward(w, enforced, next, Principal{InstanceID: c.InstanceID, PrincipalID: principal})
+		c.forward(w, enforced, next, Principal{InstanceID: c.InstanceID, PrincipalID: principal}, false)
 	}
 }
 
@@ -634,10 +686,13 @@ func (c *ClientAuth) verifyDirectory(ctx context.Context, user, password string)
 
 // forward runs the adapter with the verified principal as a single-use ticket
 // presented through the adapter's own Authorization handling.
-func (c *ClientAuth) forward(w http.ResponseWriter, r *http.Request, next http.Handler, p Principal) {
+func (c *ClientAuth) forward(w http.ResponseWriter, r *http.Request, next http.Handler, p Principal, apiKey bool) {
 	ticket := mintTicket(p)
 	defer dropTicket(ticket)
 	out := r.Clone(r.Context())
 	out.Header.Set("Authorization", "Bearer "+ticket)
+	if apiKey {
+		out.Header.Set("X-NuGet-ApiKey", ticket)
+	}
 	next.ServeHTTP(w, out)
 }
