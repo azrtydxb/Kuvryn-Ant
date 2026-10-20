@@ -345,10 +345,11 @@ func (s *Service) selectEvictions(ctx context.Context, sources []pressureSource,
    `+lastUsedSQL+` AS last_used,
    CASE WHEN v.blob_only OR `+childSQL+` THEN 2147483647 ELSE row_number() OVER (PARTITION BY v.component_id,(v.blob_only OR `+childSQL+`) ORDER BY v.created_at DESC,v.id DESC)::int END AS rnk,
    `+childSQL+` AS is_child,
+   v.blob_only AS is_blob,
    EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) AS is_tagged
   FROM versions v JOIN components c ON c.id=v.component_id WHERE v.instance_id=$1 AND c.source_id=ANY($2::uuid[]))
  SELECT vs.vid::text,vs.cid::text,vs.source_id::text,vs.coordinate,vs.version,vs.last_used FROM vs JOIN cfg ON cfg.source_id=vs.source_id
- WHERE NOT vs.is_child AND vs.rnk>cfg.min_keep AND (NOT vs.is_tagged OR cfg.include_tagged) ORDER BY vs.last_used,vs.vid LIMIT $5`,
+ WHERE NOT vs.is_child AND NOT vs.is_blob AND vs.rnk>cfg.min_keep AND (NOT vs.is_tagged OR cfg.include_tagged) ORDER BY vs.last_used,vs.vid LIMIT $5`,
 		s.InstanceID, ids, minKeeps, tagged, pressureCandidateScan)
 	if err != nil {
 		return nil, 0, false, err
@@ -421,6 +422,7 @@ func (s *Service) selectEvictions(ctx context.Context, sources []pressureSource,
 		}
 	}
 	remaining := byBlob
+	project := newProjector(s)
 	for _, c := range cands {
 		if len(picked) >= pressureEvictLimit {
 			exhausted = false
@@ -439,6 +441,11 @@ func (s *Service) selectEvictions(ctx context.Context, sources []pressureSource,
 			continue
 		}
 		picked = append(picked, c)
+		extra, perr := project.add(ctx, c)
+		if perr != nil {
+			return nil, 0, false, perr
+		}
+		freed += extra
 		for _, h := range hold[c.VersionID] {
 			remaining[h.ID]--
 			if remaining[h.ID] == 0 && external[h.ID] == 0 {

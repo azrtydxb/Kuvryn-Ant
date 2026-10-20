@@ -356,3 +356,13 @@ is. When an index is deleted, each child whose every parent is also deleted is
 deleted with it (a child another index names, or a tagged one unless the policy
 includes tagged versions, stays), and blob-only rows named only by the deleted
 manifests are released as above.
+
+Blob-only rows are never selected on their own timestamps while a manifest still
+names them. Every path that can delete versions (retention `max_age`/`max_idle`,
+cache-feed idle and `max_bytes`, pressure eviction) drops a blob-only row that
+any remaining visible manifest, top-level or child, names, and drops all of them
+when a remaining manifest cannot be read. A blob-only row no manifest names (an
+orphan upload or stray pull) can still be evicted by idle or age. Pressure
+eviction does not pick blob-only rows at all; they are released with the
+manifests that name them, and its byte projection counts the children and
+released blobs of each picked image.

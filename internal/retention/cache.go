@@ -125,37 +125,48 @@ func (s *Service) pickCacheRoots(ctx context.Context, sources map[string]time.Du
 	if len(sources) == 0 {
 		return nil, nil
 	}
-	ids := make([]string, 0, len(sources))
-	secs := make([]int64, 0, len(sources))
-	for id, idle := range sources {
-		ids = append(ids, id)
-		secs = append(secs, int64(idle/time.Second))
-	}
-	rows, err := s.DB.Query(ctx, `WITH cfg AS (SELECT * FROM unnest($2::uuid[],$3::bigint[]) AS t(source_id,idle_seconds)),
- vs AS (
-  SELECT v.id AS vid,v.component_id AS cid,c.source_id,c.coordinate,v.version,
-   COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at) AS last_used
-  FROM versions v JOIN components c ON c.id=v.component_id
-  WHERE v.instance_id=$1 AND c.source_id=ANY($2::uuid[])
-   AND NOT EXISTS(SELECT 1 FROM version_refs r WHERE r.component_id=v.component_id AND r.ref_version=v.version))
- SELECT vs.vid::text,vs.cid::text,vs.source_id::text,vs.coordinate,vs.version,vs.last_used FROM vs JOIN cfg ON cfg.source_id=vs.source_id
- WHERE NOT $4::boolean OR vs.last_used<clock_timestamp()-make_interval(secs=>cfg.idle_seconds::double precision)
- ORDER BY vs.last_used,vs.vid LIMIT $5`, s.InstanceID, ids, secs, idleOnly, limit)
-	if err != nil {
-		return nil, err
-	}
+	// A blob-only root a remaining manifest still names is never a candidate, so
+	// page past such rows instead of letting them crowd out real candidates.
 	var picks []cachePick
-	for rows.Next() {
-		var c cachePick
-		if err = rows.Scan(&c.VersionID, &c.ComponentID, &c.SourceID, &c.Coordinate, &c.Version, &c.LastUsed); err != nil {
-			rows.Close()
+	var after *time.Time
+	var afterID *string
+	for page := 0; page < 20 && len(picks) < limit; page++ {
+		rows, blobOnly, err := s.pickCacheRootsPage(ctx, sources, idleOnly, limit, after, afterID)
+		if err != nil {
 			return nil, err
 		}
-		picks = append(picks, c)
-	}
-	rows.Close()
-	if err = rows.Err(); err != nil {
-		return nil, err
+		if len(rows) == 0 {
+			break
+		}
+		last := rows[len(rows)-1]
+		after, afterID = &last.LastUsed, &last.VersionID
+		protected := map[string]bool{}
+		byComponent := map[string]map[string]bool{}
+		for _, c := range rows {
+			if blobOnly[c.VersionID] {
+				if byComponent[c.ComponentID] == nil {
+					byComponent[c.ComponentID] = map[string]bool{}
+				}
+				byComponent[c.ComponentID][c.VersionID] = true
+			}
+		}
+		for component, doomed := range byComponent {
+			keep, err := s.protectedBlobs(ctx, s.DB, component, doomed)
+			if err != nil {
+				return nil, err
+			}
+			for id := range keep {
+				protected[id] = true
+			}
+		}
+		for _, c := range rows {
+			if !protected[c.VersionID] && len(picks) < limit {
+				picks = append(picks, c)
+			}
+		}
+		if len(rows) < limit {
+			break
+		}
 	}
 	if len(picks) == 0 {
 		return nil, nil
@@ -172,6 +183,50 @@ func (s *Service) pickCacheRoots(ctx context.Context, sources map[string]time.Du
 		picks[i].Bytes = closure[picks[i].VersionID]
 	}
 	return picks, nil
+}
+
+// pickCacheRootsPage reads one keyset page of candidate roots, least recently
+// used first, and which of them are blob-only.
+func (s *Service) pickCacheRootsPage(ctx context.Context, sources map[string]time.Duration, idleOnly bool, limit int, after *time.Time, afterID *string) ([]cachePick, map[string]bool, error) {
+	ids := make([]string, 0, len(sources))
+	secs := make([]int64, 0, len(sources))
+	for id, idle := range sources {
+		ids = append(ids, id)
+		secs = append(secs, int64(idle/time.Second))
+	}
+	rows, err := s.DB.Query(ctx, `WITH cfg AS (SELECT * FROM unnest($2::uuid[],$3::bigint[]) AS t(source_id,idle_seconds)),
+ vs AS (
+  SELECT v.id AS vid,v.component_id AS cid,c.source_id,c.coordinate,v.version,v.blob_only,
+   COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at) AS last_used
+  FROM versions v JOIN components c ON c.id=v.component_id
+  WHERE v.instance_id=$1 AND c.source_id=ANY($2::uuid[])
+   AND NOT EXISTS(SELECT 1 FROM version_refs r WHERE r.component_id=v.component_id AND r.ref_version=v.version))
+ SELECT vs.vid::text,vs.cid::text,vs.source_id::text,vs.coordinate,vs.version,vs.last_used,vs.blob_only FROM vs JOIN cfg ON cfg.source_id=vs.source_id
+ WHERE (NOT $4::boolean OR vs.last_used<clock_timestamp()-make_interval(secs=>cfg.idle_seconds::double precision))
+  AND ($6::timestamptz IS NULL OR (vs.last_used,vs.vid)>($6::timestamptz,$7::uuid))
+ ORDER BY vs.last_used,vs.vid LIMIT $5`, s.InstanceID, ids, secs, idleOnly, limit, after, afterID)
+	if err != nil {
+		return nil, nil, err
+	}
+	picks := []cachePick{}
+	blobOnly := map[string]bool{}
+	for rows.Next() {
+		var c cachePick
+		var only bool
+		if err = rows.Scan(&c.VersionID, &c.ComponentID, &c.SourceID, &c.Coordinate, &c.Version, &c.LastUsed, &only); err != nil {
+			rows.Close()
+			return nil, nil, err
+		}
+		picks = append(picks, c)
+		if only {
+			blobOnly[c.VersionID] = true
+		}
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	return picks, blobOnly, nil
 }
 
 // closureBytes estimates, per root, the distinct blob bytes of the root and of
@@ -415,6 +470,25 @@ func (s *Service) evictCacheComponent(ctx context.Context, group []cachePick, re
 			batch = append(batch, c)
 			batchIDs = append(batchIDs, c.VersionID)
 		}
+	}
+	// A blob-only root is released only when no remaining manifest names it, however
+	// long it has been idle.
+	doomed := map[string]bool{}
+	for _, id := range batchIDs {
+		doomed[id] = true
+	}
+	keep, err := s.protectedBlobs(ctx, tx, group[0].ComponentID, doomed)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(keep) > 0 {
+		kept, keptIDs := batch[:0:0], batchIDs[:0:0]
+		for _, c := range batch {
+			if !keep[c.VersionID] {
+				kept, keptIDs = append(kept, c), append(keptIDs, c.VersionID)
+			}
+		}
+		batch, batchIDs = kept, keptIDs
 	}
 	if len(batch) == 0 {
 		return nil, 0, nil
