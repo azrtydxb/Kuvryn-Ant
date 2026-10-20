@@ -17,7 +17,13 @@ import {
   isDigestVersion,
   orderTags,
 } from "./versions";
-import type { DiscoveredAsset, Feed, PackageSearchResult } from "./generated";
+import type {
+  DiscoveredAsset,
+  Feed,
+  PackageSearchResult,
+  Source,
+} from "./generated";
+import { SourceIcon } from "./SourceIcon";
 import {
   Alert,
   Badge,
@@ -133,11 +139,17 @@ function PackageTable({
     />
   );
 }
-const SourceNames = createContext(new Map<string, string>());
+const SourceNames = createContext(new Map<string, Source>());
 function SourceName({ id }: { id?: string }) {
-  const names = useContext(SourceNames);
+  const sources = useContext(SourceNames);
   if (!id) return <>—</>;
-  return <Mono>{names.get(id) ?? id}</Mono>;
+  const s = sources.get(id);
+  return (
+    <span className="titled">
+      {s && <SourceIcon source={s} size="sm" />}
+      <Mono>{s?.name ?? id}</Mono>
+    </span>
+  );
 }
 function SourceNamesProvider({
   client,
@@ -148,7 +160,7 @@ function SourceNamesProvider({
 }) {
   const sources = useAllSources(client);
   const map = useMemo(
-    () => new Map(sources.items.map((s) => [s.id, s.name])),
+    () => new Map(sources.items.map((s) => [s.id, s])),
     [sources.items],
   );
   return <SourceNames.Provider value={map}>{children}</SourceNames.Provider>;
@@ -621,9 +633,10 @@ function PackageDetail({
     [client, feedId, pkg.id, tagCursor],
   );
   const sourceNames = useAllSources(client);
-  const sourceName =
-    sourceNames.items.find((s) => s.id === pkg.source_id)?.name ??
-    pkg.source_id;
+  const sourceMap = useMemo(
+    () => new Map(sourceNames.items.map((s) => [s.id, s])),
+    [sourceNames.items],
+  );
   const known = [
     ...(versions.value?.data.items ?? []),
     ...(grouped.value?.data?.items ?? []),
@@ -846,7 +859,14 @@ function PackageDetail({
               value: pkg.namespace || "(root)",
               mono: true,
             },
-            { label: "Served from", value: sourceName ?? "—", mono: true },
+            {
+              label: "Served from",
+              value: (
+                <SourceNames.Provider value={sourceMap}>
+                  <SourceName id={pkg.source_id} />
+                </SourceNames.Provider>
+              ),
+            },
             { label: "Versions", value: count(pkg.version_count) },
             { label: "Tags", value: count(pkg.tag_count) },
             { label: "Package ID", value: pkg.id, mono: true },
@@ -1005,14 +1025,20 @@ export function AssetRecord({
   });
   const p = prov.state === "ready" ? prov.data : undefined;
   const sources = useAllSources(client);
-  const sourceName =
-    sources.items.find((s) => s.id === item.source_id)?.name ?? item.source_id;
+  const sourceMap = new Map(sources.items.map((s) => [s.id, s]));
   return (
     <>
       <PropertyList
         items={[
           { label: "Key", value: item.key, mono: true },
-          { label: "Source", value: sourceName, mono: true },
+          {
+            label: "Source",
+            value: (
+              <SourceNames.Provider value={sourceMap}>
+                <SourceName id={item.source_id} />
+              </SourceNames.Provider>
+            ),
+          },
           {
             label: "Checksum",
             value: (

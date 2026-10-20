@@ -4,7 +4,7 @@ import { requireETag, type Client } from "./api";
 import type { Go } from "./App";
 import { useAllSources, sourcesForFormat, useOpsMaps } from "./data";
 import { isUnavailable } from "./gaps";
-import { formats, type Feed } from "./generated";
+import { formats, type Feed, type Source } from "./generated";
 import {
   Alert,
   Badge,
@@ -13,7 +13,6 @@ import {
   CodeBlock,
   DropdownMenu,
   EmptyState,
-  Icon,
   Input,
   Modal,
   PropertyList,
@@ -36,6 +35,14 @@ import {
   useDraft,
 } from "./CachePolicy";
 import { PolicyTab } from "./Policy";
+import { FeedSourceIcons, SourceIcon } from "./SourceIcon";
+import {
+  UpstreamFields,
+  createRemoteSource,
+  draftProblem,
+  emptyDraft,
+  type UpstreamDraft,
+} from "./UpstreamFields";
 import { FeedPackages, pullCommand, type PackageRef } from "./Packages";
 import {
   Card,
@@ -143,7 +150,18 @@ function FeedList({
     [client, cursor, prefix, purpose, epoch],
   );
   const ops = useOpsMaps(client);
+  const allSources = useAllSources(client);
+  const sourceById = new Map(allSources.items.map((s) => [s.id, s]));
   const rows = r.value?.data.items ?? [];
+  // Remote upstreams (and the cache mark) of a feed, from the one stats call.
+  const feedIcons = (f: Feed) => {
+    const attached = (ops.feeds.get(f.id)?.source_ids ?? [])
+      .map((id) => sourceById.get(id))
+      .filter((s) => !!s);
+    return attached.some((s) => s.kind === "remote") || isCache(f) ? (
+      <FeedSourceIcons sources={attached} cache={isCache(f)} />
+    ) : null;
+  };
   return (
     <>
       <PageHeading
@@ -221,6 +239,7 @@ function FeedList({
                     >
                       {f.slug}
                       <small>{endpoint(f.slug)}</small>
+                      <span className="narrow-only">{feedIcons(f)}</span>
                     </button>
                   ),
                 },
@@ -238,6 +257,12 @@ function FeedList({
                       )}
                     </>
                   ),
+                },
+                {
+                  key: "upstreams",
+                  label: "Upstreams",
+                  render: (f: Feed) =>
+                    feedIcons(f) ?? <span className="muted">—</span>,
                 },
                 {
                   key: "anonymous_read",
@@ -311,9 +336,12 @@ function CreateFeed({
   const [picked, setPicked] = useState<string[]>([]);
   const [target, setTarget] = useState("");
   const [made, setMade] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [draft2, setDraft2] = useState<UpstreamDraft>(emptyDraft);
   const toast = useToast();
   const sources = useAllSources(client);
   const action = useAction();
+  const addUpstream = useAction();
   const cacheInput = purpose === "cache" ? draftToInput(draft) : undefined;
   const valid =
     slugPattern.test(slug) && (purpose !== "cache" || cacheInput !== undefined);
@@ -327,6 +355,8 @@ function CreateFeed({
       ? target
       : (locals[0]?.id ?? "");
   const steps = ["Basics", "Sources", "Review"];
+  const upstreamProblem = draftProblem(draft2);
+  const upstreamName = draft2.name.trim();
   // Fallback for servers without the batch endpoint: create the feed, then
   // attach sources in read order and set the default publish target. A failure
   // after the feed exists reports the step and offers to open the feed.
@@ -516,6 +546,7 @@ function CreateFeed({
             onChange={(e: { target: { value: string } }) => {
               setFormat(e.target.value as Feed["format"]);
               setPicked([]);
+              setDraft2(emptyDraft);
             }}
             hint="Cannot be changed after creation."
           />
@@ -560,10 +591,7 @@ function CreateFeed({
                       )
                     }
                   />
-                  <Icon
-                    name={s.kind === "remote" ? "cloud-download" : "hard-drive"}
-                    size={16}
-                  />
+                  <SourceIcon source={s} size="sm" />
                   {picked.includes(s.id) && (
                     <Badge tone="pillar">#{picked.indexOf(s.id) + 1}</Badge>
                   )}
@@ -576,6 +604,74 @@ function CreateFeed({
                 description="Create a source first, or skip and attach one later."
               />
             ))}
+          {adding ? (
+            <section className="stack" aria-label="New upstream">
+              <h4 className="h4">New upstream</h4>
+              <UpstreamFields
+                format={format}
+                draft={draft2}
+                setDraft={setDraft2}
+              />
+              <Failure error={addUpstream.error} />
+              <div className="row">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={addUpstream.busy}
+                  onClick={() => setAdding(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  icon="plus"
+                  disabled={
+                    addUpstream.busy || !upstreamName || !!upstreamProblem
+                  }
+                  onClick={async () => {
+                    let made2: Source | undefined;
+                    const ok = await addUpstream.run(async () => {
+                      const res = await createRemoteSource(
+                        client,
+                        format,
+                        draft2,
+                      );
+                      made2 = res.source;
+                      if (res.configError) {
+                        sources.reload();
+                        setPicked((p) => [...p, res.source.id]);
+                        throw Error(
+                          "The source was created and selected, but its upstream was not saved: " +
+                            res.configError.message +
+                            " Finish it on the source's Upstream tab.",
+                        );
+                      }
+                    });
+                    if (ok && made2) {
+                      toast("Upstream added", made2.name);
+                      sources.reload();
+                      setPicked((p) => [...p, made2!.id]);
+                      setDraft2(emptyDraft);
+                      setAdding(false);
+                    }
+                  }}
+                >
+                  {addUpstream.busy ? "Creating…" : "Create and select"}
+                </Button>
+              </div>
+            </section>
+          ) : (
+            <div>
+              <Button
+                size="sm"
+                variant="secondary"
+                icon="plus"
+                onClick={() => setAdding(true)}
+              >
+                Add upstream
+              </Button>
+            </div>
+          )}
           {locals.length > 0 && (
             <Select
               label="Default publish target"
@@ -609,17 +705,34 @@ function CreateFeed({
               },
               {
                 label: "Read order",
-                value: pickedSources.length
-                  ? pickedSources.map((s) => s.name).join(" → ")
-                  : "None yet",
-                mono: true,
+                value: pickedSources.length ? (
+                  <ol className="reviewsrc">
+                    {pickedSources.map((s) => (
+                      <li key={s.id}>
+                        <SourceIcon source={s} size="sm" />
+                        <span className="mono">{s.name}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  "None yet"
+                ),
               },
               {
                 label: "Default publish target",
-                value:
-                  locals.find((s) => s.id === writeTarget)?.name ??
-                  "Reject writes",
-                mono: true,
+                value: locals.find((s) => s.id === writeTarget) ? (
+                  <span className="titled">
+                    <SourceIcon
+                      source={locals.find((s) => s.id === writeTarget)!}
+                      size="sm"
+                    />
+                    <span className="mono">
+                      {locals.find((s) => s.id === writeTarget)?.name}
+                    </span>
+                  </span>
+                ) : (
+                  "Reject writes"
+                ),
               },
             ]}
           />

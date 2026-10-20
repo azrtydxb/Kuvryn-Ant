@@ -25,6 +25,15 @@ import {
   Tabs,
 } from "./ds/bundle";
 import { RemoteSource } from "./RemoteSource";
+import { SourceIcon } from "./SourceIcon";
+import {
+  UpstreamFields,
+  createRemoteSource,
+  draftProblem,
+  emptyDraft,
+  type UpstreamDraft,
+} from "./UpstreamFields";
+import { iconForSource } from "./upstreams";
 import {
   Copyable,
   Failure,
@@ -128,14 +137,20 @@ export function SourcesPage({
                       setOpen(s.id);
                     }}
                   >
-                    {s.name}
-                    <small>
-                      {s.kind === "remote"
-                        ? "Remote upstream"
-                        : s.kind === "local"
-                          ? "Local storage"
-                          : "Replica"}
-                    </small>
+                    <span className="titled">
+                      <SourceIcon source={s} size="md" />
+                      <span>
+                        {s.name}
+                        <small>
+                          {s.kind === "remote"
+                            ? (iconForSource(s).upstream?.name ??
+                              "Remote upstream")
+                            : s.kind === "local"
+                              ? "Local storage"
+                              : "Replica"}
+                        </small>
+                      </span>
+                    </span>
                   </button>
                 ),
               },
@@ -247,14 +262,19 @@ function CreateSource({
   const [name, setName] = useState("");
   const [kind, setKind] = useState<Source["kind"]>("local");
   const [format, setFormat] = useState<Source["format"]>("oci");
+  const [draft, setDraft] = useState<UpstreamDraft>(emptyDraft);
   const action = useAction();
   const toast = useToast();
-  const tooLong = new TextEncoder().encode(name.trim()).length > 200;
+  const remote = kind === "remote";
+  const current = remote ? draft.name : name;
+  const tooLong = new TextEncoder().encode(current.trim()).length > 200;
+  const problem = remote ? draftProblem(draft) : undefined;
   return (
     <Modal
       title="Create source"
       description="A source is where content lives. Pick its format and kind."
       onClose={onClose}
+      width={remote ? 640 : undefined}
       actions={
         <>
           <Button variant="secondary" onClick={onClose}>
@@ -263,7 +283,7 @@ function CreateSource({
           <Button
             form="create-source"
             type="submit"
-            disabled={action.busy || !name.trim() || tooLong}
+            disabled={action.busy || !current.trim() || tooLong}
           >
             {action.busy ? "Creating…" : "Create source"}
           </Button>
@@ -276,9 +296,17 @@ function CreateSource({
         onSubmit={async (e) => {
           e.preventDefault();
           let made: Source | undefined;
+          let partial: Error | undefined;
           const ok = await action.run(async () => {
             if (tooLong)
               throw Error("Source name must be at most 200 UTF-8 bytes.");
+            if (remote) {
+              if (problem) throw Error(problem);
+              const r = await createRemoteSource(client, format, draft);
+              made = r.source;
+              partial = r.configError;
+              return;
+            }
             made = (
               await client.call("createSource", {
                 body: { name: name.trim(), kind, format },
@@ -286,27 +314,25 @@ function CreateSource({
             ).data;
           });
           if (ok && made) {
-            toast("Source created", made.name);
+            if (partial)
+              toast(
+                "Source created without its upstream",
+                `${made.name}: ${partial.message}`,
+              );
+            else toast("Source created", made.name);
             created(made);
           }
         }}
       >
-        <Input
-          label="Source name"
-          mono
-          required
-          maxLength={200}
-          value={name}
-          onChange={val(setName)}
-          error={tooLong ? "At most 200 UTF-8 bytes." : undefined}
-          hint="Up to 200 bytes."
-        />
         <div className="cols">
           <Select
             label="Format"
             options={formats.map((f) => ({ value: f, label: f }))}
             value={format}
-            onChange={val((v) => setFormat(v as Source["format"]))}
+            onChange={val((v) => {
+              setFormat(v as Source["format"]);
+              setDraft(emptyDraft);
+            })}
           />
           <Select
             label="Source kind"
@@ -318,9 +344,32 @@ function CreateSource({
             onChange={val((v) => setKind(v as Source["kind"]))}
           />
         </div>
+        {remote ? (
+          <UpstreamFields
+            format={format}
+            draft={draft}
+            setDraft={setDraft}
+            nameHint={
+              tooLong
+                ? undefined
+                : "Up to 200 bytes. Pick a preset or edit freely."
+            }
+          />
+        ) : (
+          <Input
+            label="Source name"
+            mono
+            required
+            maxLength={200}
+            value={name}
+            onChange={val(setName)}
+            error={tooLong ? "At most 200 UTF-8 bytes." : undefined}
+            hint="Up to 200 bytes."
+          />
+        )}
         <p className="muted small">
-          {kind === "remote"
-            ? "Next you will set the upstream origin, credentials and cache behaviour for this source."
+          {remote
+            ? "Pick a preset or a custom upstream; you can change everything afterwards on the source's Upstream tab."
             : "A local source stores what you publish. Attach it to a feed of the same format and point that feed's publish policy at it."}{" "}
           Need a copy of another Kuvryn Ant instance? Replica sources are
           created under{" "}
@@ -365,11 +414,21 @@ function SourceDrawer({
   return (
     <Drawer
       open
-      title={source.name}
+      title={
+        <span className="titled">
+          <SourceIcon source={source} size="md" />
+          {source.name}
+        </span>
+      }
       description={
         <span className="row">
           <Badge tone="outline">{source.format}</Badge>
           {source.kind}
+          {iconForSource(source).upstream && (
+            <span className="muted">
+              · {iconForSource(source).upstream?.name}
+            </span>
+          )}
           <HealthBadge h={health} />
         </span>
       }
@@ -459,7 +518,7 @@ function SourceDrawer({
       )}
       {remote && tab === "upstream" && (
         <>
-          <RemoteSource client={client} source={source} />
+          <RemoteSource client={client} source={source} onSaved={refresh} />
           <RemoteOps client={client} source={source} changed={refresh} />
         </>
       )}

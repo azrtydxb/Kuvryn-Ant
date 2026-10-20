@@ -338,3 +338,53 @@ func TestSourceMutationRollbackConcurrentCASAndInstanceIsolation(t *testing.T) {
 		t.Fatal("failed mutation partially committed")
 	}
 }
+
+func TestSourceOriginIsExposedForConfiguredRemotes(t *testing.T) {
+	f := newSourceHTTPFixture(t)
+	remote := f.source("branded", "remote", "oci")
+	bare := f.source("unconfigured", "remote", "oci")
+	local := f.source("stored", "local", "oci")
+	_, err := f.db.Exec(context.Background(), `INSERT INTO remote_source_configs(instance_id,source_id,config) VALUES($1,$2,'{"origin":"https://registry-1.docker.io","redirect_origins":[]}'::jsonb)`, f.instance, remote.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	get := func(id string) Source {
+		w := f.request("GET", "/api/v1/sources/"+id, "", "", "")
+		expectSourceStatus(t, w, 200)
+		var s Source
+		if err := json.Unmarshal(w.Body.Bytes(), &s); err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	if got := get(remote.ID).Origin; got != "https://registry-1.docker.io" {
+		t.Fatalf("origin=%q", got)
+	}
+	if get(bare.ID).Origin != "" || get(local.ID).Origin != "" {
+		t.Fatal("origin reported for a source without a remote configuration")
+	}
+	list := f.request("GET", "/api/v1/sources", "", "", "")
+	expectSourceStatus(t, list, 200)
+	var page SourcePage
+	if err := json.Unmarshal(list.Body.Bytes(), &page); err != nil {
+		t.Fatal(err)
+	}
+	origins := map[string]string{}
+	for _, s := range page.Items {
+		origins[s.ID] = s.Origin
+	}
+	if len(origins) != 3 || origins[remote.ID] != "https://registry-1.docker.io" || origins[bare.ID] != "" || origins[local.ID] != "" {
+		t.Fatalf("list origins=%v", origins)
+	}
+	feed := f.feed("brand-feed", "oci")
+	expectSourceStatus(t, f.request("PUT", "/api/v1/feeds/"+feed.ID+"/sources/"+remote.ID, `{"priority":1}`, "attach-branded", `"1"`), 200)
+	att := f.request("GET", "/api/v1/feeds/"+feed.ID+"/sources", "", "", "")
+	expectSourceStatus(t, att, 200)
+	var ap AttachmentPage
+	if err := json.Unmarshal(att.Body.Bytes(), &ap); err != nil {
+		t.Fatal(err)
+	}
+	if len(ap.Items) != 1 || ap.Items[0].Source.Origin != "https://registry-1.docker.io" {
+		t.Fatalf("attachments=%+v", ap.Items)
+	}
+}

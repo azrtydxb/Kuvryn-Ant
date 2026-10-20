@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { Client } from "./api";
-import { useAllFeeds } from "./data";
+import { useAllFeeds, useAllSources } from "./data";
+import { SourceIcon } from "./SourceIcon";
 import { useOptionalCall } from "./gaps";
-import type { ReplicationJob, ReplicationPeer } from "./generated";
+import type { ReplicationJob, ReplicationPeer, Source } from "./generated";
 import { FederationReplication } from "./FederationReplication";
 import {
   EditJobModal,
@@ -84,6 +85,7 @@ export function ReplicationPage({
   const members =
     fed && memberCall.state === "ready" ? memberCall.data.items : [];
   const feeds = useAllFeeds(client);
+  const sources = useAllSources(client);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState<string>();
   const [editing, setEditing] = useState<string>();
@@ -363,6 +365,7 @@ export function ReplicationPage({
       {current && (
         <JobDrawer
           current={current}
+          sources={sources.items}
           onClose={() => setOpen(undefined)}
           review={() => setReviewing(current.id)}
           edit={() => setEditing(current.id)}
@@ -402,11 +405,13 @@ const shortFeed = (id: string) => (id.length > 10 ? `${id.slice(0, 8)}…` : id)
 
 function JobDrawer({
   current,
+  sources,
   onClose,
   review,
   edit,
 }: {
   current: ReplicationJob;
+  sources: Source[];
   onClose: () => void;
   review: () => void;
   edit: () => void;
@@ -499,8 +504,19 @@ function JobDrawer({
             : []),
           {
             label: "Replica source",
-            value: current.replica_source_id,
-            mono: true,
+            value: (() => {
+              const replica = sources.find(
+                (s) => s.id === current.replica_source_id,
+              );
+              return replica ? (
+                <span className="titled">
+                  <SourceIcon source={replica} size="sm" />
+                  <span className="mono">{replica.name}</span>
+                </span>
+              ) : (
+                <span className="mono">{current.replica_source_id}</span>
+              );
+            })(),
           },
           {
             label: "Remote feed",

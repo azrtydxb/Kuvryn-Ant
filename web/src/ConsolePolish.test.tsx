@@ -75,13 +75,20 @@ it("closes a portal menu on outside click and Escape", () => {
 });
 
 it("does not offer replica sources and continues a new remote source to its upstream configuration", async () => {
-  install((url, init) => {
+  const mock = mockAPI((url, init) => {
     const made = { ...source, id: ids.source, name: "up", kind: "remote" };
-    if (url === "/api/v1/sources" && init.method === "POST") return json(made);
+    if (
+      url === `/api/v1/sources/${ids.source}/remote-config` &&
+      init.method === "PUT"
+    )
+      return json({ revision: 2 });
+    if (url === "/api/v1/sources" && init.method === "POST")
+      return json(made, 201, '"1"');
     if (url.startsWith("/api/v1/sources?"))
       return json({ items: [made], page: { has_more: false } });
     return undefined;
   });
+  vi.stubGlobal("fetch", mock.fetcher);
   render(<App />);
   await signInWithToken();
   nav("Sources");
@@ -94,8 +101,30 @@ it("does not offer replica sources and continues a new remote source to its upst
   fireEvent.change(within(dialog).getByLabelText("Source kind"), {
     target: { value: "remote" },
   });
-  expect(dialog.textContent).toContain("origin, credentials and cache");
   expect(dialog.textContent).not.toContain("API does not report");
+  // Presets for the chosen format, plus a custom tile; picking one prefills.
+  expect(
+    within(dialog).getByRole("button", { name: "Custom upstream" }),
+  ).toBeTruthy();
+  expect(within(dialog).queryByRole("button", { name: "npm" })).toBeNull();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Docker Hub" }));
+  expect(
+    (within(dialog).getByLabelText("Source name") as HTMLInputElement).value,
+  ).toBe("dockerhub-remote");
+  expect(
+    (
+      within(dialog).getByLabelText(
+        "Upstream HTTPS base URL",
+      ) as HTMLInputElement
+    ).value,
+  ).toBe("https://registry-1.docker.io");
+  expect(
+    (
+      within(dialog).getByLabelText(
+        "Allowed redirect origins",
+      ) as HTMLTextAreaElement
+    ).value,
+  ).toContain("https://auth.docker.io");
   fireEvent.change(within(dialog).getByLabelText("Source name"), {
     target: { value: "up" },
   });
@@ -104,6 +133,16 @@ it("does not offer replica sources and continues a new remote source to its upst
   );
   const tab = await screen.findByRole("tab", { name: "Upstream" });
   await waitFor(() => expect(tab.getAttribute("aria-selected")).toBe("true"));
+  const put = mock.calls.find(
+    (c) => c.url.endsWith("/remote-config") && c.init.method === "PUT",
+  );
+  expect(put).toBeDefined();
+  const body = JSON.parse(String(put!.init.body));
+  expect(body.origin).toBe("https://registry-1.docker.io");
+  expect(body.redirect_origins).toContain(
+    "https://production.cloudflare.docker.com",
+  );
+  expect(JSON.stringify(body)).not.toMatch(/authorization|api_key|credential/i);
 });
 
 it("links from the create-source dialog to Replication for replicas", async () => {

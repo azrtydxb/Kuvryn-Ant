@@ -26,7 +26,7 @@ import {
   val,
 } from "./ui";
 
-const initial: RemoteSourceConfig = {
+export const initial: RemoteSourceConfig = {
   origin: "",
   redirect_origins: [],
   allow_private: false,
@@ -50,9 +50,11 @@ const cacheFields = [
 export function RemoteSource({
   client,
   source,
+  onSaved,
 }: {
   client: Client;
   source: Source;
+  onSaved?: () => void;
 }) {
   const r = useResource(
     () => client.call("getRemoteSourceConfig", { params: { id: source.id } }),
@@ -66,6 +68,7 @@ export function RemoteSource({
   const reload = () => {
     r.reload();
     base.reload();
+    onSaved?.();
   };
   return (
     <>
