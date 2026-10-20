@@ -223,7 +223,9 @@ func fail(w http.ResponseWriter, err error) {
 		status = http.StatusBadRequest
 	case errors.Is(err, artifact.ErrDenied):
 		status = http.StatusForbidden
-	case errors.Is(err, artifact.ErrNotFound):
+	case errors.Is(err, artifact.ErrNotFound), errors.Is(err, blob.ErrNotFound):
+		// Bytes missing behind live metadata (cache content lost to a best-effort
+		// backup or an eviction race) is a cache miss, not a server error.
 		status = http.StatusNotFound
 	case errors.Is(err, artifact.ErrConflict):
 		status = http.StatusConflict

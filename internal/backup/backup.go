@@ -11,6 +11,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/azrtydxb/Kuvryn-Ant/internal/backupfence"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/blob"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diskusage"
 	"github.com/jackc/pgx/v5"
@@ -40,6 +41,9 @@ type Options struct {
 type Result struct {
 	Manifest       Manifest
 	ManifestSHA256 string
+	// Warnings lists non-fatal findings, such as cache-only blobs whose bytes were
+	// already gone (cache content is disposable).
+	Warnings []string
 }
 
 // ErrDiskFull is returned (wrapping ErrTarget) when a local backup would push
@@ -84,6 +88,23 @@ func CreateTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tre
 	if err = checkDisk(root, opts.MaxDiskPercent, 0); err != nil {
 		return Result{}, err
 	}
+	// Fence blob deletion before the snapshot is taken and until the blobs it lists
+	// have been copied or checked; see internal/backupfence.
+	ctx, fence, err := backupfence.Acquire(ctx, pool, "ant backup")
+	switch {
+	case err == nil:
+		defer fence.Release()
+		defer func() {
+			if err != nil && errors.Is(context.Cause(ctx), backupfence.ErrLost) {
+				err = fmt.Errorf("%w: %v", backupfence.ErrLost, err)
+			}
+		}()
+	case isUndefinedTable(err):
+		// A database older than the fence table has no sweeper that honors it.
+		err = nil
+	default:
+		return Result{}, err
+	}
 	defer func() {
 		if err != nil {
 			clean := context.WithoutCancel(ctx)
@@ -98,7 +119,7 @@ func CreateTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tre
 	}
 	m.BlobMode = opts.Blobs
 	if opts.Blobs == BlobsReference {
-		err = checkBlobs(ctx, stores, m.Blobs, opts.Concurrency)
+		err = checkBlobs(ctx, stores, m.Blobs, opts.Concurrency, true)
 	} else {
 		if err = checkDisk(root, opts.MaxDiskPercent, m.BlobBytes()); err == nil {
 			err = copyBlobs(ctx, stores, root, m.Blobs, opts.Concurrency)
@@ -112,6 +133,11 @@ func CreateTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tre
 	if m.referenced() {
 		m.Notice = notice + " " + referenceNotice
 	}
+	var warnings []string
+	if missing := m.missingBlobs(); len(missing) > 0 {
+		m.Notice += " " + cacheNotice
+		warnings = append(warnings, fmt.Sprintf("%d cache-only blob(s) were missing and are recorded as missing in the manifest; restore drops the cache versions that used them", len(missing)))
+	}
 	data, err := json.MarshalIndent(m, "", " ")
 	if err != nil {
 		return Result{}, err
@@ -120,7 +146,7 @@ func CreateTree(ctx context.Context, pool *pgxpool.Pool, stores Stores, root Tre
 		return Result{}, err
 	}
 	sum := sha256.Sum256(data)
-	return Result{m, hex.EncodeToString(sum[:])}, nil
+	return Result{m, hex.EncodeToString(sum[:]), warnings}, nil
 }
 
 // checkDisk refuses to write into a local directory that is, or after adding
@@ -143,8 +169,10 @@ func checkDisk(t Tree, maxPercent int, extra int64) error {
 	return nil
 }
 
-// checkBlobs confirms each referenced blob exists with the recorded size.
-func checkBlobs(ctx context.Context, stores Stores, blobs []Blob, workers int) error {
+// checkBlobs confirms each referenced blob exists with the recorded size. When
+// tolerate is set, a best-effort (cache-only) blob that is not found is flagged
+// Missing in blobs instead of failing.
+func checkBlobs(ctx context.Context, stores Stores, blobs []Blob, workers int, tolerate bool) error {
 	made := map[string]blob.Store{}
 	for _, b := range blobs {
 		if made[b.Domain] != nil {
@@ -158,7 +186,14 @@ func checkBlobs(ctx context.Context, stores Stores, blobs []Blob, workers int) e
 	}
 	return forEach(ctx, len(blobs), workers, func(ctx context.Context, i int) error {
 		b := blobs[i]
+		if b.Missing {
+			return nil
+		}
 		info, err := made[b.Domain].Stat(ctx, blob.Digest(b.Digest))
+		if err != nil && tolerate && b.BestEffort && errors.Is(err, blob.ErrNotFound) {
+			blobs[i].Missing = true
+			return nil
+		}
 		if err != nil {
 			return fmt.Errorf("blob %s (domain %s): %w", b.Digest, b.Domain, err)
 		}
@@ -239,13 +274,13 @@ func snapshotTables(ctx context.Context, pool *pgxpool.Pool, root Tree) (Manifes
 		m.Tables = append(m.Tables, entry)
 	}
 	m.Blobs = []Blob{}
-	brows, err := tx.Query(ctx, "SELECT DISTINCT dedup_domain_id::text, digest, size_bytes FROM blobs ORDER BY 1,2")
+	brows, err := tx.Query(ctx, bestEffortBlobsQuery)
 	if err != nil {
 		return Manifest{}, err
 	}
 	for brows.Next() {
 		var b Blob
-		if err = brows.Scan(&b.Domain, &b.Digest, &b.Size); err != nil {
+		if err = brows.Scan(&b.Domain, &b.Digest, &b.Size, &b.BestEffort); err != nil {
 			brows.Close()
 			return Manifest{}, err
 		}
@@ -306,7 +341,14 @@ func copyBlobs(ctx context.Context, stores Stores, root Tree, blobs []Blob, work
 	}
 	return forEach(ctx, len(blobs), workers, func(ctx context.Context, i int) error {
 		b := blobs[i]
+		if b.Missing {
+			return nil
+		}
 		if err := copyBlobOut(ctx, made[b.Domain], root, b); err != nil {
+			if b.BestEffort && errors.Is(err, blob.ErrNotFound) {
+				blobs[i].Missing = true
+				return nil
+			}
 			return fmt.Errorf("blob %s (domain %s): %w", b.Digest, b.Domain, err)
 		}
 		return nil
@@ -331,3 +373,30 @@ func copyBlobOut(ctx context.Context, store blob.Store, root Tree, b Blob) error
 		return nil
 	})
 }
+
+func isUndefinedTable(err error) bool {
+	var pe *pgconn.PgError
+	return errors.As(err, &pe) && pe.Code == "42P01"
+}
+
+// bestEffortBlobsQuery lists every (domain, digest) in the snapshot and flags the
+// ones that only purpose=cache content uses: at least one asset sits on a source
+// attached to a cache feed (and to no other feed kind), and nothing else
+// references the blob (no other asset, no federation route cache entry). Such a
+// blob may be absent from the blob store without the backup being wrong, because
+// cache content is disposable. A blob nothing references stays strict: bytes
+// missing behind it are an integrity problem to report.
+const bestEffortBlobsQuery = `WITH cacheonly AS (
+ SELECT c.source_id FROM components c
+  WHERE EXISTS(SELECT 1 FROM feed_sources fs JOIN feeds f ON f.id=fs.feed_id WHERE fs.source_id=c.source_id AND f.purpose='cache')
+  AND NOT EXISTS(SELECT 1 FROM feed_sources fs JOIN feeds f ON f.id=fs.feed_id WHERE fs.source_id=c.source_id AND f.purpose<>'cache')
+)
+SELECT b.dedup_domain_id::text, b.digest, b.size_bytes,
+ EXISTS(SELECT 1 FROM blobs b2 JOIN assets a ON a.blob_id=b2.id JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id
+   WHERE b2.dedup_domain_id=b.dedup_domain_id AND b2.digest=b.digest)
+ AND NOT EXISTS(SELECT 1 FROM blobs b2 WHERE b2.dedup_domain_id=b.dedup_domain_id AND b2.digest=b.digest AND (
+   EXISTS(SELECT 1 FROM federation_route_cache rc WHERE rc.blob_id=b2.id)
+   OR EXISTS(SELECT 1 FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id
+     WHERE a.blob_id=b2.id AND c.source_id NOT IN (SELECT source_id FROM cacheonly))))
+ AS best_effort
+FROM (SELECT DISTINCT dedup_domain_id, digest, size_bytes FROM blobs) b ORDER BY 1,2`

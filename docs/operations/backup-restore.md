@@ -41,11 +41,11 @@ volume is known, and leaves nothing behind when it refuses.
 
 ### Blob modes
 
-| `--blobs` | Behavior |
-| --- | --- |
-| `auto` (default) | `reference` when the active blob backend is `s3`, otherwise `copy`. |
-| `copy` | Blob bytes are copied into the backup (self-contained; large). |
-| `reference` | The backup is metadata (`tables/`) plus the blob list in `manifest.json`; no blob bytes are copied. Every blob is checked to exist with the recorded size when the backup is taken. |
+| `--blobs`        | Behavior                                                                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto` (default) | `reference` when the active blob backend is `s3`, otherwise `copy`.                                                                                                                 |
+| `copy`           | Blob bytes are copied into the backup (self-contained; large).                                                                                                                      |
+| `reference`      | The backup is metadata (`tables/`) plus the blob list in `manifest.json`; no blob bytes are copied. Every blob is checked to exist with the recorded size when the backup is taken. |
 
 Consistency guarantee of `reference`: the metadata is the same single snapshot,
 and blobs are immutable and content-addressed, so a referenced blob is either
@@ -121,7 +121,7 @@ are included and may be delivered again after restore (deliveries are at-least-o
   size-checked, and not copied. Blobs are immutable and content-addressed, so copying
   them after the snapshot yields the right bytes.
 - Every blob is hashed while it is copied and must match the digest and size in
-  the snapshot. A missing or corrupt blob fails the backup (no partial backup is
+  the snapshot. A missing or corrupt blob fails the backup (except best-effort cache blobs, below; no partial backup is
   left behind) rather than producing a silently inconsistent one.
 - Restore loads all tables in a single transaction, verifies each table file's
   digest and row count, then commits. Either all metadata is restored or none.
@@ -129,9 +129,49 @@ are included and may be delivered again after restore (deliveries are at-least-o
   restored database never references a missing blob. If restore fails first,
   already written blobs are harmless unreferenced objects.
 
-Requirement: do not run garbage collection or blob deletion while a backup is
-running. The snapshot may reference a blob that a concurrent delete removes; the
-backup then fails (it never skips silently) and must be repeated.
+### Garbage-collection fence
+
+A running backup holds a _fence_: a row in the `backup_fences` table, inserted
+before the snapshot is taken and renewed by a heartbeat every 15 seconds. While
+any unexpired fence exists, garbage collection, the expedited cache and pressure
+sweep and the byte deletion of cache eviction do not delete blob bytes. Marking
+and metadata eviction continue; the candidates simply stay marked and are swept
+by the first run after the fence is gone. The fence is in PostgreSQL, so it works
+when `ant backup` is a separate process or job from the serving process that runs
+the sweeps. Acquisition takes a transaction advisory lock that every sweep also
+takes before its check, so a sweep already deleting finishes before the fence
+becomes visible and no sweep can start deleting after it.
+
+The fence is released when the backup finishes or fails. A backup that crashes
+stops heartbeating and its fence expires after 2 minutes, so a dead backup can
+not pause deletion indefinitely. If a backup cannot renew its fence (database
+unreachable for a minute) it aborts rather than continue unprotected. A database
+older than the fence table (no sweeper that honors it) is backed up without one.
+Deletion is paused for the whole backup, so a very long backup delays space
+reclamation by that long.
+
+### Cache content is best-effort
+
+Blobs used only by `purpose=cache` feeds are disposable. A blob is _best-effort_
+when at least one asset uses it, every asset sits on a source attached only to
+cache feeds, and nothing else references it (no ordinary asset, no federation
+route cache entry). If such a blob has no bytes when the backup runs (copy and
+reference mode), the backup does not fail: the manifest records the blob with
+`missing: true`, the command logs a warning and prints it in `warnings`, and
+`missing_blobs` appears in the summary. Every other missing or corrupt blob, including a
+blob nothing references, still fails the backup.
+
+Restore skips the missing blobs and drops the cache content that used them: the
+versions with an asset on a missing blob, the versions whose manifests name those
+versions through `version_refs` (transitively, so an image index and manifest
+go with a lost layer), their tags and assets, and the blob rows. The cache feed
+is left with fewer objects; clients see a cache miss and rebuild them, and
+nothing dangling answers for a lost object. The summary reports
+`dropped_cache_versions`. In `reference` mode a best-effort blob that is absent
+from the target store is treated the same way. Should bytes disappear behind live
+cache metadata in some other way, reads answer 404 (a cache miss) instead of a
+server error; the same content uploaded again heals it, and `ant repair metadata`
+remains the tool for cleaning up leftover metadata.
 
 ## Procedure
 
