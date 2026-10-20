@@ -86,7 +86,7 @@ afterEach(() => {
 const renderHooks = () =>
   render(
     <ToastProvider>
-      <Webhooks client={new Client("token")} />
+      <Webhooks client={new Client("token")} initialTab="outgoing" />
     </ToastProvider>,
   );
 const writes = (method: string) =>

@@ -15,6 +15,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/hooks"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/secrets"
 	"github.com/jackc/pgx/v5"
@@ -420,13 +421,18 @@ func (h webhookHandlers) deleteSecret(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 	var used int
 	err := h.db.QueryRow(ctx, `SELECT count(*) FROM event_subscriptions WHERE instance_id=$1 AND signing_secret_id=$2`, p.InstanceID, id).Scan(&used)
+	if err == nil {
+		var incoming int
+		incoming, err = hooks.SecretUsers(ctx, h.db, p.InstanceID, id)
+		used += incoming
+	}
 	cancel()
 	if err != nil {
 		identityError(w, r, err)
 		return
 	}
 	if used > 0 {
-		Error(w, r, 409, api.ErrorCodeConflict, "signing secret is still used by "+strconv.Itoa(used)+" webhook(s); move them to another secret first")
+		Error(w, r, 409, api.ErrorCodeConflict, "signing secret is still used by "+strconv.Itoa(used)+" webhook(s) or incoming hook(s); move them to another secret first")
 		return
 	}
 	h.secretMutate(w, r, p, "webhook_secret.delete", id, struct{ Revision int64 }{revision}, 200, "", func(ctx context.Context, tx pgx.Tx) (any, error) {
@@ -443,7 +449,11 @@ func (h webhookHandlers) deleteSecret(w http.ResponseWriter, r *http.Request) {
 		if err := tx.QueryRow(ctx, `SELECT count(*) FROM event_subscriptions WHERE instance_id=$1 AND signing_secret_id=$2`, p.InstanceID, id).Scan(&users); err != nil {
 			return nil, err
 		}
-		if users > 0 {
+		incoming, err := hooks.SecretUsers(ctx, tx, p.InstanceID, id)
+		if err != nil {
+			return nil, err
+		}
+		if users+incoming > 0 {
 			return nil, database.ErrConflict
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM webhook_signing_secrets WHERE instance_id=$1 AND id=$2`, p.InstanceID, id); err != nil {

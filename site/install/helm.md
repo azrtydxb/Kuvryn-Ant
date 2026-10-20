@@ -326,7 +326,7 @@ with `ca-map.json` containing `{"corp-ca":"corp-ca.pem"}`. A remote source then 
 | `httpRoute.filters`     | list of objects                                                                     | `[]`                  |     | Gateway API filters applied to the application rule.                                                               |
 | `httpRoute.timeouts`    | object with optional `request`, `backendRequest` (strings)                          | `{}`                  |     | Route timeouts; `"0s"` disables the timeout on implementations that support it.                                    |
 
-Both the Ingress and the HTTPRoute route exactly `/` (redirected to `/console/`) and the prefixes `/console`, `/api`, `/auth`, `/v2`, `/feeds` and `/mcp`. `/metrics` and `/health/*` are not routed.
+Both the Ingress and the HTTPRoute route exactly `/` (redirected to `/console/`) and the prefixes `/console`, `/api`, `/auth`, `/v2`, `/feeds`, `/mcp` and `/hook` (incoming webhooks). `/metrics` and `/health/*` are not routed.
 
 ### Federation
 

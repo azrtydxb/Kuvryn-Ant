@@ -196,3 +196,20 @@ func TestConditionalRefreshCannotExtendSignature(t *testing.T) {
 		t.Fatal("304 extended signature", e)
 	}
 }
+
+func TestInvalidateMatchingRemovesOnlyMatchingEntries(t *testing.T) {
+	c, _ := New(Config{})
+	load := func(context.Context) (Value, error) { return Value{Status: 200, Body: []byte("x")}, nil }
+	for _, id := range []string{"pkg-a/1", "pkg-a/2", "pkg-b/1"} {
+		if _, err := c.Get(context.Background(), Key{"s", id, "m", "d"}, GetOptions{}, load); err != nil {
+			t.Fatal(err)
+		}
+	}
+	n := c.InvalidateMatching(func(k Key) bool { return k.Identity[:5] == "pkg-a" })
+	if n != 2 || c.Stats().Entries != 1 {
+		t.Fatalf("removed %d, entries %d", n, c.Stats().Entries)
+	}
+	if c.Stats().Bytes <= 0 {
+		t.Fatal("byte accounting lost")
+	}
+}

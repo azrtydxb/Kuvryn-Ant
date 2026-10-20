@@ -381,6 +381,17 @@ export type WebhookSecretPage = { "items": Array<WebhookSecret>; "next_after"?: 
 export type CreateWebhookSecret = { "name": string; "description"?: string; "value"?: string };
 export type RotateWebhookSecretValue = { "value"?: string; "grace_seconds"?: number };
 export type DeletedWebhookSecret = { "id": string; "deleted": boolean };
+export type IncomingHookAction = { "type": "prewarm" | "replication_run" | "purge_source_cache" | "clean_cache" | "upstream_notify" | "relay"; "feed_id"?: string; "kind"?: "package" | "image"; "name"?: string; "version"?: string; "job_id"?: string; "source_id"?: string; "coordinate"?: string; "prefix"?: string; "provider"?: "auto" | "dockerhub" | "github" | "gitlab" | "npm" | "artifactory" | "nexus"; "source_ids"?: Array<string>; "origins"?: Array<string>; "prewarm"?: boolean; "target_url"?: string; "resign_secret_id"?: string };
+export type IncomingHook = { "id": string; "slug": string; "description": string; "enabled": boolean; "auth_mode": "hmac" | "url_token" | "bearer"; "hmac_format"?: "github" | "gitlab" | "ant" | "npm" | "artifactory" | "nexus"; "signing_secret_id"?: string; "bearer_scope"?: "configure" | "replicate" | "admin"; "action": IncomingHookAction; "rate_per_minute": number; "signing_secret_name"?: string; "token_hint"?: string; "token"?: string; "action_summary": string; "path": string; "url"?: string; "revision": number; "created_at": string; "updated_at": string; "last_received_at"?: string; "received_7d": number; "succeeded_7d": number; "failed_7d": number; "success_rate"?: number };
+export type IncomingHookPage = { "items": Array<IncomingHook>; "next_after"?: string };
+export type CreateIncomingHook = { "slug": string; "description"?: string; "enabled"?: boolean; "auth_mode": "hmac" | "url_token" | "bearer"; "hmac_format"?: "github" | "gitlab" | "ant" | "npm" | "artifactory" | "nexus"; "signing_secret_id"?: string; "bearer_scope"?: "configure" | "replicate" | "admin"; "action": IncomingHookAction; "rate_per_minute"?: number };
+export type PatchIncomingHook = { "slug"?: string; "description"?: string; "enabled"?: boolean; "auth_mode"?: "hmac" | "url_token" | "bearer"; "hmac_format"?: "github" | "gitlab" | "ant" | "npm" | "artifactory" | "nexus"; "signing_secret_id"?: string; "bearer_scope"?: "configure" | "replicate" | "admin"; "action"?: IncomingHookAction; "rate_per_minute"?: number };
+export type IncomingHookDeleted = { "id": string; "deleted": boolean; "revision": number };
+export type IncomingHookDelivery = { "id": string; "received_at": string; "source_ip"?: string; "auth_result": "ok" | "test" | "redelivery" | "invalid" | "missing" | "duplicate" | "too_large"; "state": "pending" | "running" | "succeeded" | "failed" | "rejected"; "attempts": number; "finished_at"?: string; "action_result"?: string; "detail": {  }; "error"?: string; "payload_size": number; "preview": string; "delivery_ref"?: string; "redelivery_of"?: string };
+export type IncomingHookDeliveryPage = { "items": Array<IncomingHookDelivery>; "next_before"?: string };
+export type IncomingHookQueued = { "delivery_id": string };
+export type IncomingHookFormat = { "format": string; "header": string };
+export type IncomingHookConfig = { "public_url": string; "hook_base_url": string; "max_body_bytes": number; "log_retention_days": number; "hmac_formats": Array<IncomingHookFormat> };
 export type TokenCounts = { "active": number; "expired": number; "revoked": number };
 export type StartTokenCleanup = { "dry_run": boolean };
 export type TokenCleanupResult = { "dry_run": boolean; "after_days": number; "cutoff": string; "service_tokens": number; "personal_access_tokens": number; "total": number; "has_more": boolean };
@@ -634,6 +645,16 @@ createWebhookSecret: { body: CreateWebhookSecret; response: WebhookSecret };
 getWebhookSecret: { body: undefined; response: WebhookSecret };
 deleteWebhookSecret: { body: undefined; response: DeletedWebhookSecret };
 rotateWebhookSecretValue: { body: RotateWebhookSecretValue; response: WebhookSecret };
+getIncomingHookConfig: { body: undefined; response: IncomingHookConfig };
+listIncomingHooks: { body: undefined; response: IncomingHookPage };
+createIncomingHook: { body: CreateIncomingHook; response: IncomingHook };
+getIncomingHook: { body: undefined; response: IncomingHook };
+patchIncomingHook: { body: PatchIncomingHook; response: IncomingHook };
+deleteIncomingHook: { body: undefined; response: IncomingHookDeleted };
+regenerateIncomingHookToken: { body: undefined; response: IncomingHook };
+listIncomingHookDeliveries: { body: undefined; response: IncomingHookDeliveryPage };
+testIncomingHook: { body: undefined; response: IncomingHookQueued };
+redeliverIncomingHookDelivery: { body: undefined; response: IncomingHookQueued };
 cleanupTokens: { body: StartTokenCleanup; response: TokenCleanupResult };
 cleanupPersonalAccessTokens: { body: undefined; response: PersonalTokenCleanupResult };
 }
@@ -1870,6 +1891,56 @@ export const routes = {
   },
   "rotateWebhookSecretValue": {
     "path": "/api/v1/webhook-secrets/{id}/rotate",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getIncomingHookConfig": {
+    "path": "/api/v1/incoming-hook-config",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listIncomingHooks": {
+    "path": "/api/v1/incoming-hooks",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createIncomingHook": {
+    "path": "/api/v1/incoming-hooks",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getIncomingHook": {
+    "path": "/api/v1/incoming-hooks/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "patchIncomingHook": {
+    "path": "/api/v1/incoming-hooks/{id}",
+    "method": "PATCH",
+    "idempotent": true
+  },
+  "deleteIncomingHook": {
+    "path": "/api/v1/incoming-hooks/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "regenerateIncomingHookToken": {
+    "path": "/api/v1/incoming-hooks/{id}/token",
+    "method": "POST",
+    "idempotent": true
+  },
+  "listIncomingHookDeliveries": {
+    "path": "/api/v1/incoming-hooks/{id}/deliveries",
+    "method": "GET",
+    "idempotent": false
+  },
+  "testIncomingHook": {
+    "path": "/api/v1/incoming-hooks/{id}/test",
+    "method": "POST",
+    "idempotent": true
+  },
+  "redeliverIncomingHookDelivery": {
+    "path": "/api/v1/incoming-hooks/{id}/deliveries/{delivery_id}/redeliver",
     "method": "POST",
     "idempotent": true
   },

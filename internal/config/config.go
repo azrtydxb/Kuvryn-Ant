@@ -26,12 +26,18 @@ type Config struct {
 	PublicURL   string
 	// WebhookAllowHTTP (ANT_WEBHOOK_ALLOW_HTTP) lets webhook destinations use plain http.
 	WebhookAllowHTTP bool
-	Listen           string
-	Database         *pgxpool.Config
-	RootKey          []byte
-	SecretKeys       *secrets.Keyring
-	ShutdownTimeout  time.Duration
-	MaxRequests      int
+	// HookMaxBodyBytes (ANT_HOOK_MAX_BODY_BYTES) caps an incoming webhook request
+	// body (default 1 MiB, at most 8 MiB). HookLogRetentionDays
+	// (ANT_HOOK_LOG_RETENTION_DAYS) is how long incoming hook deliveries are kept
+	// (default 14, at most 365).
+	HookMaxBodyBytes     int64
+	HookLogRetentionDays int
+	Listen               string
+	Database             *pgxpool.Config
+	RootKey              []byte
+	SecretKeys           *secrets.Keyring
+	ShutdownTimeout      time.Duration
+	MaxRequests          int
 	// UploadSlots bounds concurrent uploads per package format (0: scaled to CPU).
 	UploadSlots    int
 	Retention      Retention
@@ -135,6 +141,20 @@ func Load(getenv func(string) string) (Config, error) {
 		if err != nil {
 			return Config{}, errors.New("ANT_WEBHOOK_ALLOW_HTTP must be a boolean")
 		}
+	}
+	if value := getenv("ANT_HOOK_MAX_BODY_BYTES"); value != "" {
+		n, e := strconv.ParseInt(value, 10, 64)
+		if e != nil || n < 1024 || n > 8<<20 {
+			return Config{}, errors.New("ANT_HOOK_MAX_BODY_BYTES must be between 1024 and 8388608")
+		}
+		c.HookMaxBodyBytes = n
+	}
+	if value := getenv("ANT_HOOK_LOG_RETENTION_DAYS"); value != "" {
+		n, e := strconv.Atoi(value)
+		if e != nil || n < 1 || n > 365 {
+			return Config{}, errors.New("ANT_HOOK_LOG_RETENTION_DAYS must be between 1 and 365")
+		}
+		c.HookLogRetentionDays = n
 	}
 	directory := getenv("ANT_DATA_DIR")
 	if directory == "" {

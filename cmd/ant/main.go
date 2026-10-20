@@ -270,6 +270,17 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 	// Remote sources and replication peers that point back at this instance are
 	// rejected at configuration time (feed resolution loops).
 	feedgraph.SetSelfOrigins(publicURL, "http://"+listener.Addr().String())
+	// Incoming webhooks (/hook/<slug>): public receiver, admin API, worker under the lease.
+	hookSvc, err := newHooks(pool, artifacts, ops, replicationRT, cfg, publicURL)
+	if err != nil {
+		logger.Error("incoming webhook startup rejected")
+		return 1
+	}
+	if hookSvc != nil {
+		defer hookSvc.Close()
+		workers.StartHooks(hookSvc)
+		observability.RegisterCollector("incoming_hooks", hookSvc.WriteMetrics)
+	}
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
 	observability.RegisterCollector("prewarm", prewarm.WriteMetrics)
 	observability.RegisterCollector("storage_pressure", retention.WriteMetrics)
@@ -311,6 +322,10 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		management.RegisterClientAuth(mux, clientAuthDeps)
 		management.RegisterWebhooks(mux, pool, cfg.SecretKeys, management.WebhookOptions{AllowHTTP: cfg.WebhookAllowHTTP})
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
+		if hookSvc != nil {
+			hookSvc.Register(mux)
+			management.RegisterIncomingHooks(mux, pool, hookSvc, management.WebhookOptions{AllowHTTP: cfg.WebhookAllowHTTP})
+		}
 		management.RegisterFederation(mux, pool, fed.service())
 		management.RegisterFederationSearch(mux, pool, fed.service(), management.NewCursorCodec(cfg.RootKey))
 		var transferStores transfer.Stores

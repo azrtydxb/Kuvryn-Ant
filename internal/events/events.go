@@ -15,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -282,16 +283,7 @@ func (d *Dispatcher) send(ctx context.Context, item delivery) string {
 	// X-Ant-Signature is a comma-separated list of "sha256=<hex>" entries: the
 	// current secret first and, only inside a rotation grace window, the previous.
 	// Receivers accept the request when any entry matches a secret they hold.
-	sign := func(secret []byte) string {
-		mac := hmac.New(sha256.New, secret)
-		mac.Write([]byte(timestamp + "\n" + id + "\n"))
-		mac.Write(body)
-		return "sha256=" + hex.EncodeToString(mac.Sum(nil))
-	}
-	signature := sign(key)
-	if previousKey != nil {
-		signature += "," + sign(previousKey)
-	}
+	signature := SignatureHeader(timestamp, id, body, key, previousKey)
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, item.endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "invalid_destination"
@@ -323,4 +315,22 @@ func instanceUUID(raw string) (string, bool) {
 		return "", false
 	}
 	return id.String(), true
+}
+
+// SignatureHeader returns the X-Ant-Signature value for a delivery: one
+// "sha256=<hex>" entry per non-empty key, HMAC-SHA256 over timestamp, event ID
+// and body joined by newlines. The same scheme signs outgoing webhook events
+// and relayed incoming hooks, so receivers verify both identically.
+func SignatureHeader(timestamp, id string, body []byte, keys ...[]byte) string {
+	entries := make([]string, 0, len(keys))
+	for _, key := range keys {
+		if len(key) == 0 {
+			continue
+		}
+		mac := hmac.New(sha256.New, key)
+		mac.Write([]byte(timestamp + "\n" + id + "\n"))
+		mac.Write(body)
+		entries = append(entries, "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	}
+	return strings.Join(entries, ",")
 }

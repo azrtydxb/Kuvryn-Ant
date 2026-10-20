@@ -14,15 +14,16 @@ Package clients, the console and the API all use one HTTPS origin, for example `
 
 The chart's Ingress and HTTPRoute send these paths to the Service:
 
-| Path       | Match  | Purpose                                                  |
-| ---------- | ------ | -------------------------------------------------------- |
-| `/`        | Exact  | Redirects to `/console/`                                 |
-| `/console` | Prefix | Web console                                              |
-| `/api`     | Prefix | Management API (`/api/v1`)                               |
-| `/auth`    | Prefix | Browser login, sessions, SAML metadata                   |
-| `/v2`      | Prefix | OCI distribution API                                     |
-| `/feeds`   | Prefix | All other package formats (`/feeds/<slug>/<format>/...`) |
-| `/mcp`     | Prefix | Model Context Protocol endpoint (service tokens only)    |
+| Path       | Match  | Purpose                                                    |
+| ---------- | ------ | ---------------------------------------------------------- |
+| `/`        | Exact  | Redirects to `/console/`                                   |
+| `/console` | Prefix | Web console                                                |
+| `/api`     | Prefix | Management API (`/api/v1`)                                 |
+| `/auth`    | Prefix | Browser login, sessions, SAML metadata                     |
+| `/v2`      | Prefix | OCI distribution API                                       |
+| `/feeds`   | Prefix | All other package formats (`/feeds/<slug>/<format>/...`)   |
+| `/mcp`     | Prefix | Model Context Protocol endpoint (service tokens only)      |
+| `/hook`    | Prefix | Incoming webhooks (`/hook/<slug>`), authenticated per hook |
 
 Not routed: `/health/live`, `/health/ready` and `/metrics` (keep them cluster-internal; scrape metrics through `metrics.headlessService`).
 

@@ -48,6 +48,9 @@ need "$fixture/s3.yaml" 'ANT_S3_CA_FILE'
 # The MCP endpoint is routed by both the Ingress and the HTTPRoute.
 need "$fixture/ingress.yaml" 'path: /mcp'
 need "$fixture/httproute.yaml" 'value: /mcp'
+# Incoming webhooks (/hook/<slug>) are served on the public listener, so they are routed too.
+need "$fixture/ingress.yaml" 'path: /hook'
+need "$fixture/httproute.yaml" 'value: /hook'
 # Operator CA map: mounted from a Secret or a ConfigMap and passed by env.
 need "$fixture/ca-secret.yaml" 'ANT_UPSTREAM_CA_MAP_FILE'
 need "$fixture/ca-secret.yaml" '/run/ant/upstream-ca/ca-map.json'

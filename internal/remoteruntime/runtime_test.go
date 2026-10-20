@@ -458,3 +458,66 @@ func TestRemoteRuntimePerSourceMetadataBound(t *testing.T) {
 		t.Fatal("negative bound accepted")
 	}
 }
+
+// InvalidateMetadata drops the cached metadata and negative answers of the
+// matching resources only, so the next read goes upstream for them and nothing else.
+func TestRemoteRuntimeInvalidateMetadataByName(t *testing.T) {
+	pool, boot := runtimeFixture(t)
+	var calls atomic.Int32
+	origin := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		if strings.HasSuffix(r.URL.Path, "/missing") {
+			w.WriteHeader(404)
+			return
+		}
+		io.WriteString(w, `{"path":"`+r.URL.Path+`"}`)
+	}))
+	defer origin.Close()
+	source := insertRemoteSource(t, pool, boot.InstanceID, "runtime-invalidate")
+	c := remoteconfig.DefaultConfig(origin.URL)
+	c.CARef = "runtime-ca"
+	c.AllowPrivate = true
+	c.TimeoutSeconds = 5
+	insertConfig(t, pool, boot.InstanceID, source, 1, c)
+	keys, err := secrets.New("v1", map[string][]byte{"v1": make([]byte, 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager, err := New(pool, boot.InstanceID, keys, Options{CAFiles: map[string]string{"runtime-ca": writeCAPEM(t, origin)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
+	get := func(path string) {
+		t.Helper()
+		if _, err := manager.Metadata(context.Background(), Request{SourceID: source, AuthorizationDomain: "d", Path: path}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, p := range []string{"Left-Pad/index.json", "left-pad/missing", "right-pad/index.json"} {
+		get(p)
+	}
+	if calls.Load() != 3 {
+		t.Fatal(calls.Load())
+	}
+	if n := manager.InvalidateMetadata("00000000-0000-0000-0000-000000000000", []string{"left-pad"}); n != 0 {
+		t.Fatalf("unknown source dropped %d", n)
+	}
+	// Case-insensitive match on the resource name; the 404 answer goes too.
+	if n := manager.InvalidateMetadata(source, []string{"left-pad"}); n != 2 {
+		t.Fatalf("dropped %d, want 2", n)
+	}
+	get("right-pad/index.json")
+	if calls.Load() != 3 {
+		t.Fatal("an unrelated package was invalidated")
+	}
+	get("Left-Pad/index.json")
+	get("left-pad/missing")
+	if calls.Load() != 5 {
+		t.Fatalf("invalidated packages were not refetched: %d", calls.Load())
+	}
+	// No names drops everything of the source.
+	if n := manager.InvalidateMetadata(source, nil); n != 3 {
+		t.Fatalf("dropped %d, want 3", n)
+	}
+}
