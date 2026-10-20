@@ -20685,6 +20685,13 @@
             "format": "int64",
             "minimum": 1024,
             "maximum": 1073741824
+          },
+          "max_metadata_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 1073741824,
+            "description": "Largest metadata document this source holds in memory; larger ones are streamed where the format adapter can (for example Conda repodata) and refused otherwise. 0 uses the instance default. Effective size is also bounded by max_bytes and the instance cache."
           }
         }
       },
@@ -25245,6 +25252,10 @@
             "format": "int32"
           },
           "max_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "max_metadata_bytes": {
             "type": "integer",
             "format": "int64"
           }

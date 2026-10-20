@@ -333,6 +333,7 @@ func (s *Service) planTemplate(ctx context.Context, q queryer, instance, destFee
 			{"cache.stale_if_error_seconds", rec.Config.Cache.StaleIfErrorSeconds, tr.Cache.StaleIfErrorSeconds},
 			{"cache.max_entries", rec.Config.Cache.MaxEntries, tr.Cache.MaxEntries},
 			{"cache.max_bytes", rec.Config.Cache.MaxBytes, tr.Cache.MaxBytes},
+			{"cache.max_metadata_bytes", rec.Config.Cache.MaxMetadataBytes, tr.Cache.MaxMetadataBytes},
 		} {
 			add(diffField(section, f.name, f.c, f.p, true))
 		}

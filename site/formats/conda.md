@@ -28,13 +28,11 @@ Accepted subdirs: `noarch`, `linux-64`, `linux-aarch64`, `linux-ppc64le`, `linux
 - A local upload must be a `.tar.bz2`. A `.conda` (v2) file sent to `ingest/` is rejected with 400. A cached remote channel can still serve `.conda` files.
 - A subdir is one ownership unit. If any source attached to the feed holds a package in `linux-64`, that source alone answers `linux-64/repodata.json`. Sources are never merged file by file. In practice, a local package in `noarch` hides the upstream `noarch` of a remote source attached to the same feed. Put local packages and proxied channels in separate feeds and list both feeds in the client's `channels`.
 - An index lists at most 4,096 packages per subdir.
-- The server does not serve `current_repodata.json`, the `.zst` and `.bz2` variants of repodata, or sharded repodata. Clients fall back to `repodata.json` when these return 404.
+- The server serves `repodata.json` and `current_repodata.json`. It does not serve the `.zst` and `.bz2` variants of repodata or sharded repodata; clients fall back to `repodata.json` when these return 404.
 - Uploads beyond the per-format concurrency limit (`ANT_UPLOAD_SLOTS`, which by default scales with CPU between 4 and 32) are answered with 503.
 - Responses carry `Cache-Control: private, no-store`.
 
-::: warning Gap
-A remote repodata document is held in memory and is capped at 24 MiB, the metadata limit compiled into the binary. The `linux-64` and `noarch` repodata of conda-forge (and of other large channels) are bigger than that, so those subdirs cannot be proxied today: the request fails with 503. Small channels and mirrors work. The conformance run proxies `https://conda.anaconda.org/conda-test`.
-:::
+Large remote channels are supported. A remote repodata up to the source's metadata bound (24 MiB by default, per source via `cache.max_metadata_bytes`, see [Feeds and sources](../concepts/feeds-and-sources.md)) goes through the metadata cache described below. A larger one, such as the `linux-64` and `noarch` repodata of conda-forge, is streamed instead: the server reads `repodata.json.zst` from the upstream when it exists (otherwise `repodata.json`), validates it entry by entry, and writes the sanitized document to the client as it goes, gzip-compressed when the client accepts it. Memory stays bounded by one package record, not by the document size. A streamed document is not cached between requests, so each client fetch reads the upstream again; the `.zst` form keeps that affordable. While streaming, the server spools a compact digest index (filename to sha256, about 48 bytes per package) in the process temp directory, so that package downloads are verified against the repodata digest without reading the document again. The index is derived state: it expires after 15 minutes and is rebuilt on demand, and losing it (a restart) only costs one more read. If the upstream fails after the response has started, the connection is aborted so a truncated document is never delivered as complete.
 
 ## Create the feed
 
@@ -65,11 +63,11 @@ The origin of a remote conda source is the **channel root**: the URL whose child
 - On first download, `.tar.bz2` and `.conda` files are fetched from `<subdir>/<file>`, checked against the repodata sha256 before any byte is served, and cached. For `.tar.bz2` files, the verified repodata entry is cached too, so cached packages stay listable while the upstream is down.
 - If the upstream fails and the subdir has cached packages, the feed serves its local view with `X-Kuvryn-Cache: offline`. A response from a stale metadata cache entry carries `X-Kuvryn-Cache: stale` and `Warning: 110`.
 
-| Upstream channel               | `origin`                                                                   | `redirect_origins`                                                  |
-| ------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| conda-forge                    | `https://conda.anaconda.org/conda-forge`                                   | none needed by the code (see the warning above about repodata size) |
-| Any small anaconda.org channel | `https://conda.anaconda.org/<channel>`                                     | none                                                                |
-| A self-hosted mirror           | its channel root, for example `https://mirror.example.com/conda/mychannel` | the hosts it redirects downloads to, if any                         |
+| Upstream channel               | `origin`                                                                   | `redirect_origins`                                   |
+| ------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------- |
+| conda-forge                    | `https://conda.anaconda.org/conda-forge`                                   | none needed by the code (large repodata is streamed) |
+| Any small anaconda.org channel | `https://conda.anaconda.org/<channel>`                                     | none                                                 |
+| A self-hosted mirror           | its channel root, for example `https://mirror.example.com/conda/mychannel` | the hosts it redirects downloads to, if any          |
 
 ::: warning Unverified
 The repository does not record whether `conda.anaconda.org` redirects package downloads to another host. If a download fails with 503 and the source health shows a refused redirect, add that host to `redirect_origins`. The conformance run against `conda-test` needed no redirect origins.
@@ -168,7 +166,7 @@ Exchange the job's OIDC token for a short-lived Ant token (see [GitHub Actions](
 | `403`                                       | The token's role grants or scopes do not cover this feed or subdir, or the feed's client-auth policy does not accept this credential type.                           |
 | `400` on `PUT ingest/...`                   | The filename and `info/index.json` disagree (name, version, build or subdir), the file is `.conda`, the archive is malformed, or `X-Checksum-Sha256` does not match. |
 | `409` on `PUT`                              | A different file already exists under that name. Versions are immutable. Bump the build number.                                                                      |
-| `503` on a proxied `repodata.json`          | The upstream is unreachable and nothing is cached, the upstream repodata exceeds 24 MiB, or all upload slots are busy (on `PUT`).                                    |
+| `503` on a proxied `repodata.json`          | The upstream is unreachable and nothing is cached, or all upload slots are busy (on `PUT`).                                                                          |
 | `X-Kuvryn-Cache: offline`                   | The upstream failed and the server answered from cached packages. The index then lists only `.tar.bz2` packages already cached.                                      |
 | Upstream packages missing from a mixed feed | A local package exists in the same subdir. The subdir is owned by the local source. Use a separate proxy feed.                                                       |
 

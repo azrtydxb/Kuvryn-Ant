@@ -65,3 +65,20 @@ client verification with the pinned miniconda baseline, repodata zst/conda v2
 package formats, remote/replica resolution, retention and deployment evidence
 remain release gates. All 26 formats remain Phase 1 scope.
 Protocol reference: https://conda-forge.org/docs/
+
+## Remote channels and large repodata
+
+A feed with a remote source proxies an upstream channel (see
+`remote.go`). `<subdir>/repodata.json` and `current_repodata.json` are read
+through the metadata cache while they fit the source's metadata bound
+(`cache.max_metadata_bytes`, default the instance bound of 24 MiB). A larger
+document (conda-forge `linux-64` is hundreds of MiB) takes the streaming path in
+`large.go`: `repodata.json.zst` is preferred upstream and decoded on the fly with a
+bounded decoder, entries are validated one at a time and written to the client
+(gzip when accepted), so memory does not grow with the document. The stream also
+spools a digest index (16-byte filename hash to sha256, sorted runs on disk,
+looked up by binary search) in the process temp directory; package downloads use
+it to verify against the repodata digest. It expires after 15 minutes and is
+rebuilt on demand. A failure after the response started aborts the connection.
+`.zst`, `.bz2` and sharded repodata are not served to clients (404, so they fall
+back to `repodata.json`).

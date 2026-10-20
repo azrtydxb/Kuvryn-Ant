@@ -6,14 +6,14 @@ mirrors and containerd/k3s `registries.yaml`.
 
 ## Model
 
-* One OCI feed per upstream, each with a **remote** source pointing at the
+- One OCI feed per upstream, each with a **remote** source pointing at the
   upstream registry origin (see `pull-through.md`).
-* Blobs and manifests are cached by digest under the remote source; tags are
+- Blobs and manifests are cached by digest under the remote source; tags are
   proxied through the bounded metadata cache (TTL, stale-if-error). A tag HEAD is
   answered from the same resolved manifest, so one upstream GET serves the
   HEAD and every later by-digest read (Docker Hub counts only GETs against its
   pull limit).
-* Concurrent pulls of the same missing blob are coalesced into one upstream
+- Concurrent pulls of the same missing blob are coalesced into one upstream
   fetch.
 
 ### Upstream authentication (token handshake)
@@ -21,35 +21,44 @@ mirrors and containerd/k3s `registries.yaml`.
 On `401` with `WWW-Authenticate: Bearer realm=,service=,scope=` the fetcher
 requests a token from the realm and retries with `Authorization: Bearer`.
 
-* Tokens are cached per (realm, service, scope) until `expires_in` (default 60s,
+- Tokens are cached per (realm, service, scope) until `expires_in` (default 60s,
   refreshed slightly early). A token the upstream rejects is dropped and fetched
   once more. Concurrent requests share one token fetch.
-* A failed token request is remembered for 5 seconds only (so a fixed credential
+- A failed token request is remembered for 5 seconds only (so a fixed credential
   or recovered upstream works immediately after); it is never a negative cache
   entry for the artifact.
-* If the source has a configured **Basic** credential it is sent to the realm
+- If the source has a configured **Basic** credential it is sent to the realm
   (authenticated pulls avoid anonymous rate limits). Otherwise the token is
   requested anonymously. A static `Bearer` credential is sent as-is and no token
   exchange uses it.
-* **The realm must be the source origin or one of the source's
+- **The realm must be the source origin or one of the source's
   `redirect_origins`.** The credential is sent only to such a realm, the realm
   response is never followed through a redirect, and the bearer token is sent only
   to the source origin, never to a redirected blob/CDN host.
-* Docker Hub: single-segment names get the implicit `library/` namespace.
-* `429` from the upstream or its token service is surfaced to the client as
+- Docker Hub: single-segment names get the implicit `library/` namespace.
+- Docker Hub answers `401` (not `404`) for a repository that does not exist, or that
+  the caller may not see, even after a valid token handshake: the registry
+  accepts the token and then answers `401` with `error="insufficient_scope"` or
+  an `UNAUTHORIZED` error body for a repository pull. For a request under
+  `/v2/<repo>/...` that follows a successful handshake, that answer is treated as
+  `404` (`NAME_UNKNOWN`): resolution falls through to the next source and the
+  source is not marked as an authentication failure. A refused token request, or
+  a token the registry reports as `invalid_token`, remains a `401` and counts
+  against the source's health as before.
+- `429` from the upstream or its token service is surfaced to the client as
   `429 TOOMANYREQUESTS` with the upstream `Retry-After`; it is not retried and
   does not open the upstream circuit breaker.
 
 Redirect origins to configure per upstream (blob hosts and token realms):
 
-| Upstream | origin | redirect_origins |
-|---|---|---|
-| docker.io | `https://registry-1.docker.io` | `https://auth.docker.io`, `https://production.cloudflare.docker.com` |
-| ghcr.io | `https://ghcr.io` | `https://pkg-containers.githubusercontent.com` |
-| quay.io | `https://quay.io` | `https://cdn.quay.io`, `https://cdn01.quay.io`, `https://cdn02.quay.io`, `https://cdn03.quay.io` |
-| gcr.io | `https://gcr.io` | none usually |
-| registry.k8s.io | `https://registry.k8s.io` | `https://prod-registry-k8s-io-<region>.s3.dualstack.<region>.amazonaws.com` (the regions you run in) |
-| public.ecr.aws | `https://public.ecr.aws` | `https://d1uvnnlqvlnzwp.cloudfront.net` and similar |
+| Upstream        | origin                         | redirect_origins                                                                                                 |
+| --------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| docker.io       | `https://registry-1.docker.io` | `https://auth.docker.io`, `https://production.cloudflare.docker.com`, `https://production.cloudfront.docker.com` |
+| ghcr.io         | `https://ghcr.io`              | `https://pkg-containers.githubusercontent.com`                                                                   |
+| quay.io         | `https://quay.io`              | `https://cdn.quay.io`, `https://cdn01.quay.io`, `https://cdn02.quay.io`, `https://cdn03.quay.io`                 |
+| gcr.io          | `https://gcr.io`               | none usually                                                                                                     |
+| registry.k8s.io | `https://registry.k8s.io`      | `https://prod-registry-k8s-io-<region>.s3.dualstack.<region>.amazonaws.com` (the regions you run in)             |
+| public.ecr.aws  | `https://public.ecr.aws`       | `https://d1uvnnlqvlnzwp.cloudfront.net` and similar                                                              |
 
 (CDN hostnames change; the access log shows the redirect target if a pull fails
 with a policy error.)
@@ -60,10 +69,10 @@ Existing prefixed routes keep working: `/v2/<feed-slug>/<repo>/...`.
 
 For mirror clients that cannot add a path prefix, configure:
 
-| Variable | Meaning |
-|---|---|
-| `ANT_OCI_DEFAULT_FEED` | feed slug served for unprefixed `/v2/<name>/...` |
-| `ANT_OCI_MIRROR_MAP` | `host=slug,...` choosing the feed from containerd's `?ns=` parameter |
+| Variable               | Meaning                                                              |
+| ---------------------- | -------------------------------------------------------------------- |
+| `ANT_OCI_DEFAULT_FEED` | feed slug served for unprefixed `/v2/<name>/...`                     |
+| `ANT_OCI_MIRROR_MAP`   | `host=slug,...` choosing the feed from containerd's `?ns=` parameter |
 
 Resolution order for `/v2/<name>/...`:
 
@@ -186,10 +195,10 @@ docker pull alpine:3                                           # with registry-m
 
 ## Limitations
 
-* Tag requests are cached for the source's metadata TTL; a tag HEAD costs one
+- Tag requests are cached for the source's metadata TTL; a tag HEAD costs one
   upstream GET on a cold cache.
-* Docker Hub names without a slash are fetched as `library/<name>` upstream but
+- Docker Hub names without a slash are fetched as `library/<name>` upstream but
   cached locally under the name the client used, so `alpine` and
   `library/alpine` are separate (blob-deduplicated) repositories.
-* A realm outside the source origin and its redirect origins is refused, not
+- A realm outside the source origin and its redirect origins is refused, not
   followed.

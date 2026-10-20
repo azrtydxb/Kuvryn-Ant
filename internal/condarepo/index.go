@@ -11,10 +11,10 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 )
 
-func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, subdir string) {
+func (s *Repository) index(w http.ResponseWriter, r *http.Request, p identity.Principal, feed, subdir, name string) {
 	// Remote-owned (or unowned) subdirs are answered from upstream; a local
 	// owner, or an upstream outage, falls through to the local composition.
-	served, remoteErr := s.serveRemoteIndex(w, r, p, feed, subdir)
+	served, remoteErr := s.serveRemoteIndex(w, r, p, feed, subdir, name)
 	if served {
 		return
 	}

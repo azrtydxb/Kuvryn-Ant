@@ -175,11 +175,12 @@ func (f *Fixture) AddLocal(feed, format, name string, priority int) string {
 
 // RemoteOptions adjusts the stored remote configuration.
 type RemoteOptions struct {
-	Credential      string   // authorization header value; empty means none
-	RedirectOrigins []string // extra origins; credentials are never sent to them
-	StaleSeconds    int
-	MetadataTTL     int
-	NegativeTTL     int
+	Credential       string   // authorization header value; empty means none
+	RedirectOrigins  []string // extra origins; credentials are never sent to them
+	StaleSeconds     int
+	MetadataTTL      int
+	NegativeTTL      int
+	MaxMetadataBytes int64 // per-source in-memory metadata bound; 0 keeps the instance default
 }
 
 // AddRemote creates and attaches a remote source pointing at origin.
@@ -213,6 +214,7 @@ func (f *Fixture) SetRemoteConfig(source, origin string, o RemoteOptions) {
 	if o.NegativeTTL > 0 {
 		c.Cache.NegativeTTLSeconds = o.NegativeTTL
 	}
+	c.Cache.MaxMetadataBytes = o.MaxMetadataBytes
 	if o.Credential != "" {
 		plain, _ := json.Marshal(map[string]string{"authorization": o.Credential})
 		rec, err := (secrets.Store{DB: f.Pool, Keys: f.Keys}).Create(ctx, f.Boot.InstanceID, f.Boot.PrincipalID, remoteconfig.CredentialPurpose(source), plain)

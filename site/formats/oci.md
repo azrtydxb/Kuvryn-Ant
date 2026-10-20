@@ -152,6 +152,13 @@ requests a token from the realm and retries with it.
 - The obtained token is sent only to the origin, never to a redirected blob or CDN
   host. Tokens are cached per realm, service and scope until `expires_in` (60 s when
   absent); a failed token request is remembered for 5 seconds.
+- Docker Hub answers `401`, not `404`, for a repository that does not exist (or that the
+  caller may not see), even after a valid token handshake: it accepts the token and
+  then answers `401` with `error="insufficient_scope"` or an `UNAUTHORIZED` error body.
+  For a repository request after a successful handshake, Ant treats that as `404`
+  (`NAME_UNKNOWN`). Resolution falls through to the next source and the source is not
+  marked as an authentication failure. A refused token request, or a token the
+  registry calls `invalid_token`, stays a `401` and still counts against source health.
 
 ### Upstream examples
 
