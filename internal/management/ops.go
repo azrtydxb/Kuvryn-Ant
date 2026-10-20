@@ -74,6 +74,8 @@ type OpsDeps struct {
 	WebhookAllowHTTP bool
 	// Env lists read-only deployment settings returned by the settings endpoint.
 	Env []EnvSetting
+	// TokenCleanupDays is the deployment-provided token cleanup age (ANT_TOKEN_CLEANUP_AFTER_DAYS), or nil.
+	TokenCleanupDays *int
 	// GC is the read-only maintenance schedule shown with the retention settings.
 	GC GCSettingsView
 	// Retention returns the maintenance service for the serving instance, or nil.
@@ -152,6 +154,7 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"DELETE /api/v1/retention/policies/{id}":        h.deleteRetentionPolicy,
 		"GET /api/v1/retention/settings":                h.getRetentionSettings,
 		"PUT /api/v1/retention/settings":                h.putRetentionSettings,
+		"POST /api/v1/tokens/cleanup":                   h.tokenCleanup,
 		"GET /api/v1/retention/pressure":                h.getPressureStatus,
 		"GET /api/v1/retention/runs":                    h.listRetentionRuns,
 		"POST /api/v1/retention/runs":                   h.startRetentionRun,

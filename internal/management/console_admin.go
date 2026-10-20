@@ -24,35 +24,48 @@ type TokenRecord struct {
 	PrincipalID string           `json:"principal_id"`
 	Scopes      []identity.Scope `json:"scopes"`
 	Status      string           `json:"status"`
-	CreatedAt   time.Time        `json:"created_at"`
-	ExpiresAt   time.Time        `json:"expires_at"`
-	RevokedAt   *time.Time       `json:"revoked_at,omitempty"`
-	LastUsedAt  *time.Time       `json:"last_used_at,omitempty"`
+	// State is the computed lifecycle state (active, expired or revoked); it equals Status.
+	State      string     `json:"state"`
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  time.Time  `json:"expires_at"`
+	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+}
+
+// TokenCounts is the number of tokens in each state for the unfiltered scope
+// (the principal filter applies, the state filter does not), so a client that
+// lists only active tokens can say how many others are hidden.
+type TokenCounts struct {
+	Active  int64 `json:"active"`
+	Expired int64 `json:"expired"`
+	Revoked int64 `json:"revoked"`
 }
 type TokenPage struct {
-	Items []TokenRecord `json:"items"`
-	Page  api.PageInfo  `json:"page"`
+	Items  []TokenRecord `json:"items"`
+	Page   api.PageInfo  `json:"page"`
+	Counts TokenCounts   `json:"counts"`
 }
 
 const tokenStatusSQL = `CASE WHEN revoked_at IS NOT NULL THEN 'revoked' WHEN expires_at<=clock_timestamp() THEN 'expired' ELSE 'active' END`
 
 // listTokens never selects the verifier column, so secrets cannot leak.
 func (h consoleHandlers) listTokens(w http.ResponseWriter, r *http.Request) {
-	if !singleParams(w, r, "principal", "status", "limit", "cursor") {
+	if !singleParams(w, r, "principal", "status", "state", "limit", "cursor") {
 		return
 	}
 	values := r.URL.Query()
-	principal, status := values.Get("principal"), values.Get("status")
+	principal := values.Get("principal")
+	status, valid := tokenStateParam(values.Get("state"), values.Get("status"))
+	if !valid {
+		identityInput(w, r)
+		return
+	}
 	if principal != "" {
 		var ok bool
 		if principal, ok = feedID(principal); !ok {
 			identityInput(w, r)
 			return
 		}
-	}
-	if status != "" && status != "active" && status != "expired" && status != "revoked" {
-		identityInput(w, r)
-		return
 	}
 	limit, ok := pageLimit(w, r)
 	if !ok {
@@ -90,6 +103,7 @@ func (h consoleHandlers) listTokens(w http.ResponseWriter, r *http.Request) {
 			identityError(w, r, identity.ErrUnavailable)
 			return
 		}
+		t.State = t.Status
 		page.Items = append(page.Items, t)
 	}
 	if rows.Err() != nil {
@@ -104,6 +118,11 @@ func (h consoleHandlers) listTokens(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		page.Page.HasMore, page.Page.NextCursor = true, &token
+	}
+	if err = h.db.QueryRow(ctx, `SELECT count(*) FILTER (WHERE `+tokenStatusSQL+`='active'),count(*) FILTER (WHERE `+tokenStatusSQL+`='expired'),count(*) FILTER (WHERE `+tokenStatusSQL+`='revoked')
+ FROM service_tokens WHERE instance_id=$1 AND ($2='' OR principal_id=NULLIF($2,'')::uuid)`, p.InstanceID, principal).Scan(&page.Counts.Active, &page.Counts.Expired, &page.Counts.Revoked); err != nil {
+		identityError(w, r, err)
+		return
 	}
 	JSON(w, 200, page)
 }
@@ -444,4 +463,24 @@ func (h consoleHandlers) exportAudit(w http.ResponseWriter, r *http.Request) {
 	}
 	cw.Flush()
 	_ = rc.Flush()
+}
+
+// tokenStateParam resolves the state filter of a token list. "state" is the
+// documented parameter; "status" is its older alias. Both may be given only if
+// they agree. "all" (or neither) lists every state, which is the API default;
+// the console asks for "active" explicitly.
+func tokenStateParam(state, status string) (string, bool) {
+	if state != "" && status != "" && state != status {
+		return "", false
+	}
+	if state == "" {
+		state = status
+	}
+	switch state {
+	case "", "all":
+		return "", true
+	case "active", "expired", "revoked":
+		return state, true
+	}
+	return "", false
 }

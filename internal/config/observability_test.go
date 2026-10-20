@@ -47,3 +47,19 @@ func TestAuditRetentionDefaultsAndBounds(t *testing.T) {
 		}
 	}
 }
+
+func TestTokenCleanupDaysFromEnvironment(t *testing.T) {
+	if d, err := loadTokenCleanupDays(env(nil)); err != nil || d != nil {
+		t.Fatalf("unset must defer to the stored setting: %v %v", d, err)
+	}
+	for in, want := range map[string]int{"0": 0, "30": 30, "3650": 3650} {
+		if d, err := loadTokenCleanupDays(env(map[string]string{"ANT_TOKEN_CLEANUP_AFTER_DAYS": in})); err != nil || d == nil || *d != want {
+			t.Fatalf("%s: %v %v", in, d, err)
+		}
+	}
+	for _, bad := range []string{"-1", "3651", "x", "1.5"} {
+		if _, err := loadTokenCleanupDays(env(map[string]string{"ANT_TOKEN_CLEANUP_AFTER_DAYS": bad})); err == nil {
+			t.Fatalf("%q accepted", bad)
+		}
+	}
+}

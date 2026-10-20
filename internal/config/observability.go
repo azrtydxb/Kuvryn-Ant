@@ -88,3 +88,18 @@ func loadAuditRetention(getenv func(string) string) (AuditRetention, error) {
 	}
 	return a, nil
 }
+
+// loadTokenCleanupDays reads ANT_TOKEN_CLEANUP_AFTER_DAYS. Unset returns nil
+// (the stored setting or the built-in default of 30 applies); a set value
+// overrides the stored one and makes the setting read-only. 0 means never.
+func loadTokenCleanupDays(getenv func(string) string) (*int, error) {
+	v := getenv("ANT_TOKEN_CLEANUP_AFTER_DAYS")
+	if v == "" {
+		return nil, nil
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 || n > 3650 {
+		return nil, errors.New("ANT_TOKEN_CLEANUP_AFTER_DAYS must be between 0 (never) and 3650")
+	}
+	return &n, nil
+}

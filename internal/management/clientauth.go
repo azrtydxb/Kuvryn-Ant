@@ -120,9 +120,13 @@ type PersonalAccessToken struct {
 	ExpiresAt  time.Time    `json:"expires_at"`
 	LastUsedAt *time.Time   `json:"last_used_at,omitempty"`
 	RevokedAt  *time.Time   `json:"revoked_at,omitempty"`
+	// State is computed: active, expired or revoked (revoked wins).
+	State string `json:"state"`
 }
 type PersonalAccessTokenList struct {
 	Items []PersonalAccessToken `json:"items"`
+	// Counts covers all of the user's tokens, independent of the state filter.
+	Counts TokenCounts `json:"counts"`
 }
 type CreatePersonalAccessToken struct {
 	Name          string       `json:"name"`
@@ -203,6 +207,7 @@ func RegisterClientAuth(mux *http.ServeMux, d ClientAuthDeps) {
 		"GET /api/v1/auth/personal-access-tokens":          h.listPATs,
 		"POST /api/v1/auth/personal-access-tokens":         h.createPAT,
 		"DELETE /api/v1/auth/personal-access-tokens/{id}":  h.revokePAT,
+		"POST /api/v1/auth/personal-access-tokens/cleanup": h.cleanupPATs,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
@@ -860,7 +865,7 @@ func (h authHandlers) exchange(w http.ResponseWriter, r *http.Request) {
 // --- personal access tokens ---
 
 func patDTO(rec identity.PATRecord) PersonalAccessToken {
-	return PersonalAccessToken{ID: rec.ID, Name: rec.Name, Scopes: fromIdentityScopes(rec.Scopes), CreatedAt: rec.CreatedAt, ExpiresAt: rec.ExpiresAt, LastUsedAt: rec.LastUsedAt, RevokedAt: rec.RevokedAt}
+	return PersonalAccessToken{ID: rec.ID, Name: rec.Name, Scopes: fromIdentityScopes(rec.Scopes), CreatedAt: rec.CreatedAt, ExpiresAt: rec.ExpiresAt, LastUsedAt: rec.LastUsedAt, RevokedAt: rec.RevokedAt, State: rec.State(time.Now())}
 }
 
 // self authorizes a signed-in user acting on their own tokens. Machine tokens
@@ -896,12 +901,21 @@ func (h authHandlers) listPATs(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	recs, err := (identity.PATs{DB: h.db}).List(r.Context(), p.InstanceID, p.PrincipalID)
+	if !singleParams(w, r, "state") {
+		return
+	}
+	// The API lists every state unless asked otherwise; the console asks for "active".
+	state, valid := tokenStateParam(r.URL.Query().Get("state"), "")
+	if !valid {
+		bad(w, r, "token state")
+		return
+	}
+	recs, counts, err := (identity.PATs{DB: h.db}).ListState(r.Context(), p.InstanceID, p.PrincipalID, state)
 	if err != nil {
 		patError(w, r, err)
 		return
 	}
-	out := PersonalAccessTokenList{Items: []PersonalAccessToken{}}
+	out := PersonalAccessTokenList{Items: []PersonalAccessToken{}, Counts: TokenCounts{Active: counts.Active, Expired: counts.Expired, Revoked: counts.Revoked}}
 	for _, rec := range recs {
 		out.Items = append(out.Items, patDTO(rec))
 	}

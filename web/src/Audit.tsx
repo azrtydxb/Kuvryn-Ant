@@ -68,6 +68,15 @@ export function AuditPage({ client }: { client: Client }) {
     [names.value],
   );
   const resourceNames = useNames(client);
+  // Tokens are removed by cleanup while their audit rows stay, so a token id that
+  // no longer resolves is shown as a deleted token (only when the whole list was seen).
+  const tokens = useOptionalCall(client, "listServiceTokens", {
+    query: { limit: "200", state: "all" },
+  });
+  const knownTokens =
+    tokens.state === "ready" && !tokens.data.page.has_more
+      ? new Set(tokens.data.items.map((t) => t.id))
+      : undefined;
   const rows = r.state === "ready" ? r.data.items : [];
   const exporter = useAction();
   const toast = useToast();
@@ -216,7 +225,9 @@ export function AuditPage({ client }: { client: Client }) {
                           <Mono>
                             {a.principal_id
                               ? (who.get(a.principal_id) ?? a.principal_id)
-                              : "anonymous"}
+                              : a.action === "token.cleanup"
+                                ? "system"
+                                : "anonymous"}
                           </Mono>
                         </span>
                       ),
@@ -228,7 +239,15 @@ export function AuditPage({ client }: { client: Client }) {
                       render: (a: AuditEvent) => (
                         <span title={a.resource_id ?? undefined}>
                           {a.resource_id ? (
-                            resourceNames.get(a.resource_id) ? (
+                            /^token\.(issue|revoke)$/.test(a.action) &&
+                            knownTokens &&
+                            !knownTokens.has(a.resource_id) ? (
+                              <Mono muted>deleted token</Mono>
+                            ) : /^pat\./.test(a.action) ? (
+                              <Mono muted>
+                                personal token {shortId(a.resource_id)}
+                              </Mono>
+                            ) : resourceNames.get(a.resource_id) ? (
                               <Mono>{resourceNames.get(a.resource_id)}</Mono>
                             ) : (
                               <Mono muted>{shortId(a.resource_id)}</Mono>

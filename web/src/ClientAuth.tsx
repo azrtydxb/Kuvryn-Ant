@@ -11,8 +11,18 @@ import type {
   IdentityPrincipal,
   NetworkGroup,
   PersonalAccessToken,
+  TokenCounts,
   TokenScope,
 } from "./generated";
+import {
+  DateCell,
+  Dim,
+  TokenStateBadge,
+  TokenVisibilityBar,
+  hiddenText,
+  tokenState,
+  useShowInactiveTokens,
+} from "./TokenVisibility";
 import {
   Alert,
   Badge,
@@ -64,7 +74,6 @@ export const methodInfo: Record<
 };
 const methodOrder = Object.keys(methodInfo) as ClientAuthMethod[];
 const actionChoices = ["read", "publish", "delete"] as const;
-const DAY = 86400000;
 
 /* ---------- policy editor shared by the instance default and each feed ---------- */
 
@@ -832,15 +841,25 @@ const durations: Record<string, number> = {
 };
 
 export function PersonalTokensPane({ client }: { client: Client }) {
+  // Expired and revoked tokens are hidden unless the viewer opts in.
+  const [show, setShow] = useShowInactiveTokens();
   const list = useResource(
-    () => client.call("listPersonalAccessTokens"),
-    [client],
+    () =>
+      client.call("listPersonalAccessTokens", {
+        query: { state: show ? "all" : "active" },
+      }),
+    [client, show],
   );
+  const [counts, setCounts] = useState<TokenCounts>();
+  useEffect(() => {
+    const c = list.value?.data.counts;
+    if (c) setCounts(c);
+  }, [list.value]);
   const [creating, setCreating] = useState(false);
   const [revoking, setRevoking] = useState<PersonalAccessToken>();
+  const [cleaning, setCleaning] = useState(false);
   const action = useAction();
   const toast = useToast();
-  if (list.loading) return <Loading what="personal access tokens" />;
   if (list.error)
     return isUnavailable(list.error) ? (
       <Unavailable what="Personal access tokens" />
@@ -854,17 +873,8 @@ export function PersonalTokensPane({ client }: { client: Client }) {
     ) : (
       <Failure error={list.error} />
     );
-  const items = list.value!.data.items;
-  const soon = (t: PersonalAccessToken) => {
-    const at = Date.parse(t.expires_at);
-    return at > Date.now() && at - Date.now() < 14 * DAY;
-  };
-  const status = (t: PersonalAccessToken) =>
-    t.revoked_at
-      ? "revoked"
-      : Date.parse(t.expires_at) <= Date.now()
-        ? "expired"
-        : "active";
+  const items = list.value?.data.items;
+  const inactive = (counts?.expired ?? 0) + (counts?.revoked ?? 0);
   return (
     <SettingsSection
       title="Personal access tokens"
@@ -875,71 +885,126 @@ export function PersonalTokensPane({ client }: { client: Client }) {
           Create token
         </Button>
       </div>
-      <Table
-        columns={[
-          { key: "name", label: "Name" },
-          {
-            key: "scopes",
-            label: "Scope",
-            render: (t: PersonalAccessToken) => (
-              <Mono muted>{scopeText(t.scopes)}</Mono>
-            ),
-          },
-          {
-            key: "expires_at",
-            label: "Expires",
-            render: (t: PersonalAccessToken) => when(t.expires_at),
-          },
-          {
-            key: "last_used_at",
-            label: "Last used",
-            align: "right",
-            render: (t: PersonalAccessToken) =>
-              t.last_used_at ? when(t.last_used_at) : "Never",
-          },
-          {
-            key: "state",
-            label: "Status",
-            render: (t: PersonalAccessToken) => {
-              const s = status(t);
-              return s === "revoked" ? (
-                <Badge tone="neutral" dot>
-                  Revoked
-                </Badge>
-              ) : s === "expired" ? (
-                <Badge tone="bad" dot>
-                  Expired
-                </Badge>
-              ) : soon(t) ? (
-                <Badge tone="warn" dot>
-                  Expiring
-                </Badge>
-              ) : (
-                <Badge tone="good" dot>
-                  Active
-                </Badge>
-              );
+      <TokenVisibilityBar show={show} onShow={setShow} counts={counts}>
+        {inactive > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="trash-2"
+            onClick={() => setCleaning(true)}
+          >
+            Delete expired
+          </Button>
+        )}
+      </TokenVisibilityBar>
+      {!items ? (
+        <Loading what="personal access tokens" />
+      ) : (
+        <Table
+          columns={[
+            {
+              key: "name",
+              label: "Name",
+              render: (t: PersonalAccessToken) => <Dim token={t}>{t.name}</Dim>,
             },
-          },
-          {
-            key: "x",
-            label: "",
-            align: "right",
-            render: (t: PersonalAccessToken) =>
-              status(t) !== "active" ? null : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setRevoking(t)}
-                >
-                  Revoke
-                </Button>
+            {
+              key: "scopes",
+              label: "Scope",
+              render: (t: PersonalAccessToken) => (
+                <Dim token={t}>
+                  <Mono muted>{scopeText(t.scopes)}</Mono>
+                </Dim>
               ),
-          },
-        ]}
-        rows={items}
-      />
-      {!items.length && <p className="muted">No personal access tokens.</p>}
+            },
+            {
+              key: "expires_at",
+              label: "Expires",
+              render: (t: PersonalAccessToken) => (
+                <Dim token={t}>
+                  <DateCell value={t.expires_at} />
+                </Dim>
+              ),
+            },
+            {
+              key: "last_used_at",
+              label: "Last used",
+              align: "right",
+              render: (t: PersonalAccessToken) => (
+                <Dim token={t}>
+                  {t.last_used_at ? (
+                    <DateCell value={t.last_used_at} />
+                  ) : (
+                    "Never"
+                  )}
+                </Dim>
+              ),
+            },
+            {
+              key: "state",
+              label: "Status",
+              render: (t: PersonalAccessToken) => <TokenStateBadge token={t} />,
+            },
+            {
+              key: "x",
+              label: "",
+              align: "right",
+              render: (t: PersonalAccessToken) =>
+                tokenState(t) !== "active" ? null : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setRevoking(t)}
+                  >
+                    Revoke
+                  </Button>
+                ),
+            },
+          ]}
+          rows={items}
+        />
+      )}
+      {items && !items.length && (
+        <p className="muted">
+          {show ? "No personal access tokens." : "No active tokens."}
+          {!show && inactive > 0 ? ` ${hiddenText(counts)}.` : ""}
+        </p>
+      )}
+      {cleaning && (
+        <Modal
+          title="Delete expired tokens"
+          description={`Delete your ${inactive} expired or revoked personal access token${inactive === 1 ? "" : "s"}? Active tokens and other people's tokens are not touched.`}
+          onClose={() => setCleaning(false)}
+          actions={
+            <>
+              <Button variant="secondary" onClick={() => setCleaning(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                disabled={action.busy}
+                onClick={async () => {
+                  let deleted = 0;
+                  const ok = await action.run(async () => {
+                    deleted = (await client.call("cleanupPersonalAccessTokens"))
+                      .data.deleted;
+                  });
+                  if (ok) {
+                    toast(
+                      `Deleted ${deleted} token${deleted === 1 ? "" : "s"}`,
+                    );
+                    setCleaning(false);
+                    list.reload();
+                  }
+                }}
+              >
+                {action.busy ? "Deleting…" : "Delete expired tokens"}
+              </Button>
+            </>
+          }
+        >
+          <Failure error={action.error} />
+        </Modal>
+      )}
       {creating && (
         <PersonalTokenCreator
           client={client}

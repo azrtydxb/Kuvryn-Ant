@@ -49,6 +49,8 @@ func newAuthFixture(t *testing.T) *authFixture {
 	RegisterFeeds(mux, o.db, o.deps.Codec)
 	RegisterSources(mux, o.db, o.deps.Codec)
 	RegisterIdentities(mux, o.db)
+	RegisterOperations(mux, o.deps)
+	RegisterConsole(mux, o.db, o.deps.Codec)
 	RegisterClientAuth(mux, ClientAuthDeps{Pool: o.db, GitHub: f.gh, Invalidate: func() { f.invalidated++ }})
 	// Stand-in for the browser-session middleware: a trusted in-process principal.
 	session := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

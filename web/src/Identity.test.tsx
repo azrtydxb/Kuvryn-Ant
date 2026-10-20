@@ -196,7 +196,7 @@ it("lists tokens with row-level revoke and expiry warnings when the server provi
   );
   render(<Identity client={new Client("token")} />);
   tab("Tokens");
-  await screen.findByText(/expire within 14 days/);
+  await screen.findByText(/expire within 7 days/);
   fireEvent.click(screen.getByRole("button", { name: "Revoke" }));
   const dialog = await screen.findByRole("dialog", { name: "Revoke token" });
   fireEvent.click(within(dialog).getByRole("button", { name: "Revoke token" }));

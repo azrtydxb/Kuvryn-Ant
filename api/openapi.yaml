@@ -4461,7 +4461,8 @@
                 "expired",
                 "revoked"
               ]
-            }
+            },
+            "description": "Deprecated alias of state (without all). If both are given they must agree."
           },
           {
             "name": "limit",
@@ -4481,6 +4482,21 @@
             "schema": {
               "type": "string",
               "maxLength": 2048
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Lifecycle state filter: active, expired, revoked, or all. Omitted means all (backward compatible); the console requests active and offers a toggle to include the rest. Revoked wins over expired.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "expired",
+                "revoked",
+                "all"
+              ]
             }
           }
         ],
@@ -4526,7 +4542,7 @@
             "$ref": "#/components/responses/Error"
           }
         },
-        "description": "Token metadata with expiry and last use. Requires instance admin. Secrets and verifiers are never returned. Revoke with DELETE /tokens/{id}."
+        "description": "Service-account tokens (never secrets). Lists every state unless state is given. counts covers all states for the principal filter, so a client showing only active tokens can report how many are hidden."
       }
     },
     "/api/v1/identity-bindings/{id}": {
@@ -13270,7 +13286,7 @@
     "/api/v1/auth/personal-access-tokens": {
       "get": {
         "operationId": "listPersonalAccessTokens",
-        "description": "The signed-in user's personal access tokens. Secrets are never returned.",
+        "description": "The signed-in user's personal access tokens. Secrets are never returned. Lists every state unless state is given; counts covers all of the user's tokens.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -13312,7 +13328,24 @@
           "503": {
             "$ref": "#/components/responses/Error"
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Lifecycle state filter: active, expired, revoked, or all. Omitted means all (backward compatible); the console requests active and offers a toggle to include the rest. Revoked wins over expired.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "expired",
+                "revoked",
+                "all"
+              ]
+            }
+          }
+        ]
       },
       "post": {
         "operationId": "createPersonalAccessToken",
@@ -18669,6 +18702,166 @@
           }
         }
       }
+    },
+    "/api/v1/tokens/cleanup": {
+      "post": {
+        "operationId": "cleanupTokens",
+        "description": "Instance admin only. Deletes service-account and personal access tokens that have been expired or revoked for more than token_cleanup_after_days (see /api/v1/settings; 409 when that is 0). dry_run only counts. A real run removes at most 5000 tokens of each kind (has_more tells whether to repeat), never touches active tokens or audit history, and writes one summary audit event (token.cleanup).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTokenCleanup"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cleanup result",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenCleanupResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/personal-access-tokens/cleanup": {
+      "post": {
+        "operationId": "cleanupPersonalAccessTokens",
+        "description": "Deletes the signed-in user's own expired and revoked personal access tokens, whatever their age. Active tokens and other users' tokens are never touched; one summary audit event (token.cleanup) is recorded.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cleanup result",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalTokenCleanupResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -21206,7 +21399,8 @@
           "scopes",
           "status",
           "created_at",
-          "expires_at"
+          "expires_at",
+          "state"
         ],
         "properties": {
           "id": {
@@ -21278,6 +21472,15 @@
           "last_used_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ],
+            "description": "Computed lifecycle state; equal to status."
           }
         }
       },
@@ -21286,7 +21489,8 @@
         "additionalProperties": false,
         "required": [
           "items",
-          "page"
+          "page",
+          "counts"
         ],
         "properties": {
           "items": {
@@ -21297,6 +21501,9 @@
           },
           "page": {
             "$ref": "#/components/schemas/PageInfo"
+          },
+          "counts": {
+            "$ref": "#/components/schemas/TokenCounts"
           }
         }
       },
@@ -22256,9 +22463,15 @@
           },
           "default_anonymous_read": {
             "type": "boolean"
+          },
+          "token_cleanup_after_days": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3650,
+            "description": "Delete tokens expired or revoked for more than this many days (default 30; 0 keeps them forever). Rejected with 409 when ANT_TOKEN_CLEANUP_AFTER_DAYS is set."
           }
         },
-        "description": "Replaces all editable values; an absent field reverts to its default. Environment-backed keys are read-only and rejected."
+        "description": "Changes the editable values. A field that is absent keeps its stored value; to return a field to its default, send the default. Environment-backed keys are read-only and rejected."
       },
       "RetentionPolicy": {
         "type": "object",
@@ -27061,7 +27274,8 @@
           "name",
           "scopes",
           "created_at",
-          "expires_at"
+          "expires_at",
+          "state"
         ],
         "properties": {
           "id": {
@@ -27092,6 +27306,15 @@
           "revoked_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ],
+            "description": "Computed lifecycle state."
           }
         },
         "additionalProperties": false
@@ -27099,7 +27322,8 @@
       "PersonalAccessTokenList": {
         "type": "object",
         "required": [
-          "items"
+          "items",
+          "counts"
         ],
         "properties": {
           "items": {
@@ -27107,6 +27331,9 @@
             "items": {
               "$ref": "#/components/schemas/PersonalAccessToken"
             }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/TokenCounts"
           }
         },
         "additionalProperties": false
@@ -27148,7 +27375,8 @@
           "scopes",
           "created_at",
           "expires_at",
-          "token"
+          "token",
+          "state"
         ],
         "properties": {
           "id": {
@@ -27183,6 +27411,15 @@
           "token": {
             "type": "string",
             "description": "The secret. Shown only in this response."
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ],
+            "description": "Computed lifecycle state."
           }
         },
         "additionalProperties": false
@@ -32113,6 +32350,96 @@
             "type": "string",
             "maxLength": 1900,
             "description": "https base URL such as https://hooks.example.com/ant/, or empty to clear."
+          }
+        }
+      },
+      "TokenCounts": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "active",
+          "expired",
+          "revoked"
+        ],
+        "properties": {
+          "active": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expired": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "revoked": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Tokens per state for the whole scope, independent of the state filter."
+      },
+      "StartTokenCleanup": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dry_run"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TokenCleanupResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dry_run",
+          "after_days",
+          "cutoff",
+          "service_tokens",
+          "personal_access_tokens",
+          "total",
+          "has_more"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean"
+          },
+          "after_days": {
+            "type": "integer"
+          },
+          "cutoff": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Tokens expired or revoked before this instant are eligible."
+          },
+          "service_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "personal_access_tokens": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PersonalTokenCleanupResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "deleted"
+        ],
+        "properties": {
+          "deleted": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }
