@@ -28710,6 +28710,9 @@
           "mapped_to": {
             "type": "string"
           },
+          "remote_url": {
+            "type": "string"
+          },
           "assets": {
             "type": "integer"
           },

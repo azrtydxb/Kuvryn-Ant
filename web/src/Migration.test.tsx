@@ -289,6 +289,7 @@ const artifactory = {
       type: "proxy",
       format: "maven",
       ant_format: "maven",
+      remote_url: "https://repo1.maven.org/maven2",
       mapped_to: "remote source + feed central",
     },
     {
@@ -350,6 +351,22 @@ it("discovers Artifactory repositories, dry-runs the selection in a drawer and a
   expect(row("libs-local").getByText("local")).toBeTruthy();
   expect(row("central").getByText("remote")).toBeTruthy();
   expect(row("libs-all").getByText("virtual")).toBeTruthy();
+  // Icons: upstream logo for a known remote, source glyph for local, layers for a feed.
+  expect(
+    art.getByText("central").closest("tr")!.querySelector("[data-brand]"),
+  ).not.toBeNull();
+  expect(
+    art
+      .getByText("libs-local")
+      .closest("tr")!
+      .querySelector("[data-glyph=box]"),
+  ).not.toBeNull();
+  expect(
+    art
+      .getByText("libs-all")
+      .closest("tr")!
+      .querySelector("[data-glyph=layers]"),
+  ).not.toBeNull();
   expect(art.getByText("2.0 KB")).toBeTruthy();
   expect(art.getByText("not mapped")).toBeTruthy();
   expect(art.getByLabelText("Include bower-local")).toHaveProperty(

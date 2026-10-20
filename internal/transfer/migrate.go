@@ -128,6 +128,8 @@ type RepoInventory struct {
 	Format    string `json:"format"`
 	AntFormat string `json:"ant_format,omitempty"`
 	MappedTo  string `json:"mapped_to"`
+	// RemoteURL is the upstream origin of a mapped remote source.
+	RemoteURL string `json:"remote_url,omitempty"`
 	Assets    int    `json:"assets,omitempty"`
 	Bytes     int64  `json:"bytes,omitempty"`
 }
@@ -254,6 +256,7 @@ func BuildPlan(ctx context.Context, m Manager, opt MapOptions) (*Plan, error) {
 			if r.Type == "proxy" {
 				def.Kind = "remote"
 				inv.MappedTo = "remote source"
+				inv.RemoteURL = r.RemoteURL
 				cfg := remoteconfig.DefaultConfig(r.RemoteURL)
 				if r.MetadataMaxAge > 0 {
 					cfg.Cache.MetadataTTLSeconds = int(r.MetadataMaxAge)

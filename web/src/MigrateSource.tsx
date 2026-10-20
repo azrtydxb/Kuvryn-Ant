@@ -5,6 +5,7 @@ import type {
   MigrationCompareResult,
   MigrationReport,
   MigrationRepository,
+  Source,
 } from "./generated";
 import {
   Badge,
@@ -19,6 +20,7 @@ import {
   Table,
   Textarea,
 } from "./ds/bundle";
+import { Mark, SourceIcon } from "./SourceIcon";
 import { ReportView } from "./TransferReport";
 import {
   Failure,
@@ -99,6 +101,24 @@ export function attention(report: MigrationReport | undefined, name: string) {
 }
 
 const unmapped = (r: MigrationRepository) => r.mapped_to === "unmapped";
+
+/** The mark of what a repository becomes: source icon, upstream logo, or a feed. */
+function MappingIcon({ r }: { r: MigrationRepository }) {
+  if (r.mapped_to.startsWith("local source"))
+    return <SourceIcon source={{ kind: "local" }} size="sm" />;
+  if (r.mapped_to.startsWith("remote source"))
+    return (
+      <SourceIcon
+        source={{
+          kind: "remote",
+          format: r.ant_format as Source["format"],
+          origin: r.remote_url,
+        }}
+        size="sm"
+      />
+    );
+  return <Mark icon={{ glyph: "layers" }} size="sm" />;
+}
 
 function Source({
   client,
@@ -404,7 +424,8 @@ function Source({
                         not mapped
                       </Badge>
                     ) : (
-                      <span title={r.mapped_to}>
+                      <span className="row tight" title={r.mapped_to}>
+                        <MappingIcon r={r} />
                         {r.mapped_to.replace(
                           `+ feed ${slug(r.name)}`,
                           "+ feed",
