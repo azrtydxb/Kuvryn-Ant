@@ -561,7 +561,7 @@ details > summary {
   box-shadow: none;
 }
 .settings-wide {
-  max-width: 1000px;
+  max-width: none;
 }
 .rulebox {
   border: 1px solid var(--az-border);
