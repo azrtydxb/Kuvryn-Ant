@@ -12,38 +12,133 @@ import (
 
 const manifestReadLimit = 4 << 20
 
-// unreferencedBlobs finds the blob-only versions (OCI config and layers) of a
-// component that only the manifests in batch named, so deleting those manifests
-// releases them. A blob-only row still named by a remaining manifest is kept,
-// as is every row when any remaining manifest cannot be read: the decision
-// fails closed and the rows fall to idle or age eviction as before. Bytes are
-// never deleted here; releasing the rows leaves their blobs to garbage
-// collection with its usual grace period.
-func (s *Service) unreferencedBlobs(ctx context.Context, q interface {
-	Query(context.Context, string, ...any) (pgx.Rows, error)
-	QueryRow(context.Context, string, ...any) pgx.Row
-}, src sourceInfo, component, coordinate string, versions []versionRow, batch []Deletion) ([]Deletion, error) {
-	doomed := map[string]bool{}
-	for _, d := range batch {
-		doomed[d.VersionID] = true
-	}
-	manifestsDoomed := false
-	for _, v := range versions {
-		if doomed[v.ID] && !v.BlobOnly {
-			manifestsDoomed = true
+// SQL fragments over an alias v of versions. A child is a manifest an image
+// index names (version_children rows exist only while the parent does). Ranking
+// for keep_last/min_keep covers top-level versions only; the last-used time of a
+// top-level version includes its children, so an image is idle only when every
+// platform manifest is.
+const (
+	childSQL    = `EXISTS(SELECT 1 FROM version_children vc WHERE vc.component_id=v.component_id AND vc.child_version=v.version)`
+	lastUsedSQL = `GREATEST(COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at),(SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM version_children vc JOIN versions cv ON cv.component_id=vc.component_id AND cv.version=vc.child_version JOIN assets a ON a.version_id=cv.id LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE vc.parent_version_id=v.id))`
+	rankSQL     = `CASE WHEN v.blob_only OR ` + childSQL + ` THEN 2147483647 ELSE row_number() OVER (PARTITION BY (v.blob_only OR ` + childSQL + `) ORDER BY v.created_at DESC,v.id DESC)::int END`
+)
+
+func allIncludeTagged(policies []Policy) bool {
+	for _, p := range policies {
+		if !p.IncludeTagged {
+			return false
 		}
 	}
-	if !manifestsDoomed {
+	return len(policies) > 0
+}
+
+func deletionIDs(batch []Deletion) []string {
+	out := make([]string, len(batch))
+	for i, d := range batch {
+		out[i] = d.VersionID
+	}
+	return out
+}
+
+// followers returns the deletions that must accompany deleting ids from an OCI
+// component:
+//   - children (index-grouped manifests) whose every parent is being deleted; a
+//     child another index still names, or a tagged one (unless includeTagged),
+//     stays;
+//   - blob-only versions (config and layers) named only by the manifests being
+//     deleted, children included. A blob a remaining manifest names stays, and
+//     every blob stays when a remaining manifest cannot be read (fail closed).
+//
+// Bytes are never deleted here; released rows leave their blobs to garbage
+// collection with its usual grace period. Other formats return nothing.
+func (s *Service) followers(ctx context.Context, q interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
+}, sourceID, component, coordinate string, ids []string, includeTagged bool) ([]Deletion, error) {
+	if len(ids) == 0 {
 		return nil, nil
 	}
 	var format string
-	if err := q.QueryRow(ctx, `SELECT format FROM sources WHERE id=$1`, src.ID).Scan(&format); err != nil {
+	if err := q.QueryRow(ctx, `SELECT format FROM sources WHERE id=$1`, sourceID).Scan(&format); err != nil {
 		return nil, err
 	}
 	if format != "oci" && format != "oci-artifacts" {
 		return nil, nil
 	}
-	rows, err := q.Query(ctx, `SELECT v.id::text,b.digest,b.dedup_domain_id::text FROM versions v JOIN assets a ON a.version_id=v.id AND a.asset_key='manifest' JOIN blobs b ON b.id=a.blob_id WHERE v.component_id=$1 AND NOT v.blob_only AND b.size_bytes<=$2`, component, int64(manifestReadLimit))
+	type row struct {
+		id, version     string
+		blobOnly, child bool
+		tagged          bool
+	}
+	rows, err := q.Query(ctx, `SELECT v.id::text,v.version,v.blob_only,`+childSQL+`,EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) FROM versions v WHERE v.component_id=$1`, component)
+	if err != nil {
+		return nil, err
+	}
+	var all []row
+	for rows.Next() {
+		var r row
+		if err = rows.Scan(&r.id, &r.version, &r.blobOnly, &r.child, &r.tagged); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		all = append(all, r)
+	}
+	rows.Close()
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	doomed := map[string]bool{}
+	for _, id := range ids {
+		doomed[id] = true
+	}
+	// parents of each child, by child version string
+	parents := map[string][]string{}
+	prows, err := q.Query(ctx, `SELECT vc.child_version,vc.parent_version_id::text FROM version_children vc WHERE vc.component_id=$1`, component)
+	if err != nil {
+		return nil, err
+	}
+	for prows.Next() {
+		var child, parent string
+		if err = prows.Scan(&child, &parent); err != nil {
+			prows.Close()
+			return nil, err
+		}
+		parents[child] = append(parents[child], parent)
+	}
+	prows.Close()
+	if err = prows.Err(); err != nil {
+		return nil, err
+	}
+	var out []Deletion
+	for changed := true; changed; {
+		changed = false
+		for _, r := range all {
+			if doomed[r.id] || !r.child || r.blobOnly || (r.tagged && !includeTagged) {
+				continue
+			}
+			gone := len(parents[r.version]) > 0
+			for _, p := range parents[r.version] {
+				if !doomed[p] {
+					gone = false
+				}
+			}
+			if gone {
+				doomed[r.id] = true
+				changed = true
+				out = append(out, Deletion{SourceID: sourceID, Coordinate: coordinate, Version: r.version, VersionID: r.id, Reason: "follows_parent"})
+			}
+		}
+	}
+	manifestsDoomed := false
+	for _, r := range all {
+		if doomed[r.id] && !r.blobOnly {
+			manifestsDoomed = true
+		}
+	}
+	if !manifestsDoomed {
+		return out, nil
+	}
+	rows, err = q.Query(ctx, `SELECT v.id::text,b.digest,b.dedup_domain_id::text FROM versions v JOIN assets a ON a.version_id=v.id AND a.asset_key='manifest' JOIN blobs b ON b.id=a.blob_id WHERE v.component_id=$1 AND NOT v.blob_only AND b.size_bytes<=$2`, component, int64(manifestReadLimit))
 	if err != nil {
 		return nil, err
 	}
@@ -71,17 +166,16 @@ func (s *Service) unreferencedBlobs(ctx context.Context, q interface {
 				named[r] = true
 			}
 		case !ok:
-			return nil, nil
+			return out, nil
 		default:
 			for _, r := range refs {
 				retained[r] = true
 			}
 		}
 	}
-	var out []Deletion
-	for _, v := range versions {
-		if v.BlobOnly && !doomed[v.ID] && named[v.Version] && !retained[v.Version] {
-			out = append(out, Deletion{SourceID: src.ID, Coordinate: coordinate, Version: v.Version, VersionID: v.ID, Reason: "unreferenced_blob"})
+	for _, r := range all {
+		if r.blobOnly && !doomed[r.id] && named[r.version] && !retained[r.version] {
+			out = append(out, Deletion{SourceID: sourceID, Coordinate: coordinate, Version: r.version, VersionID: r.id, Reason: "unreferenced_blob"})
 		}
 	}
 	return out, nil

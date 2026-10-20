@@ -346,3 +346,13 @@ from the stored manifest bytes) are released in the same transaction and their
 bytes fall to normal GC; rows still named by a remaining manifest stay, and if a
 remaining manifest cannot be read nothing is released. `max_age`, `max_idle` and
 pressure eviction treat blob-only rows as before.
+
+Index children follow their parent. `keep_last` and `min_keep` (retention and
+pressure) rank top-level versions only: visible versions that are not named in
+`version_children`. A child is never selected on its own by `keep_last`,
+`max_age`, `max_idle` or pressure eviction; a top-level version's last-used time
+includes its children, so an image is idle only when every platform manifest
+is. When an index is deleted, each child whose every parent is also deleted is
+deleted with it (a child another index names, or a tagged one unless the policy
+includes tagged versions, stays), and blob-only rows named only by the deleted
+manifests are released as above.

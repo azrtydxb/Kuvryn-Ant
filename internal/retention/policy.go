@@ -141,12 +141,18 @@ type versionRow struct {
 	// BlobOnly marks an OCI config or layer carrier. It is not ranked for
 	// keep_last or min_keep; it is released with the manifests that name it.
 	BlobOnly bool
+	// Child is a manifest grouped under an image index (version_children). It
+	// is never selected on its own: it follows its parents.
+	Child bool
 }
 
 // decide evaluates one policy against a component's versions.
 func decide(p Policy, sourceKind string, rows []versionRow, now time.Time) (selected map[string]string, protectedRelease, protectedTagged int) {
 	selected = map[string]string{}
 	for _, v := range rows {
+		if v.Child {
+			continue
+		}
 		var reasons []string
 		if p.KeepLast > 0 && !v.BlobOnly && v.Rank > p.KeepLast {
 			reasons = append(reasons, "keep_last")
@@ -350,14 +356,14 @@ func (s *Service) retainComponent(ctx context.Context, src sourceInfo, component
 	if err := q.QueryRow(ctx, "SELECT clock_timestamp()").Scan(&now); err != nil {
 		return err
 	}
-	rows, err := q.Query(ctx, `SELECT v.id::text,v.version,v.created_at,COALESCE((SELECT max(GREATEST(a.created_at,a.last_accessed_at,ad.last_downloaded_at)) FROM assets a LEFT JOIN asset_downloads ad ON ad.asset_id=a.id WHERE a.version_id=v.id),v.created_at),CASE WHEN v.blob_only THEN 2147483647 ELSE row_number() OVER (PARTITION BY v.blob_only ORDER BY v.created_at DESC,v.id DESC)::int END,EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id),v.blob_only FROM versions v WHERE v.component_id=$1 ORDER BY 5`, component)
+	rows, err := q.Query(ctx, `SELECT v.id::text,v.version,v.created_at,`+lastUsedSQL+`,`+rankSQL+`,EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id),v.blob_only,`+childSQL+` FROM versions v WHERE v.component_id=$1 ORDER BY 5`, component)
 	if err != nil {
 		return err
 	}
 	var versions []versionRow
 	for rows.Next() {
 		var v versionRow
-		if err = rows.Scan(&v.ID, &v.Version, &v.Created, &v.LastUsed, &v.Rank, &v.Tagged, &v.BlobOnly); err != nil {
+		if err = rows.Scan(&v.ID, &v.Version, &v.Created, &v.LastUsed, &v.Rank, &v.Tagged, &v.BlobOnly, &v.Child); err != nil {
 			rows.Close()
 			return err
 		}
@@ -388,7 +394,7 @@ func (s *Service) retainComponent(ctx context.Context, src sourceInfo, component
 			batch = append(batch, Deletion{SourceID: src.ID, Coordinate: coordinate, Version: v.Version, VersionID: v.ID, Reason: reason})
 		}
 	}
-	extra, err := s.unreferencedBlobs(ctx, q, src, component, coordinate, versions, batch)
+	extra, err := s.followers(ctx, q, src.ID, component, coordinate, deletionIDs(batch), allIncludeTagged(src.Policies))
 	if err != nil {
 		return err
 	}
