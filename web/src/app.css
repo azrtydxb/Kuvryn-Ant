@@ -1197,3 +1197,14 @@ details > summary {
 .profile-tokens {
   position: relative;
 }
+.tok-dead {
+  opacity: 0.6;
+}
+.tok-bar {
+  margin: 10px 0;
+}
+.tok-cleanup {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--az-border);
+}

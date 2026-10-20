@@ -109,6 +109,11 @@ maintenance:
 auditRetention:
   retain: 9600h # 400 days
   purgeInterval: 1h
+# Days an expired or revoked token is kept before the maintenance worker deletes it
+# (0 keeps them forever). Leave empty to use the console setting
+# token_cleanup_after_days (default 30); setting it here makes that setting read-only.
+tokenCleanup:
+  afterDays: ""
 # Reverse proxies (ingress controller / gateway pod CIDRs) whose X-Forwarded-For
 # and X-Real-IP are believed, so auth throttling and per-site limits see the
 # real client instead of the shared proxy address. Empty = trust no headers.

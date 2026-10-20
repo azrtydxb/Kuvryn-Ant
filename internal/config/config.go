@@ -43,7 +43,10 @@ type Config struct {
 	OCIMirror      OCIMirror
 	Tracing        tracing.Config
 	AuditRetention AuditRetention
-	Federation     Federation
+	// TokenCleanupDays, when set (ANT_TOKEN_CLEANUP_AFTER_DAYS), overrides the
+	// stored token cleanup setting; 0 means never.
+	TokenCleanupDays *int
+	Federation       Federation
 	// TrustedProxies are the reverse proxies whose X-Forwarded-For / X-Real-IP
 	// headers are believed (ANT_TRUSTED_PROXIES, comma separated CIDRs; default none).
 	TrustedProxies []netip.Prefix
@@ -106,6 +109,9 @@ func Load(getenv func(string) string) (Config, error) {
 		return Config{}, err
 	}
 	if c.AuditRetention, err = loadAuditRetention(getenv); err != nil {
+		return Config{}, err
+	}
+	if c.TokenCleanupDays, err = loadTokenCleanupDays(getenv); err != nil {
 		return Config{}, err
 	}
 	c.Retention, err = loadRetention(getenv)

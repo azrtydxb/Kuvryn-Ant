@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import type { Client } from "./api";
 import { useAllFeeds } from "./data";
 import { useOptionalCall } from "./gaps";
+import { requireETag } from "./api";
 import type {
+  TokenCleanupResult,
+  TokenCounts,
   TokenRecord,
   IdentityPrincipal,
   IssueServiceToken,
@@ -11,7 +14,6 @@ import type {
 import { Actions } from "./Grants";
 import {
   Alert,
-  Badge,
   Button,
   IconButton,
   Input,
@@ -21,6 +23,17 @@ import {
   SettingsSection,
   Table,
 } from "./ds/bundle";
+import {
+  DateCell,
+  Dim,
+  TOKEN_WARN_DAYS,
+  TokenStateBadge,
+  TokenVisibilityBar,
+  expiresSoon,
+  hiddenText,
+  tokenState,
+  useShowInactiveTokens,
+} from "./TokenVisibility";
 import {
   Failure,
   Loading,
@@ -333,16 +346,20 @@ export function TokensTab({
   client: Client;
   principals: IdentityPrincipal[];
 }) {
+  // Expired and revoked tokens are hidden unless the viewer opts in.
+  const [show, setShow] = useShowInactiveTokens();
   const list = useOptionalCall(client, "listServiceTokens", {
-    query: { limit: "200" },
+    query: { limit: "200", state: show ? "all" : "active" },
   });
+  const [counts, setCounts] = useState<TokenCounts>();
+  useEffect(() => {
+    if (list.state === "ready" && list.data.counts) setCounts(list.data.counts);
+  }, [list]);
   const [revoking, setRevoking] = useState<TokenRecord>();
   const action = useAction();
   const toast = useToast();
   const name = (id?: string) =>
     principals.find((p) => p.id === id)?.subject ?? id ?? "—";
-  if (list.state === "loading") return <Loading what="tokens" />;
-  if (list.state === "error") return <Failure error={list.error} />;
   if (list.state === "unavailable")
     return (
       <>
@@ -357,19 +374,33 @@ export function TokensTab({
         <RevokeById client={client} />
       </>
     );
-  const items = list.data.items;
-  const soon = items.filter((t) => {
-    const at = t.expires_at ? Date.parse(t.expires_at) : NaN;
+  const bar = (
+    <TokenVisibilityBar show={show} onShow={setShow} counts={counts} />
+  );
+  if (list.state === "loading")
     return (
-      t.status === "active" && at - Date.now() < 14 * DAY && at > Date.now()
+      <>
+        {bar}
+        <Loading what="tokens" />
+      </>
     );
-  });
+  if (list.state === "error")
+    return (
+      <>
+        {bar}
+        <Failure error={list.error} />
+      </>
+    );
+  const items = list.data.items;
+  const soon = items.filter((t) => expiresSoon(t) !== null);
+  const hidden = hiddenText(show ? undefined : (list.data.counts ?? counts));
   return (
     <>
+      {bar}
       {soon.length > 0 && (
         <Alert
           tone="warn"
-          title={`${soon.length} token${soon.length === 1 ? "" : "s"} expire within 14 days`}
+          title={`${soon.length} token${soon.length === 1 ? "" : "s"} expire within ${TOKEN_WARN_DAYS} days`}
           className="spaced"
         >
           Issue a replacement before revoking.
@@ -382,69 +413,65 @@ export function TokensTab({
             label: "Token",
             mono: true,
             render: (t: TokenRecord) => (
-              <span title={t.id}>{t.id.slice(0, 8)}</span>
+              <Dim token={t}>
+                <span title={t.id}>{t.id.slice(0, 8)}</span>
+              </Dim>
             ),
           },
           {
             key: "principal",
             label: "Principal",
             mono: true,
-            render: (t: TokenRecord) => name(t.principal_id),
+            render: (t: TokenRecord) => (
+              <Dim token={t}>{name(t.principal_id)}</Dim>
+            ),
           },
           {
             key: "scopes",
             label: "Scope",
             render: (t: TokenRecord) => (
-              <Mono muted className="wrap-cell">
-                {(t.scopes ?? [])
-                  .map(
-                    (s) =>
-                      `${s.actions.join(", ")} · ${s.namespace ?? s.feed_id ?? "*"}`,
-                  )
-                  .join("; ") || "—"}
-              </Mono>
+              <Dim token={t}>
+                <Mono muted className="wrap-cell">
+                  {(t.scopes ?? [])
+                    .map(
+                      (s) =>
+                        `${s.actions.join(", ")} · ${s.namespace ?? s.feed_id ?? "*"}`,
+                    )
+                    .join("; ") || "—"}
+                </Mono>
+              </Dim>
             ),
           },
           {
             key: "expires_at",
             label: "Expires",
-            render: (t: TokenRecord) => when(t.expires_at),
+            render: (t: TokenRecord) => (
+              <Dim token={t}>
+                <DateCell value={t.expires_at} />
+              </Dim>
+            ),
           },
           {
             key: "last_used_at",
             label: "Last used",
             align: "right",
-            render: (t: TokenRecord) =>
-              t.last_used_at ? when(t.last_used_at) : "Never",
+            render: (t: TokenRecord) => (
+              <Dim token={t}>
+                {t.last_used_at ? <DateCell value={t.last_used_at} /> : "Never"}
+              </Dim>
+            ),
           },
           {
             key: "state",
             label: "Status",
-            render: (t: TokenRecord) =>
-              t.status === "revoked" ? (
-                <Badge tone="neutral" dot>
-                  Revoked
-                </Badge>
-              ) : t.status === "expired" ? (
-                <Badge tone="bad" dot>
-                  Expired
-                </Badge>
-              ) : soon.includes(t) ? (
-                <Badge tone="warn" dot>
-                  Expiring
-                </Badge>
-              ) : (
-                <Badge tone="good" dot>
-                  Active
-                </Badge>
-              ),
+            render: (t: TokenRecord) => <TokenStateBadge token={t} />,
           },
           {
             key: "x",
             label: "",
             align: "right",
             render: (t: TokenRecord) =>
-              t.status !== "active" ? null : (
+              tokenState(t) !== "active" ? null : (
                 <Button
                   size="sm"
                   variant="ghost"
@@ -457,7 +484,12 @@ export function TokensTab({
         ]}
         rows={items}
       />
-      {!items.length && <p className="muted">No tokens.</p>}
+      {!items.length && (
+        <p className="muted">
+          {show ? "No tokens." : "No active tokens."}
+          {hidden ? ` ${hidden}.` : ""}
+        </p>
+      )}
       {revoking && (
         <Modal
           title="Revoke token"
@@ -499,6 +531,158 @@ export function TokensTab({
   );
 }
 
+const CLEANUP_KEY = "token_cleanup_after_days";
+
+// Admin-only: how long expired and revoked tokens are kept, and an immediate
+// cleanup that previews the count first.
+function TokenCleanup({
+  client,
+  onCleaned,
+}: {
+  client: Client;
+  onCleaned: () => void;
+}) {
+  const settings = useOptionalCall(client, "getSettings");
+  const [days, setDays] = useState<string>();
+  const [preview, setPreview] = useState<TokenCleanupResult>();
+  const save = useAction();
+  const run = useAction();
+  const toast = useToast();
+  if (settings.state !== "ready") return null;
+  const item = settings.data.items.find((i) => i.key === CLEANUP_KEY);
+  // Servers without the setting simply do not offer cleanup.
+  if (!item) return null;
+  const current = item.value;
+  const value = days ?? current;
+  const valid = /^\d+$/.test(value) && Number(value) <= 3650;
+  const dirty = value !== current;
+  const never = Number(current) === 0;
+  return (
+    <div className="stack tok-cleanup" data-testid="token-cleanup">
+      <h3 className="h3">Cleanup</h3>
+      <form
+        className="row end"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const ok = await save.run(() =>
+            client.call("putSettings", {
+              etag: requireETag(`"${settings.data.revision}"`),
+              body: { token_cleanup_after_days: Number(value) },
+            }),
+          );
+          if (ok) {
+            toast("Token cleanup saved");
+            setDays(undefined);
+            settings.reload();
+          }
+        }}
+      >
+        <Input
+          label="Delete expired or revoked tokens after (days)"
+          type="number"
+          min={0}
+          max={3650}
+          value={value}
+          disabled={item.read_only}
+          onChange={val(setDays)}
+        />
+        <Button
+          type="submit"
+          disabled={item.read_only || !dirty || !valid || save.busy}
+        >
+          {save.busy ? "Saving…" : "Save"}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          icon="trash-2"
+          disabled={never || dirty || run.busy}
+          onClick={async () => {
+            let result: TokenCleanupResult | undefined;
+            const ok = await run.run(async () => {
+              result = (
+                await client.call("cleanupTokens", { body: { dry_run: true } })
+              ).data;
+            });
+            if (ok) setPreview(result);
+          }}
+        >
+          Clean up now
+        </Button>
+      </form>
+      <p className="muted small">
+        {item.read_only
+          ? "Set by the deployment (ANT_TOKEN_CLEANUP_AFTER_DAYS) and read-only here. "
+          : ""}
+        {never
+          ? "Expired and revoked tokens are kept forever. "
+          : `Tokens that have been expired or revoked for more than ${current} days are removed automatically. `}
+        0 keeps them forever; the default is 30. Audit history keeps the token
+        ID.
+      </p>
+      <Failure error={save.error ?? run.error} />
+      {preview && (
+        <Modal
+          title="Clean up tokens"
+          description={
+            preview.total > 0
+              ? `Delete ${preview.total} token${preview.total === 1 ? "" : "s"} expired or revoked more than ${preview.after_days} days ago?`
+              : `No tokens have been expired or revoked for more than ${preview.after_days} days.`
+          }
+          onClose={() => setPreview(undefined)}
+          actions={
+            preview.total > 0 ? (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => setPreview(undefined)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  disabled={run.busy}
+                  onClick={async () => {
+                    let done: TokenCleanupResult | undefined;
+                    const ok = await run.run(async () => {
+                      done = (
+                        await client.call("cleanupTokens", {
+                          body: { dry_run: false },
+                        })
+                      ).data;
+                    });
+                    if (ok && done) {
+                      toast(
+                        `Deleted ${done.total} token${done.total === 1 ? "" : "s"}`,
+                        done.has_more
+                          ? "More remain; run it again."
+                          : undefined,
+                      );
+                      setPreview(undefined);
+                      onCleaned();
+                    }
+                  }}
+                >
+                  {run.busy ? "Deleting…" : `Delete ${preview.total}`}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setPreview(undefined)}>Close</Button>
+            )
+          }
+        >
+          <p className="muted small">
+            {preview.service_tokens} service account and{" "}
+            {preview.personal_access_tokens} personal access tokens. Active
+            tokens are never deleted. This is recorded in the audit log.
+          </p>
+          <Failure error={run.error} />
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 // Admin-only: service-account tokens (non-human principals), separate from
 // the signed-in user's own personal access tokens.
 export function ServiceTokensSection({ client }: { client: Client }) {
@@ -528,7 +712,13 @@ export function ServiceTokensSection({ client }: { client: Client }) {
       ) : principals.loading ? (
         <Loading what="service principals" />
       ) : (
-        <TokensTab key={version} client={client} principals={items} />
+        <>
+          <TokensTab key={version} client={client} principals={items} />
+          <TokenCleanup
+            client={client}
+            onCleaned={() => setVersion((v) => v + 1)}
+          />
+        </>
       )}
       {issuing && (
         <TokenIssuer

@@ -137,7 +137,7 @@ it("tokens page separates personal tokens from service-account tokens and sends 
   install((url, init) => {
     if (url === "/api/v1/auth/personal-access-tokens" && init.method === "POST")
       return json({ ...pat, token: "secret-token-value" }, 201);
-    if (url === "/api/v1/auth/personal-access-tokens")
+    if (url.startsWith("/api/v1/auth/personal-access-tokens"))
       return json({ items: [pat] });
     if (url.startsWith("/api/v1/tokens")) return json({ items: [svc] });
     return undefined;
@@ -169,7 +169,7 @@ it("tokens page separates personal tokens from service-account tokens and sends 
 
 it("a service-token session sees an explanation instead of a raw 403 for personal tokens", async () => {
   install((url) => {
-    if (url === "/api/v1/auth/personal-access-tokens")
+    if (url.startsWith("/api/v1/auth/personal-access-tokens"))
       return json({ code: "forbidden" }, 403);
     if (url.startsWith("/api/v1/tokens")) return json({ items: [] });
     return undefined;

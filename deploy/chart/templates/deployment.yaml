@@ -160,6 +160,10 @@ spec:
               value: {{ .Values.auditRetention.retain | quote }}
             - name: ANT_AUDIT_PURGE_INTERVAL
               value: {{ .Values.auditRetention.purgeInterval | quote }}
+            {{- if ne (toString .Values.tokenCleanup.afterDays) "" }}
+            - name: ANT_TOKEN_CLEANUP_AFTER_DAYS
+              value: {{ .Values.tokenCleanup.afterDays | quote }}
+            {{- end }}
             {{- with .Values.maintenance }}
             - name: ANT_GC_INTERVAL
               value: {{ .gcInterval | quote }}

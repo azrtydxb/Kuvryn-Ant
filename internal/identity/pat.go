@@ -47,6 +47,20 @@ type PATRecord struct {
 	RevokedAt  *time.Time
 }
 
+// State is the computed lifecycle state at now: revoked wins over expired.
+func (r PATRecord) State(now time.Time) string {
+	switch {
+	case r.RevokedAt != nil:
+		return "revoked"
+	case !r.ExpiresAt.After(now):
+		return "expired"
+	}
+	return "active"
+}
+
+// PATCounts is the number of a user's tokens per state.
+type PATCounts struct{ Active, Expired, Revoked int64 }
+
 // ValidPATScopes limits PAT scopes to package-protocol actions.
 func ValidPATScopes(scopes []Scope) bool {
 	if !validScopes(scopes) {
@@ -147,13 +161,27 @@ func CreatePATTx(ctx context.Context, tx pgx.Tx, instance, principal, name strin
 	return rec, raw, nil
 }
 
-// List returns the principal's tokens, newest first. Secrets are never stored.
+// List returns the principal's tokens in every state, newest first. Secrets are never stored.
 func (t PATs) List(ctx context.Context, instance, principal string) ([]PATRecord, error) {
+	recs, _, err := t.ListState(ctx, instance, principal, "")
+	return recs, err
+}
+
+const patStateSQL = `CASE WHEN revoked_at IS NOT NULL THEN 'revoked' WHEN expires_at<=clock_timestamp() THEN 'expired' ELSE 'active' END`
+
+// ListState lists the principal's tokens, newest first, optionally limited to
+// one state ("active", "expired" or "revoked"; "" lists all), together with the
+// per-state counts of all the principal's tokens.
+func (t PATs) ListState(ctx context.Context, instance, principal, state string) ([]PATRecord, PATCounts, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	rows, err := t.DB.Query(ctx, "SELECT id,name,scopes,created_at,expires_at,last_used_at,revoked_at FROM personal_access_tokens WHERE instance_id=$1 AND principal_id=$2 ORDER BY created_at DESC,id LIMIT 200", instance, principal)
+	var counts PATCounts
+	if err := t.DB.QueryRow(ctx, `SELECT count(*) FILTER (WHERE `+patStateSQL+`='active'),count(*) FILTER (WHERE `+patStateSQL+`='expired'),count(*) FILTER (WHERE `+patStateSQL+`='revoked') FROM personal_access_tokens WHERE instance_id=$1 AND principal_id=$2`, instance, principal).Scan(&counts.Active, &counts.Expired, &counts.Revoked); err != nil {
+		return nil, counts, ErrUnavailable
+	}
+	rows, err := t.DB.Query(ctx, "SELECT id,name,scopes,created_at,expires_at,last_used_at,revoked_at FROM personal_access_tokens WHERE instance_id=$1 AND principal_id=$2 AND ($3='' OR $3="+patStateSQL+") ORDER BY created_at DESC,id LIMIT 200", instance, principal, state)
 	if err != nil {
-		return nil, ErrUnavailable
+		return nil, counts, ErrUnavailable
 	}
 	defer rows.Close()
 	out := []PATRecord{}
@@ -161,14 +189,14 @@ func (t PATs) List(ctx context.Context, instance, principal string) ([]PATRecord
 		var r PATRecord
 		var scopes []byte
 		if rows.Scan(&r.ID, &r.Name, &scopes, &r.CreatedAt, &r.ExpiresAt, &r.LastUsedAt, &r.RevokedAt) != nil || json.Unmarshal(scopes, &r.Scopes) != nil {
-			return nil, ErrUnavailable
+			return nil, counts, ErrUnavailable
 		}
 		out = append(out, r)
 	}
 	if rows.Err() != nil {
-		return nil, ErrUnavailable
+		return nil, counts, ErrUnavailable
 	}
-	return out, nil
+	return out, counts, nil
 }
 
 // Revoke only affects tokens owned by principal; others report not found.

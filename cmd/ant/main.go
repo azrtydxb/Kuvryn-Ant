@@ -26,6 +26,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/maintenance"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/mcp"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
@@ -222,6 +223,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 	defer workers.Close()
 	workers.startRetention(pool, artifacts, cfg, logger)
 	workers.startAuditPurge(pool, artifacts, cfg.AuditRetention, logger)
+	workers.startTokenPurge(pool, artifacts, cfg.TokenCleanupDays, logger)
 	ops := newOperations(pool, artifacts, cfg)
 	ops.start(workers)
 	management.EnableStatusDetail(pool, ops.readiness)
@@ -283,6 +285,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
 	observability.RegisterCollector("prewarm", prewarm.WriteMetrics)
 	observability.RegisterCollector("storage_pressure", retention.WriteMetrics)
+	observability.RegisterCollector("token_cleanup", maintenance.WriteTokenMetrics)
 	// Free space of the data directory's filesystem, for disk-full alerts.
 	observability.RegisterCollector("datadir", diskusage.Collector(cfg.Storage.Directory))
 	// Loopback development: let the login runtime learn its own origin.

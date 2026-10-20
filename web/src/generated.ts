@@ -71,8 +71,8 @@ export type PublishPolicyTestResult = { "allowed": boolean; "reason": string; "m
 export type FeedDeleted = { "id": string; "deleted": boolean; "sources_detached": number; "replication_jobs_removed": number; "role_grants_removed": number; "retention_policies_removed": number; "upload_sessions_removed": number };
 export type SourceDeleted = { "id": string; "deleted": boolean; "feeds_detached": number; "components_removed": number; "versions_removed": number; "assets_removed": number; "bytes_released": number };
 export type CachePurge = { "source_id": string; "components_removed": number; "versions_removed": number; "assets_removed": number; "bytes_released": number };
-export type TokenRecord = { "id": string; "principal_id": string; "scopes": Array<{ "feed_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin"> }>; "status": "active" | "expired" | "revoked"; "created_at": string; "expires_at": string; "revoked_at"?: string; "last_used_at"?: string };
-export type TokenPage = { "items": Array<TokenRecord>; "page": PageInfo };
+export type TokenRecord = { "id": string; "principal_id": string; "scopes": Array<{ "feed_id"?: string; "namespace"?: string; "actions": Array<"read" | "publish" | "delete" | "configure" | "replicate" | "admin"> }>; "status": "active" | "expired" | "revoked"; "created_at": string; "expires_at": string; "revoked_at"?: string; "last_used_at"?: string; "state": "active" | "expired" | "revoked" };
+export type TokenPage = { "items": Array<TokenRecord>; "page": PageInfo; "counts": TokenCounts };
 export type IdentityBindingRecord = { "id": string; "issuer": string; "subject": string; "principal_id": string };
 export type IdentityBindingPage = { "items": Array<IdentityBindingRecord>; "page": PageInfo };
 export type IdentityBindingDeleted = { "id": string; "deleted": boolean };
@@ -98,7 +98,7 @@ export type WebhookStatsItem = { "webhook_id": string; "endpoint": string; "deli
 export type WebhookStatsPage = { "window_days": number; "overall": WebhookRate; "items": Array<WebhookStatsItem>; "next_after"?: string };
 export type SettingItem = { "key": string; "value": string; "source": "env" | "stored" | "default"; "read_only": boolean; "enforced": boolean; "description"?: string };
 export type InstanceSettings = { "revision": number; "items": Array<SettingItem>; "updated_at"?: string };
-export type PutSettings = { "session_max_age_seconds"?: number; "session_idle_timeout_seconds"?: number; "default_anonymous_read"?: boolean };
+export type PutSettings = { "session_max_age_seconds"?: number; "session_idle_timeout_seconds"?: number; "default_anonymous_read"?: boolean; "token_cleanup_after_days"?: number };
 export type RetentionPolicy = { "id": string; "feed_id"?: string; "source_id"?: string; "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep": number; "include_tagged": boolean; "allow_release_delete": boolean; "enabled": boolean; "revision": number };
 export type RetentionPolicyPage = { "items": Array<RetentionPolicy>; "next_after"?: string };
 export type CreateRetentionPolicy = { "feed_id"?: string; "source_id"?: string; "keep_last"?: number; "max_age_seconds"?: number; "max_idle_seconds"?: number; "min_keep"?: number; "include_tagged"?: boolean; "allow_release_delete"?: boolean; "enabled"?: boolean };
@@ -237,10 +237,10 @@ export type GitHubTrustRuleInput = { "name": string; "org": string; "repo": stri
 export type GitHubTrustRuleList = { "items": Array<GitHubTrustRule> };
 export type GitHubExchangeRequest = { "token": string };
 export type GitHubExchangeResponse = { "access_token": string; "token_type": "Bearer"; "expires_at": string; "trust_rule_id": string };
-export type PersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string };
-export type PersonalAccessTokenList = { "items": Array<PersonalAccessToken> };
+export type PersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string; "state": "active" | "expired" | "revoked" };
+export type PersonalAccessTokenList = { "items": Array<PersonalAccessToken>; "counts": TokenCounts };
 export type CreatePersonalAccessToken = { "name": string; "scopes": Array<TokenScope>; "expires_in_days": number };
-export type CreatedPersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string; "token": string };
+export type CreatedPersonalAccessToken = { "id": string; "name": string; "scopes": Array<TokenScope>; "created_at": string; "expires_at": string; "last_used_at"?: string; "revoked_at"?: string; "token": string; "state": "active" | "expired" | "revoked" };
 export type FederationProtocolRange = { "min": number; "max": number };
 export type FederationDocumentHead = { "generation": number; "hash": string; "applied_at": string; "age_seconds": number; "issued_at": string };
 export type FederationSyncStatus = { "last_attempt_at"?: string; "last_success_at"?: string; "last_error"?: string; "source"?: string };
@@ -381,6 +381,10 @@ export type CreateWebhookSecret = { "name": string; "description"?: string; "val
 export type RotateWebhookSecretValue = { "value"?: string; "grace_seconds"?: number };
 export type DeletedWebhookSecret = { "id": string; "deleted": boolean };
 export type PutWebhookBaseUrl = { "value": string };
+export type TokenCounts = { "active": number; "expired": number; "revoked": number };
+export type StartTokenCleanup = { "dry_run": boolean };
+export type TokenCleanupResult = { "dry_run": boolean; "after_days": number; "cutoff": string; "service_tokens": number; "personal_access_tokens": number; "total": number; "has_more": boolean };
+export type PersonalTokenCleanupResult = { "deleted": number };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getMe: { body: undefined; response: Me };
@@ -630,6 +634,8 @@ getWebhookSecret: { body: undefined; response: WebhookSecret };
 deleteWebhookSecret: { body: undefined; response: DeletedWebhookSecret };
 rotateWebhookSecretValue: { body: RotateWebhookSecretValue; response: WebhookSecret };
 putWebhookBaseUrl: { body: PutWebhookBaseUrl; response: InstanceSettings };
+cleanupTokens: { body: StartTokenCleanup; response: TokenCleanupResult };
+cleanupPersonalAccessTokens: { body: undefined; response: PersonalTokenCleanupResult };
 }
 export const routes = {
   "getMe": {
@@ -1865,6 +1871,16 @@ export const routes = {
   "putWebhookBaseUrl": {
     "path": "/api/v1/settings/webhook-base-url",
     "method": "PUT",
+    "idempotent": true
+  },
+  "cleanupTokens": {
+    "path": "/api/v1/tokens/cleanup",
+    "method": "POST",
+    "idempotent": true
+  },
+  "cleanupPersonalAccessTokens": {
+    "path": "/api/v1/auth/personal-access-tokens/cleanup",
+    "method": "POST",
     "idempotent": true
   }
 } as const;

@@ -168,3 +168,31 @@ Process-local counters from the prewarm service (`internal/prewarm`), labels fro
 | `ant_prewarm_active_runs` | gauge | Runs executing in this process |
 
 Per-job and per-item detail (including failure codes) is in the API and the console, not in labels.
+
+## Token cleanup
+
+Expired and revoked tokens (service-account tokens and personal access tokens)
+are removed once they have been dead for longer than `token_cleanup_after_days`
+(default `30`, `0` keeps them forever, maximum `3650`). A token counts as dead
+since the earlier of its expiry and its revocation; active tokens are never
+deleted. Audit history is kept: audit rows reference a token only by an opaque
+id with no foreign key, and the console labels an id that no longer resolves as a
+deleted token.
+
+- Set it in Settings, Tokens (or `PUT /api/v1/settings` with
+  `token_cleanup_after_days`; absent fields keep their stored value), or pin it
+  with `ANT_TOKEN_CLEANUP_AFTER_DAYS` (chart value `tokenCleanup.afterDays`), which
+  makes the setting read-only.
+- A worker under the instance writer lease checks hourly and deletes in batches of
+  500, then writes one `token.cleanup` audit event with the counts
+  (`service_tokens`, `personal_access_tokens`, `trigger`, `after_days`, `cutoff`).
+- Administrators can run it immediately (`POST /api/v1/tokens/cleanup`, `dry_run`
+  first; at most 5000 per kind per call). Users can delete their own expired and
+  revoked personal access tokens (`POST /api/v1/auth/personal-access-tokens/cleanup`).
+- Metrics: `ant_token_cleanup_deleted_total{kind,trigger}`,
+  `ant_token_cleanup_runs_total`, `ant_token_cleanup_last_run_timestamp_seconds`.
+
+Token lists accept `state=active|expired|revoked|all` and return `state` per item
+plus `counts` for the whole scope. The API default is unchanged (all states, so
+existing clients keep working); the console requests `state=active` and offers a
+"Show expired and revoked" toggle.

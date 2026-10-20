@@ -9,6 +9,7 @@ import (
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/maintenance"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -39,17 +40,21 @@ type InstanceSettings struct {
 	UpdatedAt *time.Time    `json:"updated_at,omitempty"`
 }
 
-// PutSettings replaces the editable values; an absent field reverts to its default.
+// PutSettings changes the editable values. Fields that are absent keep their
+// stored value (a partial update never resets the others); to return a field to
+// its default, send the default value.
 type PutSettings struct {
 	SessionMaxAgeSeconds      *int  `json:"session_max_age_seconds,omitempty"`
 	SessionIdleTimeoutSeconds *int  `json:"session_idle_timeout_seconds,omitempty"`
 	DefaultAnonymousRead      *bool `json:"default_anonymous_read,omitempty"`
+	TokenCleanupAfterDays     *int  `json:"token_cleanup_after_days,omitempty"`
 }
 
 type settingsRow struct {
 	maxAge, idle *int32
 	anon         *bool
 	webhookBase  *string
+	tokenDays    *int32
 	revision     int64
 	updated      *time.Time
 }
@@ -62,7 +67,7 @@ func (h opsHandlers) renderSettings(row settingsRow) InstanceSettings {
 		}
 		return s
 	}
-	var maxAge, idle, anon *string
+	var maxAge, idle, anon, tokenDays *string
 	var webhookBase *string
 	if row.webhookBase != nil && *row.webhookBase != "" {
 		v := *row.webhookBase
@@ -80,10 +85,22 @@ func (h opsHandlers) renderSettings(row settingsRow) InstanceSettings {
 		v := strconv.FormatBool(*row.anon)
 		anon = &v
 	}
+	if row.tokenDays != nil {
+		v := strconv.Itoa(int(*row.tokenDays))
+		tokenDays = &v
+	}
+	tokenItem := item("token_cleanup_after_days", strconv.Itoa(maintenance.DefaultTokenCleanupDays), "Delete tokens that have been expired or revoked for more than this many days (0 to 3650; 0 keeps them forever).", tokenDays)
+	if h.d.TokenCleanupDays != nil {
+		tokenItem.Value, tokenItem.Source, tokenItem.ReadOnly, tokenItem.Enforced = strconv.Itoa(*h.d.TokenCleanupDays), "env", true, true
+		tokenItem.Description += " Set by ANT_TOKEN_CLEANUP_AFTER_DAYS."
+	} else {
+		tokenItem.Enforced = true
+	}
 	out := InstanceSettings{Revision: row.revision, UpdatedAt: row.updated, Items: []SettingItem{
 		item("session_max_age_seconds", strconv.Itoa(defaultSessionMaxAge), "Maximum browser session length (1 to 28800).", maxAge),
 		item("session_idle_timeout_seconds", strconv.Itoa(defaultSessionIdle), "Browser session idle timeout (1 to 1800).", idle),
 		item("default_anonymous_read", "false", "Suggested anonymous-read default for new feeds in the console.", anon),
+		tokenItem,
 	}}
 	out.Items = append(out.Items, h.webhookBaseItem(webhookBase)...)
 	for _, e := range h.d.Env {
@@ -94,7 +111,7 @@ func (h opsHandlers) renderSettings(row settingsRow) InstanceSettings {
 
 func (h opsHandlers) loadSettings(ctx context.Context, instance string) (settingsRow, error) {
 	row := settingsRow{revision: 1}
-	err := h.db.QueryRow(ctx, `SELECT session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,webhook_base_url,revision,updated_at FROM instance_settings WHERE instance_id=$1`, instance).Scan(&row.maxAge, &row.idle, &row.anon, &row.webhookBase, &row.revision, &row.updated)
+	err := h.db.QueryRow(ctx, `SELECT session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,webhook_base_url,token_cleanup_after_days,revision,updated_at FROM instance_settings WHERE instance_id=$1`, instance).Scan(&row.maxAge, &row.idle, &row.anon, &row.webhookBase, &row.tokenDays, &row.revision, &row.updated)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return settingsRow{revision: 1}, nil
 	}
@@ -128,12 +145,17 @@ func (h opsHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in PutSettings
-	if !sourceJSON(w, r, &in, "session_max_age_seconds", "session_idle_timeout_seconds", "default_anonymous_read") {
+	if !sourceJSON(w, r, &in, "session_max_age_seconds", "session_idle_timeout_seconds", "default_anonymous_read", "token_cleanup_after_days") {
 		return
 	}
 	if in.SessionMaxAgeSeconds != nil && (*in.SessionMaxAgeSeconds < 1 || *in.SessionMaxAgeSeconds > maxSessionMaxAge) ||
-		in.SessionIdleTimeoutSeconds != nil && (*in.SessionIdleTimeoutSeconds < 1 || *in.SessionIdleTimeoutSeconds > maxSessionIdleTimeout) {
+		in.SessionIdleTimeoutSeconds != nil && (*in.SessionIdleTimeoutSeconds < 1 || *in.SessionIdleTimeoutSeconds > maxSessionIdleTimeout) ||
+		in.TokenCleanupAfterDays != nil && (*in.TokenCleanupAfterDays < 0 || *in.TokenCleanupAfterDays > maintenance.MaxTokenCleanupDays) {
 		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid settings")
+		return
+	}
+	if in.TokenCleanupAfterDays != nil && h.d.TokenCleanupDays != nil {
+		Error(w, r, 409, api.ErrorCodeConflict, "token_cleanup_after_days is set by ANT_TOKEN_CLEANUP_AFTER_DAYS and is read-only")
 		return
 	}
 	h.mutate(w, r, p, "settings.put", "settings", struct {
@@ -152,17 +174,22 @@ func (h opsHandlers) putSettings(w http.ResponseWriter, r *http.Request) {
 		if current != revision {
 			return nil, database.ErrRevisionConflict
 		}
-		row := settingsRow{}
+		// Absent fields keep their stored value.
+		var maxAge, idle, tokenDays *int32
 		if in.SessionMaxAgeSeconds != nil {
 			v := int32(*in.SessionMaxAgeSeconds)
-			row.maxAge = &v
+			maxAge = &v
 		}
 		if in.SessionIdleTimeoutSeconds != nil {
 			v := int32(*in.SessionIdleTimeoutSeconds)
-			row.idle = &v
+			idle = &v
 		}
-		row.anon = in.DefaultAnonymousRead
-		if err := tx.QueryRow(ctx, `UPDATE instance_settings SET session_max_age_seconds=$2,session_idle_timeout_seconds=$3,default_anonymous_read=$4,revision=revision+1,updated_at=now() WHERE instance_id=$1 RETURNING webhook_base_url,revision,updated_at`, p.InstanceID, row.maxAge, row.idle, row.anon).Scan(&row.webhookBase, &row.revision, &row.updated); err != nil {
+		if in.TokenCleanupAfterDays != nil {
+			v := int32(*in.TokenCleanupAfterDays)
+			tokenDays = &v
+		}
+		row := settingsRow{}
+		if err := tx.QueryRow(ctx, `UPDATE instance_settings SET session_max_age_seconds=COALESCE($2,session_max_age_seconds),session_idle_timeout_seconds=COALESCE($3,session_idle_timeout_seconds),default_anonymous_read=COALESCE($4,default_anonymous_read),token_cleanup_after_days=COALESCE($5,token_cleanup_after_days),revision=revision+1,updated_at=now() WHERE instance_id=$1 RETURNING session_max_age_seconds,session_idle_timeout_seconds,default_anonymous_read,webhook_base_url,token_cleanup_after_days,revision,updated_at`, p.InstanceID, maxAge, idle, in.DefaultAnonymousRead, tokenDays).Scan(&row.maxAge, &row.idle, &row.anon, &row.webhookBase, &row.tokenDays, &row.revision, &row.updated); err != nil {
 			return nil, err
 		}
 		return h.renderSettings(row), identityEvent(ctx, tx, p, p.InstanceID, "settings.put", row.revision)

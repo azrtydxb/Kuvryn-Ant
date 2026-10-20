@@ -113,7 +113,7 @@ func hostname() string {
 // deps assembles the management operations dependencies.
 func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 	d := management.OpsDeps{
-		Limits: o.limiter, Pool: o.pool, Codec: codec, Keys: o.cfg.SecretKeys, Background: o.background,
+		TokenCleanupDays: o.cfg.TokenCleanupDays, Limits: o.limiter, Pool: o.pool, Codec: codec, Keys: o.cfg.SecretKeys, Background: o.background,
 		StorageBackend: o.cfg.Storage.Backend, Readiness: o.readiness, StagingBytes: o.stagingBytes,
 		GC: management.GCSettingsView{IntervalSeconds: int64(o.cfg.Retention.Interval / time.Second), GraceSeconds: int64(o.cfg.Retention.Grace / time.Second), DryRun: o.cfg.Retention.DryRun,
 			PressureIntervalSeconds: int64(o.cfg.Retention.PressureInterval / time.Second), PressureSweepGraceSeconds: int64(o.cfg.Retention.PressureSweepGrace / time.Second)},
