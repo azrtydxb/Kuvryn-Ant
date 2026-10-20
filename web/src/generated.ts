@@ -275,9 +275,10 @@ export type TransferFailure = { "digest": string; "reason": string };
 export type TransferReport = { "dry_run": boolean; "summary": Record<string, Record<string, number>>; "items": Array<TransferItem>; "items_truncated"?: boolean; "unmapped": Array<TransferUnmapped>; "integrity_failures": Array<TransferFailure> };
 export type MigrationRepository = { "name": string; "type": string; "format": string; "ant_format"?: string; "mapped_to": string; "assets"?: number; "bytes"?: number };
 export type MigrationReport = { "dry_run": boolean; "summary": Record<string, Record<string, number>>; "items": Array<TransferItem>; "items_truncated"?: boolean; "unmapped": Array<TransferUnmapped>; "integrity_failures": Array<TransferFailure>; "manager": string; "repositories": Array<MigrationRepository> };
-export type NexusMigrationRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "repositories"?: Array<string>; "count_assets"?: boolean; "dry_run"?: boolean };
+export type NexusMigrationRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "ca_ref"?: string; "repositories"?: Array<string>; "count_assets"?: boolean; "dry_run"?: boolean };
+export type ArtifactoryMigrationRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "ca_ref"?: string; "repositories"?: Array<string>; "count_assets"?: boolean; "dry_run"?: boolean };
 export type MigrationCompareItem = { "repository": string; "path": string; "feed"?: string };
-export type MigrationCompareRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "items": Array<MigrationCompareItem> };
+export type MigrationCompareRequest = { "url": string; "username"?: string; "password"?: string; "token"?: string; "ca_ref"?: string; "manager"?: "nexus" | "artifactory"; "items": Array<MigrationCompareItem> };
 export type MigrationCompareSide = { "found": boolean; "sha256"?: string; "size"?: number; "detail"?: string };
 export type MigrationCompareResult = { "repository": string; "path": string; "feed": string; "status": "identical" | "differs" | "missing_in_ant" | "missing_in_source" | "missing_in_both" | "error"; "source": MigrationCompareSide; "ant": MigrationCompareSide };
 export type MigrationCompareReport = { "manager": string; "counts": Record<string, number>; "results": Array<MigrationCompareResult> };
@@ -578,6 +579,7 @@ exportTransfer: { body: TransferExportRequest; response: TransferDocument };
 importTransfer: { body: TransferImportRequest; response: TransferReport };
 listTransferRuns: { body: undefined; response: TransferRunPage };
 migrateNexus: { body: NexusMigrationRequest; response: MigrationReport };
+migrateArtifactory: { body: ArtifactoryMigrationRequest; response: MigrationReport };
 compareMigration: { body: MigrationCompareRequest; response: MigrationCompareReport };
 getFederationPolicy: { body: undefined; response: FederationPolicyView };
 getFederationPolicyDraft: { body: undefined; response: FederationPolicyDraft };
@@ -1590,6 +1592,11 @@ export const routes = {
   },
   "migrateNexus": {
     "path": "/api/v1/migrations/nexus",
+    "method": "POST",
+    "idempotent": false
+  },
+  "migrateArtifactory": {
+    "path": "/api/v1/migrations/artifactory",
     "method": "POST",
     "idempotent": false
   },

@@ -14746,10 +14746,77 @@
         }
       }
     },
+    "/api/v1/migrations/artifactory": {
+      "post": {
+        "operationId": "migrateArtifactory",
+        "description": "All transfer and migration endpoints require instance admin. Inventories a JFrog Artifactory instance through its REST API (repositories, per-repository configuration, storage summary, users, groups and permission targets) and maps local repositories to local sources, remote repositories to remote sources with the same upstream URL, and virtual repositories to feeds whose ordered sources mirror the virtual repository list and whose publish policy targets its default deployment repository. Credentials (access token, or user with password or API key) are used for this request only and never stored; remote repository credentials cannot be read from Artifactory and are reported for re-entry. Users, groups and permission targets are reported as unmapped with guidance. dry_run defaults to true. Applying maps definitions only; copy content with `ant migrate artifactory --copy-content --apply`. The server connects to the supplied URL (http or https, no redirects to other hosts); ca_ref selects an operator-configured CA bundle.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtifactoryMigrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MigrationReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "502": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          },
+          "504": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/migrations/compare": {
       "post": {
         "operationId": "compareMigration",
-        "description": "All transfer and migration endpoints require instance admin. Staged adoption: for each coordinate (a path in a Nexus repository), reports the content a client would receive from Nexus and from the Ant feed (first source in feed order holding the path) with checksums and a status. Read only; credentials are used for this request only.",
+        "description": "All transfer and migration endpoints require instance admin. Staged adoption: for each coordinate (a path in a Nexus or Artifactory repository), reports the content a client would receive from the source system and from the Ant feed (first source in feed order holding the path) with checksums and a status. Read only; credentials are used for this request only.",
         "requestBody": {
           "required": true,
           "content": {
@@ -28734,6 +28801,55 @@
             "type": "string",
             "writeOnly": true
           },
+          "ca_ref": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "description": "Operator-configured CA bundle ID (ANT_UPSTREAM_CA_MAP_FILE); never a path."
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "count_assets": {
+            "type": "boolean"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ArtifactoryMigrationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "token": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "ca_ref": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+            "description": "Operator-configured CA bundle ID (ANT_UPSTREAM_CA_MAP_FILE); never a path."
+          },
           "repositories": {
             "type": "array",
             "items": {
@@ -28789,6 +28905,19 @@
           "token": {
             "type": "string",
             "writeOnly": true
+          },
+          "ca_ref": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$"
+          },
+          "manager": {
+            "type": "string",
+            "enum": [
+              "nexus",
+              "artifactory"
+            ],
+            "default": "nexus"
           },
           "items": {
             "type": "array",

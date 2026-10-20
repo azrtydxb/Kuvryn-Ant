@@ -17,6 +17,7 @@ func TestTransferEndpointsAreAdminOnly(t *testing.T) {
 		{"POST", "/api/v1/transfer/import", `{"document":{"format_version":1,"sources":[],"feeds":[],"components":[]}}`},
 		{"GET", "/api/v1/transfer/runs", ""},
 		{"POST", "/api/v1/migrations/nexus", `{"url":"http://127.0.0.1:1"}`},
+		{"POST", "/api/v1/migrations/artifactory", `{"url":"http://127.0.0.1:1"}`},
 		{"POST", "/api/v1/migrations/compare", `{"url":"http://127.0.0.1:1","items":[{"repository":"r","path":"p"}]}`},
 	} {
 		expectSourceStatus(t, o.requestAs(c.method, c.path, c.body, "", "", o.limited), 403)
@@ -119,5 +120,67 @@ func TestNexusMigrationEndpointsNeverStoreCredentials(t *testing.T) {
 	}
 	if err := o.db.QueryRow(t.Context(), `SELECT count(*) FROM audit_events WHERE details::text LIKE '%hunter2%'`).Scan(&stored); err != nil || stored != 0 {
 		t.Fatalf("credential persisted in audit log: %v", err)
+	}
+}
+
+func TestArtifactoryMigrationEndpointNeverStoresCredentials(t *testing.T) {
+	o := newOpsFixture(t)
+	art := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer art-token-hunter3-secret" {
+			http.Error(w, "no", 401)
+			return
+		}
+		switch r.URL.Path {
+		case "/artifactory/api/repositories":
+			_, _ = w.Write([]byte(`[{"key":"gen-local","type":"LOCAL","packageType":"Generic"},{"key":"vlt","type":"VIRTUAL","packageType":"Generic"}]`))
+		case "/artifactory/api/repositories/vlt":
+			_, _ = w.Write([]byte(`{"rclass":"virtual","packageType":"generic","repositories":["gen-local"],"defaultDeploymentRepo":"gen-local"}`))
+		case "/artifactory/api/repositories/gen-local":
+			_, _ = w.Write([]byte(`{"rclass":"local","packageType":"generic"}`))
+		case "/artifactory/api/storageinfo":
+			_, _ = w.Write([]byte(`{"repositoriesSummaryList":[{"repoKey":"gen-local","filesCount":3,"usedSpaceInBytes":2048}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer art.Close()
+	body := `{"url":"` + art.URL + `","token":"art-token-hunter3-secret"}`
+	w := o.request("POST", "/api/v1/migrations/artifactory", body, "", "")
+	expectSourceStatus(t, w, 200)
+	var rep transfer.MigrationReport
+	_ = json.Unmarshal(w.Body.Bytes(), &rep)
+	if rep.Report == nil || !rep.DryRun || rep.Manager != "artifactory" || rep.Count("source", transfer.ActionCreated) != 1 || rep.Count("feed", transfer.ActionCreated) != 2 {
+		t.Fatalf("dry run: %s", w.Body.String())
+	}
+	var sized bool
+	for _, r := range rep.Repositories {
+		sized = sized || r.Name == "gen-local" && r.Bytes == 2048 && r.Assets == 3
+	}
+	if !sized || o.feeds(t, "gen-local") != 0 {
+		t.Fatalf("storage summary or dry run wrote: %s", w.Body.String())
+	}
+	// Apply creates the definitions.
+	expectSourceStatus(t, o.request("POST", "/api/v1/migrations/artifactory", strings.Replace(body, "}", `,"dry_run":false}`, 1), "", ""), 200)
+	if o.feeds(t, "vlt") != 1 {
+		t.Fatal("virtual repository feed not created")
+	}
+	expectSourceStatus(t, o.request("POST", "/api/v1/migrations/artifactory", strings.Replace(body, "art-token-hunter3-secret", "wrong", 1), "", ""), 502)
+	expectSourceStatus(t, o.request("POST", "/api/v1/migrations/artifactory", `{"url":"ftp://x"}`, "", ""), 400)
+	// CA references are operator IDs; an unknown one and a path are both refused.
+	expectSourceStatus(t, o.request("POST", "/api/v1/migrations/artifactory", strings.Replace(body, "}", `,"ca_ref":"nope"}`, 1), "", ""), 400)
+	expectSourceStatus(t, o.request("POST", "/api/v1/migrations/artifactory", strings.Replace(body, "}", `,"ca_ref":"/etc/ssl/cert.pem"}`, 1), "", ""), 400)
+	w = o.request("POST", "/api/v1/migrations/compare", `{"manager":"artifactory","url":"`+art.URL+`","token":"art-token-hunter3-secret","items":[{"repository":"gen-local","path":"a.txt"}]}`, "", "")
+	expectSourceStatus(t, w, 200)
+	var cmp transfer.CompareReport
+	_ = json.Unmarshal(w.Body.Bytes(), &cmp)
+	if cmp.Manager != "artifactory" || len(cmp.Results) != 1 {
+		t.Fatalf("compare: %s", w.Body.String())
+	}
+	expectSourceStatus(t, o.request("POST", "/api/v1/migrations/compare", `{"manager":"other","url":"`+art.URL+`","items":[{"repository":"r","path":"p"}]}`, "", ""), 400)
+	var stored int
+	for _, q := range []string{`SELECT count(*) FROM transfer_runs WHERE summary::text LIKE '%hunter3%'`, `SELECT count(*) FROM audit_events WHERE details::text LIKE '%hunter3%'`} {
+		if err := o.db.QueryRow(t.Context(), q).Scan(&stored); err != nil || stored != 0 {
+			t.Fatalf("credential persisted: %v", err)
+		}
 	}
 }

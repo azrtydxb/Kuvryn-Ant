@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/x509"
 	"errors"
 	"flag"
 	"io"
@@ -21,9 +22,11 @@ import (
 const transferUsage = `usage: ant export [--feed SLUG]... [--namespace NS]... [--no-content] <new-or-empty-dir>
        ant export verify [--expect-manifest-sha256 HEX] <dir>
        ant import [--apply] [--expect-manifest-sha256 HEX] <dir>
-       ant migrate nexus --url URL [--user NAME] [--repo NAME]... [--copy-content] [--no-count] [--apply]
-       ant compare nexus --url URL --coordinates FILE   (lines of "<repository> <path> [<feed>]")
-Nexus credentials are read at run time from ANT_NEXUS_PASSWORD or ANT_NEXUS_TOKEN and are never stored.
+       ant migrate nexus|artifactory --url URL [--user NAME] [--ca-ref ID] [--repo NAME]... [--copy-content] [--no-count] [--apply]
+       ant compare nexus|artifactory --url URL --coordinates FILE   (lines of "<repository> <path> [<feed>]")
+Source credentials are read at run time from ANT_NEXUS_PASSWORD / ANT_NEXUS_TOKEN or
+ANT_ARTIFACTORY_PASSWORD (password or API key) / ANT_ARTIFACTORY_TOKEN and are never stored.
+--ca-ref selects a CA bundle from ANT_UPSTREAM_CA_MAP_FILE for a private certificate authority.
 import and migrate only report (dry run) unless --apply is given.`
 
 type listFlag []string
@@ -50,6 +53,7 @@ func transferCommand(ctx context.Context, logger *slog.Logger, args []string, ou
 	expect := fs.String("expect-manifest-sha256", "", "")
 	url := fs.String("url", "", "")
 	user := fs.String("user", "", "")
+	caRef := fs.String("ca-ref", "", "")
 	copyContent := fs.Bool("copy-content", false, "")
 	noCount := fs.Bool("no-count", false, "")
 	coords := fs.String("coordinates", "", "")
@@ -78,7 +82,7 @@ func transferCommand(ctx context.Context, logger *slog.Logger, args []string, ou
 			return 1
 		}
 	case "migrate", "compare":
-		if manager != "nexus" || *url == "" || fs.NArg() != 0 || mode == "compare" && *coords == "" {
+		if manager != "nexus" && manager != "artifactory" || *url == "" || fs.NArg() != 0 || mode == "compare" && *coords == "" {
 			logger.Error(transferUsage)
 			return 1
 		}
@@ -148,7 +152,24 @@ func transferCommand(ctx context.Context, logger *slog.Logger, args []string, ou
 		}
 		return reportExit(logger, output, rep)
 	}
-	nx, err := transfer.NewNexus(transfer.NexusConfig{BaseURL: *url, Username: *user, Password: os.Getenv("ANT_NEXUS_PASSWORD"), Token: os.Getenv("ANT_NEXUS_TOKEN")})
+	var caPool *x509.CertPool
+	if *caRef != "" {
+		path, ok := cfg.UpstreamCAs[*caRef]
+		if !ok {
+			logger.Error("source manager rejected", "reason", "unknown CA reference")
+			return 1
+		}
+		if caPool, err = transfer.LoadCAPool(path); err != nil {
+			logger.Error("source manager rejected", "reason", err)
+			return 1
+		}
+	}
+	var nx transfer.Manager
+	if manager == "artifactory" {
+		nx, err = transfer.NewArtifactory(transfer.ArtifactoryConfig{BaseURL: *url, Username: *user, Password: os.Getenv("ANT_ARTIFACTORY_PASSWORD"), Token: os.Getenv("ANT_ARTIFACTORY_TOKEN"), RootCAs: caPool})
+	} else {
+		nx, err = transfer.NewNexus(transfer.NexusConfig{BaseURL: *url, Username: *user, Password: os.Getenv("ANT_NEXUS_PASSWORD"), Token: os.Getenv("ANT_NEXUS_TOKEN"), RootCAs: caPool})
+	}
 	if err != nil {
 		logger.Error("source manager rejected", "reason", err)
 		return 1

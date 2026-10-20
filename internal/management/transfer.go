@@ -3,8 +3,10 @@ package management
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -21,6 +23,9 @@ import (
 type TransferDeps struct {
 	Pool   *pgxpool.Pool
 	Stores transfer.Stores
+	// CAFiles maps operator-configured CA reference IDs to mounted PEM bundles.
+	// Requests select an ID; they can never supply a path.
+	CAFiles map[string]string
 }
 
 type transferHandlers struct {
@@ -41,11 +46,12 @@ func RegisterTransfer(mux *http.ServeMux, d TransferDeps) {
 	h := transferHandlers{identityHandlers{feedHandlers{db: d.Pool}}, d}
 	bearer := identity.NewBearer(identity.Tokens{DB: d.Pool})
 	for pattern, handler := range map[string]http.HandlerFunc{
-		"POST /api/v1/transfer/export":    h.export,
-		"POST /api/v1/transfer/import":    h.importDoc,
-		"GET /api/v1/transfer/runs":       h.runs,
-		"POST /api/v1/migrations/nexus":   h.migrateNexus,
-		"POST /api/v1/migrations/compare": h.compare,
+		"POST /api/v1/transfer/export":        h.export,
+		"POST /api/v1/transfer/import":        h.importDoc,
+		"GET /api/v1/transfer/runs":           h.runs,
+		"POST /api/v1/migrations/nexus":       h.migrateNexus,
+		"POST /api/v1/migrations/artifactory": h.migrateArtifactory,
+		"POST /api/v1/migrations/compare":     h.compare,
 	} {
 		mux.Handle(pattern, bearer.Wrap(handler))
 	}
@@ -173,11 +179,13 @@ func (h transferHandlers) importDoc(w http.ResponseWriter, r *http.Request) {
 	JSON(w, 200, rep)
 }
 
+// NexusRequest is the connection and scope of a Nexus 3 migration.
 type NexusRequest struct {
 	URL          string   `json:"url"`
 	Username     string   `json:"username,omitempty"`
 	Password     string   `json:"password,omitempty"`
 	Token        string   `json:"token,omitempty"`
+	CARef        string   `json:"ca_ref,omitempty"`
 	Repositories []string `json:"repositories,omitempty"`
 	CountAssets  bool     `json:"count_assets,omitempty"`
 	// DryRun defaults to true. Applying maps definitions only; copy content with
@@ -185,11 +193,44 @@ type NexusRequest struct {
 	DryRun *bool `json:"dry_run,omitempty"`
 }
 
-func (n NexusRequest) client() (*transfer.Nexus, error) {
-	return transfer.NewNexus(transfer.NexusConfig{BaseURL: n.URL, Username: n.Username, Password: n.Password, Token: n.Token})
+// ArtifactoryRequest is the connection and scope of an Artifactory migration.
+type ArtifactoryRequest = NexusRequest
+
+// caPool resolves an operator-configured CA reference to a trust pool.
+func (h transferHandlers) caPool(ref string) (*x509.CertPool, error) {
+	if ref == "" {
+		return nil, nil
+	}
+	path, ok := h.d.CAFiles[ref]
+	if !ok {
+		return nil, fmt.Errorf("%w: unknown CA reference", transfer.ErrInput)
+	}
+	return transfer.LoadCAPool(path)
+}
+
+// manager builds the source-manager client for kind ("nexus" or "artifactory").
+func (h transferHandlers) manager(kind string, n NexusRequest) (transfer.Manager, error) {
+	pool, err := h.caPool(n.CARef)
+	if err != nil {
+		return nil, err
+	}
+	switch kind {
+	case "artifactory":
+		return transfer.NewArtifactory(transfer.ArtifactoryConfig{BaseURL: n.URL, Username: n.Username, Password: n.Password, Token: n.Token, RootCAs: pool})
+	default:
+		return transfer.NewNexus(transfer.NexusConfig{BaseURL: n.URL, Username: n.Username, Password: n.Password, Token: n.Token, RootCAs: pool})
+	}
 }
 
 func (h transferHandlers) migrateNexus(w http.ResponseWriter, r *http.Request) {
+	h.migrate(w, r, "nexus")
+}
+
+func (h transferHandlers) migrateArtifactory(w http.ResponseWriter, r *http.Request) {
+	h.migrate(w, r, "artifactory")
+}
+
+func (h transferHandlers) migrate(w http.ResponseWriter, r *http.Request, kind string) {
 	p, ok := h.admin(w, r)
 	if !ok {
 		return
@@ -198,7 +239,7 @@ func (h transferHandlers) migrateNexus(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &in) {
 		return
 	}
-	nx, err := in.client()
+	m, err := h.manager(kind, in)
 	if err != nil {
 		transferError(w, r, err)
 		return
@@ -206,7 +247,7 @@ func (h transferHandlers) migrateNexus(w http.ResponseWriter, r *http.Request) {
 	dry := in.DryRun == nil || *in.DryRun
 	ctx, cancel := context.WithTimeout(r.Context(), transferTimeout)
 	defer cancel()
-	rep, err := transfer.Migrate(ctx, h.d.Pool, h.stores(), p.InstanceID, nx, transfer.MapOptions{Repositories: in.Repositories, CountAssets: in.CountAssets, MaxAssets: maxMigrationAssets}, transfer.ImportOptions{DryRun: dry})
+	rep, err := transfer.Migrate(ctx, h.d.Pool, h.stores(), p.InstanceID, m, transfer.MapOptions{Repositories: in.Repositories, CountAssets: in.CountAssets, MaxAssets: maxMigrationAssets}, transfer.ImportOptions{DryRun: dry})
 	if err != nil {
 		transferError(w, r, err)
 		return
@@ -217,7 +258,9 @@ func (h transferHandlers) migrateNexus(w http.ResponseWriter, r *http.Request) {
 
 type CompareRequest struct {
 	NexusRequest
-	Items []transfer.CompareItem `json:"items"`
+	// Manager selects the source system: "nexus" (default) or "artifactory".
+	Manager string                 `json:"manager,omitempty"`
+	Items   []transfer.CompareItem `json:"items"`
 }
 
 func (h transferHandlers) compare(w http.ResponseWriter, r *http.Request) {
@@ -229,14 +272,18 @@ func (h transferHandlers) compare(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &in) {
 		return
 	}
-	nx, err := in.client()
+	if in.Manager != "" && in.Manager != "nexus" && in.Manager != "artifactory" {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "manager must be nexus or artifactory")
+		return
+	}
+	m, err := h.manager(in.Manager, in.NexusRequest)
 	if err != nil {
 		transferError(w, r, err)
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), transferTimeout)
 	defer cancel()
-	rep, err := transfer.Compare(ctx, h.d.Pool, p.InstanceID, nx, in.Items)
+	rep, err := transfer.Compare(ctx, h.d.Pool, p.InstanceID, m, in.Items)
 	if err != nil {
 		transferError(w, r, err)
 		return
