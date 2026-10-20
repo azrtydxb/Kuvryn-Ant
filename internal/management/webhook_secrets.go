@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -464,5 +463,3 @@ func (h webhookHandlers) deleteSecret(w http.ResponseWriter, r *http.Request) {
 		}{id, true}, identityEvent(ctx, tx, p, id, "webhook_secret.delete", found)
 	})
 }
-
-var errWebhookBaseMissing = errors.New("webhook base URL is not configured")

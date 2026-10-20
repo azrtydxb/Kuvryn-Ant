@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -147,98 +148,68 @@ func TestWebhookSigningSecretLifecycle(t *testing.T) {
 	expectSourceStatus(t, f.requestAs("GET", "/api/v1/webhook-secrets", "", "", "", ""), 401)
 }
 
-func TestWebhookSlugAndBaseURL(t *testing.T) {
+func TestWebhookNameAndEndpoint(t *testing.T) {
 	f, _ := webhookHTTPFixture(t)
-	ctx := context.Background()
 	secret := createWebhookSecret(f, `{"name":"shared"}`, "s")
-	body := `{"name":"deploys","secret_id":"` + secret.ID + `"}`
-	// No base URL yet: slug mode is refused with guidance, custom mode works.
-	expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", body, "nobase", ""), 409)
-	custom := f.request("POST", "/api/v1/webhooks", `{"endpoint":"https://legacy.example.invalid/hook","secret_id":"`+secret.ID+`"}`, "custom", "")
-	expectSourceStatus(t, custom, 201)
-	var c Webhook
-	_ = json.Unmarshal(custom.Body.Bytes(), &c)
-	if !c.CustomEndpoint || c.SecretName != "shared" {
-		t.Fatal("custom endpoint not marked")
-	}
-
-	settingsRevision := func() string {
-		return `"` + itoa(int64(f.count(`SELECT COALESCE((SELECT revision FROM instance_settings WHERE instance_id=$1),1)`, f.instance))) + `"`
-	}
-	// The base URL setting lives on its own route; invalid values are rejected.
-	ops := http.NewServeMux()
-	RegisterOperations(ops, OpsDeps{Pool: f.db, Codec: NewCursorCodec(make([]byte, 32))})
-	RegisterWebhooks(ops, f.db, mustKeys(t))
-	f.handler = WithRequestID(ops)
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings/webhook-base-url", `{"value":"http://hooks.example.com/ant/"}`, "http", settingsRevision()), 400)
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings/webhook-base-url", `{"value":"https://user:pw@hooks.example.com/"}`, "cred", settingsRevision()), 400)
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings/webhook-base-url", `{"value":"https://hooks.example.com/ant"}`, "set", settingsRevision()), 200)
-	if got := f.count(`SELECT count(*) FROM instance_settings WHERE webhook_base_url='https://hooks.example.com/ant/'`); got != 1 {
-		t.Fatal("base URL not normalized with one trailing slash")
-	}
-	// PUT /settings does not reset the base URL.
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings", `{}`, "put", settingsRevision()), 200)
-	if f.count(`SELECT count(*) FROM instance_settings WHERE webhook_base_url IS NOT NULL`) != 1 {
-		t.Fatal("PUT /settings reset the webhook base URL")
-	}
-
-	// Slug validation and URL joining.
-	for _, bad := range []string{"Deploys", "dep_loys", "", strings.Repeat("a", 64), "a/b"} {
-		b, _ := json.Marshal(map[string]string{"name": bad, "secret_id": secret.ID})
-		expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", string(b), "bad-"+bad, ""), 400)
-	}
+	body := `{"name":"Deploys (prod)","endpoint":"https://hooks.example.com/ant/deploys","secret_id":"` + secret.ID + `"}`
 	created := f.request("POST", "/api/v1/webhooks", body, "good", "")
 	expectSourceStatus(t, created, 201)
 	var wh Webhook
 	_ = json.Unmarshal(created.Body.Bytes(), &wh)
-	if wh.Endpoint != "https://hooks.example.com/ant/deploys" || wh.CustomEndpoint || wh.Name != "deploys" {
-		t.Fatalf("resolved %+v", wh)
+	if wh.Endpoint != "https://hooks.example.com/ant/deploys" || wh.Name != "Deploys (prod)" || wh.SecretName != "shared" {
+		t.Fatalf("created %+v", wh)
 	}
-	expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", body, "dup-name", ""), 409)
-	// Slug change re-resolves; custom stays untouched on base changes.
-	patched := f.request("PATCH", "/api/v1/webhooks/"+wh.ID, `{"name":"releases"}`, "rename", `"1"`)
+	// The name is a display label, unique per instance regardless of case.
+	expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", strings.Replace(body, "Deploys (prod)", "deploys (PROD)", 1), "dup-name", ""), 409)
+	// The endpoint is required, https only and validated with the egress rules.
+	expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", `{"name":"slug-only","secret_id":"`+secret.ID+`"}`, "no-endpoint", ""), 400)
+	for _, bad := range []string{"http://hooks.example.com/x", "https://localhost/x", "https://10.0.0.1/x", "https://user:pw@hooks.example.com/x", "https://hooks.example.com/x?q=1"} {
+		b, _ := json.Marshal(map[string]string{"name": "bad", "endpoint": bad, "secret_id": secret.ID})
+		expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", string(b), "bad-"+bad, ""), 400)
+	}
+	for _, bad := range []string{" padded ", strings.Repeat("a", 101), "line\nbreak"} {
+		b, _ := json.Marshal(map[string]string{"name": bad, "endpoint": "https://hooks.example.com/x", "secret_id": secret.ID})
+		expectSourceStatus(t, f.request("POST", "/api/v1/webhooks", string(b), "badname-"+bad, ""), 400)
+	}
+	// Legacy shape: endpoint plus secret_id and no name gets a generated label.
+	legacy := f.request("POST", "/api/v1/webhooks", `{"endpoint":"https://legacy.example.invalid/hook","secret_id":"`+secret.ID+`"}`, "legacy", "")
+	expectSourceStatus(t, legacy, 201)
+	var l Webhook
+	_ = json.Unmarshal(legacy.Body.Bytes(), &l)
+	if !strings.HasPrefix(l.Name, "webhook-") {
+		t.Fatalf("generated name %q", l.Name)
+	}
+	// Rename and retarget in place.
+	patched := f.request("PATCH", "/api/v1/webhooks/"+wh.ID, `{"name":"Releases","endpoint":"https://hooks.example.com/ant/releases"}`, "edit", `"1"`)
 	expectSourceStatus(t, patched, 200)
-	if !strings.Contains(patched.Body.String(), "https://hooks.example.com/ant/releases") {
-		t.Fatal("rename did not re-resolve")
+	if !strings.Contains(patched.Body.String(), `"name":"Releases"`) || !strings.Contains(patched.Body.String(), "ant/releases") {
+		t.Fatalf("patch result %s", patched.Body.String())
 	}
-	// Base URL change re-resolves every slug webhook and audits it.
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings/webhook-base-url", `{"value":"https://new.example.com/h/"}`, "move-base", settingsRevision()), 200)
-	var endpoint string
-	_ = f.db.QueryRow(ctx, `SELECT endpoint FROM event_subscriptions WHERE id=$1`, wh.ID).Scan(&endpoint)
-	if endpoint != "https://new.example.com/h/releases" {
-		t.Fatalf("endpoint %s", endpoint)
-	}
-	var customEndpoint string
-	_ = f.db.QueryRow(ctx, `SELECT endpoint FROM event_subscriptions WHERE id=$1`, c.ID).Scan(&customEndpoint)
-	if customEndpoint != "https://legacy.example.invalid/hook" || f.count(`SELECT count(*) FROM audit_events WHERE action='webhook.reresolve' AND resource_id=$1`, wh.ID) != 1 {
-		t.Fatal("custom endpoint changed or re-resolution unaudited")
-	}
-	// Clearing leaves resolved endpoints in place.
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings/webhook-base-url", `{"value":""}`, "clear", settingsRevision()), 200)
-	_ = f.db.QueryRow(ctx, `SELECT endpoint FROM event_subscriptions WHERE id=$1`, wh.ID).Scan(&endpoint)
-	if endpoint != "https://new.example.com/h/releases" {
-		t.Fatal("clearing the base URL rewrote endpoints")
-	}
+	expectSourceStatus(t, f.request("PATCH", "/api/v1/webhooks/"+wh.ID, `{"endpoint":"http://hooks.example.com/x"}`, "edit-bad", `"2"`), 400)
+	// slug-mode leftovers are no longer fields.
+	expectSourceStatus(t, f.request("PATCH", "/api/v1/webhooks/"+wh.ID, `{"custom_endpoint":false}`, "edit-old", `"2"`), 400)
+}
 
-	// Env lock: the environment value wins and the setting is read-only.
-	locked := http.NewServeMux()
-	RegisterOperations(locked, OpsDeps{Pool: f.db, Codec: NewCursorCodec(make([]byte, 32)), Env: []EnvSetting{{Key: "webhook_base_url", Value: "https://env.example.com/e/"}}})
-	RegisterWebhooks(locked, f.db, mustKeys(t), WebhookOptions{BaseURL: "https://env.example.com/e/"})
-	f.handler = WithRequestID(locked)
-	expectSourceStatus(t, f.request("PUT", "/api/v1/settings/webhook-base-url", `{"value":"https://other.example.com/"}`, "locked", settingsRevision()), 409)
-	envHook := f.request("POST", "/api/v1/webhooks", `{"name":"fromenv","secret_id":"`+secret.ID+`"}`, "env", "")
-	expectSourceStatus(t, envHook, 201)
-	if !strings.Contains(envHook.Body.String(), "https://env.example.com/e/fromenv") {
-		t.Fatal("env base URL not used")
+// The webhook base URL setting and its route are gone.
+func TestWebhookBaseURLRemoved(t *testing.T) {
+	f, _ := webhookHTTPFixture(t)
+	ops := http.NewServeMux()
+	RegisterOperations(ops, OpsDeps{Pool: f.db, Codec: NewCursorCodec(make([]byte, 32))})
+	RegisterWebhooks(ops, f.db, mustKeys(t))
+	f.handler = WithRequestID(ops)
+	// Not in the API contract any more, so bypass the response validator.
+	raw := httptest.NewRequest("PUT", "http://example.test/api/v1/settings/webhook-base-url", strings.NewReader(`{"value":"https://hooks.example.com/"}`))
+	raw.Header.Set("Authorization", "Bearer "+f.credential)
+	raw.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	f.handler.ServeHTTP(rec, raw)
+	if rec.Code != 404 && rec.Code != 405 {
+		t.Fatalf("base URL route still served: %d", rec.Code)
 	}
 	got := f.request("GET", "/api/v1/settings", "", "", "")
 	expectSourceStatus(t, got, 200)
-	if !strings.Contains(got.Body.String(), `"webhook_base_url"`) || !strings.Contains(got.Body.String(), `"source":"env"`) {
-		t.Fatal("env-locked setting not reported")
-	}
-	n, err := ReconcileWebhookEndpoints(ctx, f.db, f.instance, "https://env.example.com/e/", false)
-	if err != nil || n != 1 {
-		t.Fatalf("reconcile moved %d (%v)", n, err)
+	if strings.Contains(got.Body.String(), "webhook_base_url") {
+		t.Fatal("settings still report the webhook base URL")
 	}
 }
 

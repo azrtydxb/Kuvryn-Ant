@@ -4,7 +4,6 @@ import { isUnavailable, useOptionalCall } from "./gaps";
 import type { Go } from "./App";
 import type { Webhook, WebhookDelivery, WebhookSecret } from "./generated";
 import {
-  Alert,
   Badge,
   Button,
   Drawer,
@@ -34,59 +33,37 @@ import {
   when,
 } from "./ui";
 
-const slugPattern = /^[a-z0-9-]{1,63}$/;
 const NEW_SECRET = "__new__";
 
-/** base + slug with exactly one slash between them; "" when there is no base. */
-export function previewURL(base: string, slug: string) {
-  if (!base) return "";
-  return `${base.replace(/\/+$/, "")}/${slug}`;
-}
-export function slugError(slug: string) {
-  if (!slug) return undefined;
-  return slugPattern.test(slug)
-    ? undefined
-    : "Lowercase letters, digits and hyphens only, 1–63 characters.";
+/** A display label: 1–100 printable characters, no surrounding space. */
+export function nameError(name: string) {
+  if (!name) return undefined;
+  if (name !== name.trim()) return "No leading or trailing spaces.";
+  // eslint-disable-next-line no-control-regex
+  if (name.length > 100 || /[\u0000-\u001f\u007f]/.test(name))
+    return "1–100 printable characters.";
+  return undefined;
 }
 
-/** Instance webhook base URL from the settings endpoint ("" when unset). */
-function useBaseURL(client: Client) {
-  const s = useOptionalCall(client, "getSettings");
-  if (s.state === "loading") return { loading: true, base: "" };
-  if (s.state !== "ready") return { loading: false, base: "" };
-  return {
-    loading: false,
-    base: s.data.items.find((i) => i.key === "webhook_base_url")?.value ?? "",
-  };
+/** https URL without credentials, query or fragment (the server also checks egress rules). */
+export function endpointError(url: string) {
+  if (!url) return undefined;
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return "Enter a full URL such as https://hooks.example.com/ant.";
+  }
+  if (u.protocol !== "https:") return "Use https.";
+  if (u.username || u.password) return "No credentials in the URL.";
+  if (u.search || u.hash) return "No query string or fragment.";
+  return undefined;
 }
 
 function useSecrets(client: Client) {
   return useResource(
     () => client.call("listWebhookSecrets", { query: { limit: "200" } }),
     [client],
-  );
-}
-
-/** URL the slug resolves to, copyable, with the validation message beneath. */
-export function UrlPreview({ base, slug }: { base: string; slug: string }) {
-  const error = slugError(slug);
-  const url = previewURL(base, slug || "<name>");
-  return (
-    <div className="stack" data-testid="url-preview">
-      <span className="muted small">Delivery URL</span>
-      <div className="row spread">
-        {slug && !error ? (
-          <Copyable text={url} label="Copy delivery URL" />
-        ) : (
-          <Mono muted>{url}</Mono>
-        )}
-      </div>
-      {error && (
-        <small role="alert" className="bad">
-          {error}
-        </small>
-      )}
-    </div>
   );
 }
 
@@ -160,7 +137,7 @@ export function Webhooks({ client, go }: { client: Client; go?: Go }) {
       <PageHeading
         eyebrow="Integrations"
         title="Webhooks"
-        text="Signed event delivery to public HTTPS endpoints. Configuration does not test connectivity."
+        text="Signed event delivery to public HTTPS endpoints. Webhooks are configured here only; configuration does not test connectivity."
       >
         <Button
           variant="secondary"
@@ -197,10 +174,7 @@ export function Webhooks({ client, go }: { client: Client; go?: Go }) {
                         setOpen(w.id);
                       }}
                     >
-                      {w.name || "Custom endpoint"}
-                      {w.custom_endpoint && w.name && (
-                        <small>custom endpoint</small>
-                      )}
+                      {w.name}
                     </button>
                   ),
                 },
@@ -270,7 +244,6 @@ export function Webhooks({ client, go }: { client: Client; go?: Go }) {
       {creating && (
         <CreateWebhook
           client={client}
-          go={go}
           secrets={secrets.value?.data.items ?? []}
           reloadSecrets={secrets.reload}
           onClose={() => setCreating(false)}
@@ -302,35 +275,32 @@ export function Webhooks({ client, go }: { client: Client; go?: Go }) {
 
 function CreateWebhook({
   client,
-  go,
   secrets,
   reloadSecrets,
   onClose,
   done,
 }: {
   client: Client;
-  go?: Go;
   secrets: WebhookSecret[];
   reloadSecrets: () => void;
   onClose: () => void;
   done: () => void;
 }) {
-  const { base, loading } = useBaseURL(client);
-  const [custom, setCustom] = useState(false);
-  const [slug, setSlug] = useState("");
+  const [name, setName] = useState("");
   const [endpoint, setEndpoint] = useState("");
   const [secretId, setSecretId] = useState("");
   const action = useAction();
   const toast = useToast();
-  // Without a base URL only the custom endpoint (administrator) mode can work.
-  const slugMode = !!base && !custom;
-  const valid = slugMode
-    ? slugPattern.test(slug) && !!secretId
-    : !!endpoint && !!secretId;
+  const valid =
+    !!name.trim() &&
+    !nameError(name) &&
+    !!endpoint &&
+    !endpointError(endpoint) &&
+    !!secretId;
   return (
     <Modal
       title="Create webhook"
-      description="Named webhooks deliver to the instance webhook base URL plus the name, signed with a shared signing secret."
+      description="Deliver signed events to a public HTTPS URL. The name is only a label."
       onClose={onClose}
       actions={
         <>
@@ -340,7 +310,7 @@ function CreateWebhook({
           <Button
             form="create-webhook"
             type="submit"
-            disabled={action.busy || loading || !valid}
+            disabled={action.busy || !valid}
           >
             {action.busy ? "Saving…" : "Create webhook"}
           </Button>
@@ -354,61 +324,35 @@ function CreateWebhook({
           e.preventDefault();
           const ok = await action.run(() =>
             client.call("createWebhook", {
-              body: slugMode
-                ? { name: slug, secret_id: secretId }
-                : { endpoint, secret_id: secretId },
+              body: { name, endpoint, secret_id: secretId },
             }),
           );
           if (ok) {
-            toast(
-              "Webhook created",
-              slugMode ? previewURL(base, slug) : endpoint,
-            );
+            toast("Webhook created", name);
             done();
           }
         }}
       >
-        {!loading && !base && (
-          <Alert tone="info" title="No webhook base URL configured">
-            Named webhooks need a base URL such as
-            https://hooks.example.com/ant/.{" "}
-            <Button
-              size="sm"
-              variant="ghost"
-              type="button"
-              onClick={() => go?.("settings")}
-            >
-              Open Settings
-            </Button>{" "}
-            Until then you can use a custom endpoint.
-          </Alert>
-        )}
-        {slugMode ? (
-          <>
-            <Input
-              label="Name"
-              required
-              mono
-              maxLength={63}
-              value={slug}
-              onChange={val(setSlug)}
-              error={slugError(slug)}
-              hint="Lowercase letters, digits and hyphens."
-            />
-            <UrlPreview base={base} slug={slug} />
-          </>
-        ) : (
-          <Input
-            label="Webhook endpoint"
-            type="url"
-            mono
-            required
-            maxLength={2048}
-            value={endpoint}
-            onChange={val(setEndpoint)}
-            hint="Custom endpoint: a public HTTPS URL without credentials, query or fragment."
-          />
-        )}
+        <Input
+          label="Name"
+          required
+          maxLength={100}
+          value={name}
+          onChange={val(setName)}
+          error={nameError(name)}
+          hint="A label for this webhook, unique on this instance."
+        />
+        <Input
+          label="Webhook URL"
+          type="url"
+          mono
+          required
+          maxLength={2048}
+          value={endpoint}
+          onChange={val(setEndpoint)}
+          error={endpointError(endpoint)}
+          hint="Public HTTPS URL without credentials, query or fragment."
+        />
         <SecretSelect
           client={client}
           secrets={secrets}
@@ -416,14 +360,6 @@ function CreateWebhook({
           onChange={setSecretId}
           reload={reloadSecrets}
         />
-        {!!base && (
-          <Switch
-            label="Use a custom endpoint instead"
-            labelPosition="end"
-            checked={custom}
-            onChange={chk(setCustom)}
-          />
-        )}
         <Failure error={action.error} />
       </form>
     </Modal>
@@ -447,23 +383,26 @@ function WebhookDrawer({
   onClose: () => void;
   reload: () => void;
 }) {
-  const { base } = useBaseURL(client);
   const [enabled, setEnabled] = useState(item.enabled);
-  const [slug, setSlug] = useState(item.name ?? "");
+  const [name, setName] = useState(item.name);
+  const [endpoint, setEndpoint] = useState(item.endpoint);
   const [secretId, setSecretId] = useState(item.secret_id ?? "");
   const [rotating, setRotating] = useState(false);
   const save = useAction();
   const toast = useToast();
   const etag = requireETag(`"${item.revision}"`);
   const secret = secrets.find((s) => s.id === item.secret_id);
-  const slugChanged = !item.custom_endpoint && slug !== (item.name ?? "");
+  const nameChanged = name !== item.name;
+  const endpointChanged = endpoint !== item.endpoint;
   const secretChanged = secretId !== (item.secret_id ?? "");
-  const dirty = enabled !== item.enabled || slugChanged || secretChanged;
-  const slugBad = slugChanged && !slugPattern.test(slug);
+  const dirty =
+    enabled !== item.enabled || nameChanged || endpointChanged || secretChanged;
+  const bad =
+    !name.trim() || !!nameError(name) || !endpoint || !!endpointError(endpoint);
   return (
     <Drawer
       open
-      title={item.name || item.endpoint}
+      title={item.name}
       description={<Copyable text={item.id} />}
       onClose={onClose}
       width={640}
@@ -501,10 +440,6 @@ function WebhookDrawer({
               "Inline (legacy)"
             ),
           },
-          {
-            label: "Endpoint",
-            value: item.custom_endpoint ? "Custom endpoint" : "Named",
-          },
           { label: "Revision", value: item.revision, mono: true },
           { label: "Created", value: when(item.created_at) },
           {
@@ -527,32 +462,34 @@ function WebhookDrawer({
               etag,
               body: {
                 ...(enabled !== item.enabled ? { enabled } : {}),
-                ...(slugChanged ? { name: slug } : {}),
+                ...(nameChanged ? { name } : {}),
+                ...(endpointChanged ? { endpoint } : {}),
                 ...(secretChanged && secretId ? { secret_id: secretId } : {}),
               },
             }),
           );
           if (ok) {
-            toast("Webhook saved", item.name || item.endpoint);
+            toast("Webhook saved", name);
             reload();
           }
         }}
       >
-        {!item.custom_endpoint && (
-          <>
-            <Input
-              label="Name"
-              mono
-              maxLength={63}
-              value={slug}
-              onChange={val(setSlug)}
-              error={slugChanged ? slugError(slug) : undefined}
-            />
-            {slugChanged && !slugBad && base && (
-              <UrlPreview base={base} slug={slug} />
-            )}
-          </>
-        )}
+        <Input
+          label="Name"
+          maxLength={100}
+          value={name}
+          onChange={val(setName)}
+          error={nameChanged ? nameError(name) : undefined}
+        />
+        <Input
+          label="Webhook URL"
+          type="url"
+          mono
+          maxLength={2048}
+          value={endpoint}
+          onChange={val(setEndpoint)}
+          error={endpointChanged ? endpointError(endpoint) : undefined}
+        />
         <SecretSelect
           client={client}
           secrets={secrets}
@@ -571,7 +508,7 @@ function WebhookDrawer({
             type="submit"
             size="sm"
             variant="secondary"
-            disabled={save.busy || !dirty || slugBad}
+            disabled={save.busy || !dirty || bad}
           >
             {save.busy ? "Saving…" : "Save webhook"}
           </Button>

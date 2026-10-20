@@ -22,7 +22,6 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/denyaudit"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diagnostics"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/diskusage"
-	"github.com/azrtydxb/Kuvryn-Ant/internal/events"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/feedgraph"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/limits"
@@ -200,19 +199,8 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		logger.Error("browser login startup rejected")
 		return 1
 	}
-	if cfg.WebhookBaseURL != "" {
-		if _, e := events.NormalizeBaseURL(cfg.WebhookBaseURL, cfg.WebhookAllowHTTP); e != nil {
-			logger.Error("invalid ANT_WEBHOOK_BASE_URL")
-			return 1
-		}
-		if servingInstance != "" {
-			if n, e := management.ReconcileWebhookEndpoints(ctx, pool, servingInstance, cfg.WebhookBaseURL, cfg.WebhookAllowHTTP); e != nil {
-				logger.Error("webhook endpoint reconciliation failed")
-				return 1
-			} else if n > 0 {
-				logger.Info("webhook endpoints re-resolved against ANT_WEBHOOK_BASE_URL", "count", n)
-			}
-		}
+	if os.Getenv("ANT_WEBHOOK_BASE_URL") != "" {
+		logger.Warn("ANT_WEBHOOK_BASE_URL is no longer used: outgoing webhooks take a full target URL and are configured in the console")
 	}
 	webhookAllowHTTP = cfg.WebhookAllowHTTP
 	workers, err := startWorkers(ctx, pool, artifacts, cfg.SecretKeys, browser)
@@ -321,7 +309,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 			clientAuthDeps.Invalidate = clientAuth.Invalidate
 		}
 		management.RegisterClientAuth(mux, clientAuthDeps)
-		management.RegisterWebhooks(mux, pool, cfg.SecretKeys, management.WebhookOptions{BaseURL: cfg.WebhookBaseURL, AllowHTTP: cfg.WebhookAllowHTTP})
+		management.RegisterWebhooks(mux, pool, cfg.SecretKeys, management.WebhookOptions{AllowHTTP: cfg.WebhookAllowHTTP})
 		management.RegisterOperations(mux, ops.deps(management.NewCursorCodec(cfg.RootKey)))
 		management.RegisterFederation(mux, pool, fed.service())
 		management.RegisterFederationSearch(mux, pool, fed.service(), management.NewCursorCodec(cfg.RootKey))

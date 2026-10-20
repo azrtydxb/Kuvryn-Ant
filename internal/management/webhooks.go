@@ -2,10 +2,12 @@ package management
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/database"
@@ -16,19 +18,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Webhook is one delivery subscription. Endpoint is always the resolved URL that
-// is delivered to. A slug webhook (CustomEndpoint false) has Endpoint =
-// webhook base URL + Name; a custom-endpoint webhook keeps a free-form URL.
+// Webhook is one outgoing delivery subscription. Name is a unique display
+// label; Endpoint is the full https URL that is delivered to.
 type Webhook struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name,omitempty"`
-	Endpoint       string    `json:"endpoint"`
-	CustomEndpoint bool      `json:"custom_endpoint"`
-	SecretID       string    `json:"secret_id,omitempty"`
-	SecretName     string    `json:"secret_name,omitempty"`
-	Enabled        bool      `json:"enabled"`
-	Revision       int64     `json:"revision"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Endpoint   string    `json:"endpoint"`
+	SecretID   string    `json:"secret_id,omitempty"`
+	SecretName string    `json:"secret_name,omitempty"`
+	Enabled    bool      `json:"enabled"`
+	Revision   int64     `json:"revision"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 type WebhookDelivery struct {
 	EventID     int64      `json:"event_id"`
@@ -41,8 +41,6 @@ type WebhookDelivery struct {
 
 // WebhookOptions carries deployment policy for webhook configuration.
 type WebhookOptions struct {
-	// BaseURL, when set (ANT_WEBHOOK_BASE_URL), overrides the stored setting.
-	BaseURL string
 	// AllowHTTP permits plain http destinations (ANT_WEBHOOK_ALLOW_HTTP).
 	AllowHTTP bool
 }
@@ -52,12 +50,12 @@ type webhookHandlers struct {
 	opts WebhookOptions
 }
 
-const webhookSelect = `SELECT s.id::text,COALESCE(s.name,''),s.endpoint,s.custom_endpoint,COALESCE(s.signing_secret_id::text,''),COALESCE(w.name,''),s.enabled,s.revision,s.created_at
+const webhookSelect = `SELECT s.id::text,s.name,s.endpoint,COALESCE(s.signing_secret_id::text,''),COALESCE(w.name,''),s.enabled,s.revision,s.created_at
  FROM event_subscriptions s LEFT JOIN webhook_signing_secrets w ON w.instance_id=s.instance_id AND w.id=s.signing_secret_id`
 
 func scanWebhook(row rowScanner) (Webhook, error) {
 	var item Webhook
-	err := row.Scan(&item.ID, &item.Name, &item.Endpoint, &item.CustomEndpoint, &item.SecretID, &item.SecretName, &item.Enabled, &item.Revision, &item.CreatedAt)
+	err := row.Scan(&item.ID, &item.Name, &item.Endpoint, &item.SecretID, &item.SecretName, &item.Enabled, &item.Revision, &item.CreatedAt)
 	return item, err
 }
 
@@ -84,44 +82,6 @@ func webhookInput(w http.ResponseWriter, r *http.Request) {
 	Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid webhook configuration")
 }
 
-// webhookBaseURL returns the effective, normalized webhook base URL: the
-// deployment override when set, else the stored instance setting. "" means none.
-func webhookBaseURL(ctx context.Context, q dbQuerier, instance, env string) (string, error) {
-	raw := env
-	if raw == "" {
-		var stored *string
-		err := q.QueryRow(ctx, `SELECT webhook_base_url FROM instance_settings WHERE instance_id=$1`, instance).Scan(&stored)
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return "", err
-		}
-		if stored != nil {
-			raw = *stored
-		}
-	}
-	return raw, nil
-}
-
-func (h webhookHandlers) resolve(ctx context.Context, instance, name string) (string, error) {
-	base, err := webhookBaseURL(ctx, h.db, instance, h.opts.BaseURL)
-	if err != nil {
-		return "", err
-	}
-	if base == "" {
-		return "", errWebhookBaseMissing
-	}
-	return events.ResolveEndpoint(base, name, h.opts.AllowHTTP)
-}
-func (h webhookHandlers) resolveFailure(w http.ResponseWriter, r *http.Request, err error) {
-	if errors.Is(err, errWebhookBaseMissing) {
-		Error(w, r, 409, api.ErrorCodeConflict, "webhook base URL is not configured; set it in Settings or use a custom endpoint")
-		return
-	}
-	if errors.Is(err, events.ErrConfiguration) {
-		webhookInput(w, r)
-		return
-	}
-	identityError(w, r, err)
-}
 func (h webhookHandlers) list(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
 	if !ok {
@@ -163,10 +123,23 @@ func (h webhookHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}{items, next})
 }
 
-// create accepts two shapes. Slug mode ({name, secret_id}) delivers to the
-// webhook base URL + name. Custom mode ({endpoint, secret_id | secret}) keeps a
-// free-form endpoint, the administrator escape hatch and the legacy shape; an
-// inline secret there is stored as a new signing secret named webhook-<id prefix>.
+// validWebhookName accepts a display label: 1 to 100 bytes of printable text.
+func validWebhookName(name string) bool {
+	if name != strings.TrimSpace(name) || name == "" || len(name) > 100 || !utf8.ValidString(name) {
+		return false
+	}
+	for _, r := range name {
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
+}
+
+// create takes {name, endpoint, secret_id}. The endpoint is the full https
+// URL. For backward compatibility an inline secret ({endpoint, secret}) is
+// still accepted and stored as a new signing secret, and a missing name is
+// generated.
 func (h webhookHandlers) create(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
 	if !ok {
@@ -181,9 +154,12 @@ func (h webhookHandlers) create(w http.ResponseWriter, r *http.Request) {
 	if !sourceJSON(w, r, &input, "name", "secret_id", "endpoint", "secret") {
 		return
 	}
-	custom := input.Endpoint != ""
-	if input.Name != "" && !events.ValidSlug(input.Name) {
-		webhookInput(w, r)
+	if input.Name != "" && !validWebhookName(input.Name) {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "name must be 1 to 100 printable characters")
+		return
+	}
+	if input.Endpoint == "" {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "endpoint is required: the full https URL to deliver to")
 		return
 	}
 	if input.SecretID != "" {
@@ -193,35 +169,19 @@ func (h webhookHandlers) create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	var endpoint string
-	if custom {
-		var err error
-		if endpoint, err = events.ValidateEndpointFor(input.Endpoint, h.opts.AllowHTTP); err != nil {
-			webhookInput(w, r)
-			return
-		}
-		input.Endpoint = endpoint
-		if (input.SecretID == "") == (input.Secret == "") || (input.Secret != "" && !validSecretValue(input.Secret)) {
-			webhookInput(w, r)
-			return
-		}
-		if input.Secret != "" && h.keys == nil {
-			identityError(w, r, secrets.ErrKeyConfiguration)
-			return
-		}
-	} else {
-		if input.Name == "" || input.SecretID == "" {
-			webhookInput(w, r)
-			return
-		}
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-		var err error
-		endpoint, err = h.resolve(ctx, p.InstanceID, input.Name)
-		cancel()
-		if err != nil {
-			h.resolveFailure(w, r, err)
-			return
-		}
+	endpoint, err := events.ValidateEndpointFor(input.Endpoint, h.opts.AllowHTTP)
+	if err != nil {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "endpoint must be a public https URL without credentials, query or fragment")
+		return
+	}
+	input.Endpoint = endpoint
+	if (input.SecretID == "") == (input.Secret == "") || (input.Secret != "" && !validSecretValue(input.Secret)) {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "choose a signing secret (secret_id)")
+		return
+	}
+	if input.Secret != "" && h.keys == nil {
+		identityError(w, r, secrets.ErrKeyConfiguration)
+		return
 	}
 	// ExecuteMutation retains only the hash of this canonical (possibly secret-bearing)
 	// request and the public subscription result, never the input or ciphertext.
@@ -229,6 +189,10 @@ func (h webhookHandlers) create(w http.ResponseWriter, r *http.Request) {
 		var id string
 		if err := tx.QueryRow(ctx, `SELECT gen_random_uuid()::text`).Scan(&id); err != nil {
 			return nil, err
+		}
+		name := input.Name
+		if name == "" {
+			name = "webhook-" + id[:8]
 		}
 		signing := input.SecretID
 		if input.Secret != "" {
@@ -248,11 +212,7 @@ func (h webhookHandlers) create(w http.ResponseWriter, r *http.Request) {
 				return nil, err
 			}
 		}
-		var name any
-		if input.Name != "" {
-			name = input.Name
-		}
-		if _, err := tx.Exec(ctx, `INSERT INTO event_subscriptions(id,instance_id,name,endpoint,custom_endpoint,signing_secret_id) VALUES($1,$2,$3,$4,$5,$6)`, id, p.InstanceID, name, endpoint, custom, signing); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO event_subscriptions(id,instance_id,name,endpoint,signing_secret_id) VALUES($1,$2,$3,$4,$5)`, id, p.InstanceID, name, endpoint, signing); err != nil {
 			return nil, err
 		}
 		item, err := scanWebhook(tx.QueryRow(ctx, webhookSelect+` WHERE s.instance_id=$1 AND s.id=$2`, p.InstanceID, id))
@@ -280,9 +240,7 @@ func webhookLocked(ctx context.Context, tx pgx.Tx, instance, id string, expected
 	return item, *secretRef, nil
 }
 
-// patch changes enabled, the secret, the slug or the endpoint. Setting endpoint
-// makes the webhook custom; custom_endpoint=false returns it to slug mode (needs a
-// name and a configured base URL); a slug change re-resolves the endpoint.
+// patch changes enabled, the display name, the signing secret or the endpoint.
 func (h webhookHandlers) patch(w http.ResponseWriter, r *http.Request) {
 	p, ok := h.admin(w, r)
 	if !ok {
@@ -293,21 +251,20 @@ func (h webhookHandlers) patch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input struct {
-		Enabled        *bool   `json:"enabled"`
-		Name           *string `json:"name"`
-		SecretID       *string `json:"secret_id"`
-		Endpoint       *string `json:"endpoint"`
-		CustomEndpoint *bool   `json:"custom_endpoint"`
+		Enabled  *bool   `json:"enabled"`
+		Name     *string `json:"name"`
+		SecretID *string `json:"secret_id"`
+		Endpoint *string `json:"endpoint"`
 	}
-	if !sourceJSON(w, r, &input, "enabled", "name", "secret_id", "endpoint", "custom_endpoint") {
+	if !sourceJSON(w, r, &input, "enabled", "name", "secret_id", "endpoint") {
 		return
 	}
-	if input.Enabled == nil && input.Name == nil && input.SecretID == nil && input.Endpoint == nil && input.CustomEndpoint == nil {
+	if input.Enabled == nil && input.Name == nil && input.SecretID == nil && input.Endpoint == nil {
 		webhookInput(w, r)
 		return
 	}
-	if input.Name != nil && !events.ValidSlug(*input.Name) {
-		webhookInput(w, r)
+	if input.Name != nil && !validWebhookName(*input.Name) {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "name must be 1 to 100 printable characters")
 		return
 	}
 	if input.SecretID != nil {
@@ -318,60 +275,22 @@ func (h webhookHandlers) patch(w http.ResponseWriter, r *http.Request) {
 		}
 		input.SecretID = &canonical
 	}
-	if input.Endpoint != nil && input.CustomEndpoint != nil && !*input.CustomEndpoint {
-		webhookInput(w, r)
-		return
-	}
-	// Plan outside the transaction (validation errors need distinct statuses);
-	// the transaction re-checks the revision under row lock, so a changed row is a 412.
-	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
-	current, err := scanWebhook(h.db.QueryRow(ctx, webhookSelect+` WHERE s.instance_id=$1 AND s.id=$2`, p.InstanceID, id))
-	if err != nil {
-		cancel()
-		identityError(w, r, identityDBError(err))
-		return
-	}
-	next := current
-	if input.Enabled != nil {
-		next.Enabled = *input.Enabled
-	}
-	if input.Name != nil {
-		next.Name = *input.Name
-	}
+	var endpoint *string
 	if input.Endpoint != nil {
-		var verr error
-		if next.Endpoint, verr = events.ValidateEndpointFor(*input.Endpoint, h.opts.AllowHTTP); verr != nil {
-			cancel()
-			webhookInput(w, r)
+		v, verr := events.ValidateEndpointFor(*input.Endpoint, h.opts.AllowHTTP)
+		if verr != nil {
+			Error(w, r, 400, api.ErrorCodeInvalidRequest, "endpoint must be a public https URL without credentials, query or fragment")
 			return
 		}
-		next.CustomEndpoint = true
-	} else if input.CustomEndpoint != nil {
-		next.CustomEndpoint = *input.CustomEndpoint
+		endpoint = &v
 	}
-	if !next.CustomEndpoint {
-		if next.Name == "" {
-			cancel()
-			webhookInput(w, r)
-			return
-		}
-		if next.Name != current.Name || current.CustomEndpoint {
-			if next.Endpoint, err = h.resolve(ctx, p.InstanceID, next.Name); err != nil {
-				cancel()
-				h.resolveFailure(w, r, err)
-				return
-			}
-		}
-	}
-	cancel()
 	h.mutate(w, r, p, "webhook.patch", id, struct {
-		Enabled        *bool
-		Name           *string
-		SecretID       *string
-		Endpoint       *string
-		CustomEndpoint *bool
-		Revision       int64
-	}{input.Enabled, input.Name, input.SecretID, input.Endpoint, input.CustomEndpoint, revision}, 200, func(ctx context.Context, tx pgx.Tx) (any, error) {
+		Enabled  *bool
+		Name     *string
+		SecretID *string
+		Endpoint *string
+		Revision int64
+	}{input.Enabled, input.Name, input.SecretID, endpoint, revision}, 200, func(ctx context.Context, tx pgx.Tx) (any, error) {
 		if _, _, err := webhookLocked(ctx, tx, p.InstanceID, id, revision); err != nil {
 			return nil, err
 		}
@@ -383,12 +302,8 @@ func (h webhookHandlers) patch(w http.ResponseWriter, r *http.Request) {
 			}
 			signing = *input.SecretID
 		}
-		var name any
-		if next.Name != "" {
-			name = next.Name
-		}
 		// A signing secret supersedes any legacy inline reference.
-		if _, err := tx.Exec(ctx, `UPDATE event_subscriptions SET enabled=$4,name=$5,endpoint=$6,custom_endpoint=$7,signing_secret_id=COALESCE($8::uuid,signing_secret_id),secret_ref=CASE WHEN $8::uuid IS NULL THEN secret_ref ELSE NULL END,revision=revision+1 WHERE instance_id=$1 AND id=$2 AND revision=$3`, p.InstanceID, id, revision, next.Enabled, name, next.Endpoint, next.CustomEndpoint, signing); err != nil {
+		if _, err := tx.Exec(ctx, `UPDATE event_subscriptions SET enabled=COALESCE($4,enabled),name=COALESCE($5,name),endpoint=COALESCE($6,endpoint),signing_secret_id=COALESCE($7::uuid,signing_secret_id),secret_ref=CASE WHEN $7::uuid IS NULL THEN secret_ref ELSE NULL END,revision=revision+1 WHERE instance_id=$1 AND id=$2 AND revision=$3`, p.InstanceID, id, revision, input.Enabled, input.Name, endpoint, signing); err != nil {
 			return nil, err
 		}
 		item, err := scanWebhook(tx.QueryRow(ctx, webhookSelect+` WHERE s.instance_id=$1 AND s.id=$2`, p.InstanceID, id))

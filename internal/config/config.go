@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -25,10 +24,7 @@ type Config struct {
 	Storage     storage.Config
 	InstanceID  string
 	PublicURL   string
-	// WebhookBaseURL (ANT_WEBHOOK_BASE_URL) pins the webhook base URL and makes
-	// the setting read-only in the console. WebhookAllowHTTP (ANT_WEBHOOK_ALLOW_HTTP)
-	// lets webhook destinations use plain http.
-	WebhookBaseURL   string
+	// WebhookAllowHTTP (ANT_WEBHOOK_ALLOW_HTTP) lets webhook destinations use plain http.
 	WebhookAllowHTTP bool
 	Listen           string
 	Database         *pgxpool.Config
@@ -134,7 +130,6 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	c.InstanceID = getenv("ANT_INSTANCE_ID")
 	c.PublicURL = getenv("ANT_PUBLIC_URL")
-	c.WebhookBaseURL = strings.TrimSpace(getenv("ANT_WEBHOOK_BASE_URL"))
 	if value := getenv("ANT_WEBHOOK_ALLOW_HTTP"); value != "" {
 		c.WebhookAllowHTTP, err = strconv.ParseBool(value)
 		if err != nil {

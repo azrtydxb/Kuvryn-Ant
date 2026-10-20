@@ -10,7 +10,6 @@ import {
 } from "@testing-library/react";
 import { Identity } from "./Identity";
 import { Webhooks } from "./Webhooks";
-import { SettingsPage } from "./Settings";
 import { ToastProvider } from "./ui";
 import { Client } from "./api";
 import { json, mockAPI, type Call } from "./testkit";
@@ -39,7 +38,6 @@ const hook = {
   id: "aaaaaaaa-0000-0000-0000-000000000001",
   name: "deploys",
   endpoint: "https://hooks.example.com/ant/deploys",
-  custom_endpoint: false,
   secret_id: prod.id,
   secret_name: "production",
   enabled: true,
@@ -58,26 +56,10 @@ const created = {
 
 let calls: Call[];
 let secrets = [prod];
-let base = "https://hooks.example.com/ant/";
 function install() {
   const api = mockAPI((url, init) => {
     const path = url.split("?")[0];
     const method = init.method ?? "GET";
-    if (path === "/api/v1/settings")
-      return json({
-        revision: 2,
-        items: base
-          ? [
-              {
-                key: "webhook_base_url",
-                value: base,
-                source: "stored",
-                read_only: false,
-                enforced: true,
-              },
-            ]
-          : [],
-      });
     if (path === "/api/v1/webhooks" && method === "GET")
       return json({ items: [hook] });
     if (path === "/api/v1/webhook-secrets" && method === "GET")
@@ -95,7 +77,6 @@ function install() {
 }
 beforeEach(() => {
   secrets = [prod];
-  base = "https://hooks.example.com/ant/";
   install();
 });
 afterEach(() => {
@@ -125,42 +106,39 @@ it("lists signing secrets under Access with usage and actions", async () => {
   ).toBeTruthy();
 });
 
-it("shows the live delivery URL preview and inline slug errors", async () => {
+it("validates the name and the full URL inline and creates with both", async () => {
   renderHooks();
   fireEvent.click(
     await screen.findByRole("button", { name: "Create webhook" }),
   );
   const dialog = await screen.findByRole("dialog", { name: "Create webhook" });
+  const create = within(dialog).getByRole("button", { name: "Create webhook" });
   const name = await within(dialog).findByLabelText("Name");
-  fireEvent.change(name, { target: { value: "build-events" } });
-  expect(within(dialog).getByTestId("url-preview").textContent).toContain(
-    "https://hooks.example.com/ant/build-events",
-  );
-  fireEvent.change(name, { target: { value: "Bad_Name" } });
-  expect(within(dialog).getByRole("alert").textContent).toMatch(/Lowercase/);
-  expect(
-    within(dialog).getByRole("button", { name: "Create webhook" }),
-  ).toHaveProperty("disabled", true);
-});
-
-it("explains a missing base URL and links to Settings", async () => {
-  base = "";
-  const go = vi.fn();
-  render(
-    <ToastProvider>
-      <Webhooks client={new Client("token")} go={go} />
-    </ToastProvider>,
-  );
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Create webhook" }),
-  );
-  const dialog = await screen.findByRole("dialog", { name: "Create webhook" });
-  await within(dialog).findByText(/No webhook base URL configured/);
-  expect(within(dialog).getByLabelText("Webhook endpoint")).toBeTruthy();
-  fireEvent.click(
-    within(dialog).getByRole("button", { name: "Open Settings" }),
-  );
-  expect(go).toHaveBeenCalledWith("settings");
+  const url = within(dialog).getByLabelText("Webhook URL");
+  // There is no slug, base URL or preview any more.
+  expect(within(dialog).queryByTestId("url-preview")).toBeNull();
+  fireEvent.change(name, { target: { value: "Build events" } });
+  fireEvent.change(url, { target: { value: "http://hooks.example.com/x" } });
+  expect(within(dialog).getByText("Use https.")).toBeTruthy();
+  fireEvent.change(url, {
+    target: { value: "https://u:p@hooks.example.com/x" },
+  });
+  expect(within(dialog).getByText(/No credentials/)).toBeTruthy();
+  fireEvent.change(url, {
+    target: { value: "https://hooks.example.com/ant/build" },
+  });
+  expect(create).toHaveProperty("disabled", true); // no signing secret yet
+  fireEvent.change(within(dialog).getByLabelText("Signing secret"), {
+    target: { value: prod.id },
+  });
+  expect(create).toHaveProperty("disabled", false);
+  fireEvent.click(create);
+  await waitFor(() => expect(writes("POST")).toHaveLength(1));
+  expect(JSON.parse(writes("POST")[0].init.body as string)).toEqual({
+    name: "Build events",
+    endpoint: "https://hooks.example.com/ant/build",
+    secret_id: prod.id,
+  });
 });
 
 it("creates a signing secret from the dropdown with the shared modal and selects it", async () => {
@@ -221,32 +199,4 @@ it("warns which other webhooks share a secret before rotating it", async () => {
   );
   const body = JSON.parse(writes("POST")[0].init.body as string);
   expect(body).toEqual({ grace_seconds: 0 });
-});
-
-it("edits the webhook base URL on its own route and honours the env lock", async () => {
-  render(
-    <ToastProvider>
-      <SettingsPage
-        client={new Client("token")}
-        notes={false}
-        setNotes={() => undefined}
-      />
-    </ToastProvider>,
-  );
-  const input = (await screen.findByLabelText(
-    "Webhooks base URL",
-  )) as HTMLInputElement;
-  expect(input.value).toBe("https://hooks.example.com/ant/");
-  fireEvent.change(input, {
-    target: { value: "http://insecure.example.com/" },
-  });
-  expect(screen.getByText(/Use an https URL/)).toBeTruthy();
-  fireEvent.change(input, { target: { value: "https://new.example.com/h/" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save base URL" }));
-  await waitFor(() => expect(writes("PUT")).toHaveLength(1));
-  const put = writes("PUT")[0];
-  expect(put.url).toBe("/api/v1/settings/webhook-base-url");
-  expect(JSON.parse(put.init.body as string)).toEqual({
-    value: "https://new.example.com/h/",
-  });
 });

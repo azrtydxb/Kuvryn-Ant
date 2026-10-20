@@ -18669,107 +18669,6 @@
         }
       }
     },
-    "/api/v1/settings/webhook-base-url": {
-      "put": {
-        "operationId": "putWebhookBaseUrl",
-        "description": "Requires instance admin. Sets or clears (empty value) the webhook base URL and re-resolves every slug webhook in the same transaction, auditing each change; custom endpoints are untouched. Rejected with 409 when ANT_WEBHOOK_BASE_URL is set.",
-        "parameters": [
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 256
-            }
-          },
-          {
-            "name": "If-Match",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^\"[1-9][0-9]*\"$"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PutWebhookBaseUrl"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful response",
-            "headers": {
-              "X-Request-ID": {
-                "description": "Server-generated correlation identifier",
-                "schema": {
-                  "type": "string",
-                  "minLength": 16
-                }
-              },
-              "ETag": {
-                "description": "Quoted positive revision",
-                "schema": {
-                  "type": "string",
-                  "pattern": "^\"[1-9][0-9]*\"$"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstanceSettings"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/Error"
-          },
-          "401": {
-            "$ref": "#/components/responses/Error"
-          },
-          "403": {
-            "$ref": "#/components/responses/Error"
-          },
-          "404": {
-            "$ref": "#/components/responses/Error"
-          },
-          "409": {
-            "$ref": "#/components/responses/Error"
-          },
-          "412": {
-            "$ref": "#/components/responses/Error"
-          },
-          "413": {
-            "$ref": "#/components/responses/Error"
-          },
-          "415": {
-            "$ref": "#/components/responses/Error"
-          },
-          "428": {
-            "$ref": "#/components/responses/Error"
-          },
-          "429": {
-            "$ref": "#/components/responses/Error"
-          },
-          "500": {
-            "$ref": "#/components/responses/Error"
-          },
-          "503": {
-            "$ref": "#/components/responses/Error"
-          }
-        }
-      }
-    },
     "/api/v1/tokens/cleanup": {
       "post": {
         "operationId": "cleanupTokens",
@@ -20162,8 +20061,8 @@
         "additionalProperties": false,
         "required": [
           "id",
+          "name",
           "endpoint",
-          "custom_endpoint",
           "enabled",
           "revision",
           "created_at"
@@ -20193,12 +20092,9 @@
           },
           "name": {
             "type": "string",
-            "pattern": "^[a-z0-9-]{1,63}$",
-            "description": "Slug appended to the webhook base URL."
-          },
-          "custom_endpoint": {
-            "type": "boolean",
-            "description": "True when endpoint is a free-form URL rather than base URL + name."
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display label, unique per instance (case-insensitive)."
           },
           "secret_id": {
             "type": "string",
@@ -20235,8 +20131,9 @@
         "properties": {
           "name": {
             "type": "string",
-            "pattern": "^[a-z0-9-]{1,63}$",
-            "description": "Slug mode: the endpoint becomes the webhook base URL + name (needs secret_id)."
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Display label, unique per instance (case-insensitive). Generated when omitted."
           },
           "secret_id": {
             "type": "string",
@@ -20246,7 +20143,7 @@
             "type": "string",
             "format": "uri",
             "maxLength": 2048,
-            "description": "Custom-endpoint escape hatch: HTTPS public destination, without credentials, query or fragment. Needs secret_id or secret."
+            "description": "Full HTTPS public destination URL, without credentials, query or fragment. Needs secret_id (or the legacy inline secret)."
           },
           "secret": {
             "type": "string",
@@ -20266,7 +20163,8 @@
           },
           "name": {
             "type": "string",
-            "pattern": "^[a-z0-9-]{1,63}$"
+            "minLength": 1,
+            "maxLength": 100
           },
           "secret_id": {
             "type": "string",
@@ -20276,10 +20174,6 @@
             "type": "string",
             "format": "uri",
             "maxLength": 2048
-          },
-          "custom_endpoint": {
-            "type": "boolean",
-            "description": "false returns the webhook to slug mode (needs a name and a base URL)."
           }
         }
       },
@@ -32479,20 +32373,6 @@
           },
           "deleted": {
             "type": "boolean"
-          }
-        }
-      },
-      "PutWebhookBaseUrl": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "value"
-        ],
-        "properties": {
-          "value": {
-            "type": "string",
-            "maxLength": 1900,
-            "description": "https base URL such as https://hooks.example.com/ant/, or empty to clear."
           }
         }
       },

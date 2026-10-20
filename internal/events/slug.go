@@ -35,29 +35,3 @@ func ValidateEndpointFor(raw string, allowHTTP bool) (string, error) {
 	}
 	return raw, nil
 }
-
-// NormalizeBaseURL validates a webhook base URL and returns it with exactly one
-// trailing slash, so base + slug never produces a double or missing slash.
-func NormalizeBaseURL(raw string, allowHTTP bool) (string, error) {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || len(raw) > 1900 {
-		return "", ErrConfiguration
-	}
-	base := strings.TrimRight(raw, "/") + "/"
-	if _, err := ValidateEndpointFor(base+"x", allowHTTP); err != nil {
-		return "", err
-	}
-	return base, nil
-}
-
-// ResolveEndpoint joins the base URL and slug and validates the result.
-func ResolveEndpoint(base, slug string, allowHTTP bool) (string, error) {
-	if !ValidSlug(slug) {
-		return "", ErrConfiguration
-	}
-	base, err := NormalizeBaseURL(base, allowHTTP)
-	if err != nil {
-		return "", err
-	}
-	return ValidateEndpointFor(base+slug, allowHTTP)
-}

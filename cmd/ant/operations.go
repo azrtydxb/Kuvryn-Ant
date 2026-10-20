@@ -131,10 +131,6 @@ func (o *operations) deps(codec management.CursorCodec) management.OpsDeps {
 			{Key: "replication_purge_interval", Value: o.cfg.Replication.Interval.String(), Description: "Replication history purge interval, 0s disables (ANT_REPLICATION_PURGE_INTERVAL)."},
 		},
 	}
-	d.WebhookAllowHTTP = o.cfg.WebhookAllowHTTP
-	if o.cfg.WebhookBaseURL != "" {
-		d.Env = append(d.Env, management.EnvSetting{Key: "webhook_base_url", Value: o.cfg.WebhookBaseURL, Description: "Base URL webhook names are appended to (ANT_WEBHOOK_BASE_URL)."})
-	}
 	if o.cfg.PublicURL != "" {
 		d.Env = append([]management.EnvSetting{{Key: "public_url", Value: o.cfg.PublicURL, Description: "Public origin of this instance (ANT_PUBLIC_URL)."}}, d.Env...)
 	}
