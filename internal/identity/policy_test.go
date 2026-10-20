@@ -83,3 +83,43 @@ func TestSourceAdministrationSelectorsAndTokenIntersection(t *testing.T) {
 		t.Fatal("feed-scoped token authorized independent source")
 	}
 }
+
+func TestCanSeeFeedMatchesDataPlane(t *testing.T) {
+	const inst, feed, other = "instance", "feed", "other"
+	art := func(feedID, ns string, effect Effect, actions ...Action) Grant {
+		return Grant{InstanceID: inst, Kind: ArtifactResource, FeedID: feedID, Namespace: ns, Effect: effect, Actions: actions}
+	}
+	policy := func(grants ...Grant) Policy {
+		return Policy{Roles: []Role{{Name: "r", PrincipalIDs: []string{"user"}, Grants: grants}}}
+	}
+	tok := func(scopes ...Scope) Principal {
+		return Principal{InstanceID: inst, PrincipalID: "user", TokenID: "t", Scopes: scopes}
+	}
+	cases := []struct {
+		name   string
+		policy Policy
+		p      Principal
+		feedID string
+		want   bool
+	}{
+		{"artifact grant with feed scope", policy(art(feed, "", Allow, Read, Publish, Delete)), tok(Scope{Actions: []Action{Read}}, Scope{FeedID: feed, Actions: []Action{Read, Publish}}), feed, true},
+		{"global read scope only", policy(art(feed, "", Allow, Read)), tok(Scope{Actions: []Action{Read}}), feed, true},
+		{"namespace limited grant", policy(art(feed, "org", Allow, Read, Publish)), tok(Scope{FeedID: feed, Actions: []Action{Read}}), feed, true},
+		{"namespace limited scope", policy(art(feed, "", Allow, Read)), tok(Scope{FeedID: feed, Namespace: "org", Actions: []Action{Read}}), feed, true},
+		{"publish only", policy(art(feed, "", Allow, Publish)), tok(Scope{FeedID: feed, Actions: []Action{Publish}}), feed, true},
+		{"other feed", policy(art(feed, "", Allow, Read)), tok(Scope{Actions: []Action{Read}}), other, false},
+		{"scope for other feed", policy(art(feed, "", Allow, Read)), tok(Scope{FeedID: other, Actions: []Action{Read}}), feed, false},
+		{"no grants", Policy{}, tok(Scope{Actions: []Action{Read}}), feed, false},
+		{"scope without matching action", policy(art(feed, "", Allow, Read)), tok(Scope{FeedID: feed, Actions: []Action{Delete}}), feed, false},
+		{"delete grant only", policy(art(feed, "", Allow, Delete)), tok(Scope{Actions: []Action{Delete}}), feed, false},
+		{"feed deny wins", policy(art(feed, "", Allow, Read), Grant{InstanceID: inst, Kind: FeedResource, FeedID: feed, Effect: Deny, Actions: []Action{Read}}), tok(Scope{Actions: []Action{Read}}), feed, false},
+		{"artifact deny wins", policy(art(feed, "", Allow, Read), art(feed, "", Deny, Read)), tok(Scope{Actions: []Action{Read}}), feed, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := c.policy.CanSeeFeed(c.p, inst, c.feedID); got != c.want {
+				t.Fatalf("got %v want %v", got, c.want)
+			}
+		})
+	}
+}
