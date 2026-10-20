@@ -3,7 +3,7 @@
 ## Model
 
 - A **signing secret** (`/api/v1/webhook-secrets`, console: Access, Signing secrets) is a named HMAC key: id, unique name, description, created/rotated times, revision and the webhooks using it. The value is encrypted at rest through `internal/secrets` (purpose `webhook`, key bound to instance and record id), is returned once by the create or rotate call that produced it, and is never readable again. An idempotent replay of create or rotate returns the metadata without the value.
-- A **webhook** references one signing secret. Named webhooks have a slug (`[a-z0-9-]`, 1 to 63 characters) and deliver to `webhook base URL + slug`. The resolved URL is stored in `endpoint`. **Custom-endpoint** webhooks keep a free-form HTTPS URL (administrator escape hatch, and every webhook that existed before migration 049).
+- A **webhook** references one signing secret. Named webhooks have a slug (`[a-z0-9-]`, 1 to 63 characters) and deliver to `webhook base URL + slug`. The resolved URL is stored in `endpoint`. **Custom-endpoint** webhooks keep a free-form HTTPS URL (administrator escape hatch, and every webhook that existed before migration 050).
 - Rotating a secret affects every webhook that uses it. Deleting one is refused with 409 while any webhook references it.
 
 ## Base URL
@@ -20,4 +20,4 @@ Each delivery is `POST` with `X-Ant-Event-ID`, `X-Ant-Timestamp` and `X-Ant-Sign
 
 ## Upgrade
 
-Migration 049 turns each inline webhook secret into a signing secret named `webhook-<first 8 characters of the webhook id>` that adopts the same ciphertext row, so signatures do not change. Those webhooks are marked custom. The legacy `endpoint` + `secret` create body and `PUT /api/v1/webhooks/{id}/secret` still work (the latter rotates the shared secret the webhook uses, without grace).
+Migration 050 turns each inline webhook secret into a signing secret named `webhook-<first 8 characters of the webhook id>` that adopts the same ciphertext row, so signatures do not change. Those webhooks are marked custom. The legacy `endpoint` + `secret` create body and `PUT /api/v1/webhooks/{id}/secret` still work (the latter rotates the shared secret the webhook uses, without grace).

@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// Migration 049 adopts each inline webhook secret as a signing secret named after
+// Migration 050 adopts each inline webhook secret as a signing secret named after
 // the webhook, reusing the same ciphertext row so delivery signatures are unchanged.
 func TestWebhookSigningSecretMigrationPreservesInlineSecrets(t *testing.T) {
 	pool := fixture(t)
@@ -16,12 +16,12 @@ func TestWebhookSigningSecretMigrationPreservesInlineSecrets(t *testing.T) {
 	}
 	var before []migration
 	for _, m := range definitions {
-		if m.name != "webhook_signing_secrets" && m.version < 49 {
+		if m.name != "webhook_signing_secrets" && m.version < 50 {
 			before = append(before, m)
 		}
 	}
 	if len(before) == len(definitions) {
-		t.Fatal("migration 049 missing")
+		t.Fatal("migration 050 missing")
 	}
 	if err = applyMigrations(ctx, pool, before); err != nil {
 		t.Fatal(err)
