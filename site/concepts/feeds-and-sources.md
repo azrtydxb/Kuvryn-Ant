@@ -49,18 +49,19 @@ Deleting a source is refused with `409` in these cases:
 
 A remote source proxies exactly one origin. The configuration (`RemoteSourceConfig`) is:
 
-| Field                                  | Meaning                                                                                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `origin`                               | HTTPS URL of the upstream registry root, for example `https://registry.npmjs.org` or `https://registry-1.docker.io`                                                       |
-| `redirect_origins`                     | Up to 16 additional origins the upstream redirects downloads to, or uses as a token realm: CDN hosts, `https://auth.docker.io`. They never receive the source credential. |
-| `credential_id`                        | Reference to the encrypted credential of this same source                                                                                                                 |
-| `ca_ref`                               | Operator-configured CA ID from `ANT_UPSTREAM_CA_MAP_FILE`. Never a path supplied in the request.                                                                          |
-| `allow_private`                        | Allow origins that resolve to private addresses                                                                                                                           |
-| `timeout_seconds`                      | 1 to 300. Bounds connecting and receiving response headers. Streaming bodies use idle timeouts instead.                                                                   |
-| `cache.metadata_ttl_seconds`           | 1 to 86400. How long mutable metadata (indexes, tags, packuments) is fresh.                                                                                               |
-| `cache.negative_ttl_seconds`           | 1 to 300. How long an upstream `404`/`410` is remembered.                                                                                                                 |
-| `cache.stale_if_error_seconds`         | 0 to 86400. How long expired metadata may still be served when the upstream fails.                                                                                        |
-| `cache.max_entries`, `cache.max_bytes` | Bounds of the in-process metadata cache (1 to 100000 entries, 1 KiB to 1 GiB)                                                                                             |
+| Field                                  | Meaning                                                                                                                                                                                             |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `origin`                               | HTTPS URL of the upstream registry root, for example `https://registry.npmjs.org` or `https://registry-1.docker.io`                                                                                 |
+| `redirect_origins`                     | Up to 16 additional origins the upstream redirects downloads to, or uses as a token realm: CDN hosts, `https://auth.docker.io`. They never receive the source credential.                           |
+| `credential_id`                        | Reference to the encrypted credential of this same source                                                                                                                                           |
+| `ca_ref`                               | Operator-configured CA ID from `ANT_UPSTREAM_CA_MAP_FILE`. Never a path supplied in the request.                                                                                                    |
+| `allow_private`                        | Allow origins that resolve to private addresses                                                                                                                                                     |
+| `timeout_seconds`                      | 1 to 300. Bounds connecting and receiving response headers. Streaming bodies use idle timeouts instead.                                                                                             |
+| `cache.metadata_ttl_seconds`           | 1 to 86400. How long mutable metadata (indexes, tags, packuments) is fresh.                                                                                                                         |
+| `cache.negative_ttl_seconds`           | 1 to 300. How long an upstream `404`/`410` is remembered.                                                                                                                                           |
+| `cache.stale_if_error_seconds`         | 0 to 86400. How long expired metadata may still be served when the upstream fails.                                                                                                                  |
+| `cache.max_entries`, `cache.max_bytes` | Bounds of the in-process metadata cache (1 to 100000 entries, 1 KiB to 1 GiB)                                                                                                                       |
+| `cache.max_metadata_bytes`             | Optional. Largest single metadata document held in memory (0 to 1 GiB, 0 = instance default of 24 MiB). Larger documents are streamed uncached where the format supports it, as for Conda repodata. |
 
 The credential (`{"authorization":"Bearer <upstream-token>"}` or `{"api_key":"..."}`, sent as `X-Api-Key`) is stored encrypted under a key bound to the source and is never returned or logged. `POST /api/v1/sources/{id}:test` performs one bounded `GET` of the origin with the stored configuration and records the result in `GET /api/v1/sources/{id}/health`. `DELETE /api/v1/sources/{id}/cache` purges what the source has cached.
 

@@ -27,7 +27,7 @@ spec:
               replaceFullPath: /console/
             statusCode: 302
     - matches:
-        {{- range list "/console" "/api" "/auth" "/v2" "/feeds" }}
+        {{- range list "/console" "/api" "/auth" "/v2" "/feeds" "/mcp" }}
         - path:
             type: PathPrefix
             value: {{ . }}

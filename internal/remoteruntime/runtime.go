@@ -72,16 +72,18 @@ type entry struct {
 	revision, credentialRevision int64
 	caHash                       [32]byte
 	cfg                          remoteconfig.Config
-	fetcher                      *upstream.Fetcher
-	cache                        *cache.Cache
-	ctx                          context.Context
-	cancel                       context.CancelFunc
-	users, loads                 int
-	retired                      bool
-	drained                      chan struct{}
-	used                         uint64
-	negMu                        sync.Mutex
-	negative                     map[negativeKey]time.Time
+	// metadataLimit is the largest document held in this source's cache.
+	metadataLimit int64
+	fetcher       *upstream.Fetcher
+	cache         *cache.Cache
+	ctx           context.Context
+	cancel        context.CancelFunc
+	users, loads  int
+	retired       bool
+	drained       chan struct{}
+	used          uint64
+	negMu         sync.Mutex
+	negative      map[negativeKey]time.Time
 }
 type negativeKey struct{ domain, identity, representation string }
 
@@ -161,7 +163,7 @@ func New(pool *pgxpool.Pool, instanceID string, keys *secrets.Keyring, o Options
 	if o.MaxMetadataBytes == 0 {
 		o.MaxMetadataBytes = 1 << 20
 	}
-	if o.MaxSources < 1 || o.MaxSources > 64 || o.MaxInflight < 1 || o.MaxInflight > 64 || o.MaxCacheEntries < o.MaxSources || o.MaxCacheEntries > 65536 || o.MaxCacheBytes < int64(o.MaxSources)*1024 || o.MaxCacheBytes > 1<<30 || o.MaxMetadataBytes < 1 || o.MaxMetadataBytes > 32<<20 || o.MaxMetadataBytes > o.MaxCacheBytes/int64(o.MaxSources) {
+	if o.MaxSources < 1 || o.MaxSources > 64 || o.MaxInflight < 1 || o.MaxInflight > 64 || o.MaxCacheEntries < o.MaxSources || o.MaxCacheEntries > 65536 || o.MaxCacheBytes < int64(o.MaxSources)*1024 || o.MaxCacheBytes > 1<<30 || o.MaxMetadataBytes < 1 || o.MaxMetadataBytes > 256<<20 || o.MaxMetadataBytes > o.MaxCacheBytes/int64(o.MaxSources) {
 		return nil, ErrInput
 	}
 	caFiles := map[string]string{}
@@ -387,6 +389,12 @@ func (m *Manager) acquire(ctx context.Context, source string) (*entry, error) {
 		}
 		quotaBytes := min(record.Config.Cache.MaxBytes, m.options.MaxCacheBytes/int64(m.options.MaxSources))
 		quotaEntries := min(record.Config.Cache.MaxEntries, m.options.MaxCacheEntries/m.options.MaxSources)
+		metadataLimit := m.options.MaxMetadataBytes
+		if configured := record.Config.Cache.MaxMetadataBytes; configured > 0 {
+			metadataLimit = configured
+		}
+		// A document that cannot fit the source's cache is never cached.
+		metadataLimit = min(metadataLimit, quotaBytes)
 		c, err := cache.New(cache.Config{MaxBytes: quotaBytes, MaxEntries: quotaEntries, MetadataTTL: time.Duration(record.Config.Cache.MetadataTTLSeconds) * time.Second, NegativeTTL: time.Duration(record.Config.Cache.NegativeTTLSeconds) * time.Second, StaleFor: time.Duration(record.Config.Cache.StaleIfErrorSeconds) * time.Second})
 		if err != nil {
 			fetcher.Close()
@@ -395,7 +403,7 @@ func (m *Manager) acquire(ctx context.Context, source string) (*entry, error) {
 		}
 		life, stop := context.WithCancel(context.Background())
 		m.tick++
-		e := &entry{revision: record.Revision, credentialRevision: credentialRevision, caHash: caHash, cfg: record.Config, fetcher: fetcher, cache: c, ctx: life, cancel: stop, users: 1, drained: make(chan struct{}), used: m.tick}
+		e := &entry{metadataLimit: metadataLimit, revision: record.Revision, credentialRevision: credentialRevision, caHash: caHash, cfg: record.Config, fetcher: fetcher, cache: c, ctx: life, cancel: stop, users: 1, drained: make(chan struct{}), used: m.tick}
 		m.entries[source] = e
 		m.mu.Unlock()
 		return e, nil
@@ -548,14 +556,14 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 		if response.StatusCode != 200 && response.StatusCode != 304 && response.StatusCode != 404 {
 			return cache.Value{}, ErrUnavailable
 		}
-		if response.ContentLength > m.options.MaxMetadataBytes {
+		if response.ContentLength > e.metadataLimit {
 			return cache.Value{}, ErrTooLarge
 		}
-		body, err := io.ReadAll(io.LimitReader(response.Body, m.options.MaxMetadataBytes+1))
+		body, err := io.ReadAll(io.LimitReader(response.Body, e.metadataLimit+1))
 		if err != nil {
 			return cache.Value{}, safeError(err)
 		}
-		if int64(len(body)) > m.options.MaxMetadataBytes {
+		if int64(len(body)) > e.metadataLimit {
 			return cache.Value{}, ErrTooLarge
 		}
 		return cache.Value{Status: response.StatusCode, Body: body, ETag: response.Header.Get("ETag"), LastModified: response.Header.Get("Last-Modified"), MediaType: response.Header.Get("Content-Type")}, nil

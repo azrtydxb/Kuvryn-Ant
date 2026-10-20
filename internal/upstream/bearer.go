@@ -1,6 +1,7 @@
 package upstream
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -342,5 +343,65 @@ func (f *Fetcher) bearerRetry(ctx context.Context, method string, u *url.URL, he
 		return nil, err
 	}
 	first.Body.Close()
-	return f.once(ctx, method, u, headers, "Bearer "+tok.value)
+	resp, err := f.once(ctx, method, u, headers, "Bearer "+tok.value)
+	if err != nil || resp.StatusCode != http.StatusUnauthorized || scopeFor(u.Path) == "" {
+		return resp, err
+	}
+	return scopeDenialAsNotFound(resp), nil
+}
+
+// scopeDenialAsNotFound maps the answer of a registry that accepted our token
+// but refuses the repository pull to 404. Docker Hub answers 401 rather than
+// 404 for a repository that does not exist (or that the caller may not see);
+// that is a negative answer about the repository, not a failure of the
+// source's credentials, so it must neither mark the source unhealthy nor stop
+// resolution. A token the registry calls invalid or expired, and a refused
+// token request (handled before this point), still surface as 401.
+func scopeDenialAsNotFound(resp *http.Response) *http.Response {
+	peek, _ := io.ReadAll(io.LimitReader(resp.Body, 8<<10))
+	resp.Body = &replayBody{Reader: io.MultiReader(bytes.NewReader(peek), resp.Body), Closer: resp.Body}
+	if !isScopeDenial(resp.Header.Values("WWW-Authenticate"), peek) {
+		return resp
+	}
+	resp.Body.Close()
+	body := `{"errors":[{"code":"NAME_UNKNOWN","message":"repository name not known to registry"}]}`
+	resp.StatusCode, resp.Status = http.StatusNotFound, "404 Not Found"
+	resp.Header = http.Header{"Content-Type": {"application/json"}}
+	resp.ContentLength = int64(len(body))
+	resp.Body = io.NopCloser(strings.NewReader(body))
+	return resp
+}
+
+type replayBody struct {
+	io.Reader
+	io.Closer
+}
+
+// isScopeDenial recognizes the registry token-auth answer for a missing or
+// unreadable repository: an insufficient_scope challenge error, or, with no
+// error named, the distribution UNAUTHORIZED error code.
+func isScopeDenial(challenges []string, body []byte) bool {
+	for _, v := range challenges {
+		lower := strings.ToLower(v)
+		if strings.Contains(lower, `error="insufficient_scope"`) {
+			return true
+		}
+		if strings.Contains(lower, "error=") {
+			return false // invalid_token and friends are credential failures
+		}
+	}
+	var doc struct {
+		Errors []struct {
+			Code string `json:"code"`
+		} `json:"errors"`
+	}
+	if json.Unmarshal(body, &doc) != nil {
+		return false
+	}
+	for _, e := range doc.Errors {
+		if e.Code == "UNAUTHORIZED" {
+			return true
+		}
+	}
+	return false
 }

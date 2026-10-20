@@ -199,6 +199,11 @@ spec:
             - name: {{ $name | quote }}
               value: {{ $value | quote }}
             {{- end }}
+            {{- $upstreamCA := default dict .Values.upstreamCA }}
+            {{- if or $upstreamCA.existingSecret $upstreamCA.existingConfigMap }}
+            - name: ANT_UPSTREAM_CA_MAP_FILE
+              value: {{ printf "/run/ant/upstream-ca/%s" (default "ca-map.json" $upstreamCA.mapKey) | quote }}
+            {{- end }}
             {{- range $name, $provider := .Values.auth }}
             {{- if $provider.existingSecret }}
             - name: {{ printf "ANT_%s_CONFIG_FILE" (upper $name) }}
@@ -227,6 +232,11 @@ spec:
               mountPath: /run/ant/s3-ca
               readOnly: true
             {{- end }}
+            {{- end }}
+            {{- if or $upstreamCA.existingSecret $upstreamCA.existingConfigMap }}
+            - name: upstream-ca
+              mountPath: /run/ant/upstream-ca
+              readOnly: true
             {{- end }}
             {{- if and .Values.federation.enabled .Values.federation.join.existingSecret }}
             - name: federation-join
@@ -296,6 +306,17 @@ spec:
               - key: {{ .Values.storage.s3.caKey | quote }}
                 path: ca.crt
         {{- end }}
+        {{- end }}
+        {{- if $upstreamCA.existingSecret }}
+        - name: upstream-ca
+          secret:
+            secretName: {{ $upstreamCA.existingSecret | quote }}
+            defaultMode: 0440
+        {{- else if $upstreamCA.existingConfigMap }}
+        - name: upstream-ca
+          configMap:
+            name: {{ $upstreamCA.existingConfigMap | quote }}
+            defaultMode: 0440
         {{- end }}
         {{- if and .Values.federation.enabled .Values.federation.join.existingSecret }}
         - name: federation-join

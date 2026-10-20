@@ -250,6 +250,20 @@ function RemoteEditor({
                 )}
               />
             ))}
+            <Input
+              label="Largest in-memory metadata document (bytes, 0 = default)"
+              type="number"
+              mono
+              min={0}
+              max={1073741824}
+              value={config.cache.max_metadata_bytes ?? 0}
+              onChange={val((v) =>
+                setConfig({
+                  ...config,
+                  cache: { ...config.cache, max_metadata_bytes: Number(v) },
+                }),
+              )}
+            />
           </div>
           {config.credential_id && (
             <SettingsRow

@@ -22,12 +22,9 @@ The chart's Ingress and HTTPRoute send these paths to the Service:
 | `/auth`    | Prefix | Browser login, sessions, SAML metadata                   |
 | `/v2`      | Prefix | OCI distribution API                                     |
 | `/feeds`   | Prefix | All other package formats (`/feeds/<slug>/<format>/...`) |
+| `/mcp`     | Prefix | Model Context Protocol endpoint (service tokens only)    |
 
-Not routed: `/health/live`, `/health/ready` and `/metrics` (keep them cluster-internal; scrape metrics through `metrics.headlessService`), and `/mcp`.
-
-::: warning Gap
-The chart does not route `/mcp`, so the MCP endpoint is not reachable through the chart's Ingress or HTTPRoute. Add your own route if you need it. See [MCP](../reference/mcp.md).
-:::
+Not routed: `/health/live`, `/health/ready` and `/metrics` (keep them cluster-internal; scrape metrics through `metrics.headlessService`).
 
 ## ingress-nginx
 

@@ -59,6 +59,17 @@ storage:
     credentialsKey: credentials.json
     caExistingSecret: ""
     caKey: ca.crt
+# Operator-supplied CA bundles for remote sources. A remote source refers to a CA
+# by ID (ca_ref) and can never supply a path; the IDs and files come from here.
+# Mount one Secret or ConfigMap (not both) that holds the map file and the PEM
+# bundles it names. The map is a JSON object of CA ID to PEM file name, for
+# example {"corp-ca":"corp-ca.pem"}; relative names resolve against the map
+# file's directory. At most 32 entries, 64 KiB. Setting this sets
+# ANT_UPSTREAM_CA_MAP_FILE.
+upstreamCA:
+  existingSecret: ""
+  existingConfigMap: ""
+  mapKey: ca-map.json
 # Each provider mounts the entire Secret, including config.json and referenced
 # key/certificate/password files. Config paths must use the matching mount root.
 auth:
