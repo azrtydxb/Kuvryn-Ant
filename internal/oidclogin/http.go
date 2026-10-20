@@ -98,7 +98,7 @@ func (c *Client) Callback(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	session, raw, csrf, e := c.Sessions.issueGroups(r.Context(), c.Provider.issuer, ident.Subject, ident.Groups)
+	session, raw, csrf, e := c.Sessions.issueGroups(WithProfile(r.Context(), ident.Profile), c.Provider.issuer, ident.Subject, ident.Groups)
 	if e != nil {
 		c.loginFailure(w, r)
 		return
@@ -176,11 +176,26 @@ func (c *Client) Logout(w http.ResponseWriter, r *http.Request) {
 		failure(w)
 		return
 	}
-	if e := c.Sessions.Revoke(r.Context(), getCookie(r, SessionCookie)); e != nil {
+	raw := getCookie(r, SessionCookie)
+	// RP-initiated logout: capture what the provider needs before the session row goes.
+	var endSession string
+	if c.Provider != nil && c.Provider.endSession != "" {
+		if d, e := c.Sessions.Describe(r.Context(), raw); e == nil && d.Issuer == c.Provider.issuer {
+			endSession = c.Provider.EndSessionURL(c.Sessions.IDTokenHint(r.Context(), raw), c.Origin+"/console/")
+		}
+	}
+	if e := c.Sessions.Revoke(r.Context(), raw); e != nil {
 		failure(w)
 		return
 	}
 	cookie(w, SessionCookie, "", time.Unix(1, 0), -1)
 	cookie(w, CSRFCookie, "", time.Unix(1, 0), -1)
+	if endSession != "" {
+		// The local session is gone; the console now sends the browser to the
+		// provider to end its single sign-on session too.
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"oidc_logout": endSession})
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -330,6 +330,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		replicationRT.Register(mux)
 		fed.registerRouted(mux, artifacts)
 		browser.Register(mux)
+		registerMe(mux, pool, browser)
 		mcp.Register(mux, pool, logger)
 		mux.Handle("/console", console.Handler())
 		mux.Handle("/console/", console.Handler())

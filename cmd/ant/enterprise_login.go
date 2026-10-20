@@ -331,9 +331,11 @@ type loginExtras struct {
 	roles                      []string
 	rolesMapped                bool
 	sessionIndex, nameIDFormat string
+	profile                    oidclogin.Profile
 }
 
 func (e *enterpriseLogin) issue(w http.ResponseWriter, r *http.Request, kind, issuer, subject string, x loginExtras) {
+	r = r.WithContext(oidclogin.WithProfile(r.Context(), x.profile))
 	// Mapped roles fail closed: if they cannot be applied, no session. Explicit
 	// bindings and memberships always win (ApplyClaimRoles never touches them).
 	if x.rolesMapped {
@@ -447,7 +449,7 @@ func (e *enterpriseLogin) samlCallback(w http.ResponseWriter, r *http.Request) {
 		e.fail(w, r, "saml")
 		return
 	}
-	e.issue(w, r, "saml", identity.Issuer, identity.Subject, loginExtras{groups: identity.Groups, roles: identity.Roles, rolesMapped: identity.RolesMapped, sessionIndex: identity.SessionIndex, nameIDFormat: identity.NameIDFormat})
+	e.issue(w, r, "saml", identity.Issuer, identity.Subject, loginExtras{groups: identity.Groups, roles: identity.Roles, rolesMapped: identity.RolesMapped, sessionIndex: identity.SessionIndex, nameIDFormat: identity.NameIDFormat, profile: oidclogin.Profile{Name: identity.DisplayName, Email: identity.Email}})
 }
 func (e *enterpriseLogin) ldapLogin(w http.ResponseWriter, r *http.Request) {
 	browserNoStore(w)
@@ -521,7 +523,7 @@ func (e *enterpriseLogin) ldapLogin(w http.ResponseWriter, r *http.Request) {
 	// configured group-to-role mapping (claim-managed memberships, JIT principal
 	// creation); explicit identity bindings and memberships, and federated group
 	// bindings from the signed federation policy (P2-M2), always win.
-	e.issue(w, r, "ldap", identity.ProviderID, identity.Subject, loginExtras{groups: identity.GroupIDs, roles: identity.RoleIDs, rolesMapped: identity.RolesMapped})
+	e.issue(w, r, "ldap", identity.ProviderID, identity.Subject, loginExtras{groups: identity.GroupIDs, roles: identity.RoleIDs, rolesMapped: identity.RolesMapped, profile: oidclogin.Profile{Name: credentials.Username}})
 }
 
 type loginAttempt struct {

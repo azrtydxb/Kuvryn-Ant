@@ -1,4 +1,9 @@
 // Generated from api/openapi.yaml by npm run generate. Do not edit.
+export type PasswordChange = { "mode": "local" | "external" | "unavailable"; "url"?: string; "reason"?: string };
+export type MeRole = { "id": string; "name": string };
+export type Me = { "principal_id": string; "kind": string; "display_name": string; "subject": string; "email"?: string; "picture"?: string; "auth_method": "local" | "oidc" | "saml" | "ldap" | "token"; "idp"?: string; "idp_id"?: string; "roles": Array<MeRole>; "password_change": PasswordChange; "session_expires_at"?: string; "active_sessions": number };
+export type ChangeMyPassword = { "current_password": string; "new_password": string };
+export type RevokedSessions = { "revoked": number };
 export type ServiceStatus = { "name": "kuvryn-ant"; "api_version": "v1"; "readiness"?: ReadinessDetail };
 export type Error = { "code": "invalid_request" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "precondition_failed" | "unavailable" | "internal_error" | "rate_limited" | "federation_not_configured" | "not_authority" | "member_unreachable" | "invitation_invalid" | "stale_generation" | "document_rejected" | "federation_managed" | "not_federated" | "feed_home_elsewhere" | "feed_transferring"; "message": string; "request_id": string };
 export type PageInfo = { "has_more": boolean; "next_cursor"?: string };
@@ -195,7 +200,7 @@ export type EffectivePolicy = { "feed_id": string; "revision": number; "publish_
 export type CertificateStatus = { "subject": string; "use"?: string; "not_before": string; "not_after": string; "days_left": number; "status": "ok" | "expiring" | "expired" | "not_yet_valid"; "sha256": string };
 export type ClaimRoleMapping = { "value": string; "role_ids": Array<string> };
 export type GroupRoleMapping = { "group_id": string; "role_ids": Array<string> };
-export type IdentityProviderConfig = { "issuer"?: string; "client_id"?: string; "groups_claim"?: string; "roles_claim"?: string; "claim_roles"?: Array<ClaimRoleMapping>; "scopes"?: Array<string>; "entity_id"?: string; "idp_entity_id"?: string; "idp_metadata_xml"?: string; "sp_certificate_pem"?: string; "groups_attribute"?: string; "email_attribute"?: string; "roles_attribute"?: string; "provider_id"?: string; "url"?: string; "bind_dn"?: string; "ca_pem"?: string; "user_base_dn"?: string; "group_base_dn"?: string; "login_attribute"?: string; "user_id_attribute"?: string; "group_id_attribute"?: string; "user_class"?: string; "group_class"?: string; "member_attribute"?: string; "allowed_endpoints"?: Array<string>; "group_roles"?: Array<GroupRoleMapping>; "group_nesting"?: "nested" | "direct" };
+export type IdentityProviderConfig = { "password_change_url"?: string; "no_end_session"?: boolean; "issuer"?: string; "client_id"?: string; "groups_claim"?: string; "roles_claim"?: string; "claim_roles"?: Array<ClaimRoleMapping>; "scopes"?: Array<string>; "entity_id"?: string; "idp_entity_id"?: string; "idp_metadata_xml"?: string; "sp_certificate_pem"?: string; "groups_attribute"?: string; "email_attribute"?: string; "roles_attribute"?: string; "provider_id"?: string; "url"?: string; "bind_dn"?: string; "ca_pem"?: string; "user_base_dn"?: string; "group_base_dn"?: string; "login_attribute"?: string; "user_id_attribute"?: string; "group_id_attribute"?: string; "user_class"?: string; "group_class"?: string; "member_attribute"?: string; "allowed_endpoints"?: Array<string>; "group_roles"?: Array<GroupRoleMapping>; "group_nesting"?: "nested" | "direct" };
 export type IdentityProvider = { "id": string; "kind": "oidc" | "saml" | "ldap"; "name": string; "enabled": boolean; "config": IdentityProviderConfig; "has_secret": boolean; "revision": number; "last_error"?: string; "created_at": string; "updated_at": string; "active": boolean; "shadowed_by_file": boolean; "certificates": Array<CertificateStatus> };
 export type IdentityProviderInput = { "kind": "oidc" | "saml" | "ldap"; "name": string; "enabled": boolean; "config": IdentityProviderConfig; "secret"?: string; "rotate_sp_certificate"?: boolean };
 export type UpdateIdentityProvider = { "kind"?: "oidc" | "saml" | "ldap"; "name": string; "enabled": boolean; "config": IdentityProviderConfig; "secret"?: string; "rotate_sp_certificate"?: boolean };
@@ -378,6 +383,9 @@ export type DeletedWebhookSecret = { "id": string; "deleted": boolean };
 export type PutWebhookBaseUrl = { "value": string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
+getMe: { body: undefined; response: Me };
+changeMyPassword: { body: ChangeMyPassword; response: undefined };
+revokeMyOtherSessions: { body: undefined; response: RevokedSessions };
 getStatus: { body: undefined; response: ServiceStatus };
 listFeeds: { body: undefined; response: FeedPage };
 createFeed: { body: CreateFeed; response: Feed };
@@ -621,6 +629,21 @@ rotateWebhookSecretValue: { body: RotateWebhookSecretValue; response: WebhookSec
 putWebhookBaseUrl: { body: PutWebhookBaseUrl; response: InstanceSettings };
 }
 export const routes = {
+  "getMe": {
+    "path": "/api/v1/me",
+    "method": "GET",
+    "idempotent": false
+  },
+  "changeMyPassword": {
+    "path": "/api/v1/me/password",
+    "method": "POST",
+    "idempotent": false
+  },
+  "revokeMyOtherSessions": {
+    "path": "/api/v1/me/sessions/others",
+    "method": "DELETE",
+    "idempotent": false
+  },
   "getStatus": {
     "path": "/api/v1/status",
     "method": "GET",

@@ -13,6 +13,9 @@ import { Webhooks } from "./Webhooks";
 import { AuditPage } from "./Audit";
 import { SettingsPage } from "./Settings";
 import { MigrationPage } from "./Migration";
+import { ProfilePage, startPasswordChange } from "./Profile";
+import { ProfileMenu, type ThemePref } from "./ProfileMenu";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 import { loadAllFeeds } from "./data";
 import {
   Alert,
@@ -39,7 +42,8 @@ export type Page =
   | "webhooks"
   | "audit"
   | "migration"
-  | "settings";
+  | "settings"
+  | "profile";
 export type Go = (
   page: Page,
   options?: {
@@ -63,17 +67,25 @@ const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "settings", label: "Settings", icon: "settings" },
 ];
 type Theme = "light" | "dark";
-function initialTheme(): Theme {
-  try {
-    const saved = localStorage.getItem("ant-theme");
-    if (saved === "light" || saved === "dark") return saved;
-  } catch {
-    /* storage unavailable */
-  }
+function systemTheme(): Theme {
   return typeof matchMedia === "function" &&
     matchMedia("(prefers-color-scheme: light)").matches
     ? "light"
     : "dark";
+}
+function initialPref(): ThemePref {
+  try {
+    const saved = localStorage.getItem("ant-theme");
+    if (saved === "light" || saved === "dark" || saved === "system")
+      return saved;
+  } catch {
+    /* storage unavailable */
+  }
+  return "system";
+}
+function initialTheme(): Theme {
+  const pref = initialPref();
+  return pref === "system" ? systemTheme() : pref;
 }
 
 function Shell({
@@ -101,7 +113,7 @@ function Shell({
     [client, principalId],
   );
   const can = (action: string) =>
-    perms.value?.data?.actions.find((a) => a.action === action)?.allowed;
+    perms.value?.data?.actions?.find((a) => a.action === action)?.allowed;
   const hidden = new Set<Page>(
     can("admin") === false
       ? [
@@ -124,7 +136,43 @@ function Shell({
   const [palette, setPalette] = useState(false);
   const [menu, setMenu] = useState(false);
   const [notes, setNotes] = useState(false);
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [themePref, setThemePrefState] = useState<ThemePref>(initialPref);
+  const [systemDark, setSystemTheme] = useState<Theme>(systemTheme);
+  const theme: Theme = themePref === "system" ? systemDark : themePref;
+  const setThemePref = (t: ThemePref) => {
+    setThemePrefState(t);
+    try {
+      localStorage.setItem("ant-theme", t);
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  const me = useResource(() => client.call("getMe"), [client]);
+  const [pwOpen, setPwOpen] = useState(false);
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const q = matchMedia("(prefers-color-scheme: light)");
+    const on = () => setSystemTheme(q.matches ? "light" : "dark");
+    q.addEventListener?.("change", on);
+    return () => q.removeEventListener?.("change", on);
+  }, []);
+  const rawMe = me.value?.data;
+  // Older servers or odd responses: fall back to the plain session label.
+  const meData =
+    rawMe &&
+    Array.isArray(rawMe.roles) &&
+    rawMe.password_change &&
+    rawMe.auth_method
+      ? rawMe
+      : undefined;
+  const changePassword = () =>
+    meData
+      ? startPasswordChange(
+          meData,
+          () => setPwOpen(true),
+          () => go("profile"),
+        )
+      : go("profile");
   const [paletteFeeds, setPaletteFeeds] = useState<
     { id: string; slug: string; format: string }[]
   >([]);
@@ -208,7 +256,8 @@ function Shell({
     else if (c.id === "act:create") go("feeds", { create: true });
     else if (c.id === "act:token") go("identity");
   };
-  const label = NAV.find((n) => n.id === page)!.label;
+  const label =
+    page === "profile" ? "My profile" : NAV.find((n) => n.id === page)!.label;
   const crumbs = ["Kuvryn Ant", label, ...(crumb ? [crumb] : [])];
   let body;
   if (page === "overview")
@@ -249,6 +298,18 @@ function Shell({
   else if (page === "webhooks") body = <Webhooks client={client} go={go} />;
   else if (page === "audit") body = <AuditPage client={client} />;
   else if (page === "migration") body = <MigrationPage client={client} />;
+  else if (page === "profile")
+    body = (
+      <ProfilePage
+        client={client}
+        me={meData}
+        loading={me.loading}
+        error={me.error}
+        principalId={principalId}
+        changePassword={changePassword}
+        reload={me.reload}
+      />
+    );
   else
     body = <SettingsPage client={client} notes={notes} setNotes={setNotes} />;
   return (
@@ -277,10 +338,6 @@ function Shell({
                 </button>
               }
               status="Management API v1"
-              user={{ name: "Signed in", role: sessionLabel }}
-              onSignOut={() => {
-                if (!signingOut) signOut();
-              }}
             />
           </div>
           {menu && (
@@ -316,14 +373,20 @@ function Shell({
                     ? "Switch to light theme"
                     : "Switch to dark theme"
                 }
-                onClick={() => {
-                  const next = theme === "dark" ? "light" : "dark";
-                  setTheme(next);
-                  try {
-                    localStorage.setItem("ant-theme", next);
-                  } catch {
-                    /* storage unavailable */
-                  }
+                onClick={() =>
+                  setThemePref(theme === "dark" ? "light" : "dark")
+                }
+              />
+              <ProfileMenu
+                me={meData}
+                fallback={sessionLabel}
+                themePref={themePref}
+                setThemePref={setThemePref}
+                openProfile={() => go("profile")}
+                openTokens={() => go("profile")}
+                changePassword={changePassword}
+                signOut={() => {
+                  if (!signingOut) signOut();
                 }}
               />
             </Topbar>
@@ -335,6 +398,16 @@ function Shell({
               </footer>
             </main>
           </div>
+          {pwOpen && (
+            <ChangePasswordModal
+              client={client}
+              onClose={() => setPwOpen(false)}
+              onChanged={() => {
+                setPwOpen(false);
+                me.reload();
+              }}
+            />
+          )}
           <PackageDrawer
             client={client}
             pkg={pkg}

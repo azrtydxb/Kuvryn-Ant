@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/azrtydxb/Kuvryn-Ant/internal/accountlinks"
 )
 
 type Kind string
@@ -63,6 +65,12 @@ type OIDCConfig struct {
 	RolesClaim string      `json:"roles_claim,omitempty"`
 	ClaimRoles []ClaimRole `json:"claim_roles,omitempty"`
 	Scopes     []string    `json:"scopes,omitempty"`
+	// PasswordChangeURL is where users change the password this provider owns
+	// (https). Empty means a known product is derived from the issuer, else the
+	// console says the password is managed by the provider. NoEndSession turns
+	// off RP-initiated logout at the provider.
+	PasswordChangeURL string `json:"password_change_url,omitempty"`
+	NoEndSession      bool   `json:"no_end_session,omitempty"`
 }
 
 // ClaimRole maps one claim value to local role IDs.
@@ -129,6 +137,8 @@ type SAMLConfig struct {
 	// local roles at login (same semantics as the OIDC roles claim).
 	RolesAttribute string      `json:"roles_attribute,omitempty"`
 	ClaimRoles     []ClaimRole `json:"claim_roles,omitempty"`
+	// PasswordChangeURL is the https page where users change the IdP password.
+	PasswordChangeURL string `json:"password_change_url,omitempty"`
 }
 
 type LDAPConfig struct {
@@ -148,6 +158,9 @@ type LDAPConfig struct {
 	// GroupNesting is "nested" (default; groups of groups up to the depth limit) or
 	// "direct" (only groups the user is a direct member of).
 	GroupNesting string `json:"group_nesting,omitempty"`
+	// PasswordChangeURL is an optional https page where users change their
+	// directory password; without it the console says the directory manages it.
+	PasswordChangeURL string `json:"password_change_url,omitempty"`
 }
 
 // strict decodes exactly one JSON object with no unknown or duplicate-case keys.
@@ -159,6 +172,9 @@ func strict(raw []byte, dst any) error {
 	}
 	return nil
 }
+
+// validOptionalURL accepts "" or an absolute https URL (<= 2048 bytes).
+func validOptionalURL(raw string) bool { return raw == "" || accountlinks.ValidURL(raw) }
 
 func httpsURL(raw string) bool {
 	u, err := url.Parse(raw)
@@ -174,7 +190,7 @@ func Validate(kind Kind, config json.RawMessage) error {
 	switch kind {
 	case OIDC:
 		var c OIDCConfig
-		if strict(config, &c) != nil || !httpsURL(c.Issuer) || strings.Contains(c.Issuer, "?") || c.ClientID == "" || len(c.ClientID) > 256 || len(c.GroupsClaim) > 64 || !validClaimMapping(c) {
+		if strict(config, &c) != nil || !httpsURL(c.Issuer) || strings.Contains(c.Issuer, "?") || c.ClientID == "" || len(c.ClientID) > 256 || len(c.GroupsClaim) > 64 || !validClaimMapping(c) || !validOptionalURL(c.PasswordChangeURL) {
 			return ErrInvalid
 		}
 		if len(c.AllowedEndpoints) == 0 || len(c.AllowedEndpoints) > 32 {
@@ -187,12 +203,12 @@ func Validate(kind Kind, config json.RawMessage) error {
 		}
 	case SAML:
 		var c SAMLConfig
-		if strict(config, &c) != nil || c.EntityID == "" || len(c.EntityID) > 2048 || c.IDPEntityID == "" || len(c.IDPEntityID) > 2048 || c.IDPMetadataXML == "" || len(c.IDPMetadataXML) > 256<<10 || len(c.GroupsAttribute) > 256 || len(c.EmailAttribute) > 256 || !validRoleMapping(c.RolesAttribute, c.ClaimRoles) {
+		if strict(config, &c) != nil || c.EntityID == "" || len(c.EntityID) > 2048 || c.IDPEntityID == "" || len(c.IDPEntityID) > 2048 || c.IDPMetadataXML == "" || len(c.IDPMetadataXML) > 256<<10 || len(c.GroupsAttribute) > 256 || len(c.EmailAttribute) > 256 || !validRoleMapping(c.RolesAttribute, c.ClaimRoles) || !validOptionalURL(c.PasswordChangeURL) {
 			return ErrInvalid
 		}
 	case LDAP:
 		var c LDAPConfig
-		if strict(config, &c) != nil || !httpsURL(c.ProviderID) || len(c.ProviderID) > 256 || c.URL == "" || c.BindDN == "" || len(c.CAPEM) > 64<<10 || len(c.GroupRoles) > 1000 || (c.GroupNesting != "" && c.GroupNesting != "nested" && c.GroupNesting != "direct") {
+		if strict(config, &c) != nil || !httpsURL(c.ProviderID) || len(c.ProviderID) > 256 || c.URL == "" || c.BindDN == "" || len(c.CAPEM) > 64<<10 || len(c.GroupRoles) > 1000 || (c.GroupNesting != "" && c.GroupNesting != "nested" && c.GroupNesting != "direct") || !validOptionalURL(c.PasswordChangeURL) {
 			return ErrInvalid
 		}
 	default:

@@ -15,6 +15,7 @@ import {
   json,
   mockAPI,
   signInWithToken,
+  signOutViaMenu,
   source,
   page,
   type Call,
@@ -48,7 +49,7 @@ it("keeps tokens out of browser storage and removes protected data on sign-out",
   nav("Feeds");
   await screen.findByRole("button", { name: /production/ });
   expect(local).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await signOutViaMenu();
   expect(screen.queryByRole("button", { name: /production/ })).toBeNull();
   await screen.findByRole("heading", { name: "Sign in" });
   expect(screen.queryByLabelText("Short-lived API token")).toBeNull();
@@ -116,10 +117,10 @@ it("shows permission failures and does not render HTML from remote messages", as
 it("clears an authenticated session when the page is left", async () => {
   render(<App />);
   await signInWithToken();
-  await screen.findByRole("button", { name: "Sign out" });
+  await screen.findByRole("button", { name: /^Account menu/ });
   fireEvent(window, new Event("pagehide"));
   await screen.findByRole("heading", { name: "Sign in" });
-  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Account menu/ })).toBeNull();
 });
 it("creates a source using only supported configuration fields", async () => {
   render(<App />);

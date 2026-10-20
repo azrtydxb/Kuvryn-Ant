@@ -91,6 +91,40 @@ one `SessionIndex` per request. Re-import the SP metadata at the IdP after
 upgrading so it learns the single logout endpoint. The routes exist only while a
 SAML provider is active.
 
+## Profile menu, password change and sign-out
+
+The console header has an account menu (the avatar: the OIDC `picture` claim, otherwise initials). It shows the display name, email or subject, the sign-in method and the roles, and links to My profile, personal access tokens, Change password, the theme and Sign out. `GET /api/v1/me` backs it; the profile page (`/console/` My profile) is the canonical place for personal access tokens (Settings, Tokens keeps the same list).
+
+OIDC login now requests `openid profile email` (plus any configured extra scopes) so the name, email and picture are available. They are stored on the browser session only to display them, never to grant anything. The console CSP allows `img-src 'self' https:` for the picture.
+
+### Change password
+
+`/api/v1/me` returns `auth_method` (`local`, `oidc`, `saml`, `ldap`, `token`), `idp` (provider display name) and `password_change`:
+
+| Session | `password_change.mode` |
+| --- | --- |
+| Local password user | `local`: the console opens a dialog and calls `POST /api/v1/me/password` |
+| OIDC | `external`: the configured URL, else a known-product address derived from the issuer, else `unavailable` ("managed by <provider>") |
+| SAML | `external` with the configured URL, else `unavailable` |
+| LDAP | `external` with the configured URL, else `unavailable` ("managed by your directory") |
+| API token | `unavailable`, and the console hides the item |
+
+The URL is never taken from a request. Set it per provider with `password_change_url` (https only; the sign-in provider dialog in the console). Without it, OIDC providers are recognised from the operator's issuer and approved endpoints:
+
+- Zitadel (`*.zitadel.cloud`, or `/oauth/v2/token` among the approved endpoints): `<issuer>/ui/console/users/me/password`, the Console route `me/password` for the signed-in user (current password, new password, confirmation).
+- Keycloak (issuer path contains `/realms/`): `<issuer>/account/#/security/signingin`.
+- Microsoft Entra (`login.microsoftonline.com`): `https://mysignins.microsoft.com/security-info`.
+- Google: `https://myaccount.google.com/security`.
+- Okta (`*.okta.com`, `*.oktapreview.com`): `https://<host>/enduser/settings`.
+
+A self-hosted Zitadel whose Console is served from another path needs `password_change_url` set explicitly.
+
+`POST /api/v1/me/password` (local users only) verifies the current password, applies the password policy (14 to 256 bytes), is limited to 10 attempts per minute per user, and counts wrong current passwords toward the same lockout as sign-in. On success it keeps the session making the change, ends the user's other browser sessions, and audits `auth.local.password_changed` (failures: `auth.local.password_change_failed`).
+
+### Sign-out
+
+`POST /auth/logout` ends the local session. SAML sessions continue to the IdP single logout. OIDC sessions also do RP-initiated logout: when the provider's discovery document advertises an `end_session_endpoint` on the issuer's origin (or among the approved endpoints), the response is `200 {"oidc_logout": "<url>"}` and the console navigates there with `id_token_hint`, `client_id` and `post_logout_redirect_uri=<origin>/console/`. Register `<origin>/console/` as a post-logout redirect URI in the IdP client. Turn it off per provider with "Also sign out at the provider" (`no_end_session`).
+
 ## Validating against real providers
 
 Unit and integration tests use synthetic fixtures. They do not prove interop with

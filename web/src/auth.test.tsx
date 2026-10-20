@@ -11,6 +11,7 @@ import {
 import App from "./App";
 import { Client } from "./api";
 import { AUTH_TIMEOUT_MS, getProviders, parseSession } from "./auth";
+import { signOutViaMenu } from "./testkit";
 const csrf = "a".repeat(43),
   prelogin = "b".repeat(43);
 const session = {
@@ -55,7 +56,7 @@ it("resumes a cookie session, adds CSRF to mutations, and signs out server-side"
     }),
   );
   render(<App />);
-  await screen.findByText("Browser session");
+  await screen.findByRole("button", { name: /^Account menu/ });
   fireEvent.click(
     within(
       screen.getByRole("navigation", { name: "Main navigation" }),
@@ -76,7 +77,7 @@ it("resumes a cookie session, adds CSRF to mutations, and signs out server-side"
   expect(mutation.init.credentials).toBe("same-origin");
   expect(new Headers(mutation.init.headers).get("X-CSRF-Token")).toBe(csrf);
   expect(new Headers(mutation.init.headers).has("Authorization")).toBe(false);
-  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await signOutViaMenu();
   await screen.findByRole("heading", { name: "Sign in" });
   const signout = calls.find((c) => c.url === "/auth/logout")!;
   expect(signout.init.method).toBe("POST");
@@ -95,13 +96,15 @@ it("shows logout failure after clearing local protected views and can retry revo
         return ++attempt === 1
           ? new Response(null, { status: 503 })
           : new Response(null, { status: 204 });
-      return json({ name: "kuvryn-ant", api_version: "v1" });
+      return url === "/api/v1/status"
+        ? json({ name: "kuvryn-ant", api_version: "v1" })
+        : json({ code: "not_found" }, 404);
     }),
   );
   render(<App />);
-  fireEvent.click(await screen.findByRole("button", { name: "Sign out" }));
+  await signOutViaMenu();
   await screen.findByRole("button", { name: "Retry server sign-out" });
-  expect(screen.queryByText("Browser session")).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Account menu/ })).toBeNull();
   fireEvent.click(
     screen.getByRole("button", { name: "Retry server sign-out" }),
   );
@@ -157,7 +160,7 @@ it("discovers provider links and clears LDAP password before acquiring prelogin 
     (screen.getByLabelText("LDAP password") as HTMLInputElement).value,
   ).toBe("");
   release(json({ csrf_token: prelogin }));
-  await screen.findByText("Browser session");
+  await screen.findByRole("button", { name: /^Account menu/ });
   const post = calls.find(
     (c) => c.url === "/auth/ldap/login" && c.init.method === "POST",
   )!;
@@ -240,12 +243,14 @@ it("continues a SAML sign-out at the identity provider via the server-staged pag
       if (url === "/auth/providers") return json({ providers: [] });
       if (url === "/auth/logout")
         return json({ saml_logout: "/auth/saml/logout" });
-      return json({ name: "kuvryn-ant", api_version: "v1" });
+      return url === "/api/v1/status"
+        ? json({ name: "kuvryn-ant", api_version: "v1" })
+        : json({ code: "not_found" }, 404);
     }),
   );
   render(<App />);
-  await screen.findByText("Browser session");
-  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await screen.findByRole("button", { name: /^Account menu/ });
+  await signOutViaMenu();
   await waitFor(() => expect(assign).toHaveBeenCalledWith("/auth/saml/logout"));
 });
 it("never navigates to a logout target outside the auth routes", async () => {
@@ -258,12 +263,38 @@ it("never navigates to a logout target outside the auth routes", async () => {
       if (url === "/auth/providers") return json({ providers: [] });
       if (url === "/auth/logout")
         return json({ saml_logout: "https://evil.example/" });
-      return json({ name: "kuvryn-ant", api_version: "v1" });
+      return url === "/api/v1/status"
+        ? json({ name: "kuvryn-ant", api_version: "v1" })
+        : json({ code: "not_found" }, 404);
     }),
   );
   render(<App />);
-  await screen.findByText("Browser session");
-  fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+  await screen.findByRole("button", { name: /^Account menu/ });
+  await signOutViaMenu();
   await screen.findByRole("heading", { name: "Sign in" });
   expect(assign).not.toHaveBeenCalled();
 });
+for (const [label, target, navigates] of [
+  ["follows", "https://auth.example.com/oidc/v1/end_session?client_id=c", true],
+  ["refuses a non-https", "http://auth.example.com/end", false],
+  ["refuses a javascript", "javascript:alert(1)", false],
+] as const)
+  it(`${label} OIDC end-session target after the local sign-out`, async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url === "/auth/session") return json(session);
+        if (url === "/auth/providers") return json({ providers: [] });
+        if (url === "/auth/logout") return json({ oidc_logout: target });
+        return json({ code: "not_found" }, 404);
+      }),
+    );
+    render(<App />);
+    await screen.findByRole("button", { name: /^Account menu/ });
+    await signOutViaMenu();
+    await screen.findByRole("heading", { name: "Sign in" });
+    if (navigates) expect(assign).toHaveBeenCalledWith(target);
+    else expect(assign).not.toHaveBeenCalled();
+  });

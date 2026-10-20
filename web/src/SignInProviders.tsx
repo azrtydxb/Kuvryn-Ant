@@ -271,6 +271,8 @@ export function ProviderEditor({
       .map((m) => `${m.value}=${m.role_ids.join(",")}`)
       .join("\n"),
   );
+  const [pwUrl, setPwUrl] = useState(c.password_change_url ?? "");
+  const [endSession, setEndSession] = useState(!c.no_end_session);
   const [groupNesting, setGroupNesting] = useState<string>(
     c.group_nesting ?? "nested",
   );
@@ -315,6 +317,8 @@ export function ProviderEditor({
             ? { claim_roles: parseClaimRoles(claimRoles) }
             : {}),
           ...(scopes.trim() ? { scopes: scopes.trim().split(/\s+/) } : {}),
+          ...(pwUrl.trim() ? { password_change_url: pwUrl.trim() } : {}),
+          ...(endSession ? {} : { no_end_session: true }),
         }
       : kind === "saml"
         ? {
@@ -327,6 +331,7 @@ export function ProviderEditor({
             ...(lines(samlClaimRoles).length
               ? { claim_roles: parseClaimRoles(samlClaimRoles) }
               : {}),
+            ...(pwUrl.trim() ? { password_change_url: pwUrl.trim() } : {}),
           }
         : {
             provider_id: providerId,
@@ -343,6 +348,7 @@ export function ProviderEditor({
             member_attribute: memberAttr,
             group_roles: parseGroupRoles(groupRoles),
             group_nesting: groupNesting as "nested" | "direct",
+            ...(pwUrl.trim() ? { password_change_url: pwUrl.trim() } : {}),
           };
 
   return (
@@ -751,6 +757,29 @@ export function ProviderEditor({
               onChange={val(setGroupNesting)}
             />
           </>
+        )}
+        <Input
+          label="Password change URL (optional)"
+          value={pwUrl}
+          onChange={val(setPwUrl)}
+          placeholder="https://"
+          hint={
+            kind === "oidc"
+              ? "Where users change their password at the provider. Leave empty to use the known address for Zitadel, Keycloak, Entra, Google and Okta; otherwise users are told the provider manages it."
+              : kind === "ldap"
+                ? "Optional https page for changing the directory password. Without it users are told the directory manages it."
+                : "Optional https page for changing the identity provider password."
+          }
+        />
+        {kind === "oidc" && (
+          <Switch
+            label="Also sign out at the provider (RP-initiated logout; register the console URL as a post-logout redirect there)"
+            labelPosition="end"
+            checked={endSession}
+            onChange={(e: { target: { checked: boolean } }) =>
+              setEndSession(e.target.checked)
+            }
+          />
         )}
         <Switch
           label="Enable (replaces the enabled provider of this type, takes effect immediately)"
