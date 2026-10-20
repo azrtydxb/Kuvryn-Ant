@@ -25,7 +25,7 @@ func TestShellSecurityAndRouting(t *testing.T) {
 				t.Fatalf("status %d, expected %d", w.Code, tc.status)
 			}
 			csp := w.Header().Get("Content-Security-Policy")
-			for _, part := range []string{"default-src 'none'", "frame-ancestors 'none'", "connect-src 'self'", "form-action 'none'"} {
+			for _, part := range []string{"default-src 'none'", "frame-ancestors 'none'", "connect-src 'self'", "form-action 'none'", "img-src 'self' https:"} {
 				if !strings.Contains(csp, part) {
 					t.Errorf("missing CSP %s", part)
 				}

@@ -31,6 +31,8 @@ type ProviderConfig struct {
 	RolesClaim string
 	ClaimRoles map[string][]string
 	Scopes     []string
+	// NoEndSession disables RP-initiated logout at the provider.
+	NoEndSession bool
 }
 type Provider struct {
 	key, issuer, redirect string
@@ -39,6 +41,7 @@ type Provider struct {
 	client                *http.Client
 	rolesClaim            string
 	claimRoles            map[string][]string
+	endSession            string
 }
 
 func NewProvider(ctx context.Context, cfg ProviderConfig) (*Provider, error) {
@@ -81,8 +84,9 @@ func newProvider(ctx context.Context, cfg ProviderConfig, transport http.RoundTr
 		return nil, ErrUnavailable
 	}
 	var metadata struct {
-		Issuer string `json:"issuer"`
-		JWKS   string `json:"jwks_uri"`
+		Issuer     string `json:"issuer"`
+		JWKS       string `json:"jwks_uri"`
+		EndSession string `json:"end_session_endpoint"`
 	}
 	if discovered.Claims(&metadata) != nil || metadata.Issuer != cfg.Issuer || !allowed[metadata.JWKS] || !allowed[discovered.Endpoint().TokenURL] || !valid(discovered.Endpoint().AuthURL) || !allowed[discovered.Endpoint().AuthURL] {
 		return nil, errors.New("unapproved OIDC discovery endpoints")
@@ -90,8 +94,11 @@ func newProvider(ctx context.Context, cfg ProviderConfig, transport http.RoundTr
 	// The library caches keys and refetches on unknown signing keys. Only asymmetric
 	// RS256 is enabled; no key/algorithm selection is accepted from browser input.
 	p := &Provider{key: cfg.Key, issuer: cfg.Issuer, redirect: cfg.RedirectURI, client: client}
-	p.oauth = oauth2.Config{ClientID: cfg.ClientID, ClientSecret: cfg.ClientSecret, RedirectURL: cfg.RedirectURI, Endpoint: discovered.Endpoint(), Scopes: append([]string{oidc.ScopeOpenID}, cfg.Scopes...)}
+	p.oauth = oauth2.Config{ClientID: cfg.ClientID, ClientSecret: cfg.ClientSecret, RedirectURL: cfg.RedirectURI, Endpoint: discovered.Endpoint(), Scopes: loginScopes(cfg.Scopes)}
 	p.rolesClaim, p.claimRoles = cfg.RolesClaim, cfg.ClaimRoles
+	if !cfg.NoEndSession && valid(metadata.EndSession) && sameOrigin(metadata.EndSession, cfg.Issuer, allowed) {
+		p.endSession = metadata.EndSession
+	}
 	p.verifier = discovered.Verifier(&oidc.Config{ClientID: cfg.ClientID, SupportedSigningAlgs: []string{oidc.RS256}})
 	return p, nil
 }
@@ -135,6 +142,9 @@ type Identity struct {
 	Groups      []string
 	Roles       []string
 	RolesMapped bool
+	// Profile is display information only (name, email, picture claims and the
+	// ID token kept for RP-initiated logout).
+	Profile Profile
 }
 
 // claimValues reads a claim as a set of strings: an array of strings, a single
@@ -201,6 +211,10 @@ func (p *Provider) exchangeIdentity(ctx context.Context, code, verifier string, 
 		AuthorizedParty string          `json:"azp"`
 		NotBefore       int64           `json:"nbf"`
 		Groups          json.RawMessage `json:"groups"`
+		Name            string          `json:"name"`
+		Preferred       string          `json:"preferred_username"`
+		Email           string          `json:"email"`
+		Picture         string          `json:"picture"`
 	}
 	now := time.Now()
 	if id.Claims(&claims) != nil || id.Subject == "" || id.Issuer != p.issuer || id.IssuedAt.IsZero() || id.IssuedAt.After(now.Add(30*time.Second)) || !id.Expiry.After(now) || claims.NotBefore > now.Add(30*time.Second).Unix() || !matches(id.Nonce, nonceHash) {
@@ -223,5 +237,62 @@ func (p *Provider) exchangeIdentity(ctx context.Context, code, verifier string, 
 	if p.rolesClaim != "" && id.Claims(&all) != nil {
 		return Identity{}, ErrAuthentication
 	}
-	return Identity{Subject: id.Subject, Groups: groups, Roles: p.mapRoles(all), RolesMapped: p.rolesClaim != ""}, nil
+	name := claims.Name
+	if name == "" {
+		name = claims.Preferred
+	}
+	return Identity{Subject: id.Subject, Groups: groups, Roles: p.mapRoles(all), RolesMapped: p.rolesClaim != "", Profile: Profile{Name: name, Email: claims.Email, Picture: claims.Picture, IDToken: raw}}, nil
+}
+
+// Issuer is the verified issuer URL of the provider.
+func (p *Provider) Issuer() string { return p.issuer }
+
+// sameOrigin reports whether the end-session endpoint is operator-approved: on
+// the issuer's own origin or listed among the approved endpoints. Discovery
+// alone cannot send a user's browser to an arbitrary site.
+func sameOrigin(endpoint, issuer string, allowed map[string]bool) bool {
+	e, err1 := url.Parse(endpoint)
+	i, err2 := url.Parse(issuer)
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return allowed[endpoint] || (e.Scheme == i.Scheme && e.Host == i.Host)
+}
+
+// EndSessionURL builds the RP-initiated logout URL (OIDC RP-Initiated Logout
+// 1.0): the provider's end_session_endpoint with the ID token as id_token_hint,
+// the client_id and the post-logout redirect. It is "" when the provider does
+// not advertise an endpoint or has it disabled.
+func (p *Provider) EndSessionURL(idTokenHint, postLogoutRedirect string) string {
+	if p == nil || p.endSession == "" {
+		return ""
+	}
+	u, err := url.Parse(p.endSession)
+	if err != nil {
+		return ""
+	}
+	q := u.Query()
+	if idTokenHint != "" {
+		q.Set("id_token_hint", idTokenHint)
+	}
+	q.Set("client_id", p.oauth.ClientID)
+	if postLogoutRedirect != "" {
+		q.Set("post_logout_redirect_uri", postLogoutRedirect)
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+// loginScopes requests openid plus profile and email (so the console can show
+// who is signed in) and any operator-configured extras, without duplicates.
+func loginScopes(extra []string) []string {
+	out := []string{oidc.ScopeOpenID, "profile", "email"}
+	seen := map[string]bool{oidc.ScopeOpenID: true, "profile": true, "email": true}
+	for _, s := range extra {
+		if !seen[s] {
+			seen[s] = true
+			out = append(out, s)
+		}
+	}
+	return out
 }

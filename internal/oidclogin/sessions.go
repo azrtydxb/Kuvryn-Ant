@@ -173,6 +173,7 @@ func (s Sessions) issueIdP(ctx context.Context, issuer, subject string, groups [
 		return Session{}, "", "", e
 	}
 	raw, csrf := secret(), secret()
+	prof := profileFrom(ctx)
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	tx, e := s.DB.Begin(ctx)
@@ -181,11 +182,11 @@ func (s Sessions) issueIdP(ctx context.Context, issuer, subject string, groups [
 	}
 	defer rollback(tx)
 	var result Session
-	e = tx.QueryRow(ctx, `INSERT INTO browser_sessions(verifier,csrf_hash,instance_id,issuer,subject,principal_id,created_at,last_seen_at,expires_at,idle_seconds,idp_session_index,idp_name_id_format)
- SELECT $1,$2,b.instance_id,b.issuer,b.subject,b.principal_id,statement_timestamp(),statement_timestamp(),statement_timestamp()+$6*interval '1 second',$7,NULLIF($8,''),NULLIF($9,'')
+	e = tx.QueryRow(ctx, `INSERT INTO browser_sessions(verifier,csrf_hash,instance_id,issuer,subject,principal_id,created_at,last_seen_at,expires_at,idle_seconds,idp_session_index,idp_name_id_format,display_name,email,picture,idp_id_token)
+ SELECT $1,$2,b.instance_id,b.issuer,b.subject,b.principal_id,statement_timestamp(),statement_timestamp(),statement_timestamp()+$6*interval '1 second',$7,NULLIF($8,''),NULLIF($9,''),NULLIF($10,''),NULLIF($11,''),NULLIF($12,''),NULLIF($13,'')
  FROM oidc_identity_bindings b JOIN principals p ON (p.instance_id,p.id)=(b.instance_id,b.principal_id)
  WHERE b.instance_id=$3 AND b.issuer=$4 AND b.subject=$5 AND NOT p.disabled AND p.kind IN ('user','emergency')
- RETURNING instance_id,principal_id,expires_at`, hash(raw), hash(csrf), s.InstanceID, issuer, subject, int64(max/time.Second), int64(idle/time.Second), sessionIndex, nameIDFormat).Scan(&result.InstanceID, &result.PrincipalID, &result.ExpiresAt)
+ RETURNING instance_id,principal_id,expires_at`, hash(raw), hash(csrf), s.InstanceID, issuer, subject, int64(max/time.Second), int64(idle/time.Second), sessionIndex, nameIDFormat, prof.Name, prof.Email, prof.Picture, prof.IDToken).Scan(&result.InstanceID, &result.PrincipalID, &result.ExpiresAt)
 	if errors.Is(e, pgx.ErrNoRows) {
 		return Session{}, "", "", ErrAuthentication
 	}

@@ -36,7 +36,7 @@ func (b Builder) OIDC(ctx context.Context, l Loaded) (*oidclogin.Provider, error
 	return oidclogin.NewProviderWithTransport(ctx, oidclogin.ProviderConfig{
 		Key: "idp-" + l.ID, Issuer: c.Issuer, ClientID: c.ClientID, ClientSecret: string(l.Secret),
 		RedirectURI: b.Origin + "/auth/oidc/callback", AllowedEndpoints: c.AllowedEndpoints,
-		RolesClaim: c.RolesClaim, ClaimRoles: claimRoleMap(c.ClaimRoles), Scopes: c.Scopes,
+		RolesClaim: c.RolesClaim, ClaimRoles: claimRoleMap(c.ClaimRoles), Scopes: c.Scopes, NoEndSession: c.NoEndSession,
 	}, b.Transport)
 }
 

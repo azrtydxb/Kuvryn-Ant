@@ -196,5 +196,18 @@ export async function logout(csrf: string) {
     const next = body?.saml_logout;
     if (typeof next === "string" && /^\/auth\/[a-z/_-]+$/.test(next))
       window.location.assign(next);
+    // An OIDC session ends at the provider too (RP-initiated logout): the server
+    // revoked the local session and returned the provider's end-session URL.
+    const oidc = body?.oidc_logout;
+    if (typeof oidc === "string" && isHttps(oidc)) window.location.assign(oidc);
+  }
+}
+
+function isHttps(raw: string) {
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:" && !u.username && !u.password;
+  } catch {
+    return false;
   }
 }

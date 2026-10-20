@@ -95,6 +95,7 @@ export function mockAPI(
     if (path === "/api/v1/roles" && method === "GET")
       return json({ items: [role] });
     if (path === "/api/v1/webhooks") return json({ items: [] });
+    if (path === "/api/v1/me") return json(meToken);
     if (method !== "GET") return json({});
     return notFound();
   });
@@ -109,4 +110,29 @@ export async function signInWithToken(token = "private-token") {
     target: { value: token },
   });
   fireEvent.click(screen.getByRole("button", { name: "Use token" }));
+}
+
+export const meToken = {
+  principal_id: ids.principal,
+  kind: "service",
+  display_name: "automation",
+  subject: "automation",
+  auth_method: "token",
+  roles: [] as { id: string; name: string }[],
+  password_change: {
+    mode: "unavailable",
+    reason: "API token sessions have no password.",
+  },
+  active_sessions: 0,
+};
+
+// The account menu lives in the header; its trigger is the avatar button.
+export async function openAccountMenu() {
+  const trigger = await screen.findByRole("button", { name: /^Account menu/ });
+  fireEvent.click(trigger);
+  return screen.findByRole("menu");
+}
+export async function signOutViaMenu() {
+  await openAccountMenu();
+  fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
 }

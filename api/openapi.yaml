@@ -11,6 +11,153 @@
     }
   ],
   "paths": {
+    "/api/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "description": "Who is signed in: identity, sign-in method and identity provider, roles, and how this user changes their password (locally, at the identity provider, or not at all). Works for browser sessions and bearer tokens.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/me/password": {
+      "post": {
+        "operationId": "changeMyPassword",
+        "description": "Changes the signed-in local user's own password. Requires the current password, enforces the password policy, counts wrong attempts toward the account lockout, and ends the user's other browser sessions (the session making the change stays signed in). Available only when password_change.mode is local.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeMyPassword"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/me/sessions/others": {
+      "delete": {
+        "operationId": "revokeMyOtherSessions",
+        "description": "Ends every other browser session of the signed-in user. Browser sessions only.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokedSessions"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/status": {
       "get": {
         "operationId": "getStatus",
@@ -18380,6 +18527,154 @@
       }
     },
     "schemas": {
+      "PasswordChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "local",
+              "external",
+              "unavailable"
+            ],
+            "description": "local: change it here (POST /api/v1/me/password). external: open url at the identity provider. unavailable: nothing to do here; reason says why."
+          },
+          "url": {
+            "type": "string",
+            "description": "Operator-configured or known-issuer https page for mode external."
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "MeRole": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "principal_id",
+          "kind",
+          "display_name",
+          "subject",
+          "auth_method",
+          "roles",
+          "password_change",
+          "active_sessions"
+        ],
+        "properties": {
+          "principal_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Principal kind (user, service, emergency)."
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Username or immutable identity-provider subject."
+          },
+          "email": {
+            "type": "string"
+          },
+          "picture": {
+            "type": "string",
+            "description": "https picture URL from the identity provider, when it supplied one."
+          },
+          "auth_method": {
+            "type": "string",
+            "enum": [
+              "local",
+              "oidc",
+              "saml",
+              "ldap",
+              "token"
+            ]
+          },
+          "idp": {
+            "type": "string",
+            "description": "Display name of the identity provider the session came from."
+          },
+          "idp_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeRole"
+            }
+          },
+          "password_change": {
+            "$ref": "#/components/schemas/PasswordChange"
+          },
+          "session_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "active_sessions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Browser sessions currently open for this user."
+          }
+        }
+      },
+      "ChangeMyPassword": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 14,
+            "maxLength": 256
+          }
+        }
+      },
+      "RevokedSessions": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revoked"
+        ],
+        "properties": {
+          "revoked": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
       "ServiceStatus": {
         "type": "object",
         "additionalProperties": false,
@@ -25385,6 +25680,14 @@
         "additionalProperties": false,
         "required": [],
         "properties": {
+          "password_change_url": {
+            "type": "string",
+            "description": "https page where users change the password this provider owns. Empty: a known product is derived from the issuer (OIDC), otherwise the console says the provider manages it."
+          },
+          "no_end_session": {
+            "type": "boolean",
+            "description": "OIDC: do not send the browser to the provider's end_session_endpoint on sign-out."
+          },
           "issuer": {
             "type": "string"
           },

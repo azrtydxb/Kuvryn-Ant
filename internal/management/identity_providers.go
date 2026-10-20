@@ -70,34 +70,36 @@ type ClaimRoleMapping struct {
 
 // ProviderConfig is the union of all protocol settings; unused members stay absent.
 type ProviderConfig struct {
-	Issuer           *string            `json:"issuer,omitempty"`
-	ClientID         *string            `json:"client_id,omitempty"`
-	AllowedEndpoints []string           `json:"allowed_endpoints,omitempty"`
-	GroupsClaim      *string            `json:"groups_claim,omitempty"`
-	RolesClaim       *string            `json:"roles_claim,omitempty"`
-	ClaimRoles       []ClaimRoleMapping `json:"claim_roles,omitempty"`
-	Scopes           []string           `json:"scopes,omitempty"`
-	EntityID         *string            `json:"entity_id,omitempty"`
-	IDPEntityID      *string            `json:"idp_entity_id,omitempty"`
-	IDPMetadataXML   *string            `json:"idp_metadata_xml,omitempty"`
-	SPCertificatePEM *string            `json:"sp_certificate_pem,omitempty"`
-	GroupsAttribute  *string            `json:"groups_attribute,omitempty"`
-	RolesAttribute   *string            `json:"roles_attribute,omitempty"`
-	EmailAttribute   *string            `json:"email_attribute,omitempty"`
-	ProviderID       *string            `json:"provider_id,omitempty"`
-	URL              *string            `json:"url,omitempty"`
-	BindDN           *string            `json:"bind_dn,omitempty"`
-	CAPEM            *string            `json:"ca_pem,omitempty"`
-	UserBaseDN       *string            `json:"user_base_dn,omitempty"`
-	GroupBaseDN      *string            `json:"group_base_dn,omitempty"`
-	LoginAttribute   *string            `json:"login_attribute,omitempty"`
-	UserIDAttribute  *string            `json:"user_id_attribute,omitempty"`
-	GroupIDAttribute *string            `json:"group_id_attribute,omitempty"`
-	UserClass        *string            `json:"user_class,omitempty"`
-	GroupClass       *string            `json:"group_class,omitempty"`
-	MemberAttribute  *string            `json:"member_attribute,omitempty"`
-	GroupRoles       []GroupRoleMapping `json:"group_roles,omitempty"`
-	GroupNesting     *string            `json:"group_nesting,omitempty"`
+	Issuer            *string            `json:"issuer,omitempty"`
+	ClientID          *string            `json:"client_id,omitempty"`
+	AllowedEndpoints  []string           `json:"allowed_endpoints,omitempty"`
+	GroupsClaim       *string            `json:"groups_claim,omitempty"`
+	RolesClaim        *string            `json:"roles_claim,omitempty"`
+	ClaimRoles        []ClaimRoleMapping `json:"claim_roles,omitempty"`
+	Scopes            []string           `json:"scopes,omitempty"`
+	PasswordChangeURL *string            `json:"password_change_url,omitempty"`
+	NoEndSession      *bool              `json:"no_end_session,omitempty"`
+	EntityID          *string            `json:"entity_id,omitempty"`
+	IDPEntityID       *string            `json:"idp_entity_id,omitempty"`
+	IDPMetadataXML    *string            `json:"idp_metadata_xml,omitempty"`
+	SPCertificatePEM  *string            `json:"sp_certificate_pem,omitempty"`
+	GroupsAttribute   *string            `json:"groups_attribute,omitempty"`
+	RolesAttribute    *string            `json:"roles_attribute,omitempty"`
+	EmailAttribute    *string            `json:"email_attribute,omitempty"`
+	ProviderID        *string            `json:"provider_id,omitempty"`
+	URL               *string            `json:"url,omitempty"`
+	BindDN            *string            `json:"bind_dn,omitempty"`
+	CAPEM             *string            `json:"ca_pem,omitempty"`
+	UserBaseDN        *string            `json:"user_base_dn,omitempty"`
+	GroupBaseDN       *string            `json:"group_base_dn,omitempty"`
+	LoginAttribute    *string            `json:"login_attribute,omitempty"`
+	UserIDAttribute   *string            `json:"user_id_attribute,omitempty"`
+	GroupIDAttribute  *string            `json:"group_id_attribute,omitempty"`
+	UserClass         *string            `json:"user_class,omitempty"`
+	GroupClass        *string            `json:"group_class,omitempty"`
+	MemberAttribute   *string            `json:"member_attribute,omitempty"`
+	GroupRoles        []GroupRoleMapping `json:"group_roles,omitempty"`
+	GroupNesting      *string            `json:"group_nesting,omitempty"`
 }
 
 func str(p *string) string {
@@ -125,7 +127,7 @@ func (c ProviderConfig) toRaw(kind idpadmin.Kind) (json.RawMessage, error) {
 		if len(claims) == 0 {
 			claims = nil
 		}
-		v = idpadmin.OIDCConfig{Issuer: str(c.Issuer), ClientID: str(c.ClientID), AllowedEndpoints: c.AllowedEndpoints, GroupsClaim: str(c.GroupsClaim), RolesClaim: str(c.RolesClaim), ClaimRoles: claims, Scopes: c.Scopes}
+		v = idpadmin.OIDCConfig{Issuer: str(c.Issuer), ClientID: str(c.ClientID), AllowedEndpoints: c.AllowedEndpoints, GroupsClaim: str(c.GroupsClaim), RolesClaim: str(c.RolesClaim), ClaimRoles: claims, Scopes: c.Scopes, PasswordChangeURL: str(c.PasswordChangeURL), NoEndSession: c.NoEndSession != nil && *c.NoEndSession}
 	case idpadmin.SAML:
 		claims := make([]idpadmin.ClaimRole, 0, len(c.ClaimRoles))
 		for _, m := range c.ClaimRoles {
@@ -134,7 +136,7 @@ func (c ProviderConfig) toRaw(kind idpadmin.Kind) (json.RawMessage, error) {
 		if len(claims) == 0 {
 			claims = nil
 		}
-		v = idpadmin.SAMLConfig{EntityID: str(c.EntityID), IDPEntityID: str(c.IDPEntityID), IDPMetadataXML: str(c.IDPMetadataXML), SPCertificatePEM: str(c.SPCertificatePEM), GroupsAttribute: str(c.GroupsAttribute), EmailAttribute: str(c.EmailAttribute), RolesAttribute: str(c.RolesAttribute), ClaimRoles: claims}
+		v = idpadmin.SAMLConfig{EntityID: str(c.EntityID), IDPEntityID: str(c.IDPEntityID), IDPMetadataXML: str(c.IDPMetadataXML), SPCertificatePEM: str(c.SPCertificatePEM), GroupsAttribute: str(c.GroupsAttribute), EmailAttribute: str(c.EmailAttribute), RolesAttribute: str(c.RolesAttribute), ClaimRoles: claims, PasswordChangeURL: str(c.PasswordChangeURL)}
 	case idpadmin.LDAP:
 		roles := map[string][]string{}
 		for _, m := range c.GroupRoles {
@@ -144,7 +146,7 @@ func (c ProviderConfig) toRaw(kind idpadmin.Kind) (json.RawMessage, error) {
 			roles[m.GroupID] = m.RoleIDs
 		}
 		v = idpadmin.LDAPConfig{ProviderID: str(c.ProviderID), URL: str(c.URL), BindDN: str(c.BindDN), CAPEM: str(c.CAPEM), UserBaseDN: str(c.UserBaseDN), GroupBaseDN: str(c.GroupBaseDN),
-			LoginAttribute: str(c.LoginAttribute), UserIDAttribute: str(c.UserIDAttribute), GroupIDAttribute: str(c.GroupIDAttribute), UserClass: str(c.UserClass), GroupClass: str(c.GroupClass), MemberAttribute: str(c.MemberAttribute), GroupRoles: roles, GroupNesting: str(c.GroupNesting)}
+			LoginAttribute: str(c.LoginAttribute), UserIDAttribute: str(c.UserIDAttribute), GroupIDAttribute: str(c.GroupIDAttribute), UserClass: str(c.UserClass), GroupClass: str(c.GroupClass), MemberAttribute: str(c.MemberAttribute), GroupRoles: roles, GroupNesting: str(c.GroupNesting), PasswordChangeURL: str(c.PasswordChangeURL)}
 	default:
 		return nil, idpadmin.ErrInvalid
 	}
@@ -157,14 +159,18 @@ func fromRaw(kind idpadmin.Kind, raw json.RawMessage) ProviderConfig {
 	case idpadmin.OIDC:
 		var o idpadmin.OIDCConfig
 		_ = json.Unmarshal(raw, &o)
-		c = ProviderConfig{Issuer: ptr(o.Issuer), ClientID: ptr(o.ClientID), AllowedEndpoints: o.AllowedEndpoints, GroupsClaim: ptr(o.GroupsClaim), RolesClaim: ptr(o.RolesClaim), Scopes: o.Scopes}
+		c = ProviderConfig{Issuer: ptr(o.Issuer), ClientID: ptr(o.ClientID), AllowedEndpoints: o.AllowedEndpoints, GroupsClaim: ptr(o.GroupsClaim), RolesClaim: ptr(o.RolesClaim), Scopes: o.Scopes, PasswordChangeURL: ptr(o.PasswordChangeURL)}
+		if o.NoEndSession {
+			t := true
+			c.NoEndSession = &t
+		}
 		for _, m := range o.ClaimRoles {
 			c.ClaimRoles = append(c.ClaimRoles, ClaimRoleMapping{Value: m.Value, RoleIDs: m.RoleIDs})
 		}
 	case idpadmin.SAML:
 		var o idpadmin.SAMLConfig
 		_ = json.Unmarshal(raw, &o)
-		c = ProviderConfig{EntityID: ptr(o.EntityID), IDPEntityID: ptr(o.IDPEntityID), IDPMetadataXML: ptr(o.IDPMetadataXML), SPCertificatePEM: ptr(o.SPCertificatePEM), GroupsAttribute: ptr(o.GroupsAttribute), EmailAttribute: ptr(o.EmailAttribute), RolesAttribute: ptr(o.RolesAttribute)}
+		c = ProviderConfig{EntityID: ptr(o.EntityID), IDPEntityID: ptr(o.IDPEntityID), IDPMetadataXML: ptr(o.IDPMetadataXML), SPCertificatePEM: ptr(o.SPCertificatePEM), GroupsAttribute: ptr(o.GroupsAttribute), EmailAttribute: ptr(o.EmailAttribute), RolesAttribute: ptr(o.RolesAttribute), PasswordChangeURL: ptr(o.PasswordChangeURL)}
 		for _, m := range o.ClaimRoles {
 			c.ClaimRoles = append(c.ClaimRoles, ClaimRoleMapping{Value: m.Value, RoleIDs: m.RoleIDs})
 		}
@@ -172,7 +178,7 @@ func fromRaw(kind idpadmin.Kind, raw json.RawMessage) ProviderConfig {
 		var o idpadmin.LDAPConfig
 		_ = json.Unmarshal(raw, &o)
 		c = ProviderConfig{ProviderID: ptr(o.ProviderID), URL: ptr(o.URL), BindDN: ptr(o.BindDN), CAPEM: ptr(o.CAPEM), UserBaseDN: ptr(o.UserBaseDN), GroupBaseDN: ptr(o.GroupBaseDN),
-			LoginAttribute: ptr(o.LoginAttribute), UserIDAttribute: ptr(o.UserIDAttribute), GroupIDAttribute: ptr(o.GroupIDAttribute), UserClass: ptr(o.UserClass), GroupClass: ptr(o.GroupClass), MemberAttribute: ptr(o.MemberAttribute), GroupNesting: ptr(o.GroupNesting)}
+			LoginAttribute: ptr(o.LoginAttribute), UserIDAttribute: ptr(o.UserIDAttribute), GroupIDAttribute: ptr(o.GroupIDAttribute), UserClass: ptr(o.UserClass), GroupClass: ptr(o.GroupClass), MemberAttribute: ptr(o.MemberAttribute), GroupNesting: ptr(o.GroupNesting), PasswordChangeURL: ptr(o.PasswordChangeURL)}
 		keys := make([]string, 0, len(o.GroupRoles))
 		for k := range o.GroupRoles {
 			keys = append(keys, k)
