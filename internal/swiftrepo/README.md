@@ -1,6 +1,6 @@
 # Swift Package Manager registry adapter
 
-Development subset of F24 (SE-0292 registry v1). No migrations or dependency changes.
+Swift Package Registry v1 (SE-0292). Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/swift/` for feeds of format `swift`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/swift.md`.
 
 ```go
 repo, err := swiftrepo.New(db, service)
@@ -8,7 +8,7 @@ err = repo.SetPublicURL("https://packages.example")
 // Mount at /feeds/{slug}/swift/. Feed format must be `swift`.
 ```
 
-Auth: Bearer token or Basic password containing a scoped token; no anonymous access.
+Auth: Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter. Every request without an `Authorization` header gets `401` with `WWW-Authenticate: Bearer realm="swift"` unless the layer admitted it as anonymous.
 Every request needs `Accept: application/vnd.swift.registry.v1+json` (400 missing/invalid, 415 other version).
 Errors are `application/problem+json`.
 
@@ -20,8 +20,9 @@ optional `source-archive-signature`/`metadata-signature` with `X-Swift-Package-S
 optional `X-Checksum-Sha256`). Publish is one atomic bundle (archive, release record, manifests) and
 immutable: identical retry is 201, different bytes 409.
 
-Limitations: publish is synchronous (201, never 202); DELETE returns 405 (no delete in the core
-service yet); identifier lookup scans up to 4096 release records (no index); signatures are stored
+Delete: `DELETE {scope}/{name}/{version}` goes through the core delete (gated by the feed's delete policy).
+
+Limitations: publish is synchronous (201, never 202); identifier lookup scans up to 4096 release records (no index); signatures are stored
 and returned but not cryptographically verified; no `.json` suffix negotiation beyond package list.
 Test: `sh internal/swiftrepo/test-postgres.sh`.
 

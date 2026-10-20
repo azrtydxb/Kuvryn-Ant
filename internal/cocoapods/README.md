@@ -1,7 +1,7 @@
-# CocoaPods adapter (F04)
+# CocoaPods adapter
 
-Mount at `/feeds/{slug}/cocoapods/`; feed format `cocoapods`. Use as
-`source 'https://user:TOKEN@host/feeds/x/cocoapods/'` (Basic password = machine token).
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/cocoapods/` for feeds of format `cocoapods`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/cocoapods.md`. Use as
+`source 'https://user:TOKEN@host/feeds/x/cocoapods/'` (Basic password = token).
 Requires `SetPublicURL` (archive URLs are written into podspecs at publish time).
 
 - CDN reads: `CocoaPods-version.yml` (prefix_lengths 1,1,1), `all_pods_versions_a_b_c.txt`,
@@ -17,7 +17,8 @@ Requires `SetPublicURL` (archive URLs are written into podspecs at publish time)
 
 Limitations: no external/VCS-only source references (publish requires an archive);
 podspec URLs embed the public URL in force at publish time; archive downloads need
-client credentials; not exercised against the real CocoaPods 1.17.0 client.
+client credentials. The real CocoaPods 1.17.0 client is exercised by
+`conformance/run.sh local cocoapods`.
 
 Verify: `sh internal/cocoapods/test-postgres.sh`
 

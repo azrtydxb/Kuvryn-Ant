@@ -1,8 +1,6 @@
-# APT / Debian local adapter
+# APT / Debian adapter
 
-Development subset of F03, not full Phase 1 conformance. Only this package is
-implemented; the parent must mount the handler, call `SetKeyring` and
-`SetPublicURL`. No migrations or management API changes are required.
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/apt/` for feeds of format `apt`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/apt.md`. The signing keyring is wired with `SetKeyring` when a secret keyring is configured.
 
 ```go
 repo, err := aptrepo.New(db, service)
@@ -11,8 +9,7 @@ repo.SetKeyring(keys) // *secrets.Keyring; required for publish/delete/key expor
 // Mount at /feeds/{slug}/apt/. The feed must have format `apt`.
 ```
 
-Auth: scoped Bearer token or HTTP Basic password holding one (`auth.conf`).
-Anonymous access is not implemented. Reads are private/no-store.
+Auth: Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter. Reads are private/no-store.
 
 ## Routes (under `/feeds/{slug}/apt/`)
 
@@ -47,7 +44,7 @@ Release carries `Date`, `Valid-Until` (30 days, `SetValidity`) and
 ar container, `debian-binary` 2.x, one `control.tar` or `control.tar.gz`, one
 `data.tar*`; control paragraph strictly parsed (Package/Version/Architecture/
 Maintainer/Description, name/version/arch patterns). Maintainer scripts are never
-executed. 128 MiB deb cap, 1 MiB control, four concurrent uploads, 50,000
+executed. 128 MiB deb cap, 1 MiB control, concurrent uploads limited by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32), 50,000
 stanzas per distribution, 64 MiB per index.
 
 ## Verification
@@ -69,5 +66,16 @@ and fail-closed signing.
   pool URL remains downloadable and old by-hash generations stay reachable.
 - Valid-Until is not refreshed automatically; the next publish re-signs.
 - Source packages (.dsc), Translations/Contents and Range requests on .deb are
-  not implemented. Remote/replica sources and a run with the pinned apt 3.0.3
-  client are release gates.
+  not implemented for local content.
+- The real apt 3.0.3 client (publish, install, delete, pull-through) is exercised by
+  `conformance/run.sh local apt`.
+
+## Remote sources (pull-through)
+
+Release, InRelease and Release.gpg are served verbatim from upstream through the metadata
+cache and are never rewritten, merged or re-signed: apt verifies the upstream signature
+itself. Every other file under `dists/` is served only if the upstream Release lists it,
+fetched by hash when the upstream offers Acquire-By-Hash, verified against the Release
+SHA256 before the first byte is served and cached as an immutable asset. A .deb is
+served only if a Packages index of a distribution this feed already served lists its pool
+path, and is checked against the SHA256 and size of that index.

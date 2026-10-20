@@ -1,16 +1,15 @@
-# Local RubyGems adapter (F22 implementation subset)
+# RubyGems adapter
 
-Mount `New(db, service)` at `/feeds/{slug}/rubygems/`. The feed/source format is
-`rubygems`. The repository binds to `service.Lease().InstanceID`; parent integration
-owns routing, registration, migrations and the shared namespace model. No new
-module dependencies: this package uses the existing `pgx/v5` and
-`go.yaml.in/yaml/v3`, plus the standard library. PostgreSQL is the only metadata
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/rubygems/` for feeds of format `rubygems`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/rubygems.md`.
+The repository binds to `service.Lease().InstanceID`. PostgreSQL is the only metadata
 backend.
 
 ## Implemented routes
 
 - `POST api/v1/gems`: raw `.gem` push; raw Authorization API key, Basic password
-  token or Bearer token. Returns 201, including identical-byte retries; different
+  token or Bearer token. Basic and Bearer credentials are verified by the shared
+  client-authentication layer; a raw API key (what `gem push` sends) is checked directly
+  against service tokens (see `site/formats/rubygems.md`). Returns 201, including identical-byte retries; different
   bytes at the same name/version/platform conflict with 409.
 - `GET/HEAD names`, `versions`, `info/{name}`: Bundler compact index, runtime
   dependency constraints, Ruby/RubyGems requirements and gem SHA256; versions
@@ -22,6 +21,8 @@ backend.
   uploaded Marshal object. It retains identity, dependencies, requirements,
   summary, description, authors, licenses, homepage and date; absent dates use
   Unix epoch. Other gemspec fields remain in the exact original gem archive.
+- `DELETE api/v1/gems/yank`: `gem yank`, removes the version through the artifact core
+  (gated by the feed's delete policy).
 - `GET/HEAD gems/{name}-{version}[-{platform}].gem`: exact immutable upload bytes,
   ETag/conditional GET and single byte range (multipart ranges return 416).
 
@@ -31,7 +32,7 @@ Platform variants use version keys `version-platform` (plain `version` for ruby)
 Ambiguous filename collisions fail closed, rather than choosing another package.
 There is no RubyGems.org sign-in/key creation API: provision a scoped service token
 through the shared identity service. Basic uses the password as token, ignoring
-username. Browser principals are replaced, and anonymous reads are not implemented.
+username. Browser principals are replaced; anonymous reads of a feed with `anonymous_read` are decided by the client-authentication layer.
 
 All responses are private/no-store. These wire representations emit no absolute
 URLs and never derive an origin from Host, TLS or forwarded headers. The optional
@@ -51,7 +52,7 @@ calls, including with a one-connection pool. Indexes require feed-level read
 permission and filter entries through source authorization; source-only scopes
 without feed-level read are not sufficient for these index routes.
 
-Limits: four concurrent uploads, 256 MiB compressed gem, 1 MiB metadata/checksum
+Limits: concurrent uploads bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32), 256 MiB compressed gem, 1 MiB metadata/checksum
 expansion, 512 MiB data expansion, 20,000 data entries, 20,000 YAML nodes, YAML depth
 24, 256 dependencies and 16 requirement clauses per dependency. Validation has a
 15-second context budget. Index reads have a 20-second budget and fail at more than
@@ -93,19 +94,11 @@ to have been requested. HTTP tests cover HEAD/range/conditional behavior, immuta
 conflict, concurrent conflicts, malformed input, token denial, cross-instance
 isolation, first-owner missing-version behavior, and injected atomic bundle failure.
 
-## Remaining release gates
+## Conformance and remote sources
 
-This is not complete F22 or Phase 1 conformance. RubyGems 4.0.23 has not been run;
-the observed installed-client record is not a pinned baseline fixture lock. Yank,
-latest_specs, dependency API/search, signed gem validation, upstream pull-through,
-cache freshness/offline policy, replica seed/incremental closure, retention,
-format-specific telemetry/health, management API/UI/MCP and operational restart
-coverage remain open. Consumption of replicated core records is not evidence of
-end-to-end replication. Core namespace integration remains parent-owned.
+The real RubyGems and Bundler clients (push, install, yank, pull-through of rubygems.org) are exercised by `conformance/run.sh local rubygems`. Not implemented: latest_specs, the dependency API, search, owners, API key creation and signed gem validation.
 
-Only local disk was exercised here. OKE plus MinIO is the primary deployment gate;
-AWS-compatible storage remains in scope without adding a provider fleet. All 26
-formats remain Phase 1 blockers; this subset does not reduce that requirement.
+With a remote source, the per-gem compact index file (`info/<gem>`) is read through the metadata cache and validated line by line; it carries no URLs, so it is served as received. A `.gem` is fetched on first download from `gems/<file>.gem`, verified against the sha256 `checksum` of its info line and cached together with a metadata record rebuilt from that line, so the local composition lists it afterwards and keeps serving it during an outage. `/versions`, `/names` and the legacy specs listings are feed-local views: the upstream versions of a large registry exceed the metadata limit and are never unioned with local content.
 
 Wire references: [RubyGems API](https://guides.rubygems.org/rubygems-org-api/) and
 [compact index API](https://guides.rubygems.org/rubygems-org-compact-index-api/).

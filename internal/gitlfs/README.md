@@ -1,9 +1,9 @@
-# Git LFS local protocol adapter (F09)
+# Git LFS adapter
 
 Integration: construct `New(db, service)`, call `SetPublicURL` with the trusted
-external **origin**, then mount `/feeds/{slug}/git-lfs/`. Feed/source format is
-`git-lfs`. This package does not change server wiring, migrations, or dependencies.
-The lease instance is fixed at construction. PostgreSQL is the metadata database.
+external **origin** and mount `/feeds/{slug}/git-lfs/` (done by `cmd/ant/artifacts.go`;
+see `site/formats/git-lfs.md`). Feed/source format is `git-lfs`. The lease instance is
+fixed at construction. PostgreSQL is the metadata database.
 
 Implemented subset:
 
@@ -18,16 +18,15 @@ Implemented subset:
   is the oid, namespace `git-lfs`, version `sha256`, asset key `object`. Each oid
   therefore has one package/object owner. Download actions pin owner and size;
   fresh lookups cannot fall through to lower sources.
-- Single explicit, open-ended, and suffix ranges; invalid/multipart ranges return
-  416. Strong ETag If-Range is supported. HEAD returns whole-object headers.
+- Single explicit, open-ended, and suffix ranges; invalid/multipart ranges return 416. Strong ETag If-Range is supported. HEAD returns whole-object headers.
 
 Authentication and action lifecycle:
 
-Basic passwords and Bearer credentials are shared machine service tokens;
-usernames have no authorization meaning. Browser session principals are cleared.
-Readers need read scope and upload/verify clients need publish plus read scope.
-Anonymous access is disabled. Both a valid service credential and a cryptographic
-random `X-LFS-Action` grant are required for each transfer. Grants bind token ID,
+Basic passwords and Bearer credentials are verified by the shared client-authentication
+layer (`internal/identity.ClientAuth`); usernames have no authorization meaning. Browser
+session principals are cleared. Readers need read scope and upload/verify clients need
+publish plus read scope. Both a valid credential and a cryptographic random `X-LFS-Action`
+grant are required for each transfer. Grants bind token ID,
 principal, feed, oid, size, operation, source and five-minute expiry. Every request
 reauthenticates the service token (including revocation), and core operations
 recheck authorization. Credentials are returned only in action headers targeting
@@ -44,7 +43,7 @@ reusable for immutable retries/ranges until expiry; transfers are cancelled at
 expiry too. Only the URL plus both returned headers constitutes an action.
 
 Limits: 1 MiB batch JSON, 100 objects per batch, 4 KiB verify JSON, 1 TiB declared
-object size, four active transfers per handler, 30-second batch context, 30-second
+object size, active transfers bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`), 30-second batch context, 30-second
 read/write progress deadlines and 64 KiB transfer buffers. Object bytes are never
 buffered as a whole. Unsupported transfers/hash algorithms fail explicitly.
 
@@ -62,15 +61,10 @@ PostgreSQL integration tests skip unless ANT_TEST_DATABASE_URL is set; setting
 ANT_REQUIRE_INTEGRATION=1 makes its absence fatal. The native test skips if
 `git-lfs` is absent. No global Git settings or environment changes are made.
 
-Remaining release gates: integration into the main server/API/UI; remote
-freshness; authoritative replica seed/incremental/offline
-closure; namespace binding semantics supplied by core; shared cleanup, search,
-explain/health/metrics integration; MinIO and compatible AWS storage evidence;
-large-production-object throughput and fault testing. OKE + MinIO remains the
-primary deployment target; no provider environment fleet is created. All 26
-formats remain Phase 1 requirements. This local evidence is not full F09 or
-shared-contract conformance. Git hosting, LFS locks, custom transfer adapters,
-resumable uploads, multipart ranges and Git-ref-specific ACLs are not implemented.
+The adapter is wired into the server, management API and console like the other formats
+and is exercised end to end by `conformance/run.sh local git-lfs`. Not implemented: Git
+hosting, LFS locks, custom transfer adapters, resumable uploads, multipart ranges and
+Git-ref-specific ACLs.
 
 Protocol references: [v3.8.0 batch API](https://github.com/git-lfs/git-lfs/blob/v3.8.0/docs/api/batch.md)
 and [basic transfers](https://github.com/git-lfs/git-lfs/blob/v3.8.0/docs/api/basic-transfers.md).

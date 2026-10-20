@@ -1,23 +1,18 @@
-# Ansible Galaxy local adapter
+# Ansible Galaxy adapter
 
-Development subset of F02, not full Phase 1 conformance. Only this package is
-implemented here; parent integration must mount the handler and configure the
-trusted origin. No migrations, management API, main wiring or dependency changes
-are required by this package.
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/ansible/` for feeds of format `ansible`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/ansible.md`.
 
 ```go
 repo, err := ansiblerepo.New(db, service)
 // Check err, then configure the externally reachable origin before serving:
 err = repo.SetPublicURL("https://galaxy.example")
-// Mount at /feeds/{slug}/ansible/ using the parent router.
+// Mount at /feeds/{slug}/ansible/.
 ```
 
 `SetPublicURL` accepts HTTPS or literal loopback HTTP, with no credentials, path,
 query or fragment. Host, forwarding headers and request TLS never select URLs.
 The feed must have format `ansible`; its instance must match the service lease.
-Every request uses a scoped machine Bearer token or Galaxy `Token` scheme. Browser
-principals are discarded. Anonymous access is not implemented. Namespace is the
-core authorization unit for reads and writes.
+The Galaxy `Token` scheme is treated like `Bearer`. Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter. Namespace is the core authorization unit for reads and writes.
 
 ## Routes
 
@@ -45,12 +40,12 @@ retries return a completed import without new core events.
 
 ## Bounds
 
-Four concurrent publishes, 64 MiB archive cap, 256 MiB expanded budget, 10,000 tar
+Concurrent publishes are bounded by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32); 64 MiB archive cap, 256 MiB expanded budget, 10,000 tar
 members, 2 MiB metadata and 32-member directory depth. Imports expire after one
 hour. Streams use 64 KiB buffers and 30-second progress deadlines. Reads are
 private/no-store.
 
-## Verification and remaining gates
+## Verification
 
 Run from repository root:
 
@@ -64,11 +59,14 @@ package. Tests cover publish/import, collection and version indexes, dependency
 resolution payloads, byte-identical downloads, tamper rejection, metadata/filename
 mismatch and isolation failures.
 
-The package has not been exercised against the real ansible-galaxy client; native
-client verification with the pinned ansible-core baseline, remote/replica
-resolution, testing/import state machine parity, signature bundles, retention and
-deployment evidence remain release gates. All 26 formats remain Phase 1 scope.
+The real `ansible-galaxy` client (publish, install, pull-through) is exercised by `conformance/run.sh local ansible`. Not implemented: the Galaxy NG testing/approval state machine and collection signature bundles. Import tasks are kept in memory per replica for one hour and are bound to the token and principal that published.
+
 Protocol reference: https://docs.ansible.com/ansible/latest/dev_guide/developing_collections_distributing.html
+
+## Remote sources (pull-through)
+
+The remote source origin is the API root that serves `v3/` (for example `https://galaxy.ansible.com/api/`). Collection detail, the fully paginated versions list and per-version detail are read through the metadata cache and re-rendered with every `href` and `download_url` pointing at this feed; upstream pagination links are consumed, never passed on. A collection archive is fetched on first download from the upstream `download_url`, verified against `artifact.sha256` before the first byte is served and cached with a metadata asset, so cached versions stay listable during an outage. A collection owned by a local source is never answered from upstream.
+
 ## Publishing and remote redirects
 
 `ansible-galaxy collection publish` sends the archive base64 encoded

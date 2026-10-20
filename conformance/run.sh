@@ -2,7 +2,9 @@
 # Usage: conformance/run.sh <target> [formats...]
 #   target   local | oke | kw | <any label for the results directory>
 # Environment:
-#   ANT_BASE_URL     base URL (local: auto-started if unset; oke: https://ant.azrty.com; kw: https://ant.kw.watteel.lab)
+#   ANT_BASE_URL     base URL (local: auto-started if unset)
+#   ANT_OKE_URL      base URL used by the oke target when ANT_BASE_URL is unset (for example https://ant.example.com)
+#   ANT_KW_URL       base URL used by the kw target when ANT_BASE_URL is unset (for example https://ant.site-b.example.com)
 #   ANT_TOKEN / ANT_TOKEN_FILE   admin service token, raw or credential JSON (never written to results)
 #   ANT_CA_BUNDLE    PEM bundle for a private CA (kw)
 #   ANT_VERSION      version label recorded as Ant version (default: git sha)
@@ -14,18 +16,22 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/.." && pwd)
 [ $# -ge 1 ] || {
-	echo "usage: $0 <target> [formats...]" >&2
-	exit 2
+  echo "usage: $0 <target> [formats...]" >&2
+  exit 2
 }
 TARGET=$1
 case "$TARGET" in
-oke) : "${ANT_BASE_URL:=https://ant.azrty.com}" ;;
-kw) : "${ANT_BASE_URL:=https://ant.kw.watteel.lab}" ;;
+oke) : "${ANT_BASE_URL:=${ANT_OKE_URL:-}}" ;;
+kw) : "${ANT_BASE_URL:=${ANT_KW_URL:-}}" ;;
 esac
+if [ "$TARGET" != local ] && [ -z "${ANT_BASE_URL:-}" ]; then
+  echo "no base URL for target $TARGET: set ANT_BASE_URL (or ANT_OKE_URL / ANT_KW_URL for the oke / kw targets)" >&2
+  exit 2
+fi
 STARTED=
 if [ "$TARGET" = local ] && [ -z "${ANT_BASE_URL:-}" ]; then
-	eval "$("$HERE/dev-instance.sh" start | tail -2)"
-	STARTED=1
+  eval "$("$HERE/dev-instance.sh" start | tail -2)"
+  STARTED=1
 fi
 export ANT_BASE_URL
 [ -z "${ANT_TOKEN_FILE:-}" ] || export ANT_TOKEN_FILE

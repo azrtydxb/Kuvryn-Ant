@@ -73,8 +73,9 @@ Do not run `ant bootstrap` again for an existing instance.
 `helm rollback` alone is not sufficient, because the older image refuses the newer schema.
 
 1. Scale to zero: `kubectl scale deployment/ant-ant --replicas=0`.
-2. Restore the pre-upgrade backup with the **pre-upgrade** `ant` binary into an empty database (a new database, or the same one after dropping its schema). `ant restore --force` accepts a schema that has the Kuvryn tables but no rows; it refuses any database that still contains data.
-3. `helm rollback ant <revision> --wait`.
+2. Restore the pre-upgrade backup with the **pre-upgrade** `ant` binary into an empty database (a new database, or the same one after dropping and recreating it or its schema), with the same blob store and keyring. Without `--force`, `ant restore` refuses any database that already holds tables. `--force` accepts a schema that has the Kuvryn tables but no rows; it refuses any database that still contains data.
+3. If you restored into a new database, point the release at it (the DSN in the `postgres.existingSecret` Secret).
+4. `helm rollback ant <revision> --wait`.
 
 ::: warning Gap
 Running `ant restore --force` directly against the upgraded, populated database does not work: restore never overwrites rows, so the database (or its schema) must be emptied or replaced first. This rollback path has not been rehearsed end to end; rehearse it on a copy before relying on it.

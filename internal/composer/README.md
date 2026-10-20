@@ -1,21 +1,18 @@
-# Composer local adapter
+# Composer adapter
 
-Development subset of F05, not full Phase 1 conformance. Only this package is
-implemented here; parent integration must mount the handler and configure the
-trusted origin. No migrations, management API, main wiring or dependencies change.
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/composer/` for feeds of format `composer`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/composer.md`.
 
 ```go
 repo, err := composer.New(db, service)
 // Check err, then configure the externally reachable origin before serving:
 err = repo.SetPublicURL("https://packages.example")
-// Mount at /feeds/{slug}/composer/ using the parent router.
+// Mount at /feeds/{slug}/composer/.
 ```
 
 `SetPublicURL` accepts HTTPS or literal loopback HTTP, with no credentials, path,
 query or fragment. Host, forwarding headers and request TLS never select URLs.
 The feed must have format `composer`; its instance must match the service lease.
-Every request uses a scoped machine Bearer token or HTTP Basic password containing
-that token. Browser principals are discarded. Anonymous access is not implemented.
+Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter.
 The vendor portion of `vendor/package` is the core namespace for reads and writes.
 
 ## Routes and ingestion
@@ -61,7 +58,7 @@ The core owns audit/outbox and storage behavior.
 
 ## Bounds
 
-Uploads use private temporary files, four concurrent ingestion slots, a two-minute
+Uploads use private temporary files, ingestion limited by the per-format upload slots (`ANT_UPLOAD_SLOTS`; by default two per CPU, between 4 and 32), a two-minute
 processing context, 128 MiB compressed / 512 MiB expanded bounds, 10,000 ZIP entries,
 8 MiB central directory, 1 KiB names / 32 path levels and 1 MiB manifest. All entries
 are decompressed with cancellation and CRC verification. ZIP64, symlinks/special
@@ -72,7 +69,7 @@ JSON depth is bounded; PSR paths are capped at 1,024. Metadata listing is capped
 64 KiB chunks and 30-second progress deadlines. Reads are private/no-store; no
 conditional cache or range support is claimed.
 
-## Verification and remaining gates
+## Verification
 
 Run from repository root:
 
@@ -93,13 +90,10 @@ The client test skips when Composer is absent and reports the actual version/has
 not claim the contract's 2.10.3 baseline. Fuzz seed coverage runs with ordinary
 tests; an extended fuzz campaign has not been run.
 
-Remaining release gates: full Composer schema and version/constraint coverage,
-2.10.3 pinned baseline, management API/UI/MCP ingestion sessions, upstream cache
-and freshness, anonymous policy, external source closure reporting, replication
-seed/incremental/offline verification, deletion/retention/search/health/metrics,
-MinIO backend validation and appropriate AWS compatibility checks. Namespace
-bindings beyond the core's current package-owner policy require core integration.
-All 26 formats remain Phase 1 scope; this local subset does not narrow that scope.
-No provider fleet is introduced.
+The real Composer client (update, locked install, Packagist pull-through, delete) is exercised by `conformance/run.sh local composer`. Not covered: the full Composer schema and constraint grammar for ingested packages (branch names, stability flags, aliases), management API ingestion sessions and an extended fuzz campaign.
+
+## Remote sources (pull-through)
+
+The metadata template comes from the upstream `packages.json` (`metadata-url`, default `/p2/%package%.json`). `p2/<vendor>/<pkg>.json` and the `~dev` file are read through the metadata cache, expanded from Composer's minified form and re-rendered without `source` (a VCS URL would send clients around the feed) and with every `dist.url` pointing at this feed. The feed's `dist/.../archive.zip` resolves the upstream `dist.url` again from the cached metadata, so the client never chooses the upstream URL. Packagist publishes no archive digest, so an archive is checked to be a well-formed ZIP of bounded size and, when the upstream states a SHA-1 `shasum`, against it. Dist URLs usually live on another host (GitHub `api.github.com`, redirecting to `codeload.github.com`): add those origins to the source's redirect origins; the source credential is never sent there. A package owned by a local source is never answered from upstream.
 
 Protocol reference: https://getcomposer.org/doc/05-repositories.md

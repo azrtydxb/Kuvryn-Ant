@@ -6,9 +6,10 @@ digest and the active backend is resolved at request time.
 
 ## Prerequisites
 
-- Both backends must be configured. `ANT_STORAGE_DIRECTORY` is always required;
-  for S3 set `ANT_S3_REGION`, `ANT_S3_BUCKET`, `ANT_S3_CREDENTIALS_FILE` (and the
-  optional endpoint, prefix and CA file). `ANT_STORAGE_BACKEND` only chooses the
+- Both backends must be configured. `ANT_DATA_DIR` (the private data directory:
+  disk blobs, upload staging and S3 resume state) is always used; for S3 set
+  `ANT_S3_REGION`, `ANT_S3_BUCKET`, `ANT_S3_CREDENTIALS_FILE` (and the optional
+  `ANT_S3_ENDPOINT`, `ANT_S3_PREFIX`, `ANT_S3_PATH_STYLE` and `ANT_S3_CA_FILE`). `ANT_STORAGE_BACKEND` only chooses the
   backend used until the first migration; afterwards the persisted active
   backend wins.
 - Run it as the instance administrator, on the host (`ant storage ...`) or from

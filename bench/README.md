@@ -13,7 +13,7 @@ go run ./bench/runner -target kw  -out evidence/2026-10-18/bench/kw.json
 go run ./bench/runner -target oke -scenarios warm,fanout -fanout 16 -duration 20 -out /tmp/oke.json
 ```
 
-Needs `kubectl` contexts `azrty-oke` and `kw`, Go, and the automation tokens in `~/.kuvryn-ant/`. Load is capped by flags
+Needs the base URLs of the two instances in `ANT_OKE_URL` and `ANT_KW_URL` (for example `https://ant.example.com` and `https://ant.site-b.example.com`), `kubectl` contexts named by `ANT_OKE_CONTEXT` and `ANT_KW_CONTEXT` (defaults `azrty-oke` and `kw`), Go, and the automation tokens `~/.kuvryn-ant/<context>-automation-token.txt`. Load is capped by flags
 (`-fanout`, `-duration`, `-large-gib`); defaults are modest enough for a shared cluster.
 
 ## Scenarios

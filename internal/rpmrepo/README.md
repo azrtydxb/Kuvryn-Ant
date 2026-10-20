@@ -1,22 +1,17 @@
-# Yum / RPM local adapter
+# Yum / RPM adapter
 
-Development subset of F26 (RPM-MD), not full Phase 1 conformance: no `dnf5`
-conformance run has been executed yet (see Known limitations). Only this package
-is implemented; the parent must mount it and configure the trusted origin. No
-migrations or management API changes are required.
+Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/rpm/` for feeds of format `rpm`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/rpm.md`. The signing secrets are wired with `SetSecrets` when a secret keyring is configured.
 
 ```go
 repo, err := rpmrepo.New(db, service)
 // Check err. Optional: enable repomd.xml.asc signing with per-feed keys.
 err = repo.SetSecrets(secrets.Store{DB: db, Keys: keyring})
 err = repo.SetPublicURL("https://packages.example")
-// Mount at /feeds/{slug}/rpm/ using the parent router.
+// Mount at /feeds/{slug}/rpm/.
 ```
 
 The feed must have format `rpm` and its instance must match the service lease.
-Every request uses a scoped machine Bearer token or HTTP Basic password carrying
-that token (dnf: `username=`/`password=` in the `.repo`); browser principals are
-discarded and anonymous access is not implemented.
+Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter. (dnf: `username=`/`password=` in the `.repo`.)
 
 ## Routes (under `/feeds/{slug}/rpm/`)
 
@@ -82,15 +77,20 @@ generation pruning yet.
 
 ## Known limitations
 
-- Not exercised against dnf5 5.4.6.0 or createrepo_c (neither available in the
-  development environment); fixtures are synthetic RPMs built in the tests.
+- The unit and integration tests use synthetic RPMs built in the tests; the real `dnf5`
+  client (publish, install, delete, pull-through of a Fedora mirror) is exercised by
+  `conformance/run.sh local rpm`.
 - No updateinfo/comps/modules ingestion, deltas, or SRPM-specific handling beyond
-  `src` arch. Remote/replica sources and mirrored-snapshot passthrough are not
-  implemented. No HTTP Range support. At most 10,000 packages per feed.
+  `src` arch. Local snapshots are never merged with an upstream repository (see Remote
+  repodata). No HTTP Range support. At most 10,000 packages per feed.
 - Package (rpm) signatures are retained, not verified against a trust root.
 - Signing uses `golang.org/x/crypto/openpgp` (frozen, RSA only).
 
-## Remote repodata
+## Remote sources (pull-through)
+
+The origin is the repository root (the directory that contains `repodata/`). `repomd.xml`, `repomd.xml.asc` and `repomd.xml.key` are served byte for byte from upstream and never rewritten, merged or re-signed, so the client checks the upstream signature itself and package signatures stay inside the untouched RPMs. Any other `repodata/` file is served only if `repomd.xml` lists it with a sha256 checksum, and is checked against it before the first byte is served. A package at any depth is served only if the upstream `primary.xml` lists it with a sha256 checksum, checked before serving and then cached. A repository with local RPMs keeps serving its local snapshot, and a package name owned by a local source is never fetched from upstream. Ant does not verify the upstream `repomd.xml` signature itself.
+
+### Primary indexes and slow upstreams
 
 Primary indexes compressed with gzip, xz, bzip2 or zstd (Fedora) are read to verify package
 checksums. A repodata file that must first be fetched from a slow upstream can take longer

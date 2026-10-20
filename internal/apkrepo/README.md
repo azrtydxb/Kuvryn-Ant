@@ -1,16 +1,16 @@
 # APK (Alpine) adapter
 
-Local Alpine APK v2 repositories (contract F01). Mount: `/feeds/{slug}/apk/`.
+Alpine APK v2 repositories, local and pull-through. Mounted by `cmd/ant/artifacts.go` at `/feeds/{slug}/apk/` for feeds of format `apk`. The external origin comes from `ANT_PUBLIC_URL` through `SetPublicURL`. Real-client runs are driven by `conformance/` (see `conformance/README.md`); the user-facing description is `site/formats/apk.md`.
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| PUT | `{branch}/{repo}/{arch}/{name}-{ver}-r{N}.apk` | Feed Admin. Parses `.PKGINFO` from the control segment; name/version must match the filename, arch must equal the path arch or `noarch`. Package + index entry publish as one atomic bundle. Package bytes and signature segment are preserved. |
-| GET/HEAD | same | Download. A noarch package (`A:noarch`) is served from every arch path of its branch/repo and from `noarch/`, which is where apk asks for it. |
-| DELETE | same | Feed Admin, local sources only; removes version, assets and tags in one transaction with audit and outbox events. Blobs are left for GC. |
-| GET | `{branch}/{repo}/{arch}/APKINDEX.tar.gz` | Generated on request from committed entries, signed `.SIGN.RSA.ant-<feed8>.rsa.pub` (RSA-2048, SHA-1 over the compressed index segment). |
-| GET | `keys/ant-<feed8>.rsa.pub` | PEM public key for `/etc/apk/keys`. |
+| Method   | Path                                           | Notes                                                                                                                                                                                                                                           |
+| -------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PUT      | `{branch}/{repo}/{arch}/{name}-{ver}-r{N}.apk` | Feed Admin. Parses `.PKGINFO` from the control segment; name/version must match the filename, arch must equal the path arch or `noarch`. Package + index entry publish as one atomic bundle. Package bytes and signature segment are preserved. |
+| GET/HEAD | same                                           | Download. A noarch package (`A:noarch`) is served from every arch path of its branch/repo and from `noarch/`, which is where apk asks for it.                                                                                                   |
+| DELETE   | same                                           | Feed Admin, local sources only; removes version, assets and tags in one transaction with audit and outbox events. Blobs are left for GC.                                                                                                        |
+| GET      | `{branch}/{repo}/{arch}/APKINDEX.tar.gz`       | Generated on request from committed entries, signed `.SIGN.RSA.ant-<feed8>.rsa.pub` (RSA-2048, SHA-1 over the compressed index segment).                                                                                                        |
+| GET      | `keys/ant-<feed8>.rsa.pub`                     | PEM public key for `/etc/apk/keys`.                                                                                                                                                                                                             |
 
-Auth: Bearer or Basic (password = token), same as the other adapters. Index, key and package reads require Read.
+Auth: Credentials are verified by the shared client-authentication layer (`internal/identity.ClientAuth`: service tokens, personal access tokens, directory passwords and GitHub OIDC, as the feed's client-auth policy allows) before the request reaches the adapter, which then authorizes through the artifact core. Browser principals are discarded. Anonymous reads of a feed with `anonymous_read` are decided by that layer, not by the adapter. Index, key and package reads require Read.
 
 Signing key: generated lazily per feed, stored as PKCS#8 via `internal/secrets` (purpose `apk-feed-signing-key:<feed id>`, no migration). Wire with `SetKeyring(*secrets.Keyring)`; without it, the index and key endpoints return 503.
 
@@ -21,7 +21,7 @@ Client setup:
 
 ## Limitations
 
-- No real `apk` client conformance run yet (apk-tools 3.24.2 fixture pending); tests verify the signature and format in Go.
+- Real-client evidence: apk-tools 3.0.8 in the conformance harness (`conformance/run.sh local apk`; see `site/formats/apk.md` for the recorded result and the `noarch` fix). Tests also verify the signature and format in Go.
 - Uploaded package signatures are preserved but not verified (no trusted-key import yet).
 - Local channels: the index is regenerated per request (max 4096 packages per channel).
 - Remote sources (pull-through) are described below.

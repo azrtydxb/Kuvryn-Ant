@@ -1,13 +1,14 @@
 # npm local registry adapter
 
 `New(db, artifactService) (*Registry, error)` constructs the handler for
-`/feeds/{slug}/npm/`. Before serving, call `registry.SetPublicURL(ANT_PUBLIC_URL)`
-with the externally configured origin. Only HTTPS or literal-loopback HTTP is
+`/feeds/{slug}/npm/` (mounted by `cmd/ant/artifacts.go`; see `site/formats/npm.md`). Before serving,
+`registry.SetPublicURL(ANT_PUBLIC_URL)` is called with the externally configured origin. Only HTTPS or literal-loopback HTTP is
 accepted; userinfo, paths (including `/`), queries and fragments are rejected.
 An unset origin returns 503 for authenticated requests. Host, TLS state and
 forwarding headers never determine tarball links. The handler is bound to the
-artifact service lease's instance and requires explicit npm Bearer credentials;
-browser context cannot substitute for machine authentication.
+artifact service lease's instance. npm credentials (the raw token or Bearer, as `.npmrc` sends
+them) are verified by the shared client-authentication layer; browser context cannot
+substitute for them.
 
 Implemented local operations:
 
@@ -43,10 +44,11 @@ with a 15-second generation context. Network and archive reads use at most
 control-plane HTTP deadlines. Archive expansion is limited to 256 MiB, 1000:1
 compressed size and 10,000 entries, with cancellation checks per 64 KiB read.
 
-`npm dist-tag add|rm` (PUT/DELETE `/-/package/{package}/dist-tags/{tag}`) moves or removes tag pointers through the core (audited, replicated); the authorization is the publish action. A publish whose initial tag already exists still conflicts. This is intentionally not full F14 conformance.
-Remote pull-through, replicas, search, audit advisories, provenance attachments,
-anonymous access, range requests, npm login and organization APIs are not
-implemented by this package. No upstream fallback occurs.
+`npm dist-tag add|rm` (PUT/DELETE `/-/package/{package}/dist-tags/{tag}`) moves or removes tag pointers through the core (audited, replicated); the authorization is the publish action. A publish whose initial tag already exists still conflicts. `npm unpublish` goes through the core delete (gated by the feed's delete policy);
+`npm deprecate` is accepted without effect. Not implemented: search, provenance
+attachments, range requests, `npm login` and the organization, team, access, token and
+hook APIs. Remote pull-through and audit forwarding are implemented (see below); a
+coordinate owned by a local source never falls back to upstream.
 
 ## Tests and evidence
 
@@ -67,13 +69,8 @@ ls`, `install`, and lockfile `ci --offline`, then checks installed bytes. Tests
 also cover malformed names/versions/digests/archives, cancellation, browser auth
 rejection, scoped denial, foreign-instance rejection, trusted origin validation,
 immutable tag conflict atomicity, concurrent immutable publication conflicts,
-owner isolation/no fallback, and a one-connection database pool. The contract's
-npm **12.2.1** target, MinIO, proxy/cache/replica behavior and mutable tag moves
-have not been certified by these tests. No module dependencies were added.
-
-Integration owner must mount the handler, configure the trusted origin, and
-provide the existing artifact/policy/routing/storage/lease services. No main,
-OpenAPI, migration or module files are changed by this package.
+owner isolation/no fallback, and a one-connection database pool. The real npm and pnpm clients (publish, dist-tags, unpublish, audit, pull-through of
+registry.npmjs.org) are exercised by `conformance/run.sh local npm`.
 
 References: [F14 contract](../../docs/planning/contracts/F14.md),
 [shared contract](../../docs/planning/contracts/common.md),
