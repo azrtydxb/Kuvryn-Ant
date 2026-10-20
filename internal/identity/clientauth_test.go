@@ -97,6 +97,21 @@ func newAuthEnv(t *testing.T) *authEnv {
 		}
 		return f.feed
 	}))
+	// Cargo and NuGet adapters rewrite their raw credential locations into Bearer
+	// before their pipeline, exactly as internal/cargo and internal/nuget do.
+	rawAdapter := adapter(func(*http.Request) string { return f.feed })
+	mux.Handle("/feeds/{slug}/cargo/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if v := r.Header.Values("Authorization"); len(v) == 1 && !strings.ContainsAny(v[0], " \t\r\n") {
+			r.Header.Set("Authorization", "Bearer "+v[0])
+		}
+		rawAdapter.ServeHTTP(w, r)
+	}))
+	mux.Handle("/feeds/{slug}/nuget/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if k := r.Header.Values("X-NuGet-ApiKey"); len(k) == 1 && r.Method != http.MethodGet {
+			r.Header.Set("Authorization", "Bearer "+k[0])
+		}
+		rawAdapter.ServeHTTP(w, r)
+	}))
 	mux.Handle("/v2/", adapter(func(*http.Request) string { return f.feed }))
 	mux.Handle("/other", adapter(func(*http.Request) string { return f.feed }))
 	e.ca = &ClientAuth{DB: f.pool, InstanceID: f.instance, Directory: e.dir, CacheTTL: -1}

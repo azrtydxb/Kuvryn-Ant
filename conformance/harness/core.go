@@ -60,12 +60,15 @@ var authRE = regexp.MustCompile(`(?i)401|403|unauthori[sz]ed|authenticat|denied|
 // Env is the target instance plus credentials.
 type Env struct {
 	Target, Base, Token, CA, RunID string
-	HTTP                           *http.Client
-	Loopback                       bool
-	ClientBase                     string
-	sidecar                        string
-	bridges                        []*http.Server
-	mu                             sync.Mutex
+	// AdminToken, when set, is the service token for /api/v1 calls; Token is then
+	// the credential the package clients present (for example a user PAT).
+	AdminToken string
+	HTTP       *http.Client
+	Loopback   bool
+	ClientBase string
+	sidecar    string
+	bridges    []*http.Server
+	mu         sync.Mutex
 }
 
 // NewEnv builds an Env; ca is an optional PEM bundle path for a private CA.
@@ -131,9 +134,15 @@ func (e *Env) netArgs() []string {
 
 // Redact removes the token (and its Basic encodings) from s.
 func (e *Env) Redact(s string) string {
-	for _, t := range []string{e.Token,
-		base64.StdEncoding.EncodeToString([]byte("service:" + e.Token)),
-		base64.StdEncoding.EncodeToString([]byte(":" + e.Token))} {
+	var secrets []string
+	for _, tok := range []string{e.Token, e.AdminToken} {
+		if tok != "" {
+			secrets = append(secrets, tok,
+				base64.StdEncoding.EncodeToString([]byte("service:"+tok)),
+				base64.StdEncoding.EncodeToString([]byte(":"+tok)))
+		}
+	}
+	for _, t := range secrets {
 		if t != "" {
 			s = strings.ReplaceAll(s, t, "***REDACTED***")
 		}
@@ -195,7 +204,11 @@ func (a Api) Req(method, path string, body any, rev int64) (int, map[string]any,
 	}
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Idempotency-Key", randHex(16))
-	r.Header.Set("Authorization", "Bearer "+a.E.Token)
+	admin := a.E.AdminToken
+	if admin == "" {
+		admin = a.E.Token
+	}
+	r.Header.Set("Authorization", "Bearer "+admin)
 	if rev > 0 {
 		r.Header.Set("If-Match", fmt.Sprintf(`"%d"`, rev))
 	}

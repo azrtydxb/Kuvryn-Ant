@@ -65,7 +65,7 @@ func main() {
 	if res == "" {
 		res = "conformance/results"
 	}
-	err := harness.Run(harness.Config{Target: os.Args[1], Base: base, Token: token, CA: ca, AntVersion: ver, ResultsDir: res, Formats: os.Args[2:]})
+	err := harness.Run(harness.Config{Target: os.Args[1], Base: base, Token: token, ClientToken: os.Getenv("ANT_CLIENT_TOKEN"), CA: ca, AntVersion: ver, ResultsDir: res, Formats: os.Args[2:]})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

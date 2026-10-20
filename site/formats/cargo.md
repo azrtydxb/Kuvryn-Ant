@@ -133,14 +133,12 @@ Cargo sends the registry token as the raw `Authorization` header value (no schem
 Ant treats that value as a bearer token. Cargo 1.74 or later is required for
 registries that set `auth-required`.
 
-::: warning Gap: token types
-A raw `Authorization` value bypasses the client-auth middleware's credential
-detection and is checked directly against service tokens. **Use a service token**
-(`ant_...`, including tokens from the GitHub OIDC exchange). A personal access token
-(`antp_...`) given as the Cargo token is not accepted by that path, based on reading
-the code; this has not been tested with a client. See
+Any credential type works as the Cargo token: a service token (`ant_...`, including
+tokens from the GitHub OIDC exchange), a personal access token (`antp_...`) or a
+GitHub Actions JWT. The scheme-less value goes through the same resolution as
+`Bearer`, so scoping, audit, rate limits and the feed's client-auth policy apply. A
+scheme-less value is never treated as a password login. See
 [Service accounts and tokens](../identity/tokens.md).
-:::
 
 ### Private registry next to crates.io
 
@@ -236,18 +234,18 @@ returns a service token. See [GitHub Actions](../ci/github-actions.md) and
 
 ## Troubleshooting
 
-| Symptom                              | Cause                                                                                                                                                                                  |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `401` with `WWW-Authenticate: Cargo` | No token was sent. Check `credential-provider` and that the token variable name matches the registry name (`CARGO_REGISTRIES_<NAME>_TOKEN`, uppercase, `-` becomes `_`).               |
-| `403 Cargo authentication required`  | A token was sent but rejected: invalid, expired or revoked, a PAT instead of a service token, or no read permission. The adapter turns `401` into `403` when credentials were present. |
-| `403` on publish                     | The token lacks publish permission, or the publish policy does not route the crate to a local source.                                                                                  |
-| `400` on publish                     | Invalid crate name (uppercase, underscore, longer than 64), or a malformed or unsafe archive.                                                                                          |
-| `409` on publish                     | The version already exists with different content.                                                                                                                                     |
-| `405 Cargo operation unsupported`    | `cargo owner`, `cargo search` and similar commands are not implemented.                                                                                                                |
-| `503` on `config.json`               | `ANT_PUBLIC_URL` is not set.                                                                                                                                                           |
-| `503 upstream unavailable`           | The upstream failed and nothing is cached for that crate. A crate download that redirects to a host missing from `redirect_origins` also fails.                                        |
-| `429` with `Retry-After`             | Too many failed authentication attempts from this client.                                                                                                                              |
-| `X-Kuvryn-Cache: stale` / `offline`  | The index file came from the metadata cache past its TTL, or from locally cached versions, because upstream failed.                                                                    |
+| Symptom                              | Cause                                                                                                                                                                    |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `401` with `WWW-Authenticate: Cargo` | No token was sent. Check `credential-provider` and that the token variable name matches the registry name (`CARGO_REGISTRIES_<NAME>_TOKEN`, uppercase, `-` becomes `_`). |
+| `403 Cargo authentication required`  | A token was sent but rejected: invalid, expired or revoked, or no read permission. The adapter turns `401` into `403` when credentials were present.                     |
+| `403` on publish                     | The token lacks publish permission, or the publish policy does not route the crate to a local source.                                                                    |
+| `400` on publish                     | Invalid crate name (uppercase, underscore, longer than 64), or a malformed or unsafe archive.                                                                            |
+| `409` on publish                     | The version already exists with different content.                                                                                                                       |
+| `405 Cargo operation unsupported`    | `cargo owner`, `cargo search` and similar commands are not implemented.                                                                                                  |
+| `503` on `config.json`               | `ANT_PUBLIC_URL` is not set.                                                                                                                                             |
+| `503 upstream unavailable`           | The upstream failed and nothing is cached for that crate. A crate download that redirects to a host missing from `redirect_origins` also fails.                          |
+| `429` with `Retry-After`             | Too many failed authentication attempts from this client.                                                                                                                |
+| `X-Kuvryn-Cache: stale` / `offline`  | The index file came from the metadata cache past its TTL, or from locally cached versions, because upstream failed.                                                      |
 
 To see which source owns a crate, call
 `GET /api/v1/feeds/{id}/resolve?coordinate=<crate name>`

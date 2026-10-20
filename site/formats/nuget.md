@@ -152,13 +152,12 @@ counted as failed logins.
 Pushes and deletes authenticate with the `X-NuGet-ApiKey` header, which carries the
 token.
 
-::: warning Gap: API key token type
-The API key is checked directly against service tokens. **Use a service token**
-(`ant_...`, including a token from the GitHub OIDC exchange) as the API key. Based on
-reading the code, a personal access token (`antp_...`) is not accepted as an API key;
-this has not been tested with a client. See
+The API key accepts any credential type: a service token (`ant_...`, including a token
+from the GitHub OIDC exchange), a personal access token (`antp_...`) or a GitHub
+Actions JWT. It goes through the same resolution as `Bearer`, so scoping, audit, rate
+limits and the feed's client-auth policy apply. On push and delete only the API key is
+consulted, and it is never treated as a password login. See
 [Service accounts and tokens](../identity/tokens.md).
-:::
 
 ### nuget.config
 
@@ -237,7 +236,7 @@ returns a service token that also works as an API key. See
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `401` on restore after the client retried     | No credentials for the source in `nuget.config`, or the token is invalid. The source key in `packageSourceCredentials` must match the `packageSources` key. |
 | `401 API key required` on push                | `--api-key` was not given, so no `X-NuGet-ApiKey` header was sent.                                                                                          |
-| `401` on push with an API key                 | The API key is not a valid service token (for example a PAT; see the gap above).                                                                            |
+| `401` on push with an API key                 | The API key is invalid, expired or revoked.                                                                                                                 |
 | `403`                                         | The token lacks read or publish permission on the feed, or the feed's client-auth policy does not accept that credential type.                              |
 | `400` on push                                 | The package failed validation (unsafe archive, ID mismatch, ZIP64, oversized `.nuspec`).                                                                    |
 | `409` on push                                 | The version exists with different bytes.                                                                                                                    |

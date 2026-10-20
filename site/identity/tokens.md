@@ -89,7 +89,7 @@ Personal access tokens (PATs) let a signed-in **user** (local, OIDC, SAML or LDA
 
 The response contains the secret once, in `token` (`antp_...`). A user can hold at most 50 active PATs. The list (`GET /api/v1/auth/personal-access-tokens`) shows scopes, last use, expiry and revocation; `DELETE /api/v1/auth/personal-access-tokens/{id}` revokes one immediately, including for uploads in progress. These endpoints act only on the caller's own tokens.
 
-PATs are accepted only on package protocol routes (`/feeds/...` and `/v2/...`), as Bearer or as the password of HTTP Basic auth with any username, when the feed's [client auth policy](./client-auth.md) allows `pat`. They are not accepted on `/api/v1` or `/mcp`.
+PATs are accepted only on package protocol routes (`/feeds/...` and `/v2/...`), as Bearer, as the password of HTTP Basic auth with any username, or in the credential locations some clients use instead (Cargo's and RubyGems' scheme-less `Authorization` value, NuGet's `X-NuGet-ApiKey`, Ansible's `Token` scheme), when the feed's [client auth policy](./client-auth.md) allows `pat`. They are not accepted on `/api/v1` or `/mcp`.
 
 ## Bootstrap token
 
