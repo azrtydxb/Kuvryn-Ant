@@ -136,7 +136,7 @@ func (f feedHandlers) list(w http.ResponseWriter, r *http.Request) {
 		if err = scanFeed(rows, &item); err != nil {
 			break
 		}
-		if !feedAllowed(policy, p, item.ID, identity.Read) {
+		if !feedVisible(policy, p, item.ID) {
 			continue
 		}
 		if len(page.Items) == q.Limit {
@@ -167,7 +167,7 @@ func (f feedHandlers) get(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if !feedAllowed(policy, p, id, identity.Read) {
+	if !feedVisible(policy, p, id) {
 		Error(w, r, 404, api.ErrorCodeNotFound, "feed not found")
 		return
 	}
@@ -495,4 +495,11 @@ func mutationError(w http.ResponseWriter, r *http.Request, err error) {
 func writeFeed(w http.ResponseWriter, status int, item Feed) {
 	w.Header().Set("ETag", strconv.Quote(strconv.FormatInt(item.Revision, 10)))
 	JSON(w, status, item)
+}
+
+// feedVisible gates feed metadata reads. It matches data-plane access: a
+// caller that may read or publish artifacts in the feed, in any namespace its
+// grants and token scopes allow, can see the feed itself.
+func feedVisible(policy identity.Policy, p identity.Principal, id string) bool {
+	return policy.CanSeeFeed(p, p.InstanceID, id)
 }
