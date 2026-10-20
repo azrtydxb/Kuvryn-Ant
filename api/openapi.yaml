@@ -22880,6 +22880,10 @@
             "type": "string",
             "format": "uuid"
           },
+          "remote_feed_slug": {
+            "type": "string",
+            "description": "Slug of the remote feed as the peer last reported it; omitted when unknown."
+          },
           "dest_feed_id": {
             "type": "string",
             "format": "uuid"
@@ -23455,6 +23459,10 @@
           },
           "format": {
             "type": "string"
+          },
+          "feed_slug": {
+            "type": "string",
+            "description": "Slug of the exported feed, for display. Absent from older peers."
           },
           "low_water": {
             "type": "integer",

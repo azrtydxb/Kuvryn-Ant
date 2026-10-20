@@ -67,7 +67,7 @@ func (e Exporter) Head(ctx context.Context, instance, feed string) (Head, error)
 		return Head{}, err
 	}
 	var h Head
-	err := e.DB.QueryRow(ctx, `SELECT f.format,COALESCE(h.seq,0),h.changed_at,clock_timestamp(),COALESCE(h.low_water,0) FROM feeds f LEFT JOIN replication_heads h ON h.instance_id=f.instance_id WHERE f.instance_id=$1 AND f.id=$2`, instance, feed).Scan(&h.Format, &h.Seq, &h.ChangedAt, &h.Now, &h.LowWater)
+	err := e.DB.QueryRow(ctx, `SELECT f.format,f.slug,COALESCE(h.seq,0),h.changed_at,clock_timestamp(),COALESCE(h.low_water,0) FROM feeds f LEFT JOIN replication_heads h ON h.instance_id=f.instance_id WHERE f.instance_id=$1 AND f.id=$2`, instance, feed).Scan(&h.Format, &h.FeedSlug, &h.Seq, &h.ChangedAt, &h.Now, &h.LowWater)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Head{}, ErrNotFound
 	}

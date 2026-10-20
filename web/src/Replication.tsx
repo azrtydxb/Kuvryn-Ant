@@ -157,7 +157,7 @@ export function ReplicationPage({
           />
           {activeTab === "replication" && (
             <>
-              <div className="row wrap spaced">
+              <div className="row wrap spaced flow-filters">
                 <SegmentedControl
                   aria-label="Direction"
                   options={[
@@ -170,6 +170,7 @@ export function ReplicationPage({
                 />
                 <Select
                   aria-label="Status"
+                  size="sm"
                   options={statusFilters}
                   value={statusFilter}
                   onChange={val((v) =>

@@ -393,3 +393,48 @@ it("shows the Federation rules tab only when federated", async () => {
   fireEvent.click(await screen.findByRole("tab", { name: /Federation rules/ }));
   await screen.findByText("Federated feeds");
 });
+
+it("names feeds and peers instead of showing ids, and words lag plainly", async () => {
+  install((url, init) => {
+    const path = url.split("?")[0];
+    if (path === "/api/v1/replication/outgoing")
+      return json({
+        items: [
+          outgoingMember,
+          {
+            ...outgoingToken,
+            id: "f1:principal:p2",
+            consumer_name: "site-b-replicate",
+            status: "active",
+            last_error: undefined,
+            lag_changes: 0,
+            lag_seconds: 0,
+            head_sequence: 90,
+            remote_job: undefined,
+          },
+        ],
+      });
+    if (path === "/api/v1/federation/status") return json({ state: "none" });
+    if (path.startsWith("/auth/session")) return json(session);
+    if (path === "/api/v1/replication/jobs" && (init.method ?? "GET") === "GET")
+      return json({ items: [{ ...job, remote_feed_slug: "artifacts-src" }] });
+    if (path === "/api/v1/replication/peers") return json({ items: [peer] });
+    return undefined;
+  });
+  await openReplication();
+  // Incoming: the remote slug, never the UUID.
+  await screen.findByText("artifacts-src");
+  expect(document.body.textContent).not.toContain(job.remote_feed_id);
+  // Outgoing: the arrow ends at the consumer's job, never at the principal.
+  expect(screen.getByText("pull-production")).toBeTruthy();
+  expect(document.body.textContent).not.toMatch(
+    /production → site-b-replicate/,
+  );
+  // Token consumer resolved to the replication peer whose name is in the principal.
+  expect(screen.getByText("token site-b-replicate")).toBeTruthy();
+  // Lag: plain "in sync" at zero, counts when behind.
+  expect(screen.getAllByText("in sync").length).toBeGreaterThan(0);
+  expect(screen.getByText("2 changes · 3 s")).toBeTruthy();
+  expect(screen.getByText("10 changes · 30 s")).toBeTruthy();
+  expect(screen.queryByText("0 changes")).toBeNull();
+});

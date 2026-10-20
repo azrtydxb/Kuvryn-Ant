@@ -92,6 +92,8 @@ type Head struct {
 	ChangedAt *time.Time `json:"changed_at,omitempty"`
 	Now       time.Time  `json:"now"`
 	Format    string     `json:"format"`
+	// FeedSlug names the feed for display (additive; absent from older peers).
+	FeedSlug string `json:"feed_slug,omitempty"`
 	// LowWater is the highest purged change sequence: incremental service is
 	// only possible for cursors at or above it.
 	LowWater int64 `json:"low_water"`
