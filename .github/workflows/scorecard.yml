@@ -4,8 +4,6 @@ name: Scorecard
 # and published to the OpenSSF API for the README badge (public repositories).
 on:
   branch_protection_rule:
-  schedule:
-    - cron: "23 4 * * 1"
   push:
     branches: [main]
   workflow_dispatch: {}
@@ -15,6 +13,10 @@ permissions: read-all
 jobs:
   analysis:
     name: Scorecard analysis
+    # The GITHUB_TOKEN cannot read the GraphQL data Scorecard needs on a private
+    # repository, so the job runs only for public repositories (push, branch
+    # protection and manual runs carry the repository visibility).
+    if: ${{ github.event.repository.visibility == 'public' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
