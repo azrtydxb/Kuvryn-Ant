@@ -76,17 +76,20 @@ export function FederationReplication({
   client,
   st,
   members,
+  focusRule,
 }: {
   client: Client;
   st: FederationStatus;
   members: FederationMember[];
+  /** Rule whose compliance opens first (deep link from a replication row). */
+  focusRule?: string;
 }) {
   const topology = useOptionalCall(client, "getFederationTopology");
   const local = useOptionalCall(client, "getFederationReplicationStatus");
   const authority = st.role === "authority";
   const [dialog, setDialog] = useState<"feed" | "rule" | undefined>();
   const [transfer, setTransfer] = useState<FederationTopologyFeedView>();
-  const [compliance, setCompliance] = useState<string>();
+  const [compliance, setCompliance] = useState<string | undefined>(focusRule);
   const [route, setRoute] = useState<string>();
   const [routing, setRouting] = useState<FederationTopologyFeedView>();
   const action = useAction();

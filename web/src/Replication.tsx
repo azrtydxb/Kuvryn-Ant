@@ -3,11 +3,24 @@ import type { Client } from "./api";
 import { useAllFeeds } from "./data";
 import { useOptionalCall } from "./gaps";
 import type { ReplicationJob, ReplicationPeer } from "./generated";
+import { FederationReplication } from "./FederationReplication";
 import {
   EditJobModal,
   PeerEditModal,
   TemplateModal,
 } from "./ReplicationDialogs";
+import {
+  buildFlows,
+  DirectionCell,
+  FeedsCell,
+  OutgoingDrawer,
+  PeerCell,
+  statusFilters,
+  statusTone,
+  type Direction,
+  type Flow,
+  type FlowStatus,
+} from "./ReplicationFlows";
 import {
   Alert,
   Badge,
@@ -19,6 +32,7 @@ import {
   Input,
   Modal,
   PropertyList,
+  SegmentedControl,
   Select,
   Switch,
   Table,
@@ -39,13 +53,36 @@ import {
   when,
 } from "./ui";
 
-const phaseTone = (j: ReplicationJob) =>
-  j.status.last_error ? "bad" : j.status.running ? "info" : "good";
+export type ReplicationTab = "replication" | "peers" | "federation";
 
-export function ReplicationPage({ client }: { client: Client }) {
-  const [tab, setTab] = useState("jobs");
+const PULL_MODEL =
+  "Incoming jobs run on this instance and pull from a peer; outgoing rows are peers pulling from this instance.";
+
+export function ReplicationPage({
+  client,
+  initialTab = "replication",
+  focusRule,
+}: {
+  client: Client;
+  initialTab?: ReplicationTab;
+  /** Federation rule to open in the Federation rules tab. */
+  focusRule?: string;
+}) {
+  const [tab, setTab] = useState<ReplicationTab>(initialTab);
+  const [rule, setRule] = useState(focusRule);
+  const [direction, setDirection] = useState<"all" | Direction>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | FlowStatus>("all");
   const jobs = useOptionalCall(client, "listReplicationJobs");
   const peers = useOptionalCall(client, "listReplicationPeers");
+  const outgoing = useOptionalCall(client, "listReplicationOutgoing");
+  const fedStatus = useOptionalCall(client, "getFederationStatus");
+  const fed =
+    fedStatus.state === "ready" && fedStatus.data.state === "active"
+      ? fedStatus.data
+      : undefined;
+  const memberCall = useOptionalCall(client, "listFederationMembers");
+  const members =
+    fed && memberCall.state === "ready" ? memberCall.data.items : [];
   const feeds = useAllFeeds(client);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState<string>();
@@ -53,140 +90,189 @@ export function ReplicationPage({ client }: { client: Client }) {
   const [reviewing, setReviewing] = useState<string>();
   const peerList = peers.state === "ready" ? peers.data.items : [];
   const jobList = jobs.state === "ready" ? jobs.data.items : [];
+  const outList = outgoing.state === "ready" ? outgoing.data.items : [];
   const current = jobList.find((j) => j.id === open);
   const editJob = jobList.find((j) => j.id === editing);
   const reviewJob = jobList.find((j) => j.id === reviewing);
+  const flows = buildFlows({
+    jobs: jobList,
+    outgoing: outList,
+    peers: peerList,
+    members,
+    feedSlug: (id) =>
+      feeds.items.find((f) => f.id === id)?.slug ?? shortFeed(id),
+  });
+  const shown = flows.filter(
+    (f) =>
+      (direction === "all" || f.direction === direction) &&
+      (statusFilter === "all" || f.status === statusFilter),
+  );
+  const openFlow = flows.find((f) => f.key === open);
   const reload = () => {
     jobs.reload();
     peers.reload();
+    outgoing.reload();
+    fedStatus.reload();
   };
+  const openRule = (id?: string) => {
+    setRule(id);
+    setOpen(undefined);
+    setTab("federation");
+  };
+  const activeTab: ReplicationTab =
+    tab === "federation" && !fed ? "replication" : tab;
+  const incomingCount = flows.filter((f) => f.direction === "in").length;
+  const outgoingCount = flows.length - incomingCount;
   return (
     <>
       <PageHeading
         eyebrow="Content origins"
         title="Replication"
-        text="Pull feeds from another Kuvryn Ant instance into a local replica source."
+        text="Replication is pull based: the instance that owns a job pulls a feed from its peer. Incoming jobs and the peers pulling from this instance are listed together."
       >
         <Button variant="secondary" icon="refresh-cw" onClick={reload}>
           Refresh
         </Button>
-        <Button icon="plus" onClick={() => setCreating(true)}>
-          {tab === "jobs" ? "Create job" : "Add peer"}
-        </Button>
+        {activeTab !== "federation" && (
+          <Button icon="plus" onClick={() => setCreating(true)}>
+            {activeTab === "replication" ? "Create job" : "Add peer"}
+          </Button>
+        )}
       </PageHeading>
-      {jobs.state === "unavailable" && peers.state === "unavailable" ? (
+      {jobs.state === "unavailable" && peers.state === "unavailable" && !fed ? (
         <Unavailable what="Replication" />
       ) : (
         <>
           <Tabs
-            value={tab}
-            onChange={setTab}
+            value={activeTab}
+            onChange={(v: string) => setTab(v as ReplicationTab)}
             className="spaced-tabs"
             items={[
-              { id: "jobs", label: "Jobs", count: jobList.length },
+              { id: "replication", label: "Replication", count: flows.length },
               { id: "peers", label: "Peers", count: peerList.length },
+              ...(fed ? [{ id: "federation", label: "Federation rules" }] : []),
             ]}
           />
-          {tab === "jobs" && (
+          {activeTab === "replication" && (
             <>
-              {jobs.state === "loading" && <Loading what="replication jobs" />}
+              <div className="row wrap spaced">
+                <SegmentedControl
+                  aria-label="Direction"
+                  options={[
+                    { value: "all", label: `All (${flows.length})` },
+                    { value: "in", label: `Incoming (${incomingCount})` },
+                    { value: "out", label: `Outgoing (${outgoingCount})` },
+                  ]}
+                  value={direction}
+                  onChange={(v: string) => setDirection(v as "all" | Direction)}
+                />
+                <Select
+                  aria-label="Status"
+                  options={statusFilters}
+                  value={statusFilter}
+                  onChange={val((v) =>
+                    setStatusFilter(v as "all" | FlowStatus),
+                  )}
+                />
+              </div>
+              {jobs.state === "loading" && <Loading what="replication" />}
               {jobs.state === "error" && <Failure error={jobs.error} />}
+              {outgoing.state === "error" && <Failure error={outgoing.error} />}
               {jobs.state === "ready" &&
-                (jobList.length ? (
+                (shown.length ? (
                   <Table
-                    onRowClick={(j: ReplicationJob) => setOpen(j.id)}
+                    rowKey="key"
+                    onRowClick={(f: Flow) => setOpen(f.job ? f.job.id : f.key)}
                     columns={[
                       {
-                        key: "name",
-                        label: "Job",
-                        render: (j: ReplicationJob) => (
-                          <>
-                            {j.name}
-                            {j.origin === "federation" && (
-                              <Badge tone="info">federation</Badge>
-                            )}
-                            <small>
-                              {peerList.find((p) => p.id === j.peer_id)?.name ??
-                                j.peer_id}
-                            </small>
-                          </>
-                        ),
+                        key: "direction",
+                        label: "Direction",
+                        render: (f: Flow) => <DirectionCell flow={f} />,
                       },
                       {
-                        key: "dest",
-                        label: "Local feed",
-                        mono: true,
-                        render: (j: ReplicationJob) =>
-                          feeds.items.find((f) => f.id === j.dest_feed_id)
-                            ?.slug ?? j.dest_feed_id,
+                        key: "feed",
+                        label: "Feed",
+                        render: (f: Flow) => <FeedsCell flow={f} />,
+                      },
+                      {
+                        key: "peer",
+                        label: "Peer instance",
+                        render: (f: Flow) => <PeerCell flow={f} />,
                       },
                       { key: "mode", label: "Mode" },
                       {
-                        key: "phase",
-                        label: "State",
-                        render: (j: ReplicationJob) => (
-                          <Badge tone={phaseTone(j)} dot>
-                            {j.status.running
-                              ? "Running"
-                              : j.status.last_error
-                                ? "Failing"
-                                : j.status.reseeding
-                                  ? "Reseeding"
-                                  : j.status.phase.replace("_", " ")}
+                        key: "status",
+                        label: "Status",
+                        render: (f: Flow) => (
+                          <Badge tone={statusTone[f.status]} dot>
+                            {f.statusLabel}
                           </Badge>
                         ),
                       },
                       {
                         key: "lag",
-                        label: "Behind",
+                        label: "Lag",
                         align: "right",
-                        render: (j: ReplicationJob) =>
-                          j.status.changes_behind == null
-                            ? "—"
-                            : `${count(j.status.changes_behind)} changes`,
                       },
                       {
-                        key: "last",
-                        label: "Last success",
-                        render: (j: ReplicationJob) =>
-                          when(j.status.last_success_at),
+                        key: "lastSync",
+                        label: "Last sync",
+                        render: (f: Flow) => when(f.lastSync),
                       },
                       {
-                        key: "enabled",
-                        label: "Status",
-                        render: (j: ReplicationJob) => (
-                          <Badge tone={j.enabled ? "good" : "neutral"} dot>
-                            {j.enabled ? "Enabled" : "Paused"}
-                          </Badge>
-                        ),
+                        key: "rule",
+                        label: "Managed by",
+                        render: (f: Flow) =>
+                          f.rule && fed ? (
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => openRule(f.rule?.id)}
+                              >
+                                {f.rule.label}
+                              </Button>
+                            </span>
+                          ) : f.rule ? (
+                            f.rule.label
+                          ) : (
+                            "manual"
+                          ),
                       },
                       {
                         key: "x",
                         label: "",
                         align: "right",
-                        render: (j: ReplicationJob) => (
-                          <JobMenu
-                            client={client}
-                            job={j}
-                            changed={reload}
-                            edit={() => setEditing(j.id)}
-                            review={() => setReviewing(j.id)}
-                          />
-                        ),
+                        render: (f: Flow) =>
+                          f.job ? (
+                            <JobMenu
+                              client={client}
+                              job={f.job}
+                              changed={reload}
+                              edit={() => setEditing(f.job?.id)}
+                              review={() => setReviewing(f.job?.id)}
+                            />
+                          ) : null,
                       },
                     ]}
-                    rows={jobList}
+                    rows={shown}
+                  />
+                ) : flows.length ? (
+                  <EmptyState
+                    icon="filter"
+                    title="Nothing matches these filters"
+                    description="Change the direction or status filter to see more."
                   />
                 ) : (
                   <EmptyState
                     icon="copy"
-                    title="No replication jobs"
-                    description="Add a peer, then create a job to replicate one of its feeds."
+                    title="No replication yet"
+                    description={`${PULL_MODEL} Add a peer, then create a job to replicate one of its feeds.`}
                   />
                 ))}
             </>
           )}
-          {tab === "peers" && (
+          {activeTab === "peers" && (
             <>
               {peers.state === "loading" && <Loading what="peers" />}
               {peers.state === "error" && <Failure error={peers.error} />}
@@ -194,7 +280,22 @@ export function ReplicationPage({ client }: { client: Client }) {
                 (peerList.length ? (
                   <Table
                     columns={[
-                      { key: "name", label: "Peer" },
+                      {
+                        key: "name",
+                        label: "Peer",
+                        render: (p: ReplicationPeer) => (
+                          <>
+                            {p.name}
+                            {p.auth_mode === "federation" && (
+                              <Badge tone="info">
+                                {members.find(
+                                  (m) => m.instance_id === p.member_instance_id,
+                                )?.name ?? "federation"}
+                              </Badge>
+                            )}
+                          </>
+                        ),
+                      },
                       { key: "url", label: "URL", mono: true },
                       {
                         key: "ca_ref",
@@ -222,14 +323,22 @@ export function ReplicationPage({ client }: { client: Client }) {
                   <EmptyState
                     icon="server"
                     title="No peers"
-                    description="A peer is another instance you can pull from, with its access token."
+                    description={`A peer is another instance you can pull from, with its access token. ${PULL_MODEL}`}
                   />
                 ))}
             </>
           )}
+          {activeTab === "federation" && fed && (
+            <FederationReplication
+              client={client}
+              st={fed}
+              members={members}
+              focusRule={rule}
+            />
+          )}
         </>
       )}
-      {creating && tab === "peers" && (
+      {creating && activeTab === "peers" && (
         <PeerModal
           client={client}
           onClose={() => setCreating(false)}
@@ -239,7 +348,7 @@ export function ReplicationPage({ client }: { client: Client }) {
           }}
         />
       )}
-      {creating && tab === "jobs" && (
+      {creating && activeTab === "replication" && (
         <JobModal
           client={client}
           peers={peerList}
@@ -252,141 +361,19 @@ export function ReplicationPage({ client }: { client: Client }) {
         />
       )}
       {current && (
-        <Drawer
-          open
-          title={current.name}
-          description={<Copyable text={current.id} />}
+        <JobDrawer
+          current={current}
           onClose={() => setOpen(undefined)}
-          width={560}
-          footer={
-            <>
-              <Button
-                variant="secondary"
-                icon="file-text"
-                onClick={() => setReviewing(current.id)}
-              >
-                Configuration template
-              </Button>
-              <Button
-                variant="secondary"
-                icon="pencil"
-                onClick={() => setEditing(current.id)}
-              >
-                Edit job
-              </Button>
-              <Button onClick={() => setOpen(undefined)}>Done</Button>
-            </>
-          }
-        >
-          {current.status.reseeding && (
-            <Alert tone="info" title="Reseeding">
-              The peer purged change history this job still needed, so the job
-              is re-reading the full manifest. Content already present is not
-              transferred again and nothing here is deleted.
-            </Alert>
-          )}
-          <PropertyList
-            items={[
-              { label: "Phase", value: current.status.phase, mono: true },
-              {
-                label: "Checkpoint",
-                value: `${current.status.checkpoint} of ${current.status.remote_head ?? "?"}`,
-                mono: true,
-              },
-              {
-                label: "Lag",
-                value:
-                  current.status.lag_seconds == null
-                    ? "—"
-                    : `${current.status.lag_seconds} s`,
-              },
-              {
-                label: "Seeding",
-                value:
-                  current.status.seed_total == null
-                    ? "—"
-                    : `${current.status.seed_done} / ${current.status.seed_total}`,
-              },
-              {
-                label: "Last attempt",
-                value: when(current.status.last_attempt_at),
-              },
-              {
-                label: "Last success",
-                value: when(current.status.last_success_at),
-              },
-              { label: "Next run", value: when(current.status.next_run_at) },
-              {
-                label: "Transferred",
-                value: `${count(current.status.blobs_transferred)} blobs · ${bytes(current.status.bytes_transferred)} (${count(current.status.blobs_deduplicated)} deduplicated)`,
-              },
-              {
-                label: "Deletions",
-                value: `${count(current.status.deletions_applied)} applied · ${count(current.status.deletions_held)} held`,
-              },
-              { label: "Conflicts", value: count(current.status.conflicts) },
-              {
-                label: "Failures",
-                value: `${count(current.status.consecutive_failures)} in a row · ${count(current.status.failures_total)} total`,
-              },
-              {
-                label: "Reseeds",
-                value: `${count(current.status.reseeds)}${
-                  current.status.source_low_water == null
-                    ? ""
-                    : ` · peer history starts after ${count(current.status.source_low_water)}`
-                }`,
-              },
-              {
-                label: "Back-fills",
-                value: `${count(current.status.backfills_pending)} pending · ${count(current.status.backfills_completed)} done`,
-              },
-              { label: "Resumed", value: bytes(current.status.resumed_bytes) },
-              ...(current.status.last_error
-                ? [{ label: "Last error", value: current.status.last_error }]
-                : []),
-              {
-                label: "Replica source",
-                value: current.replica_source_id,
-                mono: true,
-              },
-              {
-                label: "Remote feed",
-                value: current.remote_feed_id,
-                mono: true,
-              },
-              {
-                label: "Managed by",
-                value:
-                  current.origin === "federation"
-                    ? `Federation rule (${current.federation_feed_key ?? ""})${current.adopted_at ? ", adopted" : ""}`
-                    : "Local",
-              },
-              { label: "Deletion policy", value: current.deletion_policy },
-              {
-                label: "Destination",
-                value: current.destination_read_only
-                  ? "Read-only replica"
-                  : "Publishes allowed",
-              },
-              {
-                label: "Filters",
-                value:
-                  [
-                    ...(current.filters.namespaces ?? []).map(
-                      (v) => `namespace ${v}`,
-                    ),
-                    ...(current.filters.packages ?? []).map(
-                      (v) => `package ${v}`,
-                    ),
-                    ...(current.filters.version_prefixes ?? []).map(
-                      (v) => `version ${v}*`,
-                    ),
-                  ].join(", ") || "None (whole feed)",
-              },
-            ]}
-          />
-        </Drawer>
+          review={() => setReviewing(current.id)}
+          edit={() => setEditing(current.id)}
+        />
+      )}
+      {openFlow?.out && (
+        <OutgoingDrawer
+          flow={openFlow}
+          onClose={() => setOpen(undefined)}
+          openRule={openRule}
+        />
       )}
       {editJob && (
         <EditJobModal
@@ -408,6 +395,148 @@ export function ReplicationPage({ client }: { client: Client }) {
         />
       )}
     </>
+  );
+}
+
+const shortFeed = (id: string) => (id.length > 10 ? `${id.slice(0, 8)}…` : id);
+
+function JobDrawer({
+  current,
+  onClose,
+  review,
+  edit,
+}: {
+  current: ReplicationJob;
+  onClose: () => void;
+  review: () => void;
+  edit: () => void;
+}) {
+  return (
+    <Drawer
+      open
+      title={current.name}
+      description={<Copyable text={current.id} />}
+      onClose={() => onClose()}
+      width={560}
+      footer={
+        <>
+          <Button variant="secondary" icon="file-text" onClick={() => review()}>
+            Configuration template
+          </Button>
+          <Button variant="secondary" icon="pencil" onClick={() => edit()}>
+            Edit job
+          </Button>
+          <Button onClick={() => onClose()}>Done</Button>
+        </>
+      }
+    >
+      {current.status.reseeding && (
+        <Alert tone="info" title="Reseeding">
+          The peer purged change history this job still needed, so the job is
+          re-reading the full manifest. Content already present is not
+          transferred again and nothing here is deleted.
+        </Alert>
+      )}
+      <PropertyList
+        items={[
+          { label: "Phase", value: current.status.phase, mono: true },
+          {
+            label: "Checkpoint",
+            value: `${current.status.checkpoint} of ${current.status.remote_head ?? "?"}`,
+            mono: true,
+          },
+          {
+            label: "Lag",
+            value:
+              current.status.lag_seconds == null
+                ? "—"
+                : `${current.status.lag_seconds} s`,
+          },
+          {
+            label: "Seeding",
+            value:
+              current.status.seed_total == null
+                ? "—"
+                : `${current.status.seed_done} / ${current.status.seed_total}`,
+          },
+          {
+            label: "Last attempt",
+            value: when(current.status.last_attempt_at),
+          },
+          {
+            label: "Last success",
+            value: when(current.status.last_success_at),
+          },
+          { label: "Next run", value: when(current.status.next_run_at) },
+          {
+            label: "Transferred",
+            value: `${count(current.status.blobs_transferred)} blobs · ${bytes(current.status.bytes_transferred)} (${count(current.status.blobs_deduplicated)} deduplicated)`,
+          },
+          {
+            label: "Deletions",
+            value: `${count(current.status.deletions_applied)} applied · ${count(current.status.deletions_held)} held`,
+          },
+          { label: "Conflicts", value: count(current.status.conflicts) },
+          {
+            label: "Failures",
+            value: `${count(current.status.consecutive_failures)} in a row · ${count(current.status.failures_total)} total`,
+          },
+          {
+            label: "Reseeds",
+            value: `${count(current.status.reseeds)}${
+              current.status.source_low_water == null
+                ? ""
+                : ` · peer history starts after ${count(current.status.source_low_water)}`
+            }`,
+          },
+          {
+            label: "Back-fills",
+            value: `${count(current.status.backfills_pending)} pending · ${count(current.status.backfills_completed)} done`,
+          },
+          { label: "Resumed", value: bytes(current.status.resumed_bytes) },
+          ...(current.status.last_error
+            ? [{ label: "Last error", value: current.status.last_error }]
+            : []),
+          {
+            label: "Replica source",
+            value: current.replica_source_id,
+            mono: true,
+          },
+          {
+            label: "Remote feed",
+            value: current.remote_feed_id,
+            mono: true,
+          },
+          {
+            label: "Managed by",
+            value:
+              current.origin === "federation"
+                ? `Federation rule (${current.federation_feed_key ?? ""})${current.adopted_at ? ", adopted" : ""}`
+                : "Local",
+          },
+          { label: "Deletion policy", value: current.deletion_policy },
+          {
+            label: "Destination",
+            value: current.destination_read_only
+              ? "Read-only replica"
+              : "Publishes allowed",
+          },
+          {
+            label: "Filters",
+            value:
+              [
+                ...(current.filters.namespaces ?? []).map(
+                  (v) => `namespace ${v}`,
+                ),
+                ...(current.filters.packages ?? []).map((v) => `package ${v}`),
+                ...(current.filters.version_prefixes ?? []).map(
+                  (v) => `version ${v}*`,
+                ),
+              ].join(", ") || "None (whole feed)",
+          },
+        ]}
+      />
+    </Drawer>
   );
 }
 

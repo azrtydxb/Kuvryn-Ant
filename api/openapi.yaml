@@ -8518,6 +8518,54 @@
         }
       }
     },
+    "/api/v1/replication/outgoing": {
+      "get": {
+        "operationId": "listReplicationOutgoing",
+        "description": "Outgoing replication: consumers that pull feeds of this instance (replication is pull based, so the destination owns the job). One row per consumer and feed, built from the export API calls the instance served: the last pull, the change sequence last served against the current head (lag in changes and seconds), bytes served and a status (active, stale after one hour of silence, error when the last request failed). Federation members are named from the applied membership. History begins when this tracking was first enabled. Requires replicate or configure on a feed to see its consumers, like the jobs list.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplicationOutgoingList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/replication/status": {
       "get": {
         "operationId": "listReplicationStatus",
@@ -23035,6 +23083,59 @@
           "status": {
             "$ref": "#/components/schemas/ReplicationStatus"
           }
+        }
+      },
+      "ReplicationLagSample": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["at", "last_sequence", "head_sequence", "lag_changes"],
+        "properties": {
+          "at": { "type": "string", "format": "date-time" },
+          "last_sequence": { "type": "integer", "format": "int64" },
+          "head_sequence": { "type": "integer", "format": "int64" },
+          "lag_changes": { "type": "integer", "format": "int64" }
+        }
+      },
+      "ReplicationOutgoing": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One consumer pulling one feed of this instance.",
+        "required": [
+          "id", "consumer_kind", "consumer_name", "feed_id", "feed_slug", "feed_format", "first_seen", "last_seen", "pulls", "bytes_served",
+          "head_sequence", "lag_changes", "lag_seconds", "status", "history", "stale_after_seconds"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "consumer_kind": { "type": "string", "enum": ["member", "principal"], "description": "member: a federation member; principal: a peer token of a local principal." },
+          "consumer_name": { "type": "string", "description": "Federation member name, or the principal subject." },
+          "member_instance_id": { "type": "string" },
+          "principal_id": { "type": "string" },
+          "feed_id": { "type": "string" },
+          "feed_slug": { "type": "string" },
+          "feed_format": { "type": "string" },
+          "remote_job": { "type": "string", "description": "Destination job name as reported by the consumer; omitted when unknown." },
+          "rule_id": { "type": "string", "description": "Federation replication rule that targets this consumer for the feed, when there is one." },
+          "first_seen": { "type": "string", "format": "date-time" },
+          "last_seen": { "type": "string", "format": "date-time" },
+          "pulls": { "type": "integer", "format": "int64" },
+          "bytes_served": { "type": "integer", "format": "int64" },
+          "last_sequence": { "type": "integer", "format": "int64", "description": "Change sequence last served to the consumer." },
+          "head_sequence": { "type": "integer", "format": "int64", "description": "Current change head of this instance." },
+          "lag_changes": { "type": "integer", "format": "int64" },
+          "lag_seconds": { "type": "integer", "format": "int64", "description": "Age of the oldest change the consumer has not been served." },
+          "status": { "type": "string", "enum": ["active", "stale", "error"] },
+          "last_error": { "type": "string" },
+          "last_error_at": { "type": "string", "format": "date-time" },
+          "stale_after_seconds": { "type": "integer", "format": "int64" },
+          "history": { "type": "array", "items": { "$ref": "#/components/schemas/ReplicationLagSample" } }
+        }
+      },
+      "ReplicationOutgoingList": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items"],
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/ReplicationOutgoing" } }
         }
       },
       "ReplicationStatusList": {

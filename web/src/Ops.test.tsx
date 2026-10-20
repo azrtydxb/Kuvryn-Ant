@@ -268,5 +268,5 @@ it("hides admin-only areas when the server says the principal is not an admin, a
     within(sidebar).queryByRole("button", { name: "Settings" }),
   ).toBeNull();
   nav("Replication");
-  await screen.findByText("No replication jobs");
+  await screen.findByText("No replication yet");
 });

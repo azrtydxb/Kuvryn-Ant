@@ -52,6 +52,9 @@ type peerClient struct {
 	// signature (mTLS transport) instead of the bearer token.
 	sign func(*http.Request)
 	http *http.Client
+	// job names the destination job in the X-Replication-Job request header so the
+	// authority can show who pulls from it. Informational only.
+	job string
 }
 
 func newPeerClient(base, token, caPath string) (*peerClient, error) {
@@ -99,6 +102,9 @@ func (c *peerClient) doRange(ctx context.Context, path string, q url.Values, off
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, ErrInput
+	}
+	if c.job != "" {
+		req.Header.Set(jobHeader, c.job)
 	}
 	if c.sign != nil {
 		c.sign(req)

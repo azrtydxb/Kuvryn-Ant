@@ -42,7 +42,12 @@ export type Page =
   | "settings";
 export type Go = (
   page: Page,
-  options?: { feed?: string; create?: boolean; source?: string },
+  options?: {
+    feed?: string;
+    create?: boolean;
+    source?: string;
+    tab?: string;
+  },
 ) => void;
 const NAV: { id: Page; label: string; icon: string }[] = [
   { id: "overview", label: "Overview", icon: "gauge" },
@@ -114,6 +119,7 @@ function Shell({
   const [crumb, setCrumb] = useState("");
   const [createFeed, setCreateFeed] = useState(false);
   const [openSource, setOpenSource] = useState("");
+  const [pageTab, setPageTab] = useState("");
   const [pkg, setPkg] = useState<PackageRef>();
   const [palette, setPalette] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -131,6 +137,7 @@ function Shell({
     setCrumb("");
     setCreateFeed(!!options.create);
     setOpenSource(options.source ?? "");
+    setPageTab(options.tab ?? "");
     setMenu(false);
   };
   useEffect(() => {
@@ -223,8 +230,20 @@ function Shell({
     );
   else if (page === "sources")
     body = <SourcesPage client={client} openId={openSource} go={go} />;
-  else if (page === "replication") body = <ReplicationPage client={client} />;
-  else if (page === "federation") body = <FederationPage client={client} />;
+  else if (page === "replication")
+    body = (
+      <ReplicationPage
+        key={pageTab}
+        client={client}
+        initialTab={
+          pageTab === "federation" || pageTab === "peers"
+            ? pageTab
+            : "replication"
+        }
+      />
+    );
+  else if (page === "federation")
+    body = <FederationPage client={client} go={go} />;
   else if (page === "identity") body = <Identity client={client} />;
   else if (page === "webhooks") body = <Webhooks client={client} />;
   else if (page === "audit") body = <AuditPage client={client} />;

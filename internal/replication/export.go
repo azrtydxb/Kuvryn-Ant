@@ -25,6 +25,9 @@ type Exporter struct {
 	// Lease fences history purging by the instance writer lease. Optional for
 	// the read-only export methods; PurgeHistory requires it.
 	Lease func() ownership.Lease
+	// Consumers, when set, records which consumers pull from this instance
+	// (outgoing replication visibility). Optional.
+	Consumers *ConsumerTracker
 }
 
 const (

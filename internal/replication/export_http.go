@@ -30,7 +30,7 @@ const exportBase = "/api/v1/replication/export/feeds/{feed}"
 func RegisterExport(mux *http.ServeMux, pool *pgxpool.Pool, e Exporter) {
 	bearer := identity.NewBearer(identity.Tokens{DB: pool})
 	roles := identity.Roles{DB: pool}
-	h := exportHandlers{e: e, authz: func(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+	h := exportHandlers{e: e, authz: func(w http.ResponseWriter, r *http.Request) (string, string, consumer, bool) {
 		return bearerAuthorize(roles, w, r)
 	}}
 	mux.Handle("GET "+exportBase+"/head", bearer.Wrap(http.HandlerFunc(h.head)))
@@ -44,30 +44,30 @@ type exportHandlers struct {
 	e Exporter
 	// authz authenticates and authorizes "replicate" on the feed and returns
 	// the exporting instance and the feed.
-	authz func(w http.ResponseWriter, r *http.Request) (instance, feed string, ok bool)
+	authz func(w http.ResponseWriter, r *http.Request) (instance, feed string, who consumer, ok bool)
 }
 
-func (h exportHandlers) authorize(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+func (h exportHandlers) authorize(w http.ResponseWriter, r *http.Request) (string, string, consumer, bool) {
 	return h.authz(w, r)
 }
 
-func bearerAuthorize(roles identity.Roles, w http.ResponseWriter, r *http.Request) (string, string, bool) {
+func bearerAuthorize(roles identity.Roles, w http.ResponseWriter, r *http.Request) (string, string, consumer, bool) {
 	p, ok := identity.PrincipalFromContext(r.Context())
 	feed := r.PathValue("feed")
 	if !ok || !uuidPattern.MatchString(feed) {
 		management.Error(w, r, http.StatusNotFound, api.ErrorCodeNotFound, "feed not found")
-		return "", "", false
+		return "", "", consumer{}, false
 	}
 	policy, err := roles.Resolve(r.Context(), p)
 	if err != nil {
 		management.Error(w, r, http.StatusServiceUnavailable, api.ErrorCodeUnavailable, "authorization unavailable")
-		return "", "", false
+		return "", "", consumer{}, false
 	}
 	if !policy.Authorize(p, identity.Resource{InstanceID: p.InstanceID, FeedID: feed, Kind: identity.FeedResource}, identity.Replicate) {
 		management.Error(w, r, http.StatusForbidden, api.ErrorCodeForbidden, "replication access denied")
-		return "", "", false
+		return "", "", consumer{}, false
 	}
-	return p.InstanceID, feed, true
+	return p.InstanceID, feed, consumer{ConsumerPrincipal, p.PrincipalID}, true
 }
 
 // FederationExportPrefix is the export API path on the federation listener.
@@ -78,18 +78,18 @@ const FederationExportPrefix = "/federation/v1/replication/export/feeds/"
 // The caller is already an authenticated, active member (peer.Handler);
 // authorize decides from the applied, authority-signed topology.
 func FederationExport(e Exporter, instance string, authorize func(ctx context.Context, member, feed string) bool) http.Handler {
-	h := exportHandlers{e: e, authz: func(w http.ResponseWriter, r *http.Request) (string, string, bool) {
+	h := exportHandlers{e: e, authz: func(w http.ResponseWriter, r *http.Request) (string, string, consumer, bool) {
 		caller, ok := peer.Caller(r)
 		feed := r.PathValue("feed")
 		if !ok || !uuidPattern.MatchString(feed) {
 			management.Error(w, r, http.StatusNotFound, api.ErrorCodeNotFound, "feed not found")
-			return "", "", false
+			return "", "", consumer{}, false
 		}
 		if !authorize(r.Context(), caller.InstanceID, feed) {
 			management.Error(w, r, http.StatusForbidden, api.ErrorCodeForbidden, "replication access denied")
-			return "", "", false
+			return "", "", consumer{}, false
 		}
-		return instance, feed, true
+		return instance, feed, consumer{ConsumerMember, caller.InstanceID}, true
 	}}
 	mux := http.NewServeMux()
 	base := FederationExportPrefix + "{feed}"
@@ -129,19 +129,20 @@ func queryInt(r *http.Request, name string, def int64) (int64, bool) {
 func includeCached(r *http.Request) bool { return r.URL.Query().Get("include_cached") != "false" }
 
 func (h exportHandlers) head(w http.ResponseWriter, r *http.Request) {
-	instance, feed, ok := h.authorize(w, r)
+	instance, feed, who, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
 	head, err := h.e.Head(r.Context(), instance, feed)
 	if err != nil {
-		exportError(w, r, err)
+		h.fail(w, r, instance, feed, who, err)
 		return
 	}
+	h.track(r, instance, feed, who, pullEvent{head: &head.Seq})
 	management.JSON(w, http.StatusOK, head)
 }
 func (h exportHandlers) manifest(w http.ResponseWriter, r *http.Request) {
-	instance, feed, ok := h.authorize(w, r)
+	instance, feed, who, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
@@ -156,13 +157,14 @@ func (h exportHandlers) manifest(w http.ResponseWriter, r *http.Request) {
 		Filters: Filters{Namespaces: q["namespace"], Packages: q["package"], VersionPrefixes: q["version_prefix"]},
 	})
 	if err != nil {
-		exportError(w, r, err)
+		h.fail(w, r, instance, feed, who, err)
 		return
 	}
+	h.track(r, instance, feed, who, pullEvent{})
 	management.JSON(w, http.StatusOK, page)
 }
 func (h exportHandlers) changes(w http.ResponseWriter, r *http.Request) {
-	instance, feed, ok := h.authorize(w, r)
+	instance, feed, who, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
@@ -178,13 +180,14 @@ func (h exportHandlers) changes(w http.ResponseWriter, r *http.Request) {
 		Filters: Filters{Namespaces: q["namespace"], Packages: q["package"], VersionPrefixes: q["version_prefix"]},
 	})
 	if err != nil {
-		exportError(w, r, err)
+		h.fail(w, r, instance, feed, who, err)
 		return
 	}
+	h.track(r, instance, feed, who, pullEvent{served: &page.Next, head: &page.Head})
 	management.JSON(w, http.StatusOK, page)
 }
 func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
-	instance, feed, ok := h.authorize(w, r)
+	instance, feed, who, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
@@ -196,7 +199,7 @@ func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
 	}
 	info, body, err := h.e.OpenBlob(r.Context(), instance, feed, r.PathValue("digest"), includeCached(r), offset, length)
 	if err != nil {
-		exportError(w, r, err)
+		h.fail(w, r, instance, feed, who, err)
 		return
 	}
 	defer body.Close()
@@ -222,17 +225,20 @@ func (h exportHandlers) blob(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Range", "bytes "+strconv.FormatInt(offset, 10)+"-"+strconv.FormatInt(offset+n-1, 10)+"/"+strconv.FormatInt(info.Size, 10))
 		w.WriteHeader(http.StatusPartialContent)
 	}
-	streamBlob(w, body)
+	sent := streamBlob(w, body)
+	h.track(r, instance, feed, who, pullEvent{bytes: sent})
 }
 
 // blobWriteIdle is how long a blob response may go without a successful write.
 var blobWriteIdle = 60 * time.Second
 
-// streamBlob copies body to w, moving the write deadline forward on every write.
-func streamBlob(w http.ResponseWriter, body io.Reader) {
+// streamBlob copies body to w, moving the write deadline forward on every write and
+// returns the number of bytes written.
+func streamBlob(w http.ResponseWriter, body io.Reader) int64 {
 	c := http.NewResponseController(w)
 	_ = c.SetWriteDeadline(time.Now().Add(blobWriteIdle))
-	_, _ = io.CopyBuffer(&progressWriter{w: w, c: c}, body, make([]byte, 64<<10))
+	n, _ := io.CopyBuffer(&progressWriter{w: w, c: c}, body, make([]byte, 64<<10))
+	return n
 }
 
 // progressWriter extends the write deadline before every write.
@@ -274,14 +280,39 @@ func parseRange(v string) (offset, length int64, ranged, valid bool) {
 }
 
 func (h exportHandlers) template(w http.ResponseWriter, r *http.Request) {
-	instance, feed, ok := h.authorize(w, r)
+	instance, feed, who, ok := h.authorize(w, r)
 	if !ok {
 		return
 	}
 	t, err := h.e.Template(r.Context(), instance, feed)
 	if err != nil {
-		exportError(w, r, err)
+		h.fail(w, r, instance, feed, who, err)
 		return
 	}
+	h.track(r, instance, feed, who, pullEvent{})
 	management.JSON(w, http.StatusOK, t)
+}
+
+// track records an export request outcome for outgoing-replication visibility.
+func (h exportHandlers) track(r *http.Request, instance, feed string, who consumer, ev pullEvent) {
+	ev.job = sanitizeJob(r.Header.Get(jobHeader))
+	h.e.Consumers.record(instance, feed, who, ev)
+}
+
+// fail records a failed request of an authorized consumer and answers it.
+func (h exportHandlers) fail(w http.ResponseWriter, r *http.Request, instance, feed string, who consumer, err error) {
+	reason := "unavailable"
+	var purged *HistoryPurgedError
+	switch {
+	case errors.As(err, &purged):
+		reason = "history purged; reseed required"
+	case errors.Is(err, ErrNotFound):
+		reason = "not found"
+	case errors.Is(err, ErrInput):
+		reason = "invalid request"
+	case errors.Is(err, ErrCacheFeed):
+		reason = "cache feed"
+	}
+	h.track(r, instance, feed, who, pullEvent{err: reason})
+	exportError(w, r, err)
 }

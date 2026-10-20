@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
 import type { Client } from "./api";
+import type { Go } from "./App";
 import { useOptionalCall } from "./gaps";
 import { FederationPolicy } from "./FederationPolicy";
-import { FederationReplication } from "./FederationReplication";
 import { FederationAuthority } from "./FederationAuthority";
 import { FederationAudit } from "./FederationAudit";
 import type {
@@ -78,10 +78,9 @@ function parseLabels(text: string): Record<string, string> | undefined {
 
 type Secret = { title: string; text: ReactNode; items: [string, string][] };
 
-type FederationTab =
-  "members" | "policy" | "replication" | "authority" | "audit";
+type FederationTab = "members" | "policy" | "authority" | "audit";
 
-export function FederationPage({ client }: { client: Client }) {
+export function FederationPage({ client, go }: { client: Client; go?: Go }) {
   const status = useOptionalCall(client, "getFederationStatus");
   const members = useOptionalCall(client, "listFederationMembers");
   const st = status.state === "ready" ? status.data : undefined;
@@ -159,11 +158,23 @@ export function FederationPage({ client }: { client: Client }) {
                   items={[
                     { id: "members", label: "Members", count: list.length },
                     { id: "policy", label: "Policy" },
-                    { id: "replication", label: "Replication" },
                     { id: "authority", label: "Authority" },
                     { id: "audit", label: "Audit" },
                   ]}
                 />
+              )}
+              {active && (
+                <p className="muted small">
+                  Federated replication rules live under{" "}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => go?.("replication", { tab: "federation" })}
+                  >
+                    Replication → Federation rules
+                  </Button>
+                  .
+                </p>
               )}
               {shown === "members" && (
                 <>
@@ -246,9 +257,6 @@ export function FederationPage({ client }: { client: Client }) {
               )}
               {active && shown === "policy" && (
                 <FederationPolicy client={client} st={st} />
-              )}
-              {active && shown === "replication" && (
-                <FederationReplication client={client} st={st} members={list} />
               )}
               {active && shown === "authority" && (
                 <FederationAuthority

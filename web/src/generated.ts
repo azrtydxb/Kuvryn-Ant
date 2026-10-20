@@ -142,6 +142,9 @@ export type ReplicationJobList = { "items": Array<ReplicationJob> };
 export type ReplicationJobInput = { "name": string; "peer_id": string; "remote_feed_id": string; "dest_feed_id": string; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: ReplicationFilters; "deletion_policy"?: "ignore" | "propagate"; "destination_read_only"?: boolean };
 export type ReplicationJobPatch = { "revision"?: number; "mode"?: "continuous" | "scheduled" | "manual"; "interval_seconds"?: number; "include_cached"?: boolean; "filters"?: ReplicationFilters; "deletion_policy"?: "ignore" | "propagate"; "enabled"?: boolean; "destination_read_only"?: boolean };
 export type ReplicationStatusEntry = { "id": string; "name": string; "dest_feed_id": string; "enabled": boolean; "status": ReplicationStatus };
+export type ReplicationLagSample = { "at": string; "last_sequence": number; "head_sequence": number; "lag_changes": number };
+export type ReplicationOutgoing = { "id": string; "consumer_kind": "member" | "principal"; "consumer_name": string; "member_instance_id"?: string; "principal_id"?: string; "feed_id": string; "feed_slug": string; "feed_format": string; "remote_job"?: string; "rule_id"?: string; "first_seen": string; "last_seen": string; "pulls": number; "bytes_served": number; "last_sequence"?: number; "head_sequence": number; "lag_changes": number; "lag_seconds": number; "status": "active" | "stale" | "error"; "last_error"?: string; "last_error_at"?: string; "stale_after_seconds": number; "history": Array<ReplicationLagSample> };
+export type ReplicationOutgoingList = { "items": Array<ReplicationOutgoing> };
 export type ReplicationStatusList = { "items": Array<ReplicationStatusEntry> };
 export type ReplicationTrigger = { "job_id": string; "state": string };
 export type ReplicationDeletionEntry = { "source": "held" | "pending"; "kind": string; "coordinate": string; "version"?: string; "key"?: string; "seq": number; "disposition": "would_delete" | "protected" | "absent" };
@@ -468,6 +471,7 @@ deleteReplicationJob: { body: undefined; response: undefined };
 getReplicationJobStatus: { body: undefined; response: ReplicationStatus };
 triggerReplicationJob: { body: undefined; response: ReplicationTrigger };
 previewReplicationDeletions: { body: undefined; response: ReplicationDeletionPreview };
+listReplicationOutgoing: { body: undefined; response: ReplicationOutgoingList };
 listReplicationStatus: { body: undefined; response: ReplicationStatusList };
 getReplicationExportHead: { body: undefined; response: ReplicationHead };
 getReplicationExportManifest: { body: undefined; response: ReplicationManifestPage };
@@ -1101,6 +1105,11 @@ export const routes = {
   },
   "previewReplicationDeletions": {
     "path": "/api/v1/replication/jobs/{id}/deletions",
+    "method": "GET",
+    "idempotent": false
+  },
+  "listReplicationOutgoing": {
+    "path": "/api/v1/replication/outgoing",
     "method": "GET",
     "idempotent": false
   },

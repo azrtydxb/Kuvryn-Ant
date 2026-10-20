@@ -42,7 +42,8 @@ type site struct {
 	source    string // local source of the primary feed
 	domain    string
 	publisher *artifact.Service
-	dir       string // blob storage directory
+	dir       string           // blob storage directory
+	tracker   *ConsumerTracker // outgoing consumer tracking on the export API
 }
 
 func testDSN(t *testing.T) string {
@@ -97,7 +98,7 @@ func newSite(t *testing.T, name, feedSlug string) *site {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := &site{t: t, pool: pool, instance: owner.InstanceID}
+	s := &site{t: t, pool: pool, instance: owner.InstanceID, tracker: NewConsumerTracker()}
 	all := []identity.Action{identity.Read, identity.Publish, identity.Delete, identity.Configure, identity.Replicate, identity.Admin}
 	tok, err := (identity.Tokens{DB: pool}).Issue(ctx, owner.InstanceID, owner.PrincipalID, owner.PrincipalID, []identity.Scope{{Actions: all}}, time.Now().Add(time.Hour))
 	if err != nil {
@@ -272,7 +273,7 @@ type peerServer struct {
 func (s *site) serve(t *testing.T) *peerServer {
 	t.Helper()
 	mux := http.NewServeMux()
-	RegisterExport(mux, s.pool, Exporter{DB: s.pool, Storage: s.stores.Resolve})
+	RegisterExport(mux, s.pool, Exporter{DB: s.pool, Storage: s.stores.Resolve, Consumers: s.tracker})
 	p := &peerServer{served: map[string]int{}, failAt: -1, tamper: map[string][]byte{}, bytesServed: map[string]int{}}
 	p.Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if i := strings.Index(r.URL.Path, "/blobs/"); i >= 0 {

@@ -80,8 +80,11 @@ func (w *backgroundWorkers) StartReplication(rr *replicationRuntime, logger *slo
 	if w == nil || rr == nil {
 		return
 	}
-	w.done.Add(2)
+	w.done.Add(3)
 	go func() { defer w.done.Done(); rr.service.Run(w.ctx) }()
+	// Consumer pull activity (outgoing replication visibility) is batched in
+	// memory and persisted here, like the traffic counters.
+	go func() { defer w.done.Done(); rr.exporter.Consumers.Run(w.ctx, rr.pool, 15*time.Second) }()
 	// The authority side trims its change history to the configured bounds and
 	// raises the low-water mark; lagging consumers then reseed automatically.
 	go func() {
