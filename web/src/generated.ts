@@ -31,10 +31,10 @@ export type IssuedServiceToken = { "id": string; "secret": string; "expires_at":
 export type RevokedServiceToken = { "id": string; "revoked": true };
 export type IdentityPrincipalPage = { "items": Array<IdentityPrincipal>; "next_after"?: string };
 export type IdentityRolePage = { "items": Array<IdentityRole>; "next_after"?: string };
-export type Webhook = { "id": string; "endpoint": string; "enabled": boolean; "revision": number; "created_at": string };
+export type Webhook = { "id": string; "endpoint": string; "enabled": boolean; "revision": number; "created_at": string; "name"?: string; "custom_endpoint": boolean; "secret_id"?: string; "secret_name"?: string };
 export type WebhookPage = { "items": Array<Webhook>; "next_after"?: string };
-export type CreateWebhook = { "endpoint": string; "secret": string };
-export type PatchWebhook = { "enabled": boolean };
+export type CreateWebhook = { "name"?: string; "secret_id"?: string; "endpoint"?: string; "secret"?: string };
+export type PatchWebhook = { "enabled"?: boolean; "name"?: string; "secret_id"?: string; "endpoint"?: string; "custom_endpoint"?: boolean };
 export type RotateWebhookSecret = { "secret": string };
 export type WebhookDelivery = { "event_id": number; "state": "pending" | "delivered" | "dead"; "attempts": number; "available_at": string; "last_failure"?: "invalid_destination" | "invalid_payload" | "secret_unavailable" | "transport_failure" | "http_failure" | "attempts_exhausted" | "delivery_failure"; "delivered_at"?: string };
 export type WebhookDeliveryPage = { "items": Array<WebhookDelivery>; "next_after"?: number };
@@ -369,6 +369,13 @@ export type CachePolicy = { "max_idle_seconds": number; "max_bytes"?: number };
 export type CachePolicyInput = { "max_idle_seconds"?: number; "max_bytes"?: number };
 export type CacheCleanResult = { "feed_id": string; "prefix": string; "matched": number; "tags_removed": number; "versions_removed": number; "components_removed": number; "bytes_released": number; "truncated": boolean };
 export type CacheFeedUsage = { "feed_id": string; "slug": string; "format": string; "bytes": number; "versions": number; "max_idle_seconds": number; "max_bytes"?: number };
+export type WebhookSecretRef = { "id": string; "name"?: string; "endpoint": string };
+export type WebhookSecret = { "id": string; "name": string; "description": string; "created_at": string; "created_by"?: string; "rotated_at"?: string; "revision": number; "previous_valid_until"?: string; "used_by_count": number; "used_by": Array<WebhookSecretRef>; "value"?: string };
+export type WebhookSecretPage = { "items": Array<WebhookSecret>; "next_after"?: string };
+export type CreateWebhookSecret = { "name": string; "description"?: string; "value"?: string };
+export type RotateWebhookSecretValue = { "value"?: string; "grace_seconds"?: number };
+export type DeletedWebhookSecret = { "id": string; "deleted": boolean };
+export type PutWebhookBaseUrl = { "value": string };
 export const formats = ["apk","ansible","apt","cocoapods","composer","conan","conda","oci","git-lfs","go","helm","huggingface","maven","npm","nuget","oci-artifacts","p2","pub","pypi","cran","raw","rubygems","cargo","swift","terraform","rpm"] as const;
 export interface Operations {
 getStatus: { body: undefined; response: ServiceStatus };
@@ -606,6 +613,12 @@ getRetentionSettings: { body: undefined; response: RetentionSettings };
 putRetentionSettings: { body: PutRetentionSettings; response: RetentionSettings };
 getRetentionPressure: { body: undefined; response: PressureStatus };
 cleanFeedCache: { body: undefined; response: CacheCleanResult };
+listWebhookSecrets: { body: undefined; response: WebhookSecretPage };
+createWebhookSecret: { body: CreateWebhookSecret; response: WebhookSecret };
+getWebhookSecret: { body: undefined; response: WebhookSecret };
+deleteWebhookSecret: { body: undefined; response: DeletedWebhookSecret };
+rotateWebhookSecretValue: { body: RotateWebhookSecretValue; response: WebhookSecret };
+putWebhookBaseUrl: { body: PutWebhookBaseUrl; response: InstanceSettings };
 }
 export const routes = {
   "getStatus": {
@@ -1782,5 +1795,35 @@ export const routes = {
     "path": "/api/v1/feeds/{id}/cache",
     "method": "DELETE",
     "idempotent": false
+  },
+  "listWebhookSecrets": {
+    "path": "/api/v1/webhook-secrets",
+    "method": "GET",
+    "idempotent": false
+  },
+  "createWebhookSecret": {
+    "path": "/api/v1/webhook-secrets",
+    "method": "POST",
+    "idempotent": true
+  },
+  "getWebhookSecret": {
+    "path": "/api/v1/webhook-secrets/{id}",
+    "method": "GET",
+    "idempotent": false
+  },
+  "deleteWebhookSecret": {
+    "path": "/api/v1/webhook-secrets/{id}",
+    "method": "DELETE",
+    "idempotent": true
+  },
+  "rotateWebhookSecretValue": {
+    "path": "/api/v1/webhook-secrets/{id}/rotate",
+    "method": "POST",
+    "idempotent": true
+  },
+  "putWebhookBaseUrl": {
+    "path": "/api/v1/settings/webhook-base-url",
+    "method": "PUT",
+    "idempotent": true
   }
 } as const;

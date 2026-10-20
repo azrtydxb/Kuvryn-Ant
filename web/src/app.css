@@ -1102,6 +1102,13 @@ details > summary {
     margin-top: 6px;
   }
 }
+
+/* The design system renders an absolutely positioned sr-only label in empty
+   table headers; without a positioned wrapper it escapes the scroll container
+   and widens the whole page on narrow screens. */
+.az-table-wrap {
+  position: relative;
+}
 .flow-filters .az-input {
   padding-block: 7px;
   font-size: var(--az-text-sm);

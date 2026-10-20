@@ -28,6 +28,9 @@ type backgroundWorkers struct {
 	workCtx    context.Context
 }
 
+// webhookAllowHTTP is set once at startup (ANT_WEBHOOK_ALLOW_HTTP) before workers start.
+var webhookAllowHTTP bool
+
 func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, keys *secrets.Keyring, browser ...*browserRuntime) (*backgroundWorkers, error) {
 	if r == nil {
 		return nil, nil
@@ -36,7 +39,7 @@ func startWorkers(ctx context.Context, pool *pgxpool.Pool, r *artifactRuntime, k
 	if r.instanceID == "" || lease.InstanceID != r.instanceID {
 		return nil, errors.New("instance ownership unavailable")
 	}
-	dispatcher, err := events.New(pool, nil, webhookSecrets{secrets.Store{DB: pool, Keys: keys}}, events.Options{InstanceID: r.instanceID})
+	dispatcher, err := events.New(pool, nil, webhookSecrets{secrets.Store{DB: pool, Keys: keys}}, events.Options{InstanceID: r.instanceID, AllowHTTP: webhookAllowHTTP})
 	if err != nil {
 		return nil, err
 	}

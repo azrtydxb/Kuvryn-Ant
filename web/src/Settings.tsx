@@ -116,13 +116,23 @@ function InstanceSettingsPane({
     return <Unavailable what="Instance settings" />;
   if (r.state === "error") return <Failure error={r.error} />;
   return (
-    <SettingsForm
-      key={r.data.revision}
-      client={client}
-      value={r.data}
-      section={section}
-      reload={r.reload}
-    />
+    <>
+      <SettingsForm
+        key={r.data.revision}
+        client={client}
+        value={r.data}
+        section={section}
+        reload={r.reload}
+      />
+      {section === "general" && (
+        <WebhookBaseURL
+          key={`webhook-`}
+          client={client}
+          value={r.data}
+          reload={r.reload}
+        />
+      )}
+    </>
   );
 }
 
@@ -416,5 +426,79 @@ function TokensPane({ client }: { client: Client }) {
       <PersonalTokensPane client={client} />
       <ServiceTokensSection client={client} />
     </>
+  );
+}
+
+/** Webhook base URL: slug-mode webhooks deliver to this URL plus their name. */
+function WebhookBaseURL({
+  client,
+  value,
+  reload,
+}: {
+  client: Client;
+  value: InstanceSettings;
+  reload: () => void;
+}) {
+  const item = value.items.find((i) => i.key === "webhook_base_url");
+  const locked = !!item?.read_only;
+  const initial = item?.value ?? "";
+  const [base, setBase] = useState(initial);
+  const action = useAction();
+  const toast = useToast();
+  const trimmed = base.trim();
+  const invalid =
+    trimmed !== "" && !/^https:\/\/[^/\s?#@]+(\/[^\s?#]*)?$/i.test(trimmed)
+      ? "Use an https URL without credentials, query or fragment."
+      : undefined;
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void (async () => {
+          const ok = await action.run(() =>
+            client.call("putWebhookBaseUrl", {
+              etag: requireETag(`"${value.revision}"`),
+              body: { value: trimmed },
+            }),
+          );
+          if (ok) {
+            toast("Webhook base URL saved", trimmed || "Cleared");
+            reload();
+          }
+        })();
+      }}
+    >
+      <SettingsSection
+        title="Webhooks"
+        description="Webhooks are created by name and deliver to this base URL plus the name. Changing it re-resolves every named webhook; custom endpoints are untouched."
+        form
+        footer={
+          <Button
+            type="submit"
+            disabled={action.busy || locked || trimmed === initial || !!invalid}
+          >
+            {action.busy ? "Saving…" : "Save base URL"}
+          </Button>
+        }
+      >
+        <Input
+          label="Webhooks base URL"
+          type="url"
+          mono
+          maxLength={1900}
+          placeholder="https://hooks.example.com/ant/"
+          value={base}
+          disabled={locked}
+          onChange={val(setBase)}
+          error={invalid}
+          hint={
+            locked
+              ? "Set by the deployment (ANT_WEBHOOK_BASE_URL); read-only here."
+              : "Leave empty to use custom endpoints only."
+          }
+        />
+        <Failure error={action.error} />
+      </SettingsSection>
+    </form>
   );
 }

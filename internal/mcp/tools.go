@@ -374,6 +374,11 @@ func catalog() []*tool {
 			run: func(c *call) *toolResult {
 				return c.get("/api/v1/webhooks", c.page(nil, "limit", "after"))
 			}},
+		{name: "list_webhook_secrets", title: "List webhook signing secrets", desc: "List webhook signing secrets: name, description, rotation time and the webhooks using each. Values are never returned.", readOnly: true,
+			params: []param{{name: "after", typ: "uuid", desc: "Return items after this secret ID."}, pageParams[0]},
+			run: func(c *call) *toolResult {
+				return c.get("/api/v1/webhook-secrets", c.page(nil, "limit", "after"))
+			}},
 		{name: "create_feed", title: "Create feed", desc: "Create a feed. Requires configure permission.", idempotent: true,
 			params: []param{{name: "slug", typ: "string", required: true, desc: "Unique feed slug."}, {name: "format", typ: "string", required: true, desc: "Package format, e.g. raw, oci, npm, pypi, maven."},
 				{name: "anonymous_read", typ: "boolean", desc: "Allow anonymous reads (default false)."},
