@@ -297,3 +297,104 @@ func TestDurableDeliveryRetriesClaimsAndLateCommit(t *testing.T) {
 		t.Fatal("exhausted claim not terminal", state, err)
 	}
 }
+
+// A webhook with a signing secret signs with that secret's current value and,
+// inside the rotation grace window, also with the previous one.
+func TestDeliverySignsWithReferencedSecretAndGraceWindow(t *testing.T) {
+	pool := fixture(t)
+	ctx := context.Background()
+	owner := instance(t, pool)
+	values := map[string]string{"cur": strings.Repeat("c", 32), "prev": strings.Repeat("p", 32), "legacy": strings.Repeat("l", 32)}
+	refs := map[string]string{}
+	for label := range values {
+		var id string
+		if err := pool.QueryRow(ctx, `INSERT INTO encrypted_secrets(instance_id,purpose,envelope,key_version) VALUES($1,'webhook','{"key_version":"v1"}','v1') RETURNING id::text`, owner).Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		refs[label] = id
+	}
+	resolver := resolverFunc(func(_ context.Context, _, ref string) ([]byte, error) {
+		for label, id := range refs {
+			if id == ref {
+				return []byte(values[label]), nil
+			}
+		}
+		return nil, errors.New("unknown")
+	})
+	sign := func(secret, ts, id string, body []byte) string {
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write([]byte(ts + "\n" + id + "\n"))
+		mac.Write(body)
+		return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	}
+	var header atomic.Value
+	var bodies atomic.Value
+	var ts, eventID atomic.Value
+	endpoint := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		header.Store(r.Header.Get("X-Ant-Signature"))
+		bodies.Store(b)
+		ts.Store(r.Header.Get("X-Ant-Timestamp"))
+		eventID.Store(r.Header.Get("X-Ant-Event-ID"))
+		w.WriteHeader(204)
+	}))
+	defer endpoint.Close()
+	d, err := New(pool, nil, resolver, Options{AllowHTTP: true, AllowPrivate: true, InstanceID: owner})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer d.Close()
+	var signing string
+	if err = pool.QueryRow(ctx, `INSERT INTO webhook_signing_secrets(instance_id,name,secret_id) VALUES($1,'shared',$2) RETURNING id::text`, owner, refs["cur"]).Scan(&signing); err != nil {
+		t.Fatal(err)
+	}
+	var sub string
+	if err = pool.QueryRow(ctx, `INSERT INTO event_subscriptions(instance_id,name,endpoint,custom_endpoint,signing_secret_id) VALUES($1,'hook',$2,false,$3) RETURNING id::text`, owner, endpoint.URL, signing).Scan(&sub); err != nil {
+		t.Fatal(err)
+	}
+	deliver := func() string {
+		t.Helper()
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		event(t, tx, owner)
+		if err = tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if _, err = d.Materialize(ctx, sub, 200); err != nil {
+			t.Fatal(err)
+		}
+		if attempted, err := d.DeliverOne(ctx); err != nil || !attempted {
+			t.Fatal("not delivered", err)
+		}
+		return header.Load().(string)
+	}
+	got := deliver()
+	want := func(secrets ...string) string {
+		var parts []string
+		for _, s := range secrets {
+			parts = append(parts, sign(s, ts.Load().(string), eventID.Load().(string), bodies.Load().([]byte)))
+		}
+		return strings.Join(parts, ",")
+	}
+	if got != want(values["cur"]) {
+		t.Fatal("not signed with the referenced secret alone")
+	}
+	// Rotate with a grace window: new current, previous still signs.
+	if _, err = pool.Exec(ctx, `UPDATE webhook_signing_secrets SET secret_id=$2,previous_secret_id=$3,previous_purpose='webhook',previous_expires_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, signing, refs["legacy"], refs["prev"]); err != nil {
+		t.Fatal(err)
+	}
+	got = deliver()
+	if got != want(values["legacy"], values["prev"]) {
+		t.Fatalf("grace window not double-signed: %q", got)
+	}
+	// After the window only the current value signs.
+	if _, err = pool.Exec(ctx, `UPDATE webhook_signing_secrets SET previous_expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, signing); err != nil {
+		t.Fatal(err)
+	}
+	got = deliver()
+	if got != want(values["legacy"]) {
+		t.Fatalf("expired previous value still signs: %q", got)
+	}
+}

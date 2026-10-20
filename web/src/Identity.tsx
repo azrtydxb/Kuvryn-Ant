@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { SigningSecretsTab } from "./WebhookSecrets";
 import { requireETag, type Client } from "./api";
 import { useAllFeeds } from "./data";
 import { getProviders, type Providers } from "./auth";
@@ -55,8 +56,15 @@ function revision(n: number) {
   return requireETag(`"${n}"`);
 }
 
-export function Identity({ client }: { client: Client }) {
-  const [tab, setTab] = useState("users");
+export function Identity({
+  client,
+  initialTab = "users",
+}: {
+  client: Client;
+  initialTab?: string;
+}) {
+  const [tab, setTab] = useState(initialTab);
+  const [creatingSecret, setCreatingSecret] = useState(false);
   const [after, setAfter] = useState("");
   const [creating, setCreating] = useState<CreatePrincipal["kind"]>();
   const [creatingRole, setCreatingRole] = useState(false);
@@ -124,6 +132,11 @@ export function Identity({ client }: { client: Client }) {
             Bind identity
           </Button>
         )}
+        {tab === "secrets" && (
+          <Button icon="plus" onClick={() => setCreatingSecret(true)}>
+            Create signing secret
+          </Button>
+        )}
       </PageHeading>
       <Tabs
         value={tab}
@@ -139,6 +152,7 @@ export function Identity({ client }: { client: Client }) {
           { id: "roles", label: "Roles" },
           { id: "tokens", label: "Tokens" },
           { id: "providers", label: "Sign-in providers" },
+          { id: "secrets", label: "Signing secrets" },
         ]}
       />
       <p className="muted small">
@@ -166,6 +180,13 @@ export function Identity({ client }: { client: Client }) {
       {tab === "tokens" && <TokensTab client={client} principals={items} />}
       {tab === "providers" && (
         <ProvidersTab client={client} principals={items} />
+      )}
+      {tab === "secrets" && (
+        <SigningSecretsTab
+          client={client}
+          creating={creatingSecret}
+          setCreating={setCreatingSecret}
+        />
       )}
       {creating && (
         <CreatePrincipalModal

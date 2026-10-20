@@ -244,8 +244,9 @@ function Shell({
     );
   else if (page === "federation")
     body = <FederationPage client={client} go={go} />;
-  else if (page === "identity") body = <Identity client={client} />;
-  else if (page === "webhooks") body = <Webhooks client={client} />;
+  else if (page === "identity")
+    body = <Identity client={client} initialTab={pageTab || undefined} />;
+  else if (page === "webhooks") body = <Webhooks client={client} go={go} />;
   else if (page === "audit") body = <AuditPage client={client} />;
   else if (page === "migration") body = <MigrationPage client={client} />;
   else

@@ -70,6 +70,8 @@ type OpsDeps struct {
 	// StagingBytes reports local upload staging usage, when the backend has one.
 	StagingBytes   func(ctx context.Context) (int64, bool)
 	StorageBackend string
+	// WebhookAllowHTTP mirrors ANT_WEBHOOK_ALLOW_HTTP for webhook base URL validation.
+	WebhookAllowHTTP bool
 	// Env lists read-only deployment settings returned by the settings endpoint.
 	Env []EnvSetting
 	// GC is the read-only maintenance schedule shown with the retention settings.
@@ -142,6 +144,7 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"POST /api/v1/webhooks/{id}/deliveries/{event}": h.redeliver,
 		"GET /api/v1/settings":                          h.getSettings,
 		"PUT /api/v1/settings":                          h.putSettings,
+		"PUT /api/v1/settings/webhook-base-url":         h.putWebhookBaseURL,
 		"GET /api/v1/permissions/effective":             h.effective,
 		"GET /api/v1/retention/policies":                h.listRetentionPolicies,
 		"POST /api/v1/retention/policies":               h.createRetentionPolicy,

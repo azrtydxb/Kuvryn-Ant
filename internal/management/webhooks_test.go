@@ -57,7 +57,7 @@ func TestWebhookAdministrationContract(t *testing.T) {
 		t.Fatal("replay allocated secrets or subscriptions")
 	}
 	var ref string
-	if err := f.db.QueryRow(ctx, `SELECT secret_ref FROM event_subscriptions WHERE id=$1`, item.ID).Scan(&ref); err != nil {
+	if err := f.db.QueryRow(ctx, `SELECT w.secret_id::text FROM webhook_signing_secrets w JOIN event_subscriptions s ON s.signing_secret_id=w.id WHERE s.id=$1`, item.ID).Scan(&ref); err != nil {
 		t.Fatal(err)
 	}
 	store := secrets.Store{DB: f.db, Keys: keys}
@@ -134,7 +134,7 @@ func TestWebhookAdministrationRollbackAndIsolation(t *testing.T) {
 	rotate, _ := json.Marshal(map[string]string{"secret": next})
 	expectSourceStatus(t, f.request("PUT", "/api/v1/webhooks/"+item.ID+"/secret", string(rotate), "rotate-fail", `"1"`), 503)
 	var ref string
-	if err := f.db.QueryRow(ctx, `SELECT secret_ref FROM event_subscriptions WHERE id=$1`, item.ID).Scan(&ref); err != nil {
+	if err := f.db.QueryRow(ctx, `SELECT w.secret_id::text FROM webhook_signing_secrets w JOIN event_subscriptions s ON s.signing_secret_id=w.id WHERE s.id=$1`, item.ID).Scan(&ref); err != nil {
 		t.Fatal(err)
 	}
 	record, plain, err := (secrets.Store{DB: f.db, Keys: keys}).Open(ctx, f.instance, ref, "webhook")
@@ -291,7 +291,8 @@ func TestWebhookAdministrationGeneratedClient(t *testing.T) {
 		t.Fatal(err)
 	}
 	secret := strings.Repeat("🔐", 8)
-	response, err := client.CreateWebhookWithResponse(context.Background(), &api.CreateWebhookParams{IdempotencyKey: "client"}, api.CreateWebhookJSONRequestBody{Endpoint: "https://example.com/events", Secret: &secret})
+	endpoint := "https://example.com/events"
+	response, err := client.CreateWebhookWithResponse(context.Background(), &api.CreateWebhookParams{IdempotencyKey: "client"}, api.CreateWebhookJSONRequestBody{Endpoint: &endpoint, Secret: &secret})
 	if err != nil {
 		t.Fatal(err)
 	}

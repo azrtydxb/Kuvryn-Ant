@@ -108,21 +108,4 @@ func canonicalEndpoint(raw string) string { return strings.TrimSpace(raw) }
 
 // ValidateEndpoint validates configuration without network I/O. Resolved DNS
 // addresses are checked again by the delivery transport on every connection.
-func ValidateEndpoint(raw string) (string, error) {
-	raw = canonicalEndpoint(raw)
-	if !endpointAllowed(raw, Options{}) {
-		return "", ErrConfiguration
-	}
-	u, err := url.Parse(raw)
-	if err != nil {
-		return "", ErrConfiguration
-	}
-	host := strings.TrimSuffix(strings.ToLower(u.Hostname()), ".")
-	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
-		return "", ErrConfiguration
-	}
-	if ip, err := netip.ParseAddr(host); err == nil && (ip.Zone() != "" || !publicIP(ip)) {
-		return "", ErrConfiguration
-	}
-	return raw, nil
-}
+func ValidateEndpoint(raw string) (string, error) { return ValidateEndpointFor(raw, false) }

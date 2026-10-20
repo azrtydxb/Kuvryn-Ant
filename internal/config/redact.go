@@ -51,6 +51,7 @@ func (c Config) Redacted() map[string]any {
 	return map[string]any{
 		"listen":           c.Listen,
 		"public_url":       c.PublicURL,
+		"webhook_base_url": c.WebhookBaseURL,
 		"instance_id":      c.InstanceID,
 		"database":         db,
 		"storage":          storage,

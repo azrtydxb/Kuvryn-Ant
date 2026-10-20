@@ -136,12 +136,12 @@ func (d *Dispatcher) Materialize(ctx context.Context, subscription string, batch
 }
 
 type delivery struct {
-	subscription, instance, endpoint, secretRef, token string
-	eventID                                            int64
-	attempt                                            int
-	topic                                              string
-	payload                                            []byte
-	created                                            time.Time
+	subscription, instance, endpoint, secretRef, previousRef, token string
+	eventID                                                         int64
+	attempt                                                         int
+	topic                                                           string
+	payload                                                         []byte
+	created                                                         time.Time
 }
 
 func (d *Dispatcher) claim(ctx context.Context) (delivery, bool, error) {
@@ -164,12 +164,14 @@ func (d *Dispatcher) claim(ctx context.Context) (delivery, bool, error) {
 		return delivery{}, false, ErrUnavailable
 	}
 	var item delivery
-	err = tx.QueryRow(ctx, `SELECT e.subscription_id,e.event_id,s.instance_id,s.endpoint,s.secret_ref,left(o.topic,257),
+	var previous *string
+	err = tx.QueryRow(ctx, `SELECT e.subscription_id,e.event_id,s.instance_id,s.endpoint,COALESCE(w.secret_id::text,s.secret_ref),CASE WHEN w.previous_expires_at>clock_timestamp() THEN w.previous_secret_id::text END,left(o.topic,257),
  CASE WHEN octet_length(o.payload::text)<=$1 THEN o.payload::text ELSE NULL END,o.created_at
  FROM event_deliveries e JOIN event_subscriptions s ON s.id=e.subscription_id
+ LEFT JOIN webhook_signing_secrets w ON w.instance_id=s.instance_id AND w.id=s.signing_secret_id
  JOIN outbox_events o ON o.id=e.event_id JOIN audit_events a ON a.id=o.audit_id AND a.instance_id=s.instance_id
  WHERE s.enabled AND ($3='' OR s.instance_id=NULLIF($3,'')::uuid) AND e.state='pending' AND e.attempts<$2 AND e.available_at<=clock_timestamp() AND (e.lease_until IS NULL OR e.lease_until<=clock_timestamp())
- ORDER BY e.event_id,e.available_at FOR UPDATE OF e SKIP LOCKED LIMIT 1`, maxPayload, maxAttempts, d.options.InstanceID).Scan(&item.subscription, &item.eventID, &item.instance, &item.endpoint, &item.secretRef, &item.topic, &item.payload, &item.created)
+ ORDER BY e.event_id,e.available_at FOR UPDATE OF e SKIP LOCKED LIMIT 1`, maxPayload, maxAttempts, d.options.InstanceID).Scan(&item.subscription, &item.eventID, &item.instance, &item.endpoint, &item.secretRef, &previous, &item.topic, &item.payload, &item.created)
 	if errors.Is(err, pgx.ErrNoRows) {
 		if err = tx.Commit(ctx); err != nil {
 			return delivery{}, false, ErrUnavailable
@@ -178,6 +180,9 @@ func (d *Dispatcher) claim(ctx context.Context) (delivery, bool, error) {
 	}
 	if err != nil {
 		return delivery{}, false, ErrUnavailable
+	}
+	if previous != nil {
+		item.previousRef = *previous
 	}
 	if err = tx.QueryRow(ctx, `UPDATE event_deliveries SET attempts=attempts+1,lease_token=gen_random_uuid(),lease_until=clock_timestamp()+interval '30 seconds' WHERE subscription_id=$1 AND event_id=$2 RETURNING lease_token,attempts`, item.subscription, item.eventID).Scan(&item.token, &item.attempt); err != nil {
 		return delivery{}, false, ErrUnavailable
@@ -248,6 +253,19 @@ func (d *Dispatcher) send(ctx context.Context, item delivery) string {
 	if err != nil || len(key) < 32 {
 		return "secret_unavailable"
 	}
+	// During a rotation grace window the previous value signs too, so receivers
+	// still holding either value can verify. An unavailable previous value is
+	// skipped; only the current value is required.
+	var previousKey []byte
+	if item.previousRef != "" {
+		prevCtx, stop := context.WithTimeout(ctx, 2*time.Second)
+		previous, perr := d.secrets.Resolve(prevCtx, item.instance, item.previousRef)
+		stop()
+		if perr == nil && len(previous) >= 32 {
+			previousKey = previous
+		}
+	}
+	defer clear(previousKey)
 	id := strconv.FormatInt(item.eventID, 10)
 	body, err := json.Marshal(struct {
 		ID       string          `json:"id"`
@@ -261,9 +279,19 @@ func (d *Dispatcher) send(ctx context.Context, item delivery) string {
 	}
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 	// Canonical signature input: timestamp + newline + event ID + newline + body.
-	mac := hmac.New(sha256.New, key)
-	mac.Write([]byte(timestamp + "\n" + id + "\n"))
-	mac.Write(body)
+	// X-Ant-Signature is a comma-separated list of "sha256=<hex>" entries: the
+	// current secret first and, only inside a rotation grace window, the previous.
+	// Receivers accept the request when any entry matches a secret they hold.
+	sign := func(secret []byte) string {
+		mac := hmac.New(sha256.New, secret)
+		mac.Write([]byte(timestamp + "\n" + id + "\n"))
+		mac.Write(body)
+		return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	}
+	signature := sign(key)
+	if previousKey != nil {
+		signature += "," + sign(previousKey)
+	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, item.endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "invalid_destination"
@@ -271,7 +299,7 @@ func (d *Dispatcher) send(ctx context.Context, item delivery) string {
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("X-Ant-Event-ID", id)
 	request.Header.Set("X-Ant-Timestamp", timestamp)
-	request.Header.Set("X-Ant-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	request.Header.Set("X-Ant-Signature", signature)
 	response, err := d.client.Do(request)
 	if err != nil {
 		return "transport_failure"

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { requireETag, type Client } from "./api";
 import { isUnavailable, useOptionalCall } from "./gaps";
-import type { Webhook, WebhookDelivery } from "./generated";
+import type { Go } from "./App";
+import type { Webhook, WebhookDelivery, WebhookSecret } from "./generated";
 import {
+  Alert,
   Badge,
   Button,
   Drawer,
@@ -11,9 +13,11 @@ import {
   Modal,
   PropertyList,
   SegmentedControl,
+  Select,
   Switch,
   Table,
 } from "./ds/bundle";
+import { SigningSecretModal } from "./WebhookSecrets";
 import {
   Copyable,
   Failure,
@@ -30,17 +34,104 @@ import {
   when,
 } from "./ui";
 
-function checkSecret(s: string) {
-  const n = new TextEncoder().encode(s).length;
-  if (n < 32 || n > 4096)
-    throw Error(
-      "Signing secret must contain 32–4096 UTF-8 bytes. Enter it again to submit.",
-    );
-}
-const secretHint =
-  "32–4096 UTF-8 bytes. Cleared on every submission; never returned by the service.";
+const slugPattern = /^[a-z0-9-]{1,63}$/;
+const NEW_SECRET = "__new__";
 
-export function Webhooks({ client }: { client: Client }) {
+/** base + slug with exactly one slash between them; "" when there is no base. */
+export function previewURL(base: string, slug: string) {
+  if (!base) return "";
+  return `${base.replace(/\/+$/, "")}/${slug}`;
+}
+export function slugError(slug: string) {
+  if (!slug) return undefined;
+  return slugPattern.test(slug)
+    ? undefined
+    : "Lowercase letters, digits and hyphens only, 1–63 characters.";
+}
+
+/** Instance webhook base URL from the settings endpoint ("" when unset). */
+function useBaseURL(client: Client) {
+  const s = useOptionalCall(client, "getSettings");
+  if (s.state === "loading") return { loading: true, base: "" };
+  if (s.state !== "ready") return { loading: false, base: "" };
+  return {
+    loading: false,
+    base: s.data.items.find((i) => i.key === "webhook_base_url")?.value ?? "",
+  };
+}
+
+function useSecrets(client: Client) {
+  return useResource(
+    () => client.call("listWebhookSecrets", { query: { limit: "200" } }),
+    [client],
+  );
+}
+
+/** URL the slug resolves to, copyable, with the validation message beneath. */
+export function UrlPreview({ base, slug }: { base: string; slug: string }) {
+  const error = slugError(slug);
+  const url = previewURL(base, slug || "<name>");
+  return (
+    <div className="stack" data-testid="url-preview">
+      <span className="muted small">Delivery URL</span>
+      <div className="row spread">
+        <Mono>{url}</Mono>
+        {slug && !error && <Copyable text={url} label="Copy delivery URL" />}
+      </div>
+      {error && (
+        <small role="alert" className="bad">
+          {error}
+        </small>
+      )}
+    </div>
+  );
+}
+
+/** Signing secret picker; its last option opens the shared create modal. */
+function SecretSelect({
+  client,
+  secrets,
+  value,
+  onChange,
+  reload,
+}: {
+  client: Client;
+  secrets: WebhookSecret[];
+  value: string;
+  onChange: (id: string) => void;
+  reload: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+  return (
+    <>
+      <Select
+        label="Signing secret"
+        options={[
+          { value: "", label: "Select a signing secret…" },
+          ...secrets.map((s) => ({ value: s.id, label: s.name })),
+          { value: NEW_SECRET, label: "+ Create new signing secret…" },
+        ]}
+        value={value}
+        onChange={(e: { target: { value: string } }) => {
+          if (e.target.value === NEW_SECRET) setCreating(true);
+          else onChange(e.target.value);
+        }}
+      />
+      {creating && (
+        <SigningSecretModal
+          client={client}
+          onSaved={(s) => {
+            reload();
+            onChange(s.id);
+          }}
+          onClose={() => setCreating(false)}
+        />
+      )}
+    </>
+  );
+}
+
+export function Webhooks({ client, go }: { client: Client; go?: Go }) {
   const [after, setAfter] = useState("");
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState<string>();
@@ -51,6 +142,7 @@ export function Webhooks({ client }: { client: Client }) {
       }),
     [client, after],
   );
+  const secrets = useSecrets(client);
   const stats = useOptionalCall(client, "getWebhookStats", {
     query: { limit: "200" },
   });
@@ -71,7 +163,10 @@ export function Webhooks({ client }: { client: Client }) {
           variant="secondary"
           icon="refresh-cw"
           disabled={r.loading}
-          onClick={r.reload}
+          onClick={() => {
+            r.reload();
+            secrets.reload();
+          }}
         >
           Refresh
         </Button>
@@ -88,7 +183,7 @@ export function Webhooks({ client }: { client: Client }) {
               onRowClick={(w: Webhook) => setOpen(w.id)}
               columns={[
                 {
-                  key: "endpoint",
+                  key: "name",
                   label: "Webhook",
                   render: (w: Webhook) => (
                     <button
@@ -99,10 +194,36 @@ export function Webhooks({ client }: { client: Client }) {
                         setOpen(w.id);
                       }}
                     >
-                      {w.endpoint}
-                      <small>{w.id}</small>
+                      {w.name || "Custom endpoint"}
+                      {w.custom_endpoint && w.name && (
+                        <small>custom endpoint</small>
+                      )}
                     </button>
                   ),
+                },
+                {
+                  key: "endpoint",
+                  label: "URL",
+                  render: (w: Webhook) => <Mono>{w.endpoint}</Mono>,
+                },
+                {
+                  key: "secret",
+                  label: "Signing secret",
+                  render: (w: Webhook) =>
+                    w.secret_name ? (
+                      <button
+                        type="button"
+                        className="rowlink"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          go?.("identity", { tab: "secrets" });
+                        }}
+                      >
+                        {w.secret_name}
+                      </button>
+                    ) : (
+                      "—"
+                    ),
                 },
                 {
                   key: "ok",
@@ -113,12 +234,6 @@ export function Webhooks({ client }: { client: Client }) {
                     return v == null ? "—" : `${(v * 100).toFixed(1)}%`;
                   },
                 },
-                {
-                  key: "created_at",
-                  label: "Created",
-                  render: (w: Webhook) => when(w.created_at),
-                },
-                { key: "revision", label: "Revision", align: "right" },
                 {
                   key: "enabled",
                   label: "Status",
@@ -152,10 +267,14 @@ export function Webhooks({ client }: { client: Client }) {
       {creating && (
         <CreateWebhook
           client={client}
+          go={go}
+          secrets={secrets.value?.data.items ?? []}
+          reloadSecrets={secrets.reload}
           onClose={() => setCreating(false)}
           done={() => {
             setCreating(false);
             r.reload();
+            secrets.reload();
           }}
         />
       )}
@@ -163,9 +282,15 @@ export function Webhooks({ client }: { client: Client }) {
         <WebhookDrawer
           key={`${current.id}:${current.revision}`}
           client={client}
+          go={go}
           item={current}
+          secrets={secrets.value?.data.items ?? []}
+          reloadSecrets={secrets.reload}
           onClose={() => setOpen(undefined)}
-          reload={r.reload}
+          reload={() => {
+            r.reload();
+            secrets.reload();
+          }}
         />
       )}
     </>
@@ -174,28 +299,46 @@ export function Webhooks({ client }: { client: Client }) {
 
 function CreateWebhook({
   client,
+  go,
+  secrets,
+  reloadSecrets,
   onClose,
   done,
 }: {
   client: Client;
+  go?: Go;
+  secrets: WebhookSecret[];
+  reloadSecrets: () => void;
   onClose: () => void;
   done: () => void;
 }) {
+  const { base, loading } = useBaseURL(client);
+  const [custom, setCustom] = useState(false);
+  const [slug, setSlug] = useState("");
   const [endpoint, setEndpoint] = useState("");
-  const [secret, setSecret] = useState("");
+  const [secretId, setSecretId] = useState("");
   const action = useAction();
   const toast = useToast();
+  // Without a base URL only the custom endpoint (administrator) mode can work.
+  const slugMode = !!base && !custom;
+  const valid = slugMode
+    ? slugPattern.test(slug) && !!secretId
+    : !!endpoint && !!secretId;
   return (
     <Modal
       title="Create webhook"
-      description="No URL credentials, query, or fragment. The endpoint must be a public HTTPS URL."
+      description="Named webhooks deliver to the instance webhook base URL plus the name, signed with a shared signing secret."
       onClose={onClose}
       actions={
         <>
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button form="create-webhook" type="submit" disabled={action.busy}>
+          <Button
+            form="create-webhook"
+            type="submit"
+            disabled={action.busy || loading || !valid}
+          >
             {action.busy ? "Saving…" : "Create webhook"}
           </Button>
         </>
@@ -206,40 +349,78 @@ function CreateWebhook({
         className="stack"
         onSubmit={async (e) => {
           e.preventDefault();
-          const submitted = secret;
-          setSecret("");
-          const ok = await action.run(async () => {
-            checkSecret(submitted);
-            await client.call("createWebhook", {
-              body: { endpoint, secret: submitted },
-            });
-          });
+          const ok = await action.run(() =>
+            client.call("createWebhook", {
+              body: slugMode
+                ? { name: slug, secret_id: secretId }
+                : { endpoint, secret_id: secretId },
+            }),
+          );
           if (ok) {
-            toast("Webhook created", endpoint);
+            toast(
+              "Webhook created",
+              slugMode ? previewURL(base, slug) : endpoint,
+            );
             done();
           }
         }}
       >
-        <Input
-          label="Webhook endpoint"
-          type="url"
-          mono
-          required
-          maxLength={2048}
-          value={endpoint}
-          onChange={val(setEndpoint)}
+        {!loading && !base && (
+          <Alert tone="info" title="No webhook base URL configured">
+            Named webhooks need a base URL such as
+            https://hooks.example.com/ant/.{" "}
+            <Button
+              size="sm"
+              variant="ghost"
+              type="button"
+              onClick={() => go?.("settings")}
+            >
+              Open Settings
+            </Button>{" "}
+            Until then you can use a custom endpoint.
+          </Alert>
+        )}
+        {slugMode ? (
+          <>
+            <Input
+              label="Name"
+              required
+              mono
+              maxLength={63}
+              value={slug}
+              onChange={val(setSlug)}
+              error={slugError(slug)}
+              hint="Lowercase letters, digits and hyphens."
+            />
+            <UrlPreview base={base} slug={slug} />
+          </>
+        ) : (
+          <Input
+            label="Webhook endpoint"
+            type="url"
+            mono
+            required
+            maxLength={2048}
+            value={endpoint}
+            onChange={val(setEndpoint)}
+            hint="Custom endpoint: a public HTTPS URL without credentials, query or fragment."
+          />
+        )}
+        <SecretSelect
+          client={client}
+          secrets={secrets}
+          value={secretId}
+          onChange={setSecretId}
+          reload={reloadSecrets}
         />
-        <Input
-          label="Signing secret"
-          type="password"
-          mono
-          required
-          autoComplete="new-password"
-          maxLength={4096}
-          value={secret}
-          onChange={val(setSecret)}
-          hint={secretHint}
-        />
+        {!!base && (
+          <Switch
+            label="Use a custom endpoint instead"
+            labelPosition="end"
+            checked={custom}
+            onChange={chk(setCustom)}
+          />
+        )}
         <Failure error={action.error} />
       </form>
     </Modal>
@@ -248,24 +429,38 @@ function CreateWebhook({
 
 function WebhookDrawer({
   client,
+  go,
   item,
+  secrets,
+  reloadSecrets,
   onClose,
   reload,
 }: {
   client: Client;
+  go?: Go;
   item: Webhook;
+  secrets: WebhookSecret[];
+  reloadSecrets: () => void;
   onClose: () => void;
   reload: () => void;
 }) {
+  const { base } = useBaseURL(client);
   const [enabled, setEnabled] = useState(item.enabled);
+  const [slug, setSlug] = useState(item.name ?? "");
+  const [secretId, setSecretId] = useState(item.secret_id ?? "");
   const [rotating, setRotating] = useState(false);
   const save = useAction();
   const toast = useToast();
   const etag = requireETag(`"${item.revision}"`);
+  const secret = secrets.find((s) => s.id === item.secret_id);
+  const slugChanged = !item.custom_endpoint && slug !== (item.name ?? "");
+  const secretChanged = secretId !== (item.secret_id ?? "");
+  const dirty = enabled !== item.enabled || slugChanged || secretChanged;
+  const slugBad = slugChanged && !slugPattern.test(slug);
   return (
     <Drawer
       open
-      title={item.endpoint}
+      title={item.name || item.endpoint}
       description={<Copyable text={item.id} />}
       onClose={onClose}
       width={640}
@@ -274,6 +469,7 @@ function WebhookDrawer({
           <Button
             variant="secondary"
             icon="rotate-ccw"
+            disabled={!secret}
             onClick={() => setRotating(true)}
           >
             Rotate secret
@@ -284,6 +480,28 @@ function WebhookDrawer({
     >
       <PropertyList
         items={[
+          {
+            label: "Delivery URL",
+            value: <Copyable text={item.endpoint} />,
+          },
+          {
+            label: "Signing secret",
+            value: item.secret_name ? (
+              <button
+                type="button"
+                className="rowlink"
+                onClick={() => go?.("identity", { tab: "secrets" })}
+              >
+                {item.secret_name}
+              </button>
+            ) : (
+              "Inline (legacy)"
+            ),
+          },
+          {
+            label: "Endpoint",
+            value: item.custom_endpoint ? "Custom endpoint" : "Named",
+          },
           { label: "Revision", value: item.revision, mono: true },
           { label: "Created", value: when(item.created_at) },
           {
@@ -304,15 +522,41 @@ function WebhookDrawer({
             client.call("patchWebhook", {
               params: { id: item.id },
               etag,
-              body: { enabled },
+              body: {
+                ...(enabled !== item.enabled ? { enabled } : {}),
+                ...(slugChanged ? { name: slug } : {}),
+                ...(secretChanged && secretId ? { secret_id: secretId } : {}),
+              },
             }),
           );
           if (ok) {
-            toast("Webhook state saved", enabled ? "Enabled" : "Disabled");
+            toast("Webhook saved", item.name || item.endpoint);
             reload();
           }
         }}
       >
+        {!item.custom_endpoint && (
+          <>
+            <Input
+              label="Name"
+              mono
+              maxLength={63}
+              value={slug}
+              onChange={val(setSlug)}
+              error={slugChanged ? slugError(slug) : undefined}
+            />
+            {slugChanged && !slugBad && base && (
+              <UrlPreview base={base} slug={slug} />
+            )}
+          </>
+        )}
+        <SecretSelect
+          client={client}
+          secrets={secrets}
+          value={secretId}
+          onChange={setSecretId}
+          reload={reloadSecrets}
+        />
         <div className="row spread">
           <Switch
             label="Enable delivery"
@@ -324,97 +568,26 @@ function WebhookDrawer({
             type="submit"
             size="sm"
             variant="secondary"
-            disabled={save.busy || enabled === item.enabled}
+            disabled={save.busy || !dirty || slugBad}
           >
-            {save.busy ? "Saving…" : "Save webhook state"}
+            {save.busy ? "Saving…" : "Save webhook"}
           </Button>
         </div>
         <Failure error={save.error} />
       </form>
       <Deliveries client={client} id={item.id} />
-      {rotating && (
-        <RotateSecret
+      {rotating && secret && (
+        <SigningSecretModal
           client={client}
-          item={item}
-          etag={etag}
-          onClose={() => setRotating(false)}
-          done={() => {
+          secret={secret}
+          exceptWebhook={item.id}
+          onClose={() => {
             setRotating(false);
             reload();
           }}
         />
       )}
     </Drawer>
-  );
-}
-
-function RotateSecret({
-  client,
-  item,
-  etag,
-  onClose,
-  done,
-}: {
-  client: Client;
-  item: Webhook;
-  etag: string;
-  onClose: () => void;
-  done: () => void;
-}) {
-  const [secret, setSecret] = useState("");
-  const action = useAction();
-  const toast = useToast();
-  return (
-    <Modal
-      title="Rotate signing secret"
-      description="The new secret replaces the current one for all future deliveries."
-      onClose={onClose}
-      actions={
-        <>
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button form="rotate-secret" type="submit" disabled={action.busy}>
-            {action.busy ? "Rotating…" : "Rotate signing secret"}
-          </Button>
-        </>
-      }
-    >
-      <form
-        id="rotate-secret"
-        className="stack"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const submitted = secret;
-          setSecret("");
-          const ok = await action.run(async () => {
-            checkSecret(submitted);
-            await client.call("rotateWebhookSecret", {
-              params: { id: item.id },
-              etag,
-              body: { secret: submitted },
-            });
-          });
-          if (ok) {
-            toast("Signing secret rotated");
-            done();
-          }
-        }}
-      >
-        <Input
-          label="Signing secret"
-          type="password"
-          mono
-          required
-          autoComplete="new-password"
-          maxLength={4096}
-          value={secret}
-          onChange={val(setSecret)}
-          hint={secretHint}
-        />
-        <Failure error={action.error} />
-      </form>
-    </Modal>
   );
 }
 

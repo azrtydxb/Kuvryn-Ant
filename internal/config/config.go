@@ -14,22 +14,28 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Config struct {
-	UpstreamCAs     map[string]string
-	Storage         storage.Config
-	InstanceID      string
-	PublicURL       string
-	Listen          string
-	Database        *pgxpool.Config
-	RootKey         []byte
-	SecretKeys      *secrets.Keyring
-	ShutdownTimeout time.Duration
-	MaxRequests     int
+	UpstreamCAs map[string]string
+	Storage     storage.Config
+	InstanceID  string
+	PublicURL   string
+	// WebhookBaseURL (ANT_WEBHOOK_BASE_URL) pins the webhook base URL and makes
+	// the setting read-only in the console. WebhookAllowHTTP (ANT_WEBHOOK_ALLOW_HTTP)
+	// lets webhook destinations use plain http.
+	WebhookBaseURL   string
+	WebhookAllowHTTP bool
+	Listen           string
+	Database         *pgxpool.Config
+	RootKey          []byte
+	SecretKeys       *secrets.Keyring
+	ShutdownTimeout  time.Duration
+	MaxRequests      int
 	// UploadSlots bounds concurrent uploads per package format (0: scaled to CPU).
 	UploadSlots    int
 	Retention      Retention
@@ -122,6 +128,13 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	c.InstanceID = getenv("ANT_INSTANCE_ID")
 	c.PublicURL = getenv("ANT_PUBLIC_URL")
+	c.WebhookBaseURL = strings.TrimSpace(getenv("ANT_WEBHOOK_BASE_URL"))
+	if value := getenv("ANT_WEBHOOK_ALLOW_HTTP"); value != "" {
+		c.WebhookAllowHTTP, err = strconv.ParseBool(value)
+		if err != nil {
+			return Config{}, errors.New("ANT_WEBHOOK_ALLOW_HTTP must be a boolean")
+		}
+	}
 	directory := getenv("ANT_DATA_DIR")
 	if directory == "" {
 		directory = ".local/data"
