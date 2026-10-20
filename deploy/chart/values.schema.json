@@ -139,7 +139,10 @@
             "enabled": { "type": "boolean" },
             "highPercent": { "type": "integer", "minimum": 2, "maximum": 99 },
             "lowPercent": { "type": "integer", "minimum": 1, "maximum": 98 },
-            "capacity": { "type": "string", "pattern": "^([0-9]+(\\.[0-9]+)?\\s?([KMGT]i?B|B)?)?$" },
+            "capacity": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?\\s?([KMGT]i?B|B)?)?$"
+            },
             "interval": { "type": "string", "pattern": "^(0|[0-9]+(m|h))$" },
             "sweepGrace": { "type": "string", "pattern": "^[0-9]+(m|h)$" }
           }
@@ -219,6 +222,18 @@
           "items": {
             "enum": ["ReadWriteOnce", "ReadWriteOncePod"]
           }
+        }
+      }
+    },
+    "upstreamCA": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "existingSecret": { "type": "string" },
+        "existingConfigMap": { "type": "string" },
+        "mapKey": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
         }
       }
     },

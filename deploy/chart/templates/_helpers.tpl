@@ -27,6 +27,9 @@ app.kubernetes.io/instance: {{ .Release.Name | quote }}
 {{- if ne .Values.publicURL (printf "https://%s" .Values.ingress.host) }}{{ fail "ingress.host must exactly match publicURL" }}{{ end -}}
 {{- if not .Values.ingress.tlsSecret }}{{ fail "ingress.tlsSecret is required for HTTPS ingress" }}{{ end -}}
 {{- end -}}
+{{- $upstreamCA := default dict .Values.upstreamCA -}}
+{{- if and $upstreamCA.existingSecret $upstreamCA.existingConfigMap }}{{ fail "set only one of upstreamCA.existingSecret and upstreamCA.existingConfigMap" }}{{ end -}}
+{{- if and (or $upstreamCA.existingSecret $upstreamCA.existingConfigMap) (not (regexMatch "^[A-Za-z0-9][A-Za-z0-9_.-]*$" (default "ca-map.json" $upstreamCA.mapKey))) }}{{ fail "upstreamCA.mapKey must be a file name" }}{{ end -}}
 {{- if .Values.httpRoute.enabled -}}
 {{- if not .Values.httpRoute.parentRefs }}{{ fail "httpRoute.parentRefs is required" }}{{ end -}}
 {{- if not (has (trimPrefix "https://" .Values.publicURL) .Values.httpRoute.hostnames) }}{{ fail "httpRoute.hostnames must include the publicURL host" }}{{ end -}}

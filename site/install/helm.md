@@ -260,6 +260,27 @@ Each provider mounts its whole Secret at `/run/ant/<provider>`; paths inside the
 | `auth.ldap.existingSecret` | string                    | `""`          | `ANT_LDAP_CONFIG_FILE` | Secret with the LDAP config, bind password and CA.          |
 | `auth.ldap.configKey`      | string, file-name pattern | `config.json` |                        | Config file name.                                           |
 
+### Upstream CA bundles
+
+A remote source can trust a private CA by naming it (`ca_ref`); the IDs and PEM files are operator-supplied and an API request can never give a path. Mount one Secret or one ConfigMap (CA certificates are public, so a ConfigMap is fine) that holds both the map file and the PEM bundles. Setting either value sets `ANT_UPSTREAM_CA_MAP_FILE` and mounts the object read-only at `/run/ant/upstream-ca`.
+
+| Key                            | Type                      | Default       | Env                        | Description                                                                        |
+| ------------------------------ | ------------------------- | ------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| `upstreamCA.existingSecret`    | string                    | `""`          | `ANT_UPSTREAM_CA_MAP_FILE` | Secret with the map file and the PEM files. Mutually exclusive with the ConfigMap. |
+| `upstreamCA.existingConfigMap` | string                    | `""`          | `ANT_UPSTREAM_CA_MAP_FILE` | ConfigMap with the map file and the PEM files.                                     |
+| `upstreamCA.mapKey`            | string, file-name pattern | `ca-map.json` |                            | Name of the map file inside the Secret or ConfigMap.                               |
+
+The map is a JSON object of CA ID to PEM file name. Relative names resolve against the map file's directory, so for a ConfigMap named `upstream-ca` with keys `ca-map.json` and `corp-ca.pem`:
+
+```sh
+kubectl -n ant create configmap upstream-ca \
+  --from-file=ca-map.json=ca-map.json --from-file=corp-ca.pem=corp-ca.pem
+helm upgrade --install ant ./deploy/chart -n ant -f values.yaml \
+  --set upstreamCA.existingConfigMap=upstream-ca
+```
+
+with `ca-map.json` containing `{"corp-ca":"corp-ca.pem"}`. A remote source then sets `"ca_ref":"corp-ca"` in its configuration. The map holds at most 32 entries and 64 KiB. Changing the map or a PEM file needs a pod restart.
+
 ### Observability
 
 | Key                                 | Type                                                | Default         | Env                     | Description                                                                                                                  |
@@ -305,7 +326,7 @@ Each provider mounts its whole Secret at `/run/ant/<provider>`; paths inside the
 | `httpRoute.filters`     | list of objects                                                                     | `[]`                  |     | Gateway API filters applied to the application rule.                                                               |
 | `httpRoute.timeouts`    | object with optional `request`, `backendRequest` (strings)                          | `{}`                  |     | Route timeouts; `"0s"` disables the timeout on implementations that support it.                                    |
 
-Both the Ingress and the HTTPRoute route exactly `/` (redirected to `/console/`) and the prefixes `/console`, `/api`, `/auth`, `/v2` and `/feeds`. `/metrics`, `/health/*` and `/mcp` are not routed.
+Both the Ingress and the HTTPRoute route exactly `/` (redirected to `/console/`) and the prefixes `/console`, `/api`, `/auth`, `/v2`, `/feeds` and `/mcp`. `/metrics` and `/health/*` are not routed.
 
 ### Federation
 
