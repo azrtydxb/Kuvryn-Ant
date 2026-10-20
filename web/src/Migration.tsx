@@ -1,17 +1,9 @@
 import { useState, type ReactNode } from "react";
 import type { Client } from "./api";
 import { useOptionalCall } from "./gaps";
-import type {
-  MigrationCompareReport,
-  MigrationCompareResult,
-  MigrationReport,
-  TransferDocument,
-  TransferItem,
-  TransferReport,
-} from "./generated";
+import type { TransferDocument, TransferReport } from "./generated";
 import {
   Alert,
-  Badge,
   Button,
   Input,
   Switch,
@@ -19,131 +11,29 @@ import {
   Tabs,
   Textarea,
 } from "./ds/bundle";
+import { MigratePanel } from "./MigrateSource";
+import { ReportView } from "./TransferReport";
 import {
   Card,
-  Digest,
   Failure,
   Loading,
   Mono,
   PageHeading,
   Unavailable,
   chk,
-  count,
   useAction,
   useToast,
   val,
   when,
 } from "./ui";
 
+export { ReportView };
+
 const list = (s: string) =>
   s
     .split(/[\s,]+/)
     .map((x) => x.trim())
     .filter(Boolean);
-
-const TONE: Record<string, "good" | "info" | "neutral" | "warn" | "bad"> = {
-  created: "good",
-  updated: "info",
-  unchanged: "neutral",
-  skipped: "warn",
-  conflict: "bad",
-};
-
-/** Inventory and mapping report of an import or migration (dry run or applied). */
-export function ReportView({ report }: { report: TransferReport }) {
-  const kinds = Object.entries(report.summary);
-  return (
-    <div className="stack" data-testid="transfer-report">
-      <Alert
-        tone={
-          report.integrity_failures.length || report.summary.conflict
-            ? "warn"
-            : "info"
-        }
-        title={report.dry_run ? "Dry run — nothing was changed" : "Applied"}
-      >
-        {report.dry_run
-          ? "This is exactly what applying would do."
-          : "The changes below were written."}
-      </Alert>
-      {kinds.length > 0 && (
-        <Table
-          columns={[
-            { key: "kind", label: "Object" },
-            ...["created", "updated", "unchanged", "skipped", "conflict"].map(
-              (a) => ({
-                key: a,
-                label: a[0].toUpperCase() + a.slice(1),
-                align: "right" as const,
-                render: (r: { kind: string; counts: Record<string, number> }) =>
-                  count(r.counts[a] ?? 0),
-              }),
-            ),
-          ]}
-          rows={kinds.map(([kind, counts]) => ({ kind, counts }))}
-        />
-      )}
-      {report.items.length > 0 && (
-        <>
-          <h3>Changes and problems</h3>
-          <Table
-            columns={[
-              { key: "kind", label: "Object" },
-              {
-                key: "name",
-                label: "Name",
-                render: (i: TransferItem) => <Mono>{i.name}</Mono>,
-              },
-              {
-                key: "action",
-                label: "Action",
-                render: (i: TransferItem) => (
-                  <Badge tone={TONE[i.action]} dot>
-                    {i.action}
-                  </Badge>
-                ),
-              },
-              { key: "reason", label: "Detail" },
-            ]}
-            rows={report.items}
-          />
-          {report.items_truncated && (
-            <p className="muted">List truncated; counts above are complete.</p>
-          )}
-        </>
-      )}
-      {report.unmapped.length > 0 && (
-        <>
-          <h3>Needs attention (not mapped automatically)</h3>
-          <Table
-            columns={[
-              { key: "kind", label: "Kind" },
-              { key: "name", label: "Name" },
-              { key: "reason", label: "Why" },
-            ]}
-            rows={report.unmapped}
-          />
-        </>
-      )}
-      {report.integrity_failures.length > 0 && (
-        <>
-          <h3>Integrity failures</h3>
-          <Table
-            columns={[
-              {
-                key: "digest",
-                label: "Digest",
-                render: (f: { digest: string }) => <Digest value={f.digest} />,
-              },
-              { key: "reason", label: "Reason" },
-            ]}
-            rows={report.integrity_failures}
-          />
-        </>
-      )}
-    </div>
-  );
-}
 
 function download(name: string, data: unknown) {
   const url = URL.createObjectURL(
@@ -315,238 +205,6 @@ function ImportCard({
   );
 }
 
-function MigrateCard({
-  client,
-  reloadRuns,
-}: {
-  client: Client;
-  reloadRuns: () => void;
-}) {
-  const [url, setUrl] = useState("");
-  const [user, setUser] = useState("");
-  const [password, setPassword] = useState("");
-  const [token, setToken] = useState("");
-  const [repos, setRepos] = useState("");
-  const [counts, setCounts] = useState(true);
-  const [report, setReport] = useState<MigrationReport>();
-  const [coords, setCoords] = useState("");
-  const [compare, setCompare] = useState<MigrationCompareReport>();
-  const action = useAction();
-  const cmp = useAction();
-  const toast = useToast();
-  const creds = {
-    url,
-    ...(user ? { username: user } : {}),
-    ...(password ? { password } : {}),
-    ...(token ? { token } : {}),
-  };
-  const items = coords
-    .split("\n")
-    .map((l) => l.trim().split(/\s+/))
-    .filter((p) => p.length >= 2 && !p[0].startsWith("#"))
-    .map(([repository, path, feed]) => ({
-      repository,
-      path,
-      ...(feed ? { feed } : {}),
-    }));
-  const migrate = async (dry: boolean) => {
-    const ok = await action.run(async () => {
-      setReport(
-        (
-          await client.call("migrateNexus", {
-            body: {
-              ...creds,
-              repositories: list(repos),
-              count_assets: counts,
-              dry_run: dry,
-            },
-          })
-        ).data,
-      );
-    });
-    if (ok) {
-      toast(dry ? "Migration dry run complete" : "Definitions migrated");
-      reloadRuns();
-    }
-  };
-  return (
-    <Card title="Migrate from Nexus 3">
-      <p className="muted">
-        Reads the repository inventory through the Nexus REST API: hosted
-        becomes a local source, proxy a remote source, a group a feed with
-        ordered sources, and cleanup policies become retention. Credentials are
-        used for the request only and are never stored. Copy content with{" "}
-        <Mono>ant migrate nexus --copy-content --apply</Mono>.
-      </p>
-      <Input
-        label="Nexus URL"
-        placeholder="https://nexus.example.com"
-        value={url}
-        onChange={val(setUrl)}
-      />
-      <div className="cols">
-        <Input
-          label="Username"
-          autoComplete="off"
-          value={user}
-          onChange={val(setUser)}
-        />
-        <Input
-          label="Password"
-          type="password"
-          autoComplete="off"
-          value={password}
-          onChange={val(setPassword)}
-        />
-        <Input
-          label="Or bearer token"
-          type="password"
-          autoComplete="off"
-          value={token}
-          onChange={val(setToken)}
-        />
-      </div>
-      <Input
-        label="Repositories"
-        hint="Space or comma separated. Empty migrates every repository."
-        value={repos}
-        onChange={val(setRepos)}
-      />
-      <Switch
-        label="Count assets and bytes per hosted repository"
-        labelPosition="end"
-        checked={counts}
-        onChange={chk(setCounts)}
-      />
-      <Failure error={action.error} />
-      <div className="row">
-        <Button
-          variant="secondary"
-          disabled={action.busy || !url}
-          onClick={() => migrate(true)}
-        >
-          {action.busy ? "Reading…" : "Dry run"}
-        </Button>
-        <Button
-          disabled={action.busy || !url || !report?.dry_run}
-          title={!report?.dry_run ? "Run a dry run first" : ""}
-          onClick={() => migrate(false)}
-        >
-          Apply definitions
-        </Button>
-      </div>
-      {report && (
-        <>
-          <h3>Repositories</h3>
-          <Table
-            columns={[
-              { key: "name", label: "Repository" },
-              { key: "type", label: "Type" },
-              { key: "format", label: "Format" },
-              { key: "mapped_to", label: "Maps to" },
-              {
-                key: "assets",
-                label: "Assets",
-                align: "right",
-                render: (r: { assets?: number }) => count(r.assets),
-              },
-            ]}
-            rows={report.repositories}
-          />
-          <ReportView report={report} />
-        </>
-      )}
-      <h3>Compare during staged adoption</h3>
-      <p className="muted">
-        For each coordinate, compare what a client receives from Nexus with what
-        it would receive from the Ant feed. One per line:{" "}
-        <Mono>repository path [feed]</Mono>.
-      </p>
-      <Textarea
-        label="Coordinates"
-        mono
-        rows={4}
-        value={coords}
-        onChange={val(setCoords)}
-      />
-      <Failure error={cmp.error} />
-      <Button
-        variant="secondary"
-        disabled={cmp.busy || !url || !items.length}
-        onClick={async () => {
-          const ok = await cmp.run(async () => {
-            setCompare(
-              (
-                await client.call("compareMigration", {
-                  body: { ...creds, items },
-                })
-              ).data,
-            );
-          });
-          if (ok) {
-            toast("Comparison complete");
-            reloadRuns();
-          }
-        }}
-      >
-        {cmp.busy ? "Comparing…" : "Compare"}
-      </Button>
-      {compare && (
-        <Table
-          columns={[
-            {
-              key: "path",
-              label: "Coordinate",
-              render: (r: MigrationCompareResult) => (
-                <Mono>{`${r.repository}/${r.path}`}</Mono>
-              ),
-            },
-            {
-              key: "status",
-              label: "Result",
-              render: (r: MigrationCompareResult) => (
-                <Badge
-                  tone={
-                    r.status === "identical"
-                      ? "good"
-                      : r.status === "error"
-                        ? "bad"
-                        : "warn"
-                  }
-                  dot
-                >
-                  {r.status.replaceAll("_", " ")}
-                </Badge>
-              ),
-            },
-            {
-              key: "source",
-              label: "Nexus",
-              render: (r: MigrationCompareResult) => (
-                <Mono muted>{r.source.sha256?.slice(0, 12) ?? "—"}</Mono>
-              ),
-            },
-            {
-              key: "ant",
-              label: "Ant",
-              render: (r: MigrationCompareResult) => (
-                <Mono muted>{r.ant.sha256?.slice(0, 12) ?? "—"}</Mono>
-              ),
-            },
-            {
-              key: "detail",
-              label: "Detail",
-              render: (r: MigrationCompareResult) =>
-                r.ant.detail || r.source.detail || "",
-            },
-          ]}
-          rows={compare.results}
-        />
-      )}
-    </Card>
-  );
-}
-
 export function MigrationPage({ client }: { client: Client }) {
   const runs = useOptionalCall(client, "listTransferRuns");
   const [text, setText] = useState("");
@@ -559,7 +217,7 @@ export function MigrationPage({ client }: { client: Client }) {
     </div>
   );
   return (
-    <>
+    <div className={tab === "migrate" ? "mig mig--fit" : "mig"}>
       <PageHeading
         eyebrow="Import & migrate"
         title="Import, export and migration"
@@ -572,7 +230,7 @@ export function MigrationPage({ client }: { client: Client }) {
         items={[
           { id: "export", label: "Export" },
           { id: "import", label: "Import" },
-          { id: "nexus", label: "Migrate from Nexus" },
+          { id: "migrate", label: "Migrate" },
           { id: "history", label: "History", count: runList.length },
         ]}
       />
@@ -594,7 +252,10 @@ export function MigrationPage({ client }: { client: Client }) {
           reloadRuns={runs.reload}
         />,
       )}
-      {panel("nexus", <MigrateCard client={client} reloadRuns={runs.reload} />)}
+      {panel(
+        "migrate",
+        <MigratePanel client={client} reloadRuns={runs.reload} />,
+      )}
       {panel(
         "history",
         <Card title="History">
@@ -634,6 +295,6 @@ export function MigrationPage({ client }: { client: Client }) {
             ))}
         </Card>,
       )}
-    </>
+    </div>
   );
 }

@@ -212,7 +212,7 @@ export default defineConfig({
           { text: "Diagnostics and repair", link: "/operations/diagnostics" },
           { text: "Break-glass access", link: "/operations/break-glass" },
           {
-            text: "Import, export, Nexus migration",
+            text: "Import, export, migration",
             link: "/operations/import-export",
           },
           { text: "Prewarm", link: "/operations/prewarm" },

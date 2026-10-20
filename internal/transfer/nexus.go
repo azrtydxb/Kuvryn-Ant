@@ -2,13 +2,13 @@ package transfer
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 // NexusConfig addresses a Sonatype Nexus Repository 3 instance. Credentials are
@@ -19,6 +19,8 @@ type NexusConfig struct {
 	Password string
 	// Token, when set, is sent as a bearer token instead of basic credentials.
 	Token string
+	// RootCAs, when set, replaces the system trust store for this instance.
+	RootCAs *x509.CertPool
 	// HTTPClient overrides the default client (tests).
 	HTTPClient *http.Client
 }
@@ -44,19 +46,10 @@ func NewNexus(cfg NexusConfig) (*Nexus, error) {
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
 		return nil, fmt.Errorf("%w: invalid Nexus base URL", ErrInput)
 	}
-	c := cfg.HTTPClient
-	if c == nil {
-		c = &http.Client{Timeout: 0, Transport: &http.Transport{ResponseHeaderTimeout: 30 * time.Second}}
-	}
-	cc := *c
-	cc.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		if req.URL.Host != u.Host || len(via) > 5 {
-			return http.ErrUseLastResponse
-		}
-		return nil
-	}
+	c := migrationClient(u, cfg.HTTPClient, cfg.RootCAs)
+	cfg.RootCAs = nil
 	cfg.HTTPClient = nil
-	return &Nexus{base: u, cfg: cfg, http: &cc}, nil
+	return &Nexus{base: u, cfg: cfg, http: c}, nil
 }
 
 func (n *Nexus) Name() string { return "nexus" }

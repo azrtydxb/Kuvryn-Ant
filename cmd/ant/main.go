@@ -329,7 +329,7 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		if artifacts != nil {
 			transferStores = artifacts.stores
 		}
-		management.RegisterTransfer(mux, management.TransferDeps{Pool: pool, Stores: transferStores})
+		management.RegisterTransfer(mux, management.TransferDeps{Pool: pool, Stores: transferStores, CAFiles: cfg.UpstreamCAs})
 		replicationRT.Register(mux)
 		fed.registerRouted(mux, artifacts)
 		browser.Register(mux)

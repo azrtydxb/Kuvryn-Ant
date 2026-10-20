@@ -32,6 +32,36 @@ type SourceRepo struct {
 	MetadataMaxAge int64
 	// Authenticated reports that a proxy used credentials upstream.
 	Authenticated bool
+	// ConfigErr is set when the repository's configuration could not be read;
+	// the repository is reported and not mapped rather than mapped incompletely.
+	ConfigErr string
+	// Notes are source settings Ant cannot express, reported as unmapped.
+	Notes []string
+}
+
+// RepoStat is the stored size of a repository as the manager reports it.
+type RepoStat struct {
+	Files int
+	Bytes int64
+}
+
+// StatsProvider is implemented by managers that report repository sizes
+// without listing every asset.
+type StatsProvider interface {
+	Stats(ctx context.Context) (map[string]RepoStat, error)
+}
+
+// IdentityReporter is implemented by managers whose users, groups and
+// permissions can be listed. Ant does not import accounts; the entries are
+// reported as unmapped with guidance.
+type IdentityReporter interface {
+	Identities(ctx context.Context) ([]Unmapped, error)
+}
+
+// ContentCopier is implemented by managers that can supply content for more
+// formats than the default (raw and Maven layouts).
+type ContentCopier interface {
+	CopyableFormats() map[string]bool
 }
 
 // CleanupPolicy is a manager cleanup policy in neutral terms.
@@ -52,11 +82,19 @@ type SourceAsset struct {
 	SHA256      string
 	Size        int64 // -1 when unknown
 	ContentType string
+	// Kind, Image, Tags and Subject describe registry objects (OCI): Kind is
+	// "manifest" or "blob" and Image the repository path inside the registry.
+	Kind    string
+	Image   string
+	Tags    []string
+	Subject *SubjectDef
+	// Note marks an object the manager could not describe (reported, not copied).
+	Note string
 }
 
 // Manager reads the inventory of another artifact manager. Implementations hold
 // credentials only for the lifetime of the value; nothing is persisted. Nexus 3
-// is implemented; Artifactory can be added by implementing this interface.
+// and JFrog Artifactory are implemented.
 type Manager interface {
 	Name() string
 	// AntFormat maps the manager's format name to an Ant format.
@@ -90,6 +128,8 @@ type RepoInventory struct {
 	Format    string `json:"format"`
 	AntFormat string `json:"ant_format,omitempty"`
 	MappedTo  string `json:"mapped_to"`
+	// RemoteURL is the upstream origin of a mapped remote source.
+	RemoteURL string `json:"remote_url,omitempty"`
 	Assets    int    `json:"assets,omitempty"`
 	Bytes     int64  `json:"bytes,omitempty"`
 }
@@ -196,6 +236,19 @@ func BuildPlan(ctx context.Context, m Manager, opt MapOptions) (*Plan, error) {
 			continue
 		}
 		inv.AntFormat = af
+		if r.ConfigErr != "" || r.Type == "proxy" && r.RemoteURL == "" {
+			why := r.ConfigErr
+			if why == "" {
+				why = "remote URL could not be read"
+			}
+			inv.MappedTo = "unmapped"
+			un("repository", r.Name, "configuration could not be read ("+why+"); repository not mapped")
+			plan.Repositories = append(plan.Repositories, inv)
+			continue
+		}
+		for _, note := range r.Notes {
+			un("repository", r.Name, note)
+		}
 		switch r.Type {
 		case "hosted", "proxy":
 			def := SourceDef{Name: r.Name, Format: af, Kind: "local"}
@@ -203,6 +256,7 @@ func BuildPlan(ctx context.Context, m Manager, opt MapOptions) (*Plan, error) {
 			if r.Type == "proxy" {
 				def.Kind = "remote"
 				inv.MappedTo = "remote source"
+				inv.RemoteURL = r.RemoteURL
 				cfg := remoteconfig.DefaultConfig(r.RemoteURL)
 				if r.MetadataMaxAge > 0 {
 					cfg.Cache.MetadataTTLSeconds = int(r.MetadataMaxAge)
@@ -245,6 +299,8 @@ func BuildPlan(ctx context.Context, m Manager, opt MapOptions) (*Plan, error) {
 			}
 			if r.WritableMember != "" && slices.ContainsFunc(feed.Sources, func(s FeedSourceRef) bool { return s.Source == r.WritableMember }) {
 				feed.PublishPolicy = &PublishPolicyDef{DefaultSource: r.WritableMember}
+			} else if r.WritableMember != "" {
+				un("publish_policy", r.Name, "default deployment repository "+r.WritableMember+" is not a member; no publish policy was created")
 			}
 			doc.Feeds = append(doc.Feeds, feed)
 		default:
@@ -253,8 +309,57 @@ func BuildPlan(ctx context.Context, m Manager, opt MapOptions) (*Plan, error) {
 		}
 		plan.Repositories = append(plan.Repositories, inv)
 	}
-	// Sources not selected explicitly but needed by groups were added above;
-	// a plan never lists a source twice.
+	// A group member that could not be mapped (unreadable or unsupported) is not a
+	// source; drop it from the ordered list and say so.
+	have := map[string]bool{}
+	for _, sd := range doc.Sources {
+		have[sd.Name] = true
+	}
+	for i := range doc.Feeds {
+		f := &doc.Feeds[i]
+		if len(f.Sources) == 0 || !slices.ContainsFunc(f.Sources, func(r FeedSourceRef) bool { return !have[r.Source] }) {
+			continue
+		}
+		kept := f.Sources[:0]
+		for _, r := range f.Sources {
+			if !have[r.Source] {
+				un("feed", f.Slug, "member "+r.Source+" was not mapped and is missing from the ordered sources")
+				continue
+			}
+			r.Priority = len(kept) + 1
+			kept = append(kept, r)
+		}
+		f.Sources = kept
+		if f.PublishPolicy != nil && !have[f.PublishPolicy.DefaultSource] {
+			f.PublishPolicy = nil
+		}
+	}
+	// Sizes reported by the manager need no asset listing.
+	if sp, ok := m.(StatsProvider); ok {
+		if stats, err := sp.Stats(ctx); err == nil {
+			for i := range plan.Repositories {
+				inv := &plan.Repositories[i]
+				st, ok := stats[inv.Name]
+				if !ok {
+					st, ok = stats[inv.Name+"-cache"]
+				}
+				if ok && inv.AntFormat != "" {
+					inv.Assets, inv.Bytes = st.Files, st.Bytes
+				}
+			}
+		}
+	}
+	if ir, ok := m.(IdentityReporter); ok {
+		if list, err := ir.Identities(ctx); err == nil {
+			plan.Unmapped = append(plan.Unmapped, list...)
+		} else {
+			un("identity", "users, groups and permissions", "could not be read ("+err.Error()+"); recreate access control manually")
+		}
+	}
+	copyable := map[string]bool{"raw": true, "maven": true}
+	if cc, ok := m.(ContentCopier); ok {
+		copyable = cc.CopyableFormats()
+	}
 	// Content.
 	if opt.CopyContent || opt.CountAssets {
 		nc := &listedContent{m: m, byDigest: map[string]SourceAsset{}}
@@ -292,11 +397,12 @@ func BuildPlan(ctx context.Context, m Manager, opt MapOptions) (*Plan, error) {
 			if !opt.CopyContent {
 				continue
 			}
+			if !copyable[inv.AntFormat] {
+				un("content", r.Name, "content copy is not supported for format "+r.Format+"; definitions only")
+				continue
+			}
 			comps, skipped := mapAssets(r.Name, inv.AntFormat, assets, nc)
 			doc.Components = append(doc.Components, comps...)
-			if inv.AntFormat != "maven" && inv.AntFormat != "raw" {
-				un("content", r.Name, "content copy is not supported for format "+r.Format+"; definitions only")
-			}
 			for _, s := range skipped {
 				un("asset", r.Name+"/"+s.path, s.reason)
 			}
@@ -355,7 +461,11 @@ func mapAssets(source, format string, assets []SourceAsset, lc *listedContent) (
 	type key struct{ ns, coord string }
 	idx := map[key]int{}
 	var comps []ComponentDef
-	add := func(ns, coord, version string, a SourceAsset) {
+	add := func(ns, coord, version string, a SourceAsset) *ComponentDef {
+		akey := a.Path
+		if a.Kind != "" {
+			akey = a.Kind
+		}
 		k := key{ns, coord}
 		i, ok := idx[k]
 		if !ok {
@@ -373,15 +483,37 @@ func mapAssets(source, format string, assets []SourceAsset, lc *listedContent) (
 		if media == "" {
 			media = "application/octet-stream"
 		}
-		c.Versions[vi].Assets = append(c.Versions[vi].Assets, AssetDef{Key: a.Path, MediaType: media, Digest: a.SHA256, Size: a.Size})
-		lc.byDigest[a.SHA256] = a
+		c.Versions[vi].Assets = append(c.Versions[vi].Assets, AssetDef{Key: akey, MediaType: media, Digest: a.SHA256, Size: a.Size, Subject: a.Subject})
+		if _, dup := lc.byDigest[a.SHA256]; !dup {
+			lc.byDigest[a.SHA256] = a
+		}
+		return c
 	}
 	for _, a := range assets {
+		if a.Note != "" {
+			skipped = append(skipped, skippedAsset{a.Path, a.Note})
+			continue
+		}
 		if a.SHA256 == "" || !digestPattern.MatchString(a.SHA256) {
 			skipped = append(skipped, skippedAsset{a.Path, "source manager did not provide a SHA-256 checksum"})
 			continue
 		}
 		switch format {
+		case "oci":
+			if a.Kind == "" || a.Image == "" {
+				skipped = append(skipped, skippedAsset{a.Path, "not a registry manifest or blob"})
+				continue
+			}
+			ns := ""
+			if i := strings.LastIndexByte(a.Image, '/'); i >= 0 {
+				ns = a.Image[:i]
+			}
+			// A blob is stored once per image version it belongs to; it is
+			// keyed by its own digest like the registry adapter does.
+			c := add(ns, a.Image, a.SHA256, a)
+			for _, tag := range a.Tags {
+				c.Tags = append(c.Tags, TagDef{Name: tag, Version: a.SHA256})
+			}
 		case "raw":
 			ns := ""
 			if i := strings.LastIndexByte(a.Path, '/'); i >= 0 {
