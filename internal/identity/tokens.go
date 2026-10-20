@@ -91,6 +91,12 @@ func validScopes(scopes []Scope) bool {
 // Issue requires prior authorization of actor and requested scopes by the caller.
 // It returns secret material once; never route this through response caching.
 func (t Tokens) Issue(ctx context.Context, instance, actor, principal string, scopes []Scope, expires time.Time) (IssuedToken, error) {
+	return t.IssueForRule(ctx, instance, actor, principal, scopes, expires, "")
+}
+
+// IssueForRule is Issue for a token minted by a GitHub OIDC trust rule. The rule
+// id is recorded so RevokeRuleTokensTx can revoke the token when the rule goes.
+func (t Tokens) IssueForRule(ctx context.Context, instance, actor, principal string, scopes []Scope, expires time.Time, ruleID string) (IssuedToken, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if !validScopes(scopes) {
@@ -135,7 +141,7 @@ func (t Tokens) Issue(ctx context.Context, instance, actor, principal string, sc
 		}
 	}
 	var result IssuedToken
-	if err = tx.QueryRow(ctx, "INSERT INTO service_tokens(instance_id,principal_id,verifier,scopes,expires_at) VALUES($1,$2,$3,$4,$5) RETURNING id,expires_at", instance, principal, verifier[:], encoded, expires).Scan(&result.ID, &result.ExpiresAt); err != nil {
+	if err = tx.QueryRow(ctx, "INSERT INTO service_tokens(instance_id,principal_id,verifier,scopes,expires_at,trust_rule_id) VALUES($1,$2,$3,$4,$5,NULLIF($6,'')::uuid) RETURNING id,expires_at", instance, principal, verifier[:], encoded, expires, ruleID).Scan(&result.ID, &result.ExpiresAt); err != nil {
 		return IssuedToken{}, errors.New("cannot issue token")
 	}
 	if err = tokenEvent(ctx, tx, instance, actor, result.ID, "token.issue"); err != nil {
@@ -239,4 +245,81 @@ func normalizeScopes(in []Scope) ([]Scope, error) {
 		}
 	}
 	return scopes, nil
+}
+
+// ScopesCovered reports whether every scope in held is contained in one scope
+// of allowed (feed, namespace and actions). It is deliberately conservative:
+// a scope only coverable by combining several allowed scopes counts as not
+// covered, which errs toward revoking.
+func ScopesCovered(held, allowed []Scope) bool {
+	for _, h := range held {
+		ok := false
+		for _, a := range allowed {
+			if (a.FeedID == "" || a.FeedID == h.FeedID) && (a.Namespace == "" || a.Namespace == h.Namespace) && actionsSubset(h.Actions, a.Actions) {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func actionsSubset(sub, super []Action) bool {
+	for _, s := range sub {
+		found := false
+		for _, a := range super {
+			if a == s {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// RevokeRuleTokensTx revokes, inside the caller's transaction, the live tokens
+// that a GitHub OIDC trust rule issued. When keepIfCovered is non-nil a token
+// survives only if its scopes are all covered by it (a rule edit that did not
+// narrow them); nil revokes every outstanding token (delete, disable). Each
+// revocation is audited as token.revoke by actor. It returns the count revoked.
+func RevokeRuleTokensTx(ctx context.Context, tx pgx.Tx, instance, actor, ruleID string, keepIfCovered []Scope) (int, error) {
+	rows, err := tx.Query(ctx, "SELECT id::text,scopes FROM service_tokens WHERE instance_id=$1 AND trust_rule_id=$2 AND revoked_at IS NULL AND expires_at>clock_timestamp() FOR UPDATE", instance, ruleID)
+	if err != nil {
+		return 0, ErrUnavailable
+	}
+	var ids []string
+	for rows.Next() {
+		var id string
+		var raw []byte
+		if rows.Scan(&id, &raw) != nil {
+			rows.Close()
+			return 0, ErrUnavailable
+		}
+		if keepIfCovered != nil {
+			var held []Scope
+			if json.Unmarshal(raw, &held) == nil && ScopesCovered(held, keepIfCovered) {
+				continue
+			}
+		}
+		ids = append(ids, id)
+	}
+	rows.Close()
+	if rows.Err() != nil {
+		return 0, ErrUnavailable
+	}
+	for _, id := range ids {
+		if _, err = tx.Exec(ctx, "UPDATE service_tokens SET revoked_at=clock_timestamp() WHERE instance_id=$1 AND id=$2 AND revoked_at IS NULL", instance, id); err != nil {
+			return 0, ErrUnavailable
+		}
+		if err = tokenEvent(ctx, tx, instance, actor, id, "token.revoke"); err != nil {
+			return 0, err
+		}
+	}
+	return len(ids), nil
 }

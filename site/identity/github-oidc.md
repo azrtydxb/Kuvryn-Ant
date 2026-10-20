@@ -149,4 +149,4 @@ Debugging a 403: decode the JWT payload (`echo "$JWT" | cut -d. -f2 | base64 -d 
 
 ## Revocation
 
-An exchanged token is a normal service token: list it with `GET /api/v1/tokens?principal=<id>` and revoke it with `DELETE /api/v1/tokens/{id}`. Deleting or disabling a trust rule stops new exchanges for it; tokens already issued stay valid until they expire (at most `ttl_seconds`, 1 hour maximum) unless revoked.
+An exchanged token is a normal service token: list it with `GET /api/v1/tokens?principal=<id>` and revoke it with `DELETE /api/v1/tokens/{id}`. Tokens remember the rule that issued them. Deleting a rule, disabling it, changing its principal or its match conditions (org, repo, ref, environment, workflow), or narrowing its scopes revokes the unexpired tokens it already issued, in the same transaction as the edit, and audits each as `token.revoke`. Widening the scopes or changing only the name or TTL keeps them. Tokens issued before this behaviour existed carry no rule id and stay valid until they expire (at most `ttl_seconds`, 1 hour maximum) unless revoked by hand.

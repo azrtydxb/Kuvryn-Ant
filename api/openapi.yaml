@@ -11835,6 +11835,51 @@
         }
       }
     },
+    "/api/v1/local-account/me": {
+      "get": {
+        "operationId": "getOwnLocalAccount",
+        "description": "Any signed-in local account. Returns the caller's own username/password account (second-factor and lockout state); 404 when the caller has none.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/local-account/unlock": {
       "post": {
         "operationId": "unlockLocalAccount",
@@ -11900,7 +11945,7 @@
             }
           }
         ],
-        "description": "Only the signed-in break-glass account may call this. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.",
+        "description": "Only the signed-in local account may call this: the break-glass account always, an ordinary local user when the local-user TOTP setting is on. Starts TOTP enrollment and returns the otpauth URI; it is enforced only after confirmation.",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -11958,7 +12003,7 @@
             }
           }
         ],
-        "description": "Only the signed-in break-glass account may call this. Removes the second factor.",
+        "description": "Only the signed-in local account may call this: the break-glass account always, an ordinary local user when the local-user TOTP setting is on. Removes the second factor.",
         "responses": {
           "204": {
             "description": "No content",
@@ -12008,7 +12053,7 @@
             }
           }
         ],
-        "description": "Only the signed-in break-glass account may call this. Enables TOTP when the code is valid.",
+        "description": "Only the signed-in local account may call this: the break-glass account always, an ordinary local user when the local-user TOTP setting is on. Enables TOTP when the code is valid.",
         "requestBody": {
           "required": true,
           "content": {
@@ -17506,6 +17551,134 @@
             "$ref": "#/components/responses/Error"
           },
           "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/local-accounts/{username}/unlock": {
+      "post": {
+        "operationId": "unlockLocalUser",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Requires instance admin. Clears the failed-attempt counter and lockout of a local account without changing its password. Audited.",
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/local-accounts/{username}/totp": {
+      "delete": {
+        "operationId": "resetLocalUserTotp",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "username",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "description": "Requires instance admin. Removes a non break-glass account's TOTP second factor (for a lost device) and revokes its browser sessions. The user can enrol again when the local-user TOTP setting is on. Audited.",
+        "responses": {
+          "204": {
+            "description": "No content",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
             "$ref": "#/components/responses/Error"
           },
           "429": {
@@ -26060,6 +26233,9 @@
           "sso_mandatory": {
             "type": "boolean"
           },
+          "local_user_totp": {
+            "type": "boolean"
+          },
           "origin": {
             "type": "string"
           },
@@ -26394,6 +26570,10 @@
         "properties": {
           "sso_mandatory": {
             "type": "boolean"
+          },
+          "local_user_totp": {
+            "type": "boolean",
+            "description": "When true, ordinary local users may enrol their own TOTP second factor. Optional on write: omitted settings are left unchanged."
           }
         },
         "description": "When true, local password sign-in is disabled for every account except the break-glass administrator."

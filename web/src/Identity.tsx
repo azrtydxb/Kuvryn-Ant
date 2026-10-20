@@ -6,6 +6,7 @@ import { getProviders, type Providers } from "./auth";
 import { isUnavailable, useOptionalCall } from "./gaps";
 import type {
   EffectiveAction,
+  LocalUser,
   IdentityBindingRecord,
   CreatePrincipal,
   IdentityPrincipal,
@@ -13,6 +14,7 @@ import type {
   IdentityRoleGrant,
 } from "./generated";
 import { GrantEditor } from "./Grants";
+import { LocalTotpModal } from "./LocalTotp";
 import { ProviderAdmin } from "./SignInProviders";
 import { TokenIssuer, TokensTab } from "./Tokens";
 import {
@@ -44,6 +46,7 @@ import {
   Toolbar,
   Unavailable,
   chk,
+  when,
   useAction,
   useResource,
   useToast,
@@ -92,6 +95,11 @@ export function Identity({
       }),
     [client, roleAfter],
   );
+  // Local sign-in state (lockout, second factor) for the Users tab. Servers
+  // without these endpoints simply show no local-account details.
+  const localUsers = useOptionalCall(client, "listLocalUsers");
+  const ownLocal = useOptionalCall(client, "getOwnLocalAccount");
+  const identityPolicy = useOptionalCall(client, "getIdentityPolicy");
   const items = principals.value?.data.items ?? [];
   const users = items.filter((p) => p.kind !== "service");
   const services = items.filter((p) => p.kind === "service");
@@ -163,6 +171,16 @@ export function Identity({
           client={client}
           kind={tab === "users" ? "user" : "service"}
           rows={tab === "users" ? users : services}
+          local={localUsers.state === "ready" ? localUsers.data.items : []}
+          selfID={ownLocal.state === "ready" ? ownLocal.data.principal_id : ""}
+          selfEnrol={
+            identityPolicy.state === "ready" &&
+            !!identityPolicy.data.local_user_totp
+          }
+          reloadLocal={() => {
+            localUsers.reload();
+            ownLocal.reload();
+          }}
           roles={allRoles}
           state={principals}
           after={after}
@@ -232,6 +250,10 @@ function PrincipalsTab({
   client,
   kind,
   rows,
+  local,
+  selfID,
+  selfEnrol,
+  reloadLocal,
   roles,
   state,
   after,
@@ -240,6 +262,10 @@ function PrincipalsTab({
   client: Client;
   kind: "user" | "service";
   rows: IdentityPrincipal[];
+  local: LocalUser[];
+  selfID: string;
+  selfEnrol: boolean;
+  reloadLocal: () => void;
   roles: IdentityRole[];
   state: ReturnType<
     typeof useResource<{ items: IdentityPrincipal[]; next_after?: string }>
@@ -252,6 +278,12 @@ function PrincipalsTab({
   const [binding, setBinding] = useState<IdentityPrincipal>();
   const [effective, setEffective] = useState<IdentityPrincipal>();
   const [token, setToken] = useState<IdentityPrincipal>();
+  const [enrolling, setEnrolling] = useState<LocalUser>();
+  const localAction = useAction();
+  const toast = useToast();
+  const localOf = (id: string) => local.find((u) => u.principal_id === id);
+  const isLocked = (u?: LocalUser) =>
+    !!u?.locked_until && Date.parse(u.locked_until) > Date.now();
   const shown = rows.filter((p) =>
     (p.subject + p.id).toLowerCase().includes(filter.trim().toLowerCase()),
   );
@@ -278,6 +310,7 @@ function PrincipalsTab({
           Refresh
         </Button>
       </Toolbar>
+      <Failure error={localAction.error} />
       <Failure error={state.error} />
       {state.loading && (
         <Loading what={kind === "user" ? "users" : "service principals"} />
@@ -319,6 +352,34 @@ function PrincipalsTab({
                     <span className="muted">None</span>
                   ),
               },
+              ...(kind === "user" && local.length
+                ? [
+                    {
+                      key: "signin",
+                      label: "Local sign-in",
+                      render: (p: IdentityPrincipal) => {
+                        const u = localOf(p.id);
+                        if (!u) return <span className="muted">External</span>;
+                        return (
+                          <span className="row tight wrap">
+                            {isLocked(u) && (
+                              <Badge
+                                tone="bad"
+                                dot
+                                title={`Until ${when(u.locked_until)}`}
+                              >
+                                Locked
+                              </Badge>
+                            )}
+                            <Badge tone={u.totp_enabled ? "good" : "neutral"}>
+                              {u.totp_enabled ? "2FA on" : "2FA off"}
+                            </Badge>
+                          </span>
+                        );
+                      },
+                    },
+                  ]
+                : []),
               {
                 key: "kind",
                 label: "Kind",
@@ -369,6 +430,63 @@ function PrincipalsTab({
                               label: "Bind provider identity",
                               icon: "link",
                               onSelect: () => setBinding(p),
+                            },
+                          ]
+                        : []),
+                      ...(localOf(p.id) && isLocked(localOf(p.id))
+                        ? [
+                            {
+                              label: "Unlock account",
+                              icon: "lock-open",
+                              onSelect: async () => {
+                                if (
+                                  await localAction.run(() =>
+                                    client.call("unlockLocalUser", {
+                                      params: {
+                                        username: localOf(p.id)!.username,
+                                      },
+                                    }),
+                                  )
+                                ) {
+                                  toast("Account unlocked", p.subject);
+                                  reloadLocal();
+                                }
+                              },
+                            },
+                          ]
+                        : []),
+                      ...(localOf(p.id)?.totp_enabled &&
+                      !localOf(p.id)!.break_glass
+                        ? [
+                            {
+                              label: "Reset two-factor",
+                              icon: "shield-off",
+                              onSelect: async () => {
+                                if (
+                                  await localAction.run(() =>
+                                    client.call("resetLocalUserTotp", {
+                                      params: {
+                                        username: localOf(p.id)!.username,
+                                      },
+                                    }),
+                                  )
+                                ) {
+                                  toast("Two-factor reset", p.subject);
+                                  reloadLocal();
+                                }
+                              },
+                            },
+                          ]
+                        : []),
+                      ...(localOf(p.id) &&
+                      p.id === selfID &&
+                      !localOf(p.id)!.totp_enabled &&
+                      (selfEnrol || localOf(p.id)!.break_glass)
+                        ? [
+                            {
+                              label: "Set up two-factor",
+                              icon: "smartphone",
+                              onSelect: () => setEnrolling(localOf(p.id)),
                             },
                           ]
                         : []),
@@ -427,6 +545,17 @@ function PrincipalsTab({
           principals={[token]}
           initial={token.id}
           onClose={() => setToken(undefined)}
+        />
+      )}
+      {enrolling && (
+        <LocalTotpModal
+          client={client}
+          username={enrolling.username}
+          onClose={() => setEnrolling(undefined)}
+          done={() => {
+            setEnrolling(undefined);
+            reloadLocal();
+          }}
         />
       )}
       {effective && (

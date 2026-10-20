@@ -22,7 +22,7 @@ Both use the same password storage, lockout and rate limits.
 
 When **SSO mandatory** is on (`PUT /api/v1/identity-policy` with `{"sso_mandatory":true}`), every local account except break-glass is refused at sign-in.
 
-Audit events: `auth.local.success`, `auth.local.failure`, `auth.local.denied`, `auth.local.mfa_required`, `auth.local.user_created`, `auth.local.password_set`, `auth.local.user_deleted`.
+Audit events: `auth.local.success`, `auth.local.failure`, `auth.local.denied`, `auth.local.mfa_required`, `auth.local.user_created`, `auth.local.password_set`, `auth.local.user_deleted`, `auth.local.unlocked`, `auth.local.totp_reset`, `auth.local.totp_enabled`.
 
 ## Create or reset a user on the host
 
@@ -81,6 +81,8 @@ All local-account endpoints require instance `admin`. Mutations need an `Idempot
 | Create       | `POST /api/v1/local-accounts` with `{"username":"...","password":"..."}`          |
 | Set password | `PUT /api/v1/local-accounts/{username}/password` with `{"password":"..."}`        |
 | Delete       | `DELETE /api/v1/local-accounts/{username}`                                        |
+| Unlock       | `POST /api/v1/local-accounts/{username}/unlock`                                   |
+| Reset TOTP   | `DELETE /api/v1/local-accounts/{username}/totp`                                   |
 
 ```sh
 export ANT=https://ant.example.com
@@ -99,20 +101,23 @@ Deleting an account removes its password, its `ant-local` sign-in binding and it
 
 TOTP uses SHA-1, 6 digits and a 30-second period, accepts one step of clock drift either way, and each code works once. When TOTP is enabled the console asks for the code after the password is accepted (the login endpoint answers `401 {"mfa_required":true}` until a `totp_code` is supplied).
 
-Enrollment endpoints (`POST /api/v1/local-account/totp`, `POST /api/v1/local-account/totp/confirm`, `DELETE /api/v1/local-account/totp`) can only be called by the signed-in **break-glass** account, for itself. See [Break-glass access](../operations/break-glass.md).
+Enrolment endpoints are for the signed-in account itself:
 
-::: warning Gap
-There is no API or CLI to enroll TOTP for an ordinary local user. The login path checks TOTP for any local account that has it enabled, but only the break-glass account can enroll. Use SSO with the IdP's own MFA for users who need a second factor.
-:::
+| Operation       | Request                                                            |
+| --------------- | ------------------------------------------------------------------ |
+| Start           | `POST /api/v1/local-account/totp` returns the `otpauth_uri` once   |
+| Confirm         | `POST /api/v1/local-account/totp/confirm` with `{"code":"123456"}` |
+| Remove          | `DELETE /api/v1/local-account/totp`                                |
+| Show my account | `GET /api/v1/local-account/me`                                     |
+
+The break-glass account can always do this (see [Break-glass access](../operations/break-glass.md)). An ordinary local user can enrol only from a browser session, and only when the instance setting **local-user TOTP** is on: `PUT /api/v1/identity-policy` with `{"sso_mandatory":false,"local_user_totp":true}`, or the switch under Access, Sign-in providers. The setting is off by default. Turning it off stops new enrolments but does not remove factors already enrolled; sign-in keeps asking for the code of any account that has one.
+
+An administrator can never enrol or read another user's factor. If a user loses their device, an administrator removes it with `DELETE /api/v1/local-accounts/{username}/totp` (console: Access, Users, row menu, Reset two-factor). That also revokes the account's browser sessions and is audited as `auth.local.totp_reset`. The break-glass account manages its own factor.
 
 ## Unlock
 
 - **Break-glass:** `POST /api/v1/local-account/unlock` (instance admin), or the console (Access, Sign-in providers), or reset it with `ant admin break-glass`.
-- **Ordinary users:** set a new password (`PUT /api/v1/local-accounts/{username}/password` or `ant admin local-user USERNAME`). A password change clears the lockout.
-
-::: warning Gap
-`POST /api/v1/local-account/unlock` clears only the break-glass account's lockout. There is no separate unlock for ordinary users that keeps their password; otherwise wait for the lock to expire.
-:::
+- **Ordinary users:** `POST /api/v1/local-accounts/{username}/unlock` (instance admin; console: Access, Users, row menu, Unlock account) clears the failure counter and lockout and keeps the password. Setting a new password (`PUT /api/v1/local-accounts/{username}/password` or `ant admin local-user USERNAME`) also clears the lockout. Unlocking is audited as `auth.local.unlocked`.
 
 ## Sign in
 

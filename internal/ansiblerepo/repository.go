@@ -17,9 +17,9 @@ import (
 )
 
 type importTask struct {
-	token, feed string
-	expires     time.Time
-	result      map[string]any
+	token, feed, principal string
+	expires                time.Time
+	result                 map[string]any
 }
 type Repository struct {
 	db        *pgxpool.Pool
@@ -109,7 +109,7 @@ func (s *Repository) serve(w http.ResponseWriter, r *http.Request) {
 		s.mu.Lock()
 		task, ok := s.tasks[parts[2]]
 		s.mu.Unlock()
-		if !ok || task.feed != feed || task.token != p.TokenID || time.Now().After(task.expires) {
+		if !ok || task.feed != feed || task.token != p.TokenID || task.principal != p.PrincipalID || time.Now().After(task.expires) {
 			failure(w, artifact.ErrNotFound)
 			return
 		}

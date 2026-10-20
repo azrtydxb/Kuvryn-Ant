@@ -432,7 +432,7 @@ func parseCredential(header string) (user, secret string, basic, ok bool) {
 		return "", "", false, false
 	}
 	switch {
-	case strings.EqualFold(scheme, "Bearer"):
+	case strings.EqualFold(scheme, "Bearer"), strings.EqualFold(scheme, "Token"): // Token: Ansible Galaxy
 		if strings.ContainsAny(value, " \t") {
 			return "", "", false, false
 		}
@@ -525,6 +525,7 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 		c.deny(w, r, http.StatusTooManyRequests, "authentication attempts limited")
 		return
 	}
+	enforced = enforced.WithContext(withPresented(enforced.Context(), method, secret))
 	fail := func() {
 		c.peers.fail(peer, c.now())
 		c.deny(w, r, http.StatusUnauthorized, "authentication required")

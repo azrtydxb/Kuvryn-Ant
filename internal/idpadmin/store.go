@@ -504,3 +504,31 @@ func (s Store) SSOMandatory(ctx context.Context) (bool, error) {
 	err := s.DB.QueryRow(ctx, `SELECT COALESCE((SELECT sso_mandatory FROM identity_policy WHERE instance_id=$1),false)`, s.InstanceID).Scan(&v)
 	return v, err
 }
+
+// LocalUserTOTP reports whether ordinary local users may enrol their own TOTP
+// second factor (the break-glass account always may).
+func (s Store) LocalUserTOTP(ctx context.Context) (bool, error) {
+	var v bool
+	err := s.DB.QueryRow(ctx, `SELECT COALESCE((SELECT local_user_totp FROM identity_policy WHERE instance_id=$1),false)`, s.InstanceID).Scan(&v)
+	return v, err
+}
+
+// SetLocalUserTOTP updates the setting and audits the change.
+func (s Store) SetLocalUserTOTP(ctx context.Context, actor string, enabled bool) error {
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	if _, err = tx.Exec(ctx, `INSERT INTO identity_policy(instance_id,local_user_totp) VALUES($1,$2) ON CONFLICT(instance_id) DO UPDATE SET local_user_totp=$2,revision=identity_policy.revision+1,updated_at=now()`, s.InstanceID, enabled); err != nil {
+		return err
+	}
+	action := "identity_policy.local_user_totp_disabled"
+	if enabled {
+		action = "identity_policy.local_user_totp_enabled"
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO audit_events(instance_id,principal_id,action) VALUES($1,NULLIF($2,'')::uuid,$3)`, s.InstanceID, actor, action); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}

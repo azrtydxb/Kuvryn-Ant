@@ -143,7 +143,7 @@ func (s *Repository) publish(w http.ResponseWriter, r *http.Request, p identity.
 		return
 	}
 	id := rand.Text()
-	s.tasks[id] = importTask{feed: feed, token: p.TokenID, expires: time.Now().Add(time.Hour)}
+	s.tasks[id] = importTask{feed: feed, token: p.TokenID, principal: p.PrincipalID, expires: time.Now().Add(time.Hour)}
 	s.mu.Unlock()
 	success := false
 	defer func() {

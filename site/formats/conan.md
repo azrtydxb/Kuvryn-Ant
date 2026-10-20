@@ -32,9 +32,7 @@ Routes under `/feeds/<slug>/conan/`. A reference is always the four-part path `<
 - Listings never exceed 4,096 rows. Responses carry `Cache-Control: private, no-store`.
 - Uploads beyond the per-format concurrency limit (`ANT_UPLOAD_SLOTS`) are answered with 503.
 
-::: warning Gap
-`v2/users/authenticate` echoes back the bearer value the adapter received, and Conan stores that value as its token for later requests. A service token (`ant_...`) reaches the adapter unchanged, so it works. A personal access token, a directory password or a GitHub OIDC JWT is first replaced by Ant's client-auth layer with a single-use internal ticket, so Conan would store a ticket that stops working after the login call. Until this is fixed, use a **service token** for `conan remote login`, or the short-lived service token returned by the GitHub OIDC exchange. This finding comes from reading the code and has not been reproduced with a client.
-:::
+`v2/users/authenticate` hands Conan the token it keeps for later requests. A service token (`ant_...`) is echoed back unchanged. A personal access token is returned as itself, because it is already a reusable credential. A directory (LDAP or Active Directory) username and password is exchanged for a personal access token owned by that user, valid for 12 hours and named `conan remote login`; logging in again replaces the previous one, so tokens do not accumulate. A GitHub OIDC JWT is exchanged for the short-lived service token described below.
 
 ## Create the feed
 
@@ -131,8 +129,8 @@ Exchange the OIDC token for a short-lived Ant service token (see [GitHub Actions
 
 | Symptom                                          | Cause                                                                                                                                                  |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ERROR: Wrong user or password` on login         | The token is invalid or revoked, or it is a PAT or JWT (see the gap above). Use a service token.                                                       |
-| Login works but the next command gets `401`      | Conan stored a single-use ticket instead of your token (PAT, directory or JWT login). Log in again with a service token.                               |
+| `ERROR: Wrong user or password` on login         | The token is invalid, revoked or expired, or the feed's client-auth policy does not accept this credential type.                                       |
+| Login works but the next command gets `401`      | The credential Conan stored has expired (the directory-login token lasts 12 hours) or was revoked. Run `conan remote login` again.                     |
 | `403`                                            | The token lacks read or publish on this feed, or the feed's client-auth policy rejects the credential type.                                            |
 | `400` on upload                                  | The reference, revision or package ID is malformed, or the file name is not one of the allowed Conan files.                                            |
 | `400` on the `conanmanifest.txt` upload          | The manifest did not match the revision in the URL or the staged files. The stage was discarded and nothing became visible. Upload the revision again. |
