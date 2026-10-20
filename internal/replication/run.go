@@ -203,6 +203,7 @@ func (s *Service) runJob(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	rt.client.job = rt.job.Name
 	if err = s.refreshHead(ctx, rt); err != nil {
 		return err
 	}

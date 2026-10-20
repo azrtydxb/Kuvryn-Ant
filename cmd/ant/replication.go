@@ -51,7 +51,7 @@ func openReplication(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) 
 		return nil, err
 	}
 	service.RegisterMetrics()
-	return &replicationRuntime{pool: pool, service: service, exporter: replication.Exporter{DB: pool, Storage: r.stores.Resolve, Lease: r.manager.Lease},
+	return &replicationRuntime{pool: pool, service: service, exporter: replication.Exporter{DB: pool, Storage: r.stores.Resolve, Lease: r.manager.Lease, Consumers: replication.NewConsumerTracker()},
 		instance: r.instanceID, history: cfg.Replication}, nil
 }
 

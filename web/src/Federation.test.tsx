@@ -582,8 +582,8 @@ it("shows federated feeds, rule compliance and starts a planned home transfer", 
   });
   render(<App />);
   await signInWithToken();
-  nav("Federation");
-  await openTab("Replication");
+  nav("Replication");
+  await openTab("Federation rules");
   await screen.findByText("Federated feeds");
   await waitFor(() =>
     expect(screen.getAllByText("site=beta").length).toBeGreaterThan(0),
@@ -693,8 +693,8 @@ it("explains read routing and publishes routing settings", async () => {
   });
   render(<App />);
   await signInWithToken();
-  nav("Federation");
-  await openTab("Replication");
+  nav("Replication");
+  await openTab("Federation rules");
   await screen.findByText("proxy · blob URLs");
   fireEvent.click(screen.getByRole("button", { name: "Explain" }));
   const explain = await screen.findByRole("dialog", {
@@ -846,3 +846,35 @@ async function openTab(name: string) {
     await screen.findByRole("tab", { name: new RegExp(`^${name}`) }),
   );
 }
+
+it("replaced the Federation replication tab with a link to Replication", async () => {
+  install((url) => {
+    if (url === "/api/v1/federation/status") return json(active);
+    if (url === "/api/v1/federation/members")
+      return json({
+        items: [member(alpha, "alpha", { authority: true, self: true })],
+      });
+    if (url === "/api/v1/federation/invitations") return json({ items: [] });
+    if (url === "/api/v1/federation/topology")
+      return json({ generation: 1, authority: true, feeds: [], rules: [] });
+    if (url === "/api/v1/federation/replication/status")
+      return json({ items: [], quarantines: [] });
+    return undefined;
+  });
+  render(<App />);
+  await signInWithToken();
+  nav("Federation");
+  await screen.findByRole("tab", { name: /^Members/ });
+  expect(screen.queryByRole("tab", { name: /^Replication/ })).toBeNull();
+  fireEvent.click(
+    await screen.findByRole("button", {
+      name: /Replication → Federation rules/,
+    }),
+  );
+  await screen.findByText("Federated feeds");
+  expect(
+    screen
+      .getByRole("tab", { name: /^Federation rules/ })
+      .getAttribute("aria-selected"),
+  ).toBe("true");
+});

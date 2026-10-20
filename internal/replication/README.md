@@ -226,3 +226,21 @@ under the instance lease context; `main.go` mounts both route sets.
   its `replica:<name>` source to `replica-retired:<name>-<id>` so the job name
   can be reused. Remove the retired source with `DELETE /api/v1/sources/{id}`
   (`force=true` detaches it and removes its content).
+
+## Outgoing visibility (who pulls from this instance)
+
+Replication is pull based, so an authority only learns about consumers from
+their export calls. `ConsumerTracker` (`consumers.go`) records, per
+(consumer, feed), the last pull, the change sequence last served against the
+head, bytes served and the last result. Consumers are bearer principals (token
+mode) or federation members (mTLS mode). Counters are batched in memory and
+upserted every 15 s under the writer lease; a lag sample is kept per consumer
+and feed every 5 minutes for 7 days (table `replication_consumer_samples`,
+migration `048_replication_consumers.sql`). Destinations send their job name in
+`X-Replication-Job` (informational).
+
+`GET /api/v1/replication/outgoing` lists them (visible per feed with
+replicate or configure, like the jobs list). Status is `error` when the last
+request failed, `stale` after one hour of silence, otherwise `active`. Lag
+counts the instance-wide change sequence, like a destination's "changes
+behind". History starts when the tracker first runs after upgrade.

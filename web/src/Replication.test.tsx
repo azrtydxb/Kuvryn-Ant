@@ -283,3 +283,113 @@ it("refuses to apply a template with blocked entries", async () => {
     false,
   );
 });
+
+const outgoingMember = {
+  id: "f1:member:m1",
+  consumer_kind: "member",
+  consumer_name: "kw",
+  member_instance_id: "m1",
+  feed_id: ids.feed,
+  feed_slug: "production",
+  feed_format: "oci",
+  remote_job: "pull-production",
+  rule_id: "99999999-8888-4777-8666-555555555555",
+  first_seen: "2026-10-01T00:00:00Z",
+  last_seen: "2026-10-20T00:00:00Z",
+  pulls: 12,
+  bytes_served: 2048,
+  last_sequence: 90,
+  head_sequence: 100,
+  lag_changes: 10,
+  lag_seconds: 30,
+  status: "active",
+  stale_after_seconds: 3600,
+  history: [
+    {
+      at: "2026-10-19T23:50:00Z",
+      last_sequence: 80,
+      head_sequence: 100,
+      lag_changes: 20,
+    },
+    {
+      at: "2026-10-19T23:55:00Z",
+      last_sequence: 90,
+      head_sequence: 100,
+      lag_changes: 10,
+    },
+  ],
+};
+const outgoingToken = {
+  ...outgoingMember,
+  id: "f1:principal:p1",
+  consumer_kind: "principal",
+  consumer_name: "peer-token",
+  member_instance_id: undefined,
+  remote_job: undefined,
+  rule_id: undefined,
+  status: "error",
+  last_error: "history purged; reseed required",
+};
+
+function setupUnified(federated: boolean) {
+  install((url, init) => {
+    const path = url.split("?")[0];
+    if (path === "/api/v1/replication/outgoing")
+      return json({ items: [outgoingMember, outgoingToken] });
+    if (path === "/api/v1/federation/status")
+      return json(
+        federated
+          ? { state: "active", role: "authority", federation_name: "lab" }
+          : { state: "none" },
+      );
+    if (path === "/api/v1/federation/members") return json({ items: [] });
+    if (path === "/api/v1/federation/topology")
+      return json({ generation: 1, authority: true, feeds: [], rules: [] });
+    if (path === "/api/v1/federation/replication/status")
+      return json({ items: [], quarantines: [] });
+    if (path.startsWith("/auth/session")) return json(session);
+    if (path === "/api/v1/replication/jobs" && (init.method ?? "GET") === "GET")
+      return json({ items: [job] });
+    if (path === "/api/v1/replication/peers") return json({ items: [peer] });
+    return undefined;
+  });
+}
+
+it("lists incoming and outgoing replication with explicit direction and filters", async () => {
+  setupUnified(false);
+  await openReplication();
+  expect(screen.getAllByText("Incoming").length).toBeGreaterThan(0);
+  await screen.findByText("kw");
+  expect(screen.getAllByText("Outgoing").length).toBeGreaterThan(0);
+  expect(screen.queryByRole("tab", { name: /Federation rules/ })).toBeNull();
+  fireEvent.click(screen.getByRole("radio", { name: /^Outgoing/ }));
+  expect(screen.queryByText("mirror")).toBeNull();
+  expect(screen.getByText("kw")).toBeTruthy();
+  fireEvent.click(screen.getByRole("radio", { name: /^Incoming/ }));
+  expect(screen.getByText("mirror")).toBeTruthy();
+  expect(screen.queryByText("kw")).toBeNull();
+  fireEvent.click(screen.getByRole("radio", { name: /^All/ }));
+  fireEvent.change(screen.getByLabelText("Status"), {
+    target: { value: "error" },
+  });
+  expect(screen.queryByText("mirror")).toBeNull();
+  expect(screen.getByText("peer-token")).toBeTruthy();
+});
+
+it("opens a read-only drawer for an outgoing consumer", async () => {
+  setupUnified(false);
+  await openReplication();
+  fireEvent.click(await screen.findByText("kw"));
+  const drawer = await screen.findByRole("dialog");
+  expect(within(drawer).getByText(/Pulled by the consumer/)).toBeTruthy();
+  expect(within(drawer).getByText("90 of 100")).toBeTruthy();
+  expect(within(drawer).getByText("pull-production")).toBeTruthy();
+  expect(within(drawer).queryByText("Edit job")).toBeNull();
+});
+
+it("shows the Federation rules tab only when federated", async () => {
+  setupUnified(true);
+  await openReplication();
+  fireEvent.click(await screen.findByRole("tab", { name: /Federation rules/ }));
+  await screen.findByText("Federated feeds");
+});

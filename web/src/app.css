@@ -953,3 +953,25 @@ details > summary {
     font-size: 22px;
   }
 }
+/* Replication: unified incoming/outgoing list */
+.flow-dir {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.flow-dir > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.flow-dir small,
+.flow-feeds small {
+  color: var(--az-text-2);
+  overflow-wrap: anywhere;
+}
+.flow-feeds {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}

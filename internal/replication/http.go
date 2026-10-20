@@ -29,6 +29,7 @@ import (
 //	GET    /api/v1/replication/jobs/{id}          PATCH  /api/v1/replication/jobs/{id}    DELETE /api/v1/replication/jobs/{id}
 //	GET    /api/v1/replication/jobs/{id}/status   POST   /api/v1/replication/jobs/{id}/runs
 //	GET    /api/v1/replication/jobs/{id}/deletions   (dry-run deletion preview)
+//	GET    /api/v1/replication/outgoing        (consumers pulling from this instance)
 //	GET    /api/v1/replication/status             (all jobs: progress, lag, failures, last success)
 //	POST   /api/v1/replication/jobs/{id}/template/preview   (diff a feed configuration template; read-only)
 //	POST   /api/v1/replication/jobs/{id}/template/apply     (apply a reviewed template)
@@ -47,6 +48,7 @@ func (s *Service) Register(mux *http.ServeMux, auth identity.Authenticator) {
 		"GET /api/v1/replication/peers/{id}":                  h.getPeer,
 		"PATCH /api/v1/replication/peers/{id}":                h.patchPeer,
 		"DELETE /api/v1/replication/peers/{id}":               h.deletePeer,
+		"GET /api/v1/replication/outgoing":                    h.listOutgoing,
 		"GET /api/v1/replication/jobs":                        h.listJobs,
 		"POST /api/v1/replication/jobs":                       h.createJob,
 		"GET /api/v1/replication/jobs/{id}":                   h.getJob,

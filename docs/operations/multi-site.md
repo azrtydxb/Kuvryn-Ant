@@ -67,7 +67,7 @@ Rotation (before expiry; alert on `ant_replication_consecutive_failures`):
 
 ## Operations
 
-Status: `GET /api/v1/replication/status` or the console Replication page on kw.
+Status: `GET /api/v1/replication/status` or the console Replication page on kw (incoming jobs); on OKE the same page lists the consumers pulling from it (`GET /api/v1/replication/outgoing`).
 Healthy: `phase=incremental`, `changes_behind=0`, `consecutive_failures=0`,
 `last_success_at` within a few poll intervals. Metrics on kw `/metrics`:
 `ant_replication_seconds_since_last_success{job}`, `_changes_behind`,
