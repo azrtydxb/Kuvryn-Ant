@@ -43,7 +43,7 @@ docker compose --profile app exec app ant-entrypoint bootstrap
 docker compose --profile app restart app
 ```
 
-Open `http://localhost:8080/console/` and use the initial credential. Native package
+Open `http://127.0.0.1:8080/console/` and use the initial credential. Native package
 URLs use the loopback public URL. Browser identity-provider cookies require HTTPS;
 configure a TLS reverse proxy and `ANT_PUBLIC_URL` for browser SSO testing.
 

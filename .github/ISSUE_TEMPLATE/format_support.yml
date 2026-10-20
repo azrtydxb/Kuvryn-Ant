@@ -1,0 +1,47 @@
+name: Format support request
+description: Request a new package format, a client, or a missing protocol feature of a supported format.
+labels: [format, triage]
+body:
+  - type: input
+    id: ecosystem
+    attributes:
+      label: Ecosystem or format
+      placeholder: "e.g. Bazel remote cache, Nix binary cache, Chocolatey"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Request type
+      options:
+        - New format
+        - New client for a supported format
+        - Missing protocol feature of a supported format
+    validations:
+      required: true
+  - type: checkboxes
+    id: capabilities
+    attributes:
+      label: Needed capabilities
+      options:
+        - label: Publish (hosted packages)
+        - label: Consume (install from Ant)
+        - label: Remote pull-through cache of a public upstream
+        - label: Replication to other sites
+  - type: textarea
+    id: clients
+    attributes:
+      label: Clients and versions
+      description: Which tools must work, with versions, and the commands you run.
+    validations:
+      required: true
+  - type: textarea
+    id: protocol
+    attributes:
+      label: Protocol references
+      description: Links to the protocol specification, public upstream registries and reference implementations.
+  - type: textarea
+    id: usage
+    attributes:
+      label: Expected usage
+      description: Rough package counts and sizes, and whether you can help test.

@@ -1,0 +1,75 @@
+name: Bug report
+description: Something does not work as documented.
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Replace real hostnames, IP addresses, tokens and
+        e-mail addresses with placeholders (ant.example.com, 10.0.0.x,
+        user@example.com) before posting.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands, client configuration and API calls.
+      placeholder: |
+        1. Create feed ...
+        2. Run `npm install ...`
+        3. See error ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Kuvryn Ant version or commit
+      placeholder: "0.1.0 or a commit SHA"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Helm chart
+        - Docker Compose
+        - Binary
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Blob storage
+      options:
+        - Disk
+        - AWS S3
+        - MinIO
+        - Other S3-compatible
+  - type: input
+    id: format
+    attributes:
+      label: Package format and client version
+      placeholder: "npm 11.6.0, docker 28.5, pip 25.2 ..."
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs and responses
+      description: Status codes, response bodies, X-Kuvryn-Cache headers and server log lines.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and the documentation.
+          required: true
+        - label: I removed secrets and real hostnames from this report.
+          required: true

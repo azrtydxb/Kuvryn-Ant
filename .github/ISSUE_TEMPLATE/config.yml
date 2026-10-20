@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://azrtydxb.github.io/Kuvryn-Ant/
+    about: Installation, format guides, identity, replication and operations.
+  - name: Report a security vulnerability
+    url: https://github.com/azrtydxb/Kuvryn-Ant/security/advisories/new
+    about: Please report vulnerabilities privately, never in a public issue.

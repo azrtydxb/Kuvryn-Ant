@@ -1,0 +1,144 @@
+# Kuvryn Ant on an on-premises Kubernetes cluster with MinIO (private CA),
+# a Gateway API HTTPRoute and a NetworkPolicy with explicit egress.
+#
+# All names and addresses are placeholders (10.0.0.x). Replace them with your
+# own. The chart creates no buckets, databases, Gateways or Secrets.
+#
+#   helm upgrade --install ant deploy/chart -n ant -f deploy/examples/onprem-minio.yaml --wait
+#   kubectl -n ant exec deploy/ant-ant -- ant bootstrap
+
+# Image built and pushed to your internal registry.
+image:
+  repository: registry.example.com/myorg/kuvryn-ant
+  tag: "0.1.0"
+  digest: ""
+
+publicURL: https://ant.example.com
+
+# Existing Secrets:
+#   ant-postgres     key dsn               postgres://ant:<pw>@10.0.0.20:5432/ant?sslmode=verify-full&sslrootcert=/run/ant/postgres/ca.crt
+#   ant-postgres-tls key ca.crt            CA that signed the PostgreSQL server certificate
+#   ant-root-key     key root.key          32 random raw bytes, backed up separately
+#   ant-minio        key credentials.json  {"access_key_id":"...","secret_access_key":"..."}
+#   ant-minio-ca     key ca.crt            CA that signed the MinIO certificate
+postgres:
+  existingSecret: ant-postgres
+  dsnKey: dsn
+  tlsExistingSecret: ant-postgres-tls
+rootKey:
+  existingSecret: ant-root-key
+  key: root.key
+  activeVersion: v1
+
+# MinIO S3 API (not the MinIO console port). MinIO needs path-style
+# addressing; the private CA keeps TLS verification enabled.
+storage:
+  backend: s3
+  s3:
+    endpoint: https://minio.example.com:9000
+    region: us-east-1 # the region configured in MinIO
+    bucket: ant
+    prefix: ant/
+    pathStyle: true
+    allowInsecureHTTP: false
+    credentialsExistingSecret: ant-minio
+    credentialsKey: credentials.json
+    caExistingSecret: ant-minio-ca
+    caKey: ca.crt
+
+# Block storage for staging and resume state (ext4/XFS; not NFS/SMB).
+persistence:
+  storageClass: "" # e.g. your local-path, Longhorn or Ceph RBD class
+  size: 50Gi
+
+# Gateway API instead of Ingress. TLS terminates on the referenced Gateway
+# listener; "0s" disables route timeouts for long transfers where the
+# implementation supports it.
+ingress:
+  enabled: false
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: edge
+      namespace: gateway-system
+      sectionName: https
+  hostnames:
+    - ant.example.com
+  timeouts:
+    request: "0s"
+    backendRequest: "0s"
+
+# Gateway proxy pods; their X-Forwarded-For is trusted.
+trustedProxies:
+  - 10.0.0.0/24
+
+# MinIO has no capacity API: set the bucket quota or dataset size so
+# storage-pressure eviction can work.
+maintenance:
+  pressure:
+    enabled: true
+    highPercent: 85
+    lowPercent: 75
+    capacity: 2TiB
+
+# Default-deny NetworkPolicy with explicit peers. An empty list denies all
+# traffic in that direction. Requires a CNI that enforces NetworkPolicy.
+networkPolicy:
+  enabled: true
+  ingressFrom:
+    # Gateway proxies.
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: gateway-system
+    # Prometheus scraping /metrics through the headless Service.
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring
+  egress:
+    # Cluster DNS.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # PostgreSQL.
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.20/32
+      ports:
+        - protocol: TCP
+          port: 5432
+    # MinIO S3 API.
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.30/32
+      ports:
+        - protocol: TCP
+          port: 9000
+    # LDAP/AD over LDAPS, if a directory provider is configured.
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.40/32
+      ports:
+        - protocol: TCP
+          port: 636
+    # Upstream registries for remote (pull-through) sources: HTTPS to the
+    # internet or to an outbound proxy. Narrow this to what you use.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 443
+
+metrics:
+  headlessService: true

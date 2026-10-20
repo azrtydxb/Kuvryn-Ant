@@ -7,10 +7,10 @@ services:
       POSTGRES_DB: ant
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     secrets: [postgres_password]
-    ports: ['127.0.0.1:15432:5432']
-    volumes: ['postgres_data:/var/lib/postgresql']
+    ports: ["127.0.0.1:15432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql"]
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ant -d ant']
+      test: ["CMD-SHELL", "pg_isready -U ant -d ant"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -18,14 +18,14 @@ services:
     profiles: [app]
     image: kuvryn-ant:local
     build: .
-    user: '0:0'
-    entrypoint: ['/bin/sh', '-ec']
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-ec"]
     command:
-      - 'umask 077; cp /run/secrets/root_key /prepared/root.key; cp /run/secrets/postgres_password /prepared/postgres-password; chown -R 10001:10001 /prepared; chmod 0700 /prepared; chmod 0400 /prepared/*'
+      - "umask 077; cp /run/secrets/root_key /prepared/root.key; cp /run/secrets/postgres_password /prepared/postgres-password; chown -R 10001:10001 /prepared; chmod 0700 /prepared; chmod 0400 /prepared/*"
     secrets: [postgres_password, root_key]
-    volumes: ['app_secrets:/prepared']
+    volumes: ["app_secrets:/prepared"]
     read_only: true
-    security_opt: ['no-new-privileges:true']
+    security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
   app:
@@ -38,21 +38,29 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      ANT_DATABASE_URL: 'host=postgres port=5432 user=ant dbname=ant sslmode=disable'
+      ANT_DATABASE_URL: "host=postgres port=5432 user=ant dbname=ant sslmode=disable"
       ANT_DATABASE_PASSWORD_FILE: /run/ant/dev-secrets/postgres-password
       ANT_ROOT_KEY_FILE: /run/ant/dev-secrets/root.key
-      ANT_PUBLIC_URL: '${ANT_PUBLIC_URL:-http://localhost:8080}'
+      ANT_PUBLIC_URL: "${ANT_PUBLIC_URL:-http://127.0.0.1:8080}"
       ANT_SHUTDOWN_TIMEOUT: 15s
       ANT_DATA_DIR: /var/lib/ant/data
-    ports: ['127.0.0.1:8080:8080']
-    volumes: ['app_data:/var/lib/ant', 'app_secrets:/run/ant/dev-secrets:ro']
-    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
+    ports: ["127.0.0.1:8080:8080"]
+    volumes: ["app_data:/var/lib/ant", "app_secrets:/run/ant/dev-secrets:ro"]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
     read_only: true
-    security_opt: ['no-new-privileges:true']
+    security_opt: ["no-new-privileges:true"]
     cap_drop: [ALL]
     stop_grace_period: 30s
     healthcheck:
-      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/health/ready']
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:8080/health/ready",
+        ]
       interval: 10s
       timeout: 3s
       retries: 3

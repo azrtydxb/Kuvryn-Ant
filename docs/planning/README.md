@@ -19,6 +19,6 @@ Planning-time documents (historical where noted):
 - [Spec coverage](coverage.md) — functional requirements and all ten release acceptance criteria.
 - [Verification](verification.json) and [readiness review](readiness-review.md) — historical planning audit, not implementation status.
 
-PostgreSQL only; license undecided; OCI/Docker → Go → Helm → Cargo → Raw first; all 26 formats in Phase 1; OIDC/SAML/LDAP in first GA. No calendar or staffing promises.
+PostgreSQL only; Apache-2.0 licensed (decided 2026-10-20); OCI/Docker → Go → Helm → Cargo → Raw first; all 26 formats in Phase 1; OIDC/SAML/LDAP in first GA. No calendar or staffing promises.
 
 GitHub body checklists and links provide the task hierarchy. No separate Project board is implied. The one-shot Python publishers that created the GitHub backlog were removed (planning is frozen; see `implementation-started.json`); finalized issue bodies/states are preserved in `planning-resolutions.json`. The recorded manifests are kept as history.

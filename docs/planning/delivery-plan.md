@@ -11,7 +11,7 @@ Source of truth for product scope: [product specification](../../kuvryn-ant-prod
 - All 26 ecosystem entries in the specification remain Phase 1 scope. Delivery waves do not redefine Phase 1 as a reduced-format MVP.
 - Feeds expose stable, format-specific endpoints. Read resolution and publish routing are separate policies. Publishing resolves to exactly one local source before accepting content; writes never implicitly go upstream.
 - Phase 1 instances are independently administered. Explicit seed/incremental artifact replication is required; federation belongs to Phase 2.
-- License/distribution selection is deferred at the owner's direction. Do not add a license or make an open-source licensing claim.
+- Licensing: Apache License 2.0 (owner decision, 2026-10-20). The repository is prepared for public open-source distribution; see LICENSE and CONTRIBUTING.md.
 - Complete planning, questions, milestones, user stories, and GitHub tasks/issues before product implementation begins.
 
 ## Planning gate
@@ -285,7 +285,7 @@ Cross-cutting suites include:
 ## Confirmed decision log
 
 - D001: PostgreSQL only for all installations. Owner response, 2026-10-18.
-- D002: No license selection at present. Owner response, 2026-10-18.
+- D002: No license selection at present. Owner response, 2026-10-18. Superseded 2026-10-20: Apache License 2.0.
 - D003: Complete planning and GitHub backlog before implementation. Owner instruction, 2026-10-18.
 - D004: Initial ecosystem order is OCI/Docker, Go, Helm, Cargo, Raw, then the remaining formats. Owner response, 2026-10-18.
 - D005: OIDC, SAML, and LDAP are all required for first general release. Owner response, 2026-10-18.
