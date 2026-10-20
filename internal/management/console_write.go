@@ -574,38 +574,18 @@ func (h consoleHandlers) purgeSourceCache(w http.ResponseWriter, r *http.Request
 	canonical, _ := json.Marshal(coordinate)
 	var pr *problem
 	result, err := database.ExecuteMutation(r.Context(), h.db, database.MutationRequest{InstanceID: p.InstanceID, PrincipalID: p.PrincipalID, Operation: "source.cache.purge", Resource: source, Key: key, Fingerprint: sha256.Sum256(canonical), NonSecretResult: true}, func(ctx context.Context, tx pgx.Tx) (json.RawMessage, error) {
-		var kind string
-		err := tx.QueryRow(ctx, `SELECT kind FROM sources WHERE instance_id=$1 AND id=$2 FOR SHARE`, p.InstanceID, source).Scan(&kind)
-		if errors.Is(err, pgx.ErrNoRows) {
+		res, err := artifact.PurgeRemoteCacheTx(ctx, tx, p.InstanceID, source, coordinate)
+		if errors.Is(err, artifact.ErrNotFound) {
 			return nil, database.ErrNotFound
+		}
+		if errors.Is(err, artifact.ErrNotRemote) {
+			pr = &problem{409, api.ErrorCodeConflict, "only remote sources have a cache"}
+			return nil, database.ErrConflict
 		}
 		if err != nil {
 			return nil, err
 		}
-		if kind != "remote" {
-			pr = &problem{409, api.ErrorCodeConflict, "only remote sources have a cache"}
-			return nil, database.ErrConflict
-		}
-		out := CachePurge{SourceID: source}
-		comps := `SELECT id FROM components WHERE instance_id=$1 AND source_id=$2 AND ($3='' OR coordinate=$3)`
-		if err = tx.QueryRow(ctx, `SELECT COALESCE(sum(b.size_bytes),0)::bigint FROM assets a JOIN blobs b ON b.id=a.blob_id JOIN versions v ON v.id=a.version_id WHERE v.component_id IN (`+comps+`)`, p.InstanceID, source, coordinate).Scan(&out.BytesReleased); err != nil {
-			return nil, err
-		}
-		for _, step := range []struct {
-			dst *int64
-			sql string
-		}{
-			{new(int64), `DELETE FROM tags WHERE component_id IN (` + comps + `)`},
-			{&out.AssetsRemoved, `DELETE FROM assets WHERE version_id IN (SELECT id FROM versions WHERE component_id IN (` + comps + `))`},
-			{&out.VersionsRemoved, `DELETE FROM versions WHERE component_id IN (` + comps + `)`},
-			{&out.ComponentsRemoved, `DELETE FROM components WHERE id IN (` + comps + `)`},
-		} {
-			tag, e := tx.Exec(ctx, step.sql, p.InstanceID, source, coordinate)
-			if e != nil {
-				return nil, e
-			}
-			*step.dst = tag.RowsAffected()
-		}
+		out := CachePurge{SourceID: source, ComponentsRemoved: res.Components, VersionsRemoved: res.Versions, AssetsRemoved: res.Assets, BytesReleased: res.Bytes}
 		if err = auditTx(ctx, tx, p, "source.cache.purge", source, map[string]any{"coordinate": coordinate, "components": out.ComponentsRemoved, "versions": out.VersionsRemoved, "assets": out.AssetsRemoved, "bytes": out.BytesReleased}, map[string]any{"source_id": source}); err != nil {
 			return nil, err
 		}

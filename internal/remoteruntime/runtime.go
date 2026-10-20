@@ -752,3 +752,49 @@ func withPublicOrigins(configured []string) []string {
 	}
 	return out
 }
+
+// InvalidateMetadata drops the in-process metadata cache entries and negative
+// cache entries of one remote source whose resource name contains one of names
+// (case-insensitive), so new tags and versions become visible immediately. With
+// no names every entry of the source is dropped. A source that is not loaded has
+// nothing cached and counts zero. Immutable artifacts are untouched. It returns
+// the number of entries dropped.
+func (m *Manager) InvalidateMetadata(source string, names []string) int {
+	m.mu.Lock()
+	e := m.entries[source]
+	if e == nil || e.retired {
+		m.mu.Unlock()
+		return 0
+	}
+	e.users++
+	m.mu.Unlock()
+	defer m.release(e)
+	lowered := make([]string, 0, len(names))
+	for _, n := range names {
+		if n = strings.ToLower(strings.TrimSpace(n)); n != "" {
+			lowered = append(lowered, n)
+		}
+	}
+	hit := func(identity string) bool {
+		if len(lowered) == 0 {
+			return true
+		}
+		id := strings.ToLower(identity)
+		for _, n := range lowered {
+			if strings.Contains(id, n) {
+				return true
+			}
+		}
+		return false
+	}
+	dropped := e.cache.InvalidateMatching(func(k cache.Key) bool { return k.Source == source && hit(k.Identity) })
+	e.negMu.Lock()
+	for k := range e.negative {
+		if hit(k.identity) {
+			delete(e.negative, k)
+			dropped++
+		}
+	}
+	e.negMu.Unlock()
+	return dropped
+}

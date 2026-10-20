@@ -18669,6 +18669,905 @@
         }
       }
     },
+    "/api/v1/incoming-hook-config": {
+      "get": {
+        "operationId": "getIncomingHookConfig",
+        "description": "Requires instance admin. The public base URL hooks are served under, the request size cap, the delivery log retention and the supported signature formats.",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHookConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/incoming-hooks": {
+      "get": {
+        "operationId": "listIncomingHooks",
+        "description": "Requires instance admin. Incoming webhooks ordered by slug, with last-received time and seven-day delivery statistics.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]{1,63}$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHookPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createIncomingHook",
+        "description": "Requires instance admin. Creates a hook served at <public URL>/hook/<slug>. For auth_mode url_token the response carries the secret path suffix once in token; it is stored only as a digest and cannot be shown again.",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIncomingHook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHook"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/incoming-hooks/{id}": {
+      "get": {
+        "operationId": "getIncomingHook",
+        "description": "Requires instance admin.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHook"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchIncomingHook",
+        "description": "Requires instance admin. Changes the given fields; the action is replaced as a whole. Switching to url_token generates a token, returned once.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchIncomingHook"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHook"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteIncomingHook",
+        "description": "Requires instance admin. Deletes the hook with its delivery log.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHookDeleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/incoming-hooks/{id}/token": {
+      "post": {
+        "operationId": "regenerateIncomingHookToken",
+        "description": "Requires instance admin. Replaces the secret URL token of a url_token hook; the old URL stops working at once. The new token is returned once.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\"[1-9][0-9]*\"$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              },
+              "ETag": {
+                "description": "Quoted positive revision",
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\"[1-9][0-9]*\"$"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHook"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/incoming-hooks/{id}/deliveries": {
+      "get": {
+        "operationId": "listIncomingHookDeliveries",
+        "description": "Requires instance admin. The delivery log, newest first: every received call with its authentication result, action result and a redacted, truncated payload preview.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "running",
+                "succeeded",
+                "failed",
+                "rejected"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHookDeliveryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/incoming-hooks/{id}/test": {
+      "post": {
+        "operationId": "testIncomingHook",
+        "description": "Requires instance admin. Queues a sample payload for the hook's action. For an HMAC hook the sample is signed with the hook's secret and verified like a live call; other modes record it as a test.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHookQueued"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/incoming-hooks/{id}/deliveries/{delivery_id}/redeliver": {
+      "post": {
+        "operationId": "redeliverIncomingHookDelivery",
+        "description": "Requires instance admin. Queues a copy of a logged delivery that still has its payload (not a rejected call), to test the action again. Replay protection does not apply.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "delivery_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomingHookQueued"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error"
+          },
+          "413": {
+            "$ref": "#/components/responses/Error"
+          },
+          "415": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/tokens/cleanup": {
       "post": {
         "operationId": "cleanupTokens",
@@ -32373,6 +33272,567 @@
           },
           "deleted": {
             "type": "boolean"
+          }
+        }
+      },
+      "IncomingHookAction": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "prewarm",
+              "replication_run",
+              "purge_source_cache",
+              "clean_cache",
+              "upstream_notify",
+              "relay"
+            ]
+          },
+          "feed_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "prewarm, clean_cache (a cache feed) and upstream_notify with prewarm (optional: limit to one feed)."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "package",
+              "image"
+            ],
+            "description": "prewarm: what the name denotes."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "prewarm: package or repository, a template such as {{ .repository.full_name }}."
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "prewarm: version or tag, a template such as {{ .release.tag_name | trimv }}."
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "replication_run: the replication job to run now."
+          },
+          "source_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "purge_source_cache: the remote source."
+          },
+          "coordinate": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "purge_source_cache: template for one coordinate; empty purges the whole cache."
+          },
+          "prefix": {
+            "type": "string",
+            "maxLength": 1024,
+            "description": "clean_cache: template for the prefix, <repository>[:<tag prefix>] for OCI or a path prefix for raw."
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "dockerhub",
+              "github",
+              "gitlab",
+              "npm",
+              "artifactory",
+              "nexus"
+            ],
+            "description": "upstream_notify: payload format; auto detects it."
+          },
+          "source_ids": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "upstream_notify: remote sources the change applies to; without it sources are matched by origin."
+          },
+          "origins": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "maxLength": 253
+            },
+            "description": "upstream_notify: host names that identify the sources (needed for Artifactory and Nexus)."
+          },
+          "prewarm": {
+            "type": "boolean",
+            "description": "upstream_notify: also prewarm the changed tag or version."
+          },
+          "target_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri",
+            "description": "relay: HTTPS destination, validated like an outgoing webhook URL."
+          },
+          "resign_secret_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "relay: re-sign the forwarded payload with this signing secret (X-Ant-Signature)."
+          }
+        }
+      },
+      "IncomingHook": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "description",
+          "enabled",
+          "auth_mode",
+          "action",
+          "action_summary",
+          "rate_per_minute",
+          "path",
+          "revision",
+          "created_at",
+          "updated_at",
+          "received_7d",
+          "succeeded_7d",
+          "failed_7d"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,63}$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "hmac",
+              "url_token",
+              "bearer"
+            ]
+          },
+          "hmac_format": {
+            "type": "string",
+            "enum": [
+              "github",
+              "gitlab",
+              "ant",
+              "npm",
+              "artifactory",
+              "nexus"
+            ]
+          },
+          "signing_secret_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bearer_scope": {
+            "type": "string",
+            "enum": [
+              "configure",
+              "replicate",
+              "admin"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/IncomingHookAction"
+          },
+          "rate_per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6000
+          },
+          "signing_secret_name": {
+            "type": "string"
+          },
+          "token_hint": {
+            "type": "string",
+            "description": "Last characters of the URL token, to tell tokens apart."
+          },
+          "token": {
+            "type": "string",
+            "description": "The secret URL suffix, present only in the response that created or regenerated it. The hook is served at <path>/<token>."
+          },
+          "action_summary": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "description": "Path of the hook on the public listener, /hook/<slug>."
+          },
+          "url": {
+            "type": "string",
+            "description": "Full URL built from the instance public URL, without any token."
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_received_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "received_7d": {
+            "type": "integer"
+          },
+          "succeeded_7d": {
+            "type": "integer"
+          },
+          "failed_7d": {
+            "type": "integer"
+          },
+          "success_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      },
+      "IncomingHookPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/IncomingHook"
+            }
+          },
+          "next_after": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,63}$"
+          }
+        }
+      },
+      "CreateIncomingHook": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "slug",
+          "auth_mode",
+          "action"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,63}$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "hmac",
+              "url_token",
+              "bearer"
+            ]
+          },
+          "hmac_format": {
+            "type": "string",
+            "enum": [
+              "github",
+              "gitlab",
+              "ant",
+              "npm",
+              "artifactory",
+              "nexus"
+            ]
+          },
+          "signing_secret_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bearer_scope": {
+            "type": "string",
+            "enum": [
+              "configure",
+              "replicate",
+              "admin"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/IncomingHookAction"
+          },
+          "rate_per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6000
+          }
+        }
+      },
+      "PatchIncomingHook": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,63}$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "hmac",
+              "url_token",
+              "bearer"
+            ]
+          },
+          "hmac_format": {
+            "type": "string",
+            "enum": [
+              "github",
+              "gitlab",
+              "ant",
+              "npm",
+              "artifactory",
+              "nexus"
+            ]
+          },
+          "signing_secret_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bearer_scope": {
+            "type": "string",
+            "enum": [
+              "configure",
+              "replicate",
+              "admin"
+            ]
+          },
+          "action": {
+            "$ref": "#/components/schemas/IncomingHookAction"
+          },
+          "rate_per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6000
+          }
+        }
+      },
+      "IncomingHookDeleted": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "deleted",
+          "revision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "IncomingHookDelivery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "received_at",
+          "auth_result",
+          "state",
+          "attempts",
+          "detail",
+          "payload_size",
+          "preview"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "received_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source_ip": {
+            "type": "string"
+          },
+          "auth_result": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "test",
+              "redelivery",
+              "invalid",
+              "missing",
+              "duplicate",
+              "too_large"
+            ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "succeeded",
+              "failed",
+              "rejected"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action_result": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "error": {
+            "type": "string"
+          },
+          "payload_size": {
+            "type": "integer"
+          },
+          "preview": {
+            "type": "string",
+            "description": "Redacted, truncated payload preview. Values under keys that look like credentials and credential-shaped strings are replaced."
+          },
+          "delivery_ref": {
+            "type": "string"
+          },
+          "redelivery_of": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncomingHookDeliveryPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/IncomingHookDelivery"
+            }
+          },
+          "next_before": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncomingHookQueued": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "delivery_id"
+        ],
+        "properties": {
+          "delivery_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncomingHookFormat": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "format",
+          "header"
+        ],
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "header": {
+            "type": "string"
+          }
+        }
+      },
+      "IncomingHookConfig": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "public_url",
+          "hook_base_url",
+          "max_body_bytes",
+          "log_retention_days",
+          "hmac_formats"
+        ],
+        "properties": {
+          "public_url": {
+            "type": "string",
+            "description": "Public origin of the instance (ANT_PUBLIC_URL); empty when none is configured."
+          },
+          "hook_base_url": {
+            "type": "string",
+            "description": "public_url + /hook/ ; empty when no public URL is configured."
+          },
+          "max_body_bytes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "log_retention_days": {
+            "type": "integer"
+          },
+          "hmac_formats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncomingHookFormat"
+            }
           }
         }
       },

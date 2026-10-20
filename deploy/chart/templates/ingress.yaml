@@ -27,7 +27,7 @@ spec:
                 name: {{ include "ant.name" $ }}
                 port:
                   name: http
-          {{- range list "/console" "/api" "/auth" "/v2" "/feeds" "/mcp" }}
+          {{- range list "/console" "/api" "/auth" "/v2" "/feeds" "/mcp" "/hook" }}
           - path: {{ . }}
             pathType: Prefix
             backend:

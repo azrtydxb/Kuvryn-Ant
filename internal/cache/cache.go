@@ -301,3 +301,25 @@ func (c *Cache) canStale(k Key, old entry) bool {
 	now := c.cfg.Now()
 	return ok && current.generation == old.generation && old.value.Status >= 200 && old.value.Status < 300 && now.Before(old.stale) && signedValid(old.value, now)
 }
+
+// InvalidateMatching removes every cached entry whose key satisfies match and
+// cancels in-flight loads for such keys, so a response that began before the
+// call cannot repopulate the cache. It returns the number of entries removed.
+func (c *Cache) InvalidateMatching(match func(Key) bool) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	n := 0
+	for k := range c.entries {
+		if match(k) {
+			c.remove(k)
+			n++
+		}
+	}
+	for k, f := range c.flights {
+		if match(k) {
+			delete(c.flights, k)
+			f.cancel()
+		}
+	}
+	return n
+}

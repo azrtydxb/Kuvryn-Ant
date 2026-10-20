@@ -1340,3 +1340,51 @@ details > summary {
     z-index: 2;
   }
 }
+
+/* Incoming webhook delivery log: redacted payload preview and action detail. */
+.hook-preview {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--az-border);
+  border-radius: var(--az-radius-md);
+  background: var(--az-raised);
+  color: var(--az-text);
+  font-family: var(--az-font-mono);
+  font-size: var(--az-text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.clamp {
+  display: inline-block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.hook-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+.hook-cell .row {
+  flex-wrap: nowrap;
+  max-width: 100%;
+}
+/* Small screens show the columns that scroll out of view as one extra line. */
+.hook-meta {
+  display: none;
+}
+@media (max-width: 720px) {
+  .hook-meta {
+    display: block;
+  }
+}
