@@ -206,7 +206,7 @@ func openBrowser(ctx context.Context, pool *pgxpool.Pool, runtimeConfig config.C
 	} else {
 		origin = localOrigin(runtimeConfig.PublicURL)
 	}
-	client := &oidclogin.Client{Provider: provider, Sessions: oidclogin.Sessions{DB: pool, InstanceID: instanceID}, Origin: origin, SuccessRedirect: "/console/"}
+	client := &oidclogin.Client{Provider: provider, Sessions: oidclogin.Sessions{DB: pool, InstanceID: instanceID, Keys: runtimeConfig.SecretKeys}, Origin: origin, SuccessRedirect: "/console/"}
 	enterprise.client = client
 	rt := &browserRuntime{client: client, enterprise: enterprise}
 	rt.dyn = &dynamicProviders{

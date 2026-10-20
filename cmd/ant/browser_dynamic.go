@@ -213,7 +213,7 @@ func (d *dynamicProviders) Reload(ctx context.Context) error {
 			state.active = append(state.active, management.ActiveProvider{Kind: string(kind), Source: "database", ProviderID: l.ID})
 		}
 	}
-	client := &oidclogin.Client{Provider: oidcProv, Sessions: oidclogin.Sessions{DB: d.pool, InstanceID: d.instance}, Origin: origin, SuccessRedirect: "/console/"}
+	client := &oidclogin.Client{Provider: oidcProv, Sessions: oidclogin.Sessions{DB: d.pool, InstanceID: d.instance, Keys: d.keys}, Origin: origin, SuccessRedirect: "/console/"}
 	ent.client = client
 	state.client, state.enterprise = client, ent
 	d.live.Store(state)

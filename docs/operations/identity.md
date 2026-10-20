@@ -123,7 +123,7 @@ A self-hosted Zitadel whose Console is served from another path needs `password_
 
 ### Sign-out
 
-`POST /auth/logout` ends the local session. SAML sessions continue to the IdP single logout. OIDC sessions also do RP-initiated logout: when the provider's discovery document advertises an `end_session_endpoint` on the issuer's origin (or among the approved endpoints), the response is `200 {"oidc_logout": "<url>"}` and the console navigates there with `id_token_hint`, `client_id` and `post_logout_redirect_uri=<origin>/console/`. Register `<origin>/console/` as a post-logout redirect URI in the IdP client. Turn it off per provider with "Also sign out at the provider" (`no_end_session`).
+`POST /auth/logout` ends the local session. SAML sessions continue to the IdP single logout. OIDC sessions also do RP-initiated logout: when the provider's discovery document advertises an `end_session_endpoint` on the issuer's origin (or among the approved endpoints), the response is `200 {"oidc_logout": "<url>"}` and the console navigates there with `id_token_hint`, `client_id` and `post_logout_redirect_uri=<origin>/console/`. Register `<origin>/console/` as a post-logout redirect URI in the IdP client. The ID token used for `id_token_hint` is kept encrypted (secrets keyring, bound to the instance and session row), decrypted only when the logout URL is built, and deleted with the session. Turn the redirect off per provider with "Also sign out at the provider" (`no_end_session`).
 
 ## Validating against real providers
 
