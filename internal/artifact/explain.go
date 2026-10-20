@@ -29,7 +29,7 @@ func (p Policies) ExplainRead(ctx context.Context, feed, coordinate string) ([]A
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	rows, err := p.DB.Query(ctx, `SELECT fs.source_id::text,s.name,s.kind,fs.priority,c.id IS NOT NULL,COALESCE(c.namespace,''),
- COALESCE((SELECT count(*) FROM versions v WHERE v.component_id=c.id),0),
+ COALESCE((SELECT count(*) FROM versions v WHERE NOT v.blob_only AND v.component_id=c.id),0),
  (SELECT max(a.created_at) FROM versions v JOIN assets a ON a.version_id=v.id WHERE v.component_id=c.id),
  (SELECT max(a.last_accessed_at) FROM versions v JOIN assets a ON a.version_id=v.id WHERE v.component_id=c.id),
  COALESCE((rc.config->'cache'->>'metadata_ttl_seconds')::int,0),COALESCE((rc.config->'cache'->>'stale_if_error_seconds')::int,0)

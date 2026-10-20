@@ -38,6 +38,9 @@ type PackageVersion struct {
 	// under an image index: the index version and the os/arch it provides.
 	ParentVersion *string `json:"parent_version"`
 	Platform      *string `json:"platform"`
+	// PulledByDigest marks a top-level OCI manifest that no tag names and no
+	// index groups: it was pulled (or pushed) by digest.
+	PulledByDigest bool `json:"pulled_by_digest"`
 }
 type PackageTag struct {
 	Name       string     `json:"name"`
@@ -385,7 +388,7 @@ func (h packageHandlers) listVersions(w http.ResponseWriter, r *http.Request) {
 		packageError(w, r, err)
 		return
 	}
-	rows, err := h.db.Query(ctx, packageComponentSQL+`SELECT v.id::text,v.component_id::text,v.version,v.revision,v.created_at,par.version,par.platform FROM visible o JOIN versions v ON v.component_id=o.id LEFT JOIN LATERAL (SELECT pv.version,NULLIF(vc.platform,'') AS platform FROM version_children vc JOIN versions pv ON pv.id=vc.parent_version_id WHERE vc.component_id=v.component_id AND vc.child_version=v.version ORDER BY pv.created_at,pv.id LIMIT 1) par ON true WHERE o.id=$4 AND (NOT $8 OR par.version IS NULL) AND ($5='' OR v.id>NULLIF($5,'')::uuid) AND starts_with(v.version,$6) ORDER BY v.id LIMIT $7`, p.InstanceID, feed, permissions, component, q.After, q.Prefix, q.Limit+1, q.TopLevel)
+	rows, err := h.db.Query(ctx, packageComponentSQL+`SELECT v.id::text,v.component_id::text,v.version,v.revision,v.created_at,par.version,par.platform,(par.version IS NULL AND NOT EXISTS(SELECT 1 FROM tags t WHERE t.component_id=v.component_id AND t.version_id=v.id) AND EXISTS(SELECT 1 FROM sources s WHERE s.id=o.source_id AND s.format IN ('oci','oci-artifacts'))) FROM visible o JOIN versions v ON v.component_id=o.id AND NOT v.blob_only LEFT JOIN LATERAL (SELECT pv.version,NULLIF(vc.platform,'') AS platform FROM version_children vc JOIN versions pv ON pv.id=vc.parent_version_id WHERE vc.component_id=v.component_id AND vc.child_version=v.version ORDER BY pv.created_at,pv.id LIMIT 1) par ON true WHERE o.id=$4 AND (NOT $8 OR par.version IS NULL) AND ($5='' OR v.id>NULLIF($5,'')::uuid) AND starts_with(v.version,$6) ORDER BY v.id LIMIT $7`, p.InstanceID, feed, permissions, component, q.After, q.Prefix, q.Limit+1, q.TopLevel)
 	if err != nil {
 		packageError(w, r, err)
 		return
@@ -394,7 +397,7 @@ func (h packageHandlers) listVersions(w http.ResponseWriter, r *http.Request) {
 	items := []PackageVersion{}
 	for rows.Next() {
 		var item PackageVersion
-		if err = rows.Scan(&item.ID, &item.ComponentID, &item.Version, &item.Revision, &item.CreatedAt, &item.ParentVersion, &item.Platform); err != nil {
+		if err = rows.Scan(&item.ID, &item.ComponentID, &item.Version, &item.Revision, &item.CreatedAt, &item.ParentVersion, &item.Platform, &item.PulledByDigest); err != nil {
 			packageError(w, r, err)
 			return
 		}

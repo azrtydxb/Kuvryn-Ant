@@ -316,3 +316,36 @@ func TestPackageDiscoveryUnknownNamespaceFailsClosed(t *testing.T) {
 	}
 	expectSourceStatus(t, f.request("GET", "/api/v1/feeds/"+f.feed+"/assets/"+item.Asset, "", "", ""), 404)
 }
+
+// Blob-only versions never appear in the versions listing, and a tag-less
+// top-level OCI manifest is flagged as pulled by digest.
+func TestPackageVersionsHideBlobsAndFlagDigestPulls(t *testing.T) {
+	f := packageHTTPFixture(t)
+	ctx := context.Background()
+	var feed, source string
+	if err := f.db.QueryRow(ctx, `INSERT INTO feeds(instance_id,slug,format) VALUES($1,'images','oci') RETURNING id::text`, f.instance).Scan(&feed); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.db.QueryRow(ctx, `INSERT INTO sources(instance_id,name,kind,format) VALUES($1,'imgsrc','local','oci') RETURNING id::text`, f.instance).Scan(&source); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.Exec(ctx, `INSERT INTO feed_sources(instance_id,feed_id,source_id,priority) VALUES($1,$2,$3,1)`, f.instance, feed, source); err != nil {
+		t.Fatal(err)
+	}
+	manifest := f.seed(source, "team/app", "team", strings.Repeat("a", 64), "a", "")
+	if _, err := f.db.Exec(ctx, `DELETE FROM tags WHERE component_id=$1`, manifest.Component); err != nil {
+		t.Fatal(err)
+	}
+	blobVersion := f.seed(source, "team/app", "team", strings.Repeat("b", 64), "b", "")
+	if _, err := f.db.Exec(ctx, `UPDATE versions SET blob_only=true WHERE id=$1`, blobVersion.Version); err != nil {
+		t.Fatal(err)
+	}
+	w := f.request("GET", "/api/v1/feeds/"+feed+"/packages/"+manifest.Component+"/versions", "", "", "")
+	expectSourceStatus(t, w, 200)
+	var page struct {
+		Items []PackageVersion `json:"items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &page); err != nil || len(page.Items) != 1 || page.Items[0].Version != strings.Repeat("a", 64) || !page.Items[0].PulledByDigest {
+		t.Fatalf("versions: %s", w.Body.String())
+	}
+}

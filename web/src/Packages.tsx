@@ -703,7 +703,11 @@ function PackageDetail({
                       {
                         key: "version",
                         label: "Version",
-                        render: (r: { id: string; version: string }) => (
+                        render: (r: {
+                          id: string;
+                          version: string;
+                          pulled_by_digest?: boolean;
+                        }) => (
                           <>
                             <VersionName version={r.version} copy />
                             <span className="row tight inline">
@@ -720,6 +724,9 @@ function PackageDetail({
                                   {p}
                                 </Badge>
                               ))}
+                              {r.pulled_by_digest && (
+                                <Badge tone="outline">pulled by digest</Badge>
+                              )}
                             </span>
                           </>
                         ),

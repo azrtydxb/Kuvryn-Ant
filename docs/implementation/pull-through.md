@@ -309,3 +309,32 @@ Backfill for data cached or published before this: tags appear on the next
 resolution of each tag; index links are also recorded then. For indexes that are
 not re-resolved, run `ant repair oci-index-children [--dry-run]` (idempotent,
 reads manifest bytes from blob storage, never contacts an upstream).
+
+## OCI blobs are not versions
+
+An OCI blob (image config or layer) is stored, like every artifact, as an asset
+(`blob`) of a digest-named version row of its repository's component. That row
+is the storage carrier that reference checks, access accounting
+(`last_accessed_at`, downloads), retention/pressure eviction and GC operate on.
+It is not a version a person pulls, so `versions.blob_only` (migration 047) marks
+it. The flag is set by a database trigger when a `blob` asset is inserted into a
+version of an `oci`/`oci-artifacts` source (publish, pull-through, replication
+and import alike) and cleared if a manifest asset is later stored under the same
+digest. `version_count`, `latest_version`, `updated_at`, the package versions
+listing and the feed/source version statistics skip blob-only rows. Retention,
+pressure eviction and GC still see them, so blob-only cached data stays
+evictable by idle time and pressure.
+
+A top-level manifest that no tag names and no index groups is returned by the
+versions listing with `pulled_by_digest: true` (the console shows a "pulled by
+digest" badge). Platform is shown for manifests grouped under an index; a
+standalone manifest's platform lives in its config blob, which the management
+plane does not read.
+
+Rows created before migration 047 are classified by
+`ant repair oci-blob-versions [--dry-run] [--feed SLUG]`. It examines digest-named
+OCI versions that carry only `blob` assets, keeps any whose media type is a
+manifest type or whose bytes parse as a manifest/index, and marks the rest
+blob-only. No asset, blob row or byte changes, so timestamps and references are
+untouched. It is idempotent, batched, reports counts per feed and repository, and
+writes one `repair.oci_blob_versions` audit event.
