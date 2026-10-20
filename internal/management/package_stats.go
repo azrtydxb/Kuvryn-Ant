@@ -34,10 +34,10 @@ const statsWindow = 128
 // version_children), never one query per package. Index-grouped children are
 // excluded from the version list and count.
 const packageStatsSQL = `SELECT c.id::text,s.format,c.coordinate,
- (SELECT count(*) FROM versions v WHERE v.component_id=c.id AND NOT EXISTS (SELECT 1 FROM version_children vc WHERE vc.component_id=c.id AND vc.child_version=v.version)),
+ (SELECT count(*) FROM versions v WHERE NOT v.blob_only AND v.component_id=c.id AND NOT EXISTS (SELECT 1 FROM version_children vc WHERE vc.component_id=c.id AND vc.child_version=v.version)),
  (SELECT count(*) FROM tags t WHERE t.component_id=c.id),
- (SELECT max(v.created_at) FROM versions v WHERE v.component_id=c.id),
- COALESCE((SELECT array_agg(x.version ORDER BY x.created_at DESC,x.version) FROM (SELECT v.version,v.created_at FROM versions v WHERE v.component_id=c.id AND NOT EXISTS (SELECT 1 FROM version_children vc WHERE vc.component_id=c.id AND vc.child_version=v.version) ORDER BY v.created_at DESC,v.version LIMIT $2) x),'{}'::text[]),
+ (SELECT max(v.created_at) FROM versions v WHERE NOT v.blob_only AND v.component_id=c.id),
+ COALESCE((SELECT array_agg(x.version ORDER BY x.created_at DESC,x.version) FROM (SELECT v.version,v.created_at FROM versions v WHERE NOT v.blob_only AND v.component_id=c.id AND NOT EXISTS (SELECT 1 FROM version_children vc WHERE vc.component_id=c.id AND vc.child_version=v.version) ORDER BY v.created_at DESC,v.version LIMIT $2) x),'{}'::text[]),
  COALESCE((SELECT array_agg(x.name ORDER BY (x.name='latest') DESC,x.created_at DESC,x.name) FROM (SELECT t.name,v.created_at FROM tags t JOIN versions v ON v.id=t.version_id WHERE t.component_id=c.id ORDER BY (t.name='latest') DESC,v.created_at DESC,t.name LIMIT $2) x),'{}'::text[]),
  COALESCE(rc.config->>'origin','')
  FROM components c JOIN sources s ON s.id=c.source_id AND s.instance_id=c.instance_id

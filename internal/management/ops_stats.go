@@ -64,7 +64,7 @@ func (h opsHandlers) feedStats(w http.ResponseWriter, r *http.Request) {
 		var rows pgx.Rows
 		rows, err = h.db.Query(ctx, `SELECT f.id::text,f.slug,f.format,
  (SELECT count(*) FROM components c JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id),
- (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id),
+ (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE NOT v.blob_only AND fs.feed_id=f.id),
  (SELECT count(*) FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id),
  COALESCE((SELECT sum(size_bytes) FROM blobs b WHERE b.id IN (SELECT a.blob_id FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id)),0)::bigint,
  COALESCE((SELECT sum(value) FROM traffic_buckets t WHERE t.instance_id=f.instance_id AND t.scope='feed' AND t.ref=f.id::text AND t.metric='pulls'),0)::bigint
@@ -111,7 +111,7 @@ func (h opsHandlers) sourceStats(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		rows, qerr := h.db.Query(ctx, `SELECT s.id::text,s.name,s.kind,s.format,
  (SELECT count(*) FROM components c WHERE c.source_id=s.id),
- (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id WHERE c.source_id=s.id),
+ (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id WHERE NOT v.blob_only AND c.source_id=s.id),
  (SELECT count(*) FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id WHERE c.source_id=s.id),
  COALESCE((SELECT sum(size_bytes) FROM blobs b WHERE b.id IN (SELECT a.blob_id FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id WHERE c.source_id=s.id)),0)::bigint,
  (SELECT count(*) FROM feed_sources fs WHERE fs.source_id=s.id),
@@ -233,7 +233,7 @@ func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
 	}
 	crows, cerr := h.db.Query(ctx, `SELECT f.id::text,f.slug,f.format,f.cache_max_idle_seconds,f.cache_max_bytes,
  COALESCE((SELECT sum(b.size_bytes) FROM blobs b WHERE b.id IN (SELECT a.blob_id FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id)),0)::bigint AS bytes,
- (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE fs.feed_id=f.id) AS versions
+ (SELECT count(*) FROM versions v JOIN components c ON c.id=v.component_id JOIN feed_sources fs ON fs.source_id=c.source_id WHERE NOT v.blob_only AND fs.feed_id=f.id) AS versions
  FROM feeds f WHERE f.instance_id=$1 AND f.purpose='cache' ORDER BY bytes DESC,f.slug LIMIT 100`, p.InstanceID)
 	if cerr != nil {
 		Error(w, r, 503, api.ErrorCodeUnavailable, "storage usage unavailable")

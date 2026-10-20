@@ -79,6 +79,13 @@ func TestLoadPackageStats(t *testing.T) {
 		}
 	}
 	_, _ = c1, c2
+	// Config and layer blobs are stored as blob-only versions; they never count.
+	for _, d := range []string{"b101", "b102", "b103"} {
+		bv := version(app, d, time.Hour)
+		if _, err := f.Pool.Exec(ctx, `UPDATE versions SET blob_only=true WHERE id=$1`, bv); err != nil {
+			t.Fatal(err)
+		}
+	}
 	alpine := component(hub, "library/alpine")
 	version(alpine, "ffff", time.Minute)
 	bare := component(local, "team/bare")

@@ -26,7 +26,7 @@ import (
 var errorRing *diagnostics.Ring
 
 const diagnosticsUsage = "usage: ant diagnostics [-o FILE|-]  (default ant-diagnostics-<timestamp>.tar.gz)"
-const repairUsage = "usage: ant repair metadata [--dry-run] | ant repair oci-index-children [--dry-run]"
+const repairUsage = "usage: ant repair metadata [--dry-run] | ant repair oci-index-children [--dry-run] | ant repair oci-blob-versions [--dry-run] [--feed SLUG]"
 
 type storeResolver func(ctx context.Context, domain string) (blob.Store, error)
 
@@ -141,14 +141,19 @@ func diagnosticsCommand(ctx context.Context, logger *slog.Logger, args []string,
 // repairCommand implements `ant repair metadata [--dry-run]`. It refuses to run
 // unless the schema matches this binary, and never migrates.
 func repairCommand(ctx context.Context, logger *slog.Logger, args []string, output io.Writer) int {
-	if len(args) < 1 || (args[0] != "metadata" && args[0] != "oci-index-children") {
+	if len(args) < 1 || (args[0] != "metadata" && args[0] != "oci-index-children" && args[0] != "oci-blob-versions") {
 		logger.Error(repairUsage)
 		return 1
 	}
 	set := flag.NewFlagSet("repair", flag.ContinueOnError)
 	set.SetOutput(io.Discard)
 	dry := set.Bool("dry-run", false, "")
+	feed := set.String("feed", "", "")
 	if set.Parse(args[1:]) != nil || set.NArg() != 0 {
+		logger.Error(repairUsage)
+		return 1
+	}
+	if *feed != "" && args[0] != "oci-blob-versions" {
 		logger.Error(repairUsage)
 		return 1
 	}
@@ -168,6 +173,23 @@ func repairCommand(ctx context.Context, logger *slog.Logger, args []string, outp
 	if err != nil || !state.Current {
 		logger.Error("schema does not match this binary; start the service (or upgrade) first", "applied", state.Applied, "binary", state.Latest)
 		return 1
+	}
+	if args[0] == "oci-blob-versions" {
+		stores, serr := storage.New(cfg.Storage)
+		if serr != nil {
+			logger.Error("storage configuration rejected", "reason", serr)
+			return 1
+		}
+		defer stores.Close()
+		result, rerr := oci.RepairBlobVersions(ctx, pool, stores.Resolve, oci.BlobRepairOptions{DryRun: *dry, Feed: *feed})
+		if code := emit(logger, output, result); code != 0 {
+			return code
+		}
+		if rerr != nil {
+			logger.Error("oci blob version repair failed", "reason", rerr)
+			return 1
+		}
+		return 0
 	}
 	if args[0] == "oci-index-children" {
 		stores, serr := storage.New(cfg.Storage)

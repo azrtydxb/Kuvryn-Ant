@@ -19095,6 +19095,10 @@
             "type": "string",
             "nullable": true,
             "description": "os/architecture[/variant] this grouped manifest provides, or attestation; null when ungrouped."
+          },
+          "pulled_by_digest": {
+            "type": "boolean",
+            "description": "True for a top-level OCI manifest that no tag names and no index groups (pulled or pushed by digest). Blob-only digests (config, layers) are never listed as versions."
           }
         }
       },

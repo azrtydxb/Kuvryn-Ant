@@ -174,6 +174,14 @@ it("shows the package drawer with an install command, short digests and ordered 
             revision: 1,
             created_at: "2024-05-01T00:00:00Z",
           },
+          {
+            id: "v3",
+            component_id: "p1",
+            version: "e".repeat(64),
+            revision: 1,
+            created_at: "2024-05-01T00:00:00Z",
+            pulled_by_digest: true,
+          },
           ...(url.includes("top_level")
             ? []
             : [
@@ -216,6 +224,8 @@ it("shows the package drawer with an install command, short digests and ordered 
   await within(drawer).findByText("sha256:" + "c".repeat(12));
   // The platform manifest is grouped under the index, never a row of its own.
   expect(within(drawer).getByText("linux/arm64/v8")).toBeTruthy();
+  // A tag-less top-level manifest is shown as pulled by digest.
+  expect(within(drawer).getByText("pulled by digest")).toBeTruthy();
   expect(within(drawer).queryByText("sha256:aaaaaaaaaaaa")).toBeNull();
   // The full digest is available on hover.
   expect(drawer.querySelector(`[title="sha256:${index}"]`)).toBeTruthy();
