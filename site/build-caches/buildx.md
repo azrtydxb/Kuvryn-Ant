@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v4
       - id: ant
-        uses: azrtydxb/ant-setup-action@<sha> # v1.1.0
+        uses: azrtydxb/ant-setup-action@<sha> # v1.2.0
         with:
           host: ant.example.com
           build-cache: "true"

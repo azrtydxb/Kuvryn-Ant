@@ -5,22 +5,20 @@
 This page documents the action from its source (`action.yml`, `setup.sh`, `lib.sh`, `build-cache.sh`, `install-sccache.sh` and the `cache-cleanup` and `cache-stats` sub-actions). A fallback that uses a stored token secret instead of the action is at the end.
 
 ::: tip Pin the action
-The examples use `azrtydxb/ant-setup-action@<sha> # v1.1.0`. Replace `<sha>` with the full commit SHA of the release you have reviewed. The tags `v1` and `v1.1.0` currently point at the same commit, which includes the build-cache options and both sub-actions. Pin sub-actions to the same SHA: `azrtydxb/ant-setup-action/cache-stats@<sha>`.
+The examples use `azrtydxb/ant-setup-action@<sha> # v1.2.0`. Replace `<sha>` with the full commit SHA of the release you have reviewed. The tags `v1` and `v1.2.0` currently point at the same commit, which includes the build-cache options, both sub-actions and the host handling described below. Pin sub-actions to the same SHA: `azrtydxb/ant-setup-action/cache-stats@<sha>`.
 :::
 
 ## What the action does
 
-1. **Reachability probe.** It sends an unauthenticated `GET https://<host>/v2/` (with `curl`, `wget` or `node` 18+, whichever exists in the job image). Any non-2xx answer counts as "Ant is not answering" and triggers the fallback.
-2. **OIDC token.** It requests a GitHub OIDC ID token with the audience `https://<host>` from `ACTIONS_ID_TOKEN_REQUEST_URL`.
-3. **Exchange.** It posts the JWT to `POST https://<host>/api/v1/auth/github-oidc/exchange` (`{"token":"<jwt>"}`) and reads `access_token` from the answer. The token is masked with `::add-mask::` and never printed.
+1. **Host.** The `host` input (or the host of `ant-url`). Repositories of the `azrtydxb` organization may omit it and get `ant.azrty.com`; anywhere else a missing host makes the step warn and leave the public registries in place, or fail with `required: "true"`. The action never guesses a server to send a token to.
+2. **OIDC token.** It requests a GitHub OIDC ID token with the audience `https://<host>` from `ACTIONS_ID_TOKEN_REQUEST_URL` (using `curl`, `wget` or `node` 18+, whichever exists in the job image).
+3. **Exchange.** It posts the JWT to `POST https://<host>/api/v1/auth/github-oidc/exchange` (`{"token":"<jwt>"}`) and reads `access_token` from the answer. The token is masked with `::add-mask::` and never printed. The exchange is also the reachability check: there is no separate probe, so an Ant whose `/v2/` answers an anonymous request with `401` works.
 4. **Configuration.** It writes the token and the feed URLs into the job: environment variables through `$GITHUB_ENV` and config files in `$HOME`. It also exports `ANT_HOST` and `ANT_TOKEN` for later steps.
 5. **Build caches** (opt-in): buildx registry cache references and sccache over WebDAV.
 
 The token lives for the `ttl_seconds` of the trust rule that matched (60 to 3600 seconds, default 900). Steps that run after it expires fail authentication, so set the rule's TTL to cover your longest job.
 
-::: warning Ant-side requirement for the probe
-Ant answers an unauthenticated `GET /v2/` with `200` only when the mirror default feed (`ANT_OCI_DEFAULT_FEED`) names an OCI feed with anonymous reads. Otherwise it answers `401` with a Basic challenge, and the action treats that as "not answering" and falls back to the public registries (or fails with `required: "true"`). Configure `ANT_OCI_DEFAULT_FEED` with an anonymous-read mirror feed (see [OCI / Docker](../formats/oci.md) and [Configuration](../reference/configuration.md)) on any instance the action talks to.
-:::
+When the action falls back it says why: no `id-token: write` permission (Dependabot and fork pull requests get none), the host is not reachable, or the exchange was refused (no enabled trust rule matches, or the audience configured in Ant is not `https://<host>`). Versions before 1.2.0 sent an unauthenticated `GET /v2/` first and treated its `401` as "not answering"; on those versions configure `ANT_OCI_DEFAULT_FEED` with an anonymous-read mirror feed (see [OCI / Docker](../formats/oci.md)) or upgrade.
 
 ## Ant-side setup: OIDC trust
 
@@ -181,16 +179,16 @@ sccache is still installed when Ant is unreachable (it then caches on local disk
 
 `azrtydxb/ant-setup-action/cache-cleanup` deletes a branch's caches from the cache feeds with [`DELETE /api/v1/feeds/{id}/cache?prefix=...`](../build-caches/index.md#branch-cleanup), repeating the call while the answer says `truncated`. It exchanges its own OIDC token (needs `id-token: write`) and never fails the workflow when Ant is unreachable unless `required: "true"`.
 
-| Input             | Default                                       | Description                                                                                                      |
-| ----------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `branch`          | `""`                                          | Branch whose caches to delete. Default: the ref of a `delete` event, else the PR head branch, else the ref name. |
-| `repository`      | <span v-pre>`${{ github.repository }}`</span> | `org/repo` whose caches to delete.                                                                               |
-| `host`            | the project's own instance                    | Ant host name. Always set it.                                                                                    |
-| `cache-feed`      | `buildcache`                                  | Slug of the OCI cache feed.                                                                                      |
-| `sccache-feed`    | `sccache`                                     | Slug of the raw cache feed.                                                                                      |
-| `cache-feed-id`   | a UUID of the project's own instance          | Feed ID used when the OCI cache feed cannot be looked up by slug with the CI token. Set it to your feed's ID.    |
-| `sccache-feed-id` | a UUID of the project's own instance          | Same, for the sccache feed.                                                                                      |
-| `required`        | `"false"`                                     | Fail the step when the cleanup could not run.                                                                    |
+| Input             | Default                                         | Description                                                                                                      |
+| ----------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `branch`          | `""`                                            | Branch whose caches to delete. Default: the ref of a `delete` event, else the PR head branch, else the ref name. |
+| `repository`      | <span v-pre>`${{ github.repository }}`</span>   | `org/repo` whose caches to delete.                                                                               |
+| `host`            | `""` (`ant.azrty.com` in azrtydxb repositories) | Ant host name. Set it. `ant-url` is accepted instead.                                                            |
+| `cache-feed`      | `buildcache`                                    | Slug of the OCI cache feed.                                                                                      |
+| `sccache-feed`    | `sccache`                                       | Slug of the raw cache feed.                                                                                      |
+| `cache-feed-id`   | `""`                                            | Optional feed ID, used only when the OCI cache feed cannot be looked up by slug with the CI token.               |
+| `sccache-feed-id` | `""`                                            | Same, for the sccache feed.                                                                                      |
+| `required`        | `"false"`                                       | Fail the step when the cleanup could not run.                                                                    |
 
 | Output           | Description                                                   |
 | ---------------- | ------------------------------------------------------------- |
@@ -201,11 +199,7 @@ Behaviour from the source:
 
 - **Prefixes.** OCI: `<org>/<repo>:<branch>-` (lowercased repository, sanitized branch), which removes `<branch>-<arch>` and `<branch>-<name>-<arch>`. Because it is a prefix, cleaning `feat` also removes the caches of branches named `feat-*`; that is only cache. Raw: `<org>/<repo>/<branch>/`, which removes files only for a repository that put the branch into `SCCACHE_WEBDAV_KEY_PREFIX`; with the default per-repository prefix nothing is removed there.
 - **Safety.** A deleted tag is skipped (tag builds share the default branch cache). The default branch is refused unless you pass `branch` explicitly.
-- **Feed lookup.** It looks up feed IDs with `GET /api/v1/feeds?prefix=<slug>`. A CI token may be allowed to delete from a cache feed without being allowed to read it through the management API; then it falls back to `cache-feed-id` / `sccache-feed-id`, but only when the slug is the default (`buildcache` / `sccache`). With custom slugs and no readable feed, that feed is skipped with a warning.
-
-::: warning Set the feed-ID inputs
-The defaults of `host`, `cache-feed-id` and `sccache-feed-id` refer to the action author's own instance. On any other instance, always set `host`, and set both feed-ID inputs (or grant the CI principal read access to the feeds through the management API).
-:::
+- **Feed lookup.** It looks up feed IDs by slug with `GET /api/v1/feeds?prefix=<slug>`, which works with the scoped CI token. If a server cannot list feeds with that token, an explicit `cache-feed-id` / `sccache-feed-id` is used for the default slugs (`buildcache` / `sccache`); with no ID and no readable feed, that feed is skipped with a warning.
 
 The trust rule that matches the cleanup workflow needs `delete` on both cache feeds.
 
@@ -231,7 +225,7 @@ jobs:
       - uses: actions/setup-go@v5
         with: { go-version: stable }
       - id: ant
-        uses: azrtydxb/ant-setup-action@<sha> # v1.1.0
+        uses: azrtydxb/ant-setup-action@<sha> # v1.2.0
         with:
           host: ant.example.com
           cargo: "false"
@@ -260,7 +254,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v4
       - id: ant
-        uses: azrtydxb/ant-setup-action@<sha> # v1.1.0
+        uses: azrtydxb/ant-setup-action@<sha> # v1.2.0
         with:
           host: ant.example.com
           build-cache: "true"
@@ -296,7 +290,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - id: ant
-        uses: azrtydxb/ant-setup-action@<sha> # v1.1.0
+        uses: azrtydxb/ant-setup-action@<sha> # v1.2.0
         with:
           host: ant.example.com
           build-cache: "true" # sccache: auto installs it because Cargo.toml exists
@@ -304,7 +298,7 @@ jobs:
           npm: "false"
           pip: "false"
       - run: cargo test --locked
-      - uses: azrtydxb/ant-setup-action/cache-stats@<sha> # v1.1.0
+      - uses: azrtydxb/ant-setup-action/cache-stats@<sha> # v1.2.0
         if: always()
         with:
           min-hits: "0"
@@ -327,7 +321,7 @@ jobs:
     if: github.event_name == 'pull_request' || github.event.ref_type == 'branch'
     runs-on: ubuntu-latest
     steps:
-      - uses: azrtydxb/ant-setup-action/cache-cleanup@<sha> # v1.1.0
+      - uses: azrtydxb/ant-setup-action/cache-cleanup@<sha> # v1.2.0
         with:
           host: ant.example.com
           cache-feed-id: <buildcache feed id>
@@ -395,18 +389,17 @@ Ant also accepts the GitHub OIDC JWT itself as a Bearer token or Basic password 
 
 ## Troubleshooting
 
-| Warning in the log                                                    | Cause                                                                                                                                                                 |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `https://<host> is not answering`                                     | The unauthenticated `GET /v2/` did not return 2xx: Ant is down, unreachable from the runner, or has no anonymous-read `ANT_OCI_DEFAULT_FEED` (see the warning above). |
-| `no GitHub OIDC token (add 'permissions: id-token: write'; ...)`      | Missing permission, a Dependabot run or a fork pull request.                                                                                                          |
-| `OIDC exchange at https://<host> was refused (check the trust rules)` | Audience mismatch (it must be `https://<host>`), no matching enabled rule, or a rule whose scopes exceed the principal's grants.                                      |
-| `docker login to <host> failed; the buildx cache will be skipped`     | Login failed after the retries; the build continues without a remote cache.                                                                                           |
-| `sccache is not available; Rust builds compile without it`            | Non-Linux runner, unsupported architecture, download or checksum failure.                                                                                             |
-| `refusing to clean the default branch`                                | `cache-cleanup` ran for the default branch without an explicit `branch`.                                                                                              |
+| Warning in the log                                                        | Cause                                                                                                                            |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `https://<host> is not reachable (the OIDC exchange request failed, ...)` | Ant is down or unreachable from the runner.                                                                                      |
+| `no Ant host configured`                                                  | The `host` (or `ant-url`) input is missing outside an azrtydxb repository.                                                       |
+| `no GitHub OIDC token (add 'permissions: id-token: write'; ...)`          | Missing permission, a Dependabot run or a fork pull request.                                                                     |
+| `https://<host> answered but refused the OIDC exchange (...)`             | Audience mismatch (it must be `https://<host>`), no matching enabled rule, or a rule whose scopes exceed the principal's grants. |
+| `docker login to <host> failed; the buildx cache will be skipped`         | Login failed after the retries; the build continues without a remote cache.                                                      |
+| `sccache is not available; Rust builds compile without it`                | Non-Linux runner, unsupported architecture, download or checksum failure.                                                        |
+| `refusing to clean the default branch`                                    | `cache-cleanup` ran for the default branch without an explicit `branch`.                                                         |
 
 ::: warning Gap
 
-- The action's reachability probe depends on an anonymous `GET /v2/`; Ant answers it with `200` only when `ANT_OCI_DEFAULT_FEED` (or the mirror map for the request) names an anonymous-read OCI feed. The repository does not document this dependency elsewhere.
-- The action's `host` and `cache-feed-id` / `sccache-feed-id` defaults point at the author's own instance; there is no neutral default.
 - The action comments that Ant's Go sumdb proxy returns `404` for some `/lookup` requests, which is why it sends checksum lookups straight to `sum.golang.org`. That behaviour is not covered by Ant's own documentation.
   :::
