@@ -120,3 +120,21 @@ func TestCancellationStopsRetry(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestFetchSendsUserAgent(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { got = r.Header.Get("User-Agent") }))
+	defer srv.Close()
+	f, err := New(Config{Origin: srv.URL, AllowHTTP: true, AllowPrivate: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := f.Fetch(context.Background(), http.MethodGet, srv.URL+"/x", http.Header{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if got != UserAgent {
+		t.Fatalf("user agent = %q", got)
+	}
+}
