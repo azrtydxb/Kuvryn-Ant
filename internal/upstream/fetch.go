@@ -146,10 +146,24 @@ func New(c Config) (*Fetcher, error) {
 	tr.MaxConnsPerHost = 8
 	tr.MaxIdleConns = 16
 	tr.MaxIdleConnsPerHost = 4
-	f.client = &http.Client{Transport: tr, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	f.client = &http.Client{Transport: userAgentTransport{tr}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	return f, nil
 }
-func (f *Fetcher) Close() { f.client.CloseIdleConnections() }
+
+// UserAgent identifies Ant to upstream registries. Go's default
+// "Go-http-client/x" agent is throttled with 429 by Maven Central's CDN.
+const UserAgent = "kuvryn-ant (+https://github.com/azrtydxb/Kuvryn-Ant)"
+
+// userAgentTransport sets UserAgent on every upstream request.
+type userAgentTransport struct{ base *http.Transport }
+
+func (t userAgentTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	r = r.Clone(r.Context())
+	r.Header.Set("User-Agent", UserAgent)
+	return t.base.RoundTrip(r)
+}
+func (t userAgentTransport) CloseIdleConnections() { t.base.CloseIdleConnections() }
+func (f *Fetcher) Close()                          { f.client.CloseIdleConnections() }
 func (f *Fetcher) permitted(ctx context.Context, u *url.URL) error {
 	if !f.allowed[origin(u)] {
 		return ErrPolicy
