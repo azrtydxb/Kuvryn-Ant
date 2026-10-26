@@ -86,11 +86,13 @@ export type SourceHealthPage = { "items": Array<SourceHealth>; "page": PageInfo 
 export type SourceTestResult = { "source_id": string; "reachable": boolean; "authenticated": boolean; "status_code"?: number; "latency_ms": number; "error"?: string };
 export type FeedStats = { "feed_id": string; "slug": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "pulls": number; "source_ids"?: Array<string> };
 export type FeedStatsPage = { "items": Array<FeedStats>; "page": PageInfo };
-export type SourceStats = { "source_id": string; "name": string; "kind": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "attached_feeds": number; "cache_hits": number; "cache_misses": number };
+export type SourceStats = { "source_id": string; "name": string; "kind": string; "format": string; "packages": number; "versions": number; "assets": number; "bytes": number; "attached_feeds": number; "cache_hits": number; "cache_misses": number; "cache_revalidations": number };
+export type SourceCacheStats = { "source_id": string; "name": string; "format": string; "cache_hits": number; "cache_revalidations": number; "cache_misses": number; "cache_hit_ratio"?: number };
+export type CacheStats = { "from": string; "to": string; "items": Array<SourceCacheStats>; "totals": SourceCacheStats };
 export type SourceStatsPage = { "items": Array<SourceStats>; "page": PageInfo };
 export type DomainUsage = { "domain_id": string; "name": string; "blob_count": number; "blob_bytes": number };
 export type StorageUsage = { "backend": string; "blob_count": number; "blob_bytes": number; "logical_bytes": number; "dedup_saved_bytes": number; "unreferenced_bytes": number; "gc_candidates": number; "staging_bytes"?: number; "domains": Array<DomainUsage>; "measured_at": string; "reclaimable_bytes"?: number; "in_grace_bytes"?: number; "pressure"?: PressureStatus; "cache_feeds": Array<CacheFeedUsage> };
-export type TrafficPoint = { "bucket": string; "pulls": number; "publishes": number; "bytes_out": number; "bytes_in": number; "cache_hits": number; "cache_misses": number; "errors": number; "cache_hit_ratio"?: number };
+export type TrafficPoint = { "bucket": string; "pulls": number; "publishes": number; "bytes_out": number; "bytes_in": number; "cache_hits": number; "cache_misses": number; "cache_revalidations": number; "errors": number; "cache_hit_ratio"?: number };
 export type TrafficSeries = { "scope": "instance" | "feed" | "source"; "ref"?: string; "from": string; "to": string; "step_seconds": number; "points": Array<TrafficPoint>; "totals": TrafficPoint };
 export type Provenance = { "asset_id": string; "coordinate": string; "version": string; "asset_key": string; "source_id": string; "feed_id"?: string; "origin": "local" | "remote" | "replica"; "created_at": string; "uploader_id"?: string; "uploader_subject"?: string; "token_id"?: string; "matched_rule"?: string; "digest": string; "verification": "verified" | "integrity_failure"; "verification_detail": string; "downloads": number; "last_downloaded_at"?: string };
 export type WebhookRate = { "delivered": number; "failed": number; "pending": number; "success_rate"?: number };
@@ -455,6 +457,7 @@ listSourceHealth: { body: undefined; response: SourceHealthPage };
 getSourceHealth: { body: undefined; response: SourceHealth };
 testSource: { body: undefined; response: SourceTestResult };
 listFeedStats: { body: undefined; response: FeedStatsPage };
+getCacheStats: { body: undefined; response: CacheStats };
 listSourceStats: { body: undefined; response: SourceStatsPage };
 getStorageUsage: { body: undefined; response: StorageUsage };
 getTrafficMetrics: { body: undefined; response: TrafficSeries };
@@ -941,6 +944,11 @@ export const routes = {
   },
   "listFeedStats": {
     "path": "/api/v1/stats/feeds",
+    "method": "GET",
+    "idempotent": false
+  },
+  "getCacheStats": {
+    "path": "/api/v1/stats/cache",
     "method": "GET",
     "idempotent": false
   },

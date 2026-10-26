@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -519,5 +520,75 @@ func TestRemoteRuntimeInvalidateMetadataByName(t *testing.T) {
 	// No names drops everything of the source.
 	if n := manager.InvalidateMetadata(source, nil); n != 3 {
 		t.Fatalf("dropped %d, want 3", n)
+	}
+}
+
+func TestRemoteRuntimeCacheOutcomes(t *testing.T) {
+	pool, boot := runtimeFixture(t)
+	origin := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/index.json":
+			if r.Header.Get("If-None-Match") == `"v1"` {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+			w.Header().Set("ETag", `"v1"`)
+			io.WriteString(w, `{}`)
+		case "/blob":
+			io.WriteString(w, "bytes")
+		default:
+			w.WriteHeader(404)
+		}
+	}))
+	defer origin.Close()
+	source := insertRemoteSource(t, pool, boot.InstanceID, "runtime-outcomes")
+	c := remoteconfig.DefaultConfig(origin.URL)
+	c.CARef = "runtime-ca"
+	c.AllowPrivate = true
+	c.TimeoutSeconds = 5
+	c.Cache.MetadataTTLSeconds = 1
+	insertConfig(t, pool, boot.InstanceID, source, 1, c)
+	keys, err := secrets.New("v1", map[string][]byte{"v1": make([]byte, 32)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager, err := New(pool, boot.InstanceID, keys, Options{CAFiles: map[string]string{"runtime-ca": writeCAPEM(t, origin)}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
+	var mu sync.Mutex
+	got := map[CacheOutcome]int{}
+	manager.SetCacheObserver(func(s string, o CacheOutcome) {
+		if s != source {
+			t.Errorf("observed source %q", s)
+		}
+		mu.Lock()
+		got[o]++
+		mu.Unlock()
+	})
+	meta := func(path string) {
+		t.Helper()
+		if _, err := manager.Metadata(context.Background(), Request{SourceID: source, AuthorizationDomain: "d", Path: path}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	meta("index.json") // transfer
+	meta("index.json") // fresh
+	time.Sleep(1100 * time.Millisecond)
+	meta("index.json") // 304
+	meta("missing")    // not counted
+	response, err := manager.Fetch(context.Background(), Request{SourceID: source, AuthorizationDomain: "d", Path: "blob"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response, err = manager.Fetch(context.Background(), Request{SourceID: source, AuthorizationDomain: "d", Path: "gone"}); err == nil {
+		response.Body.Close()
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if got[CacheMiss] != 2 || got[CacheHit] != 1 || got[CacheRevalidated] != 1 {
+		t.Fatalf("outcomes %v", got)
 	}
 }

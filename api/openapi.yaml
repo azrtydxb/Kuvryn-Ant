@@ -5133,6 +5133,74 @@
         }
       }
     },
+    "/api/v1/stats/cache": {
+      "get": {
+        "operationId": "getCacheStats",
+        "description": "Cache efficiency per remote source the caller can read over a window (default the last 24 hours), lowest hit ratio first.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Server-generated correlation identifier",
+                "schema": {
+                  "type": "string",
+                  "minLength": 16
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CacheStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error"
+          },
+          "500": {
+            "$ref": "#/components/responses/Error"
+          },
+          "503": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/stats/sources": {
       "get": {
         "operationId": "listSourceStats",
@@ -22801,7 +22869,8 @@
           "bytes",
           "attached_feeds",
           "cache_hits",
-          "cache_misses"
+          "cache_misses",
+          "cache_revalidations"
         ],
         "properties": {
           "source_id": {
@@ -22844,6 +22913,83 @@
           "cache_misses": {
             "type": "integer",
             "format": "int64"
+          },
+          "cache_revalidations": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upstream 304 Not Modified answers served from the cached copy."
+          }
+        }
+      },
+      "SourceCacheStats": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "One remote source's cache efficiency over a window. A hit is served from Ant (a stored artifact or fresh cached metadata), a revalidation is an upstream 304, a miss is a transfer from upstream. Not-found answers and upstream errors are not counted.",
+        "required": [
+          "source_id",
+          "name",
+          "format",
+          "cache_hits",
+          "cache_revalidations",
+          "cache_misses"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "cache_hits": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_revalidations": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upstream 304 Not Modified answers served from the cached copy."
+          },
+          "cache_misses": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cache_hit_ratio": {
+            "type": "number",
+            "description": "(hits + revalidations) / all lookups; absent without lookups."
+          }
+        }
+      },
+      "CacheStats": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "items",
+          "totals"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 500,
+            "description": "Remote sources the caller can read, lowest ratio first; sources without lookups last.",
+            "items": {
+              "$ref": "#/components/schemas/SourceCacheStats"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/SourceCacheStats"
           }
         }
       },
@@ -22986,6 +23132,7 @@
           "bytes_in",
           "cache_hits",
           "cache_misses",
+          "cache_revalidations",
           "errors"
         ],
         "properties": {
@@ -23017,12 +23164,18 @@
             "type": "integer",
             "format": "int64"
           },
+          "cache_revalidations": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Upstream 304 Not Modified answers served from the cached copy."
+          },
           "errors": {
             "type": "integer",
             "format": "int64"
           },
           "cache_hit_ratio": {
-            "type": "number"
+            "type": "number",
+            "description": "Share of remote lookups served without transferring from upstream: (hits + revalidations) / all lookups. Absent without lookups."
           }
         }
       },

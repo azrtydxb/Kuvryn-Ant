@@ -24,7 +24,7 @@ func (s *Service) Lookup(ctx context.Context, p identity.Principal, r Publicatio
 	result := Record{}
 	err := s.DB.QueryRow(ctx, `WITH owner AS (
  SELECT c.id,c.source_id,c.namespace FROM feed_sources fs JOIN components c ON c.source_id=fs.source_id AND c.instance_id=fs.instance_id WHERE fs.instance_id=$1 AND fs.feed_id=$2 AND c.coordinate=$3 ORDER BY fs.priority LIMIT 1
- ) SELECT a.id::text,o.source_id::text,v.id::text,b.dedup_domain_id::text,a.media_type,b.digest,b.size_bytes FROM owner o JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id JOIN blobs b ON b.id=a.blob_id WHERE v.version=$4 AND a.asset_key=$5 AND o.namespace=$6`, p.InstanceID, r.FeedID, r.Coordinate, r.Version, r.AssetKey, r.Namespace).Scan(&result.ID, &result.SourceID, &result.VersionID, &result.DomainID, &result.MediaType, &result.Info.Digest, &result.Info.Size)
+ ) SELECT a.id::text,o.source_id::text,v.id::text,b.dedup_domain_id::text,a.media_type,b.digest,b.size_bytes,s.kind='remote' FROM owner o JOIN sources s ON s.id=o.source_id JOIN versions v ON v.component_id=o.id JOIN assets a ON a.version_id=v.id JOIN blobs b ON b.id=a.blob_id WHERE v.version=$4 AND a.asset_key=$5 AND o.namespace=$6`, p.InstanceID, r.FeedID, r.Coordinate, r.Version, r.AssetKey, r.Namespace).Scan(&result.ID, &result.SourceID, &result.VersionID, &result.DomainID, &result.MediaType, &result.Info.Digest, &result.Info.Size, &result.Remote)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Record{}, ErrNotFound
 	}
@@ -68,6 +68,9 @@ func (s *Service) Open(ctx context.Context, p identity.Principal, r Publication,
 	}
 	if s.Downloads != nil {
 		s.Downloads.Download(record.ID)
+	}
+	if record.Remote && offset == 0 && s.CacheHits != nil {
+		s.CacheHits.Cache(record.SourceID, true)
 	}
 	return record, reader, nil
 }

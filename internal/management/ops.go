@@ -131,6 +131,7 @@ func RegisterOperations(mux *http.ServeMux, d OpsDeps) {
 		"POST /api/v1/sources/{target}":                 h.sourceAction,
 		"GET /api/v1/stats/feeds":                       h.feedStats,
 		"GET /api/v1/stats/sources":                     h.sourceStats,
+		"GET /api/v1/stats/cache":                       h.cacheStats,
 		"GET /api/v1/storage/usage":                     h.storageUsage,
 		"GET /api/v1/storage/migration":                 h.storageMigrationStatus,
 		"GET /api/v1/storage/migrations":                h.listStorageJobs,

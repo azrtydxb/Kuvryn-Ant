@@ -47,6 +47,9 @@ type Service struct {
 	Remote RemoteBackend
 	// Downloads, when set, counts successful reads per asset (cheap, in-memory).
 	Downloads interface{ Download(assetID string) }
+	// CacheHits, when set, counts a read served from storage for an artifact
+	// cached under a remote source: a pull-through hit that never left Ant.
+	CacheHits interface{ Cache(source string, hit bool) }
 	// MaxMaterializeBytes bounds one cached upstream artifact; zero means 8 GiB.
 	MaxMaterializeBytes int64
 	// Changed, when set, is called after a delete/unlist/relist commits so derived
@@ -86,6 +89,8 @@ type Record struct {
 	ID, SourceID, VersionID, DomainID, MediaType string
 	Info                                         blob.Info
 	Replayed                                     bool
+	// Remote reports that the owning source is a remote (pull-through) source.
+	Remote bool
 }
 
 func bounded(s string, n int) bool {

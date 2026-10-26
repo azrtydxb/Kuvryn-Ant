@@ -510,3 +510,56 @@ func TestAllRoutesRegisterTogether(t *testing.T) {
 	RegisterConsole(mux, o.db, codec)
 	RegisterOperations(mux, o.deps)
 }
+
+func TestCacheStatsPerRemote(t *testing.T) {
+	o := newOpsFixture(t)
+	ctx := context.Background()
+	good := o.source("good-remote", "remote", "raw")
+	poor := o.source("poor-remote", "remote", "raw")
+	idle := o.source("idle-remote", "remote", "raw")
+	local := o.source("local-src", "local", "raw")
+	tr := observability.NewTraffic()
+	for i := 0; i < 8; i++ {
+		tr.CacheMetric(good.ID, observability.MetricCacheHits)
+	}
+	tr.CacheMetric(good.ID, observability.MetricCacheRevalidations)
+	tr.CacheMetric(good.ID, observability.MetricCacheMisses)
+	tr.CacheMetric(poor.ID, observability.MetricCacheHits)
+	tr.CacheMetric(poor.ID, observability.MetricCacheMisses)
+	tr.CacheMetric(poor.ID, observability.MetricCacheMisses)
+	tr.CacheMetric(poor.ID, observability.MetricCacheMisses)
+	tr.CacheMetric(local.ID, observability.MetricCacheHits)
+	if err := tr.Flush(ctx, o.db, o.instance); err != nil {
+		t.Fatal(err)
+	}
+	cs := decodeJSON[CacheStats](t, o.get("/api/v1/stats/cache"))
+	if len(cs.Items) != 3 {
+		t.Fatalf("remote sources only: %+v", cs.Items)
+	}
+	if cs.Items[0].SourceID != poor.ID || cs.Items[1].SourceID != good.ID || cs.Items[2].SourceID != idle.ID {
+		t.Fatalf("worst first, idle last: %+v", cs.Items)
+	}
+	if r := cs.Items[0].CacheHitRatio; r == nil || *r != 0.25 {
+		t.Fatalf("poor ratio %+v", cs.Items[0])
+	}
+	if g := cs.Items[1]; g.CacheHits != 8 || g.CacheRevalidations != 1 || g.CacheMisses != 1 || g.CacheHitRatio == nil || *g.CacheHitRatio != 0.9 {
+		t.Fatalf("good %+v", g)
+	}
+	if cs.Items[2].CacheHitRatio != nil {
+		t.Fatalf("idle ratio %+v", cs.Items[2])
+	}
+	if tot := cs.Totals; tot.CacheHits != 9 || tot.CacheRevalidations != 1 || tot.CacheMisses != 4 {
+		t.Fatalf("totals %+v", tot)
+	}
+	// A window before the traffic sees nothing.
+	old := time.Now().Add(-48 * time.Hour).UTC()
+	q := "?from=" + old.Format(time.RFC3339) + "&to=" + old.Add(time.Hour).Format(time.RFC3339)
+	if cs = decodeJSON[CacheStats](t, o.get("/api/v1/stats/cache"+q)); cs.Totals.CacheHitRatio != nil {
+		t.Fatalf("old window %+v", cs.Totals)
+	}
+	expectSourceStatus(t, o.get("/api/v1/stats/cache?from=nope"), 400)
+	inst := decodeJSON[TrafficSeries](t, o.get("/api/v1/metrics/traffic"))
+	if inst.Totals.CacheRevalidations != 1 || inst.Totals.CacheHitRatio == nil {
+		t.Fatalf("instance traffic %+v", inst.Totals)
+	}
+}

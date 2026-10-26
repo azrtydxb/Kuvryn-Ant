@@ -138,7 +138,7 @@ type Manager struct {
 	requests, network chan struct{}
 	closeOnce         sync.Once
 	health            *Health
-	cacheObserver     func(string, bool)
+	cacheObserver     func(string, CacheOutcome)
 }
 
 func (*Manager) String() string   { return "remoteruntime.Manager{redacted}" }
@@ -532,7 +532,7 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 	if representation == "" {
 		representation = "*/*"
 	}
-	loaded := false
+	loaded, revalidated := false, false
 	value, err := e.cache.Revalidate(ctx, cache.Key{Source: r.SourceID, Identity: r.identity(), Representation: representation, AuthorizationDomain: r.AuthorizationDomain}, cache.GetOptions{AllowStale: r.AllowStale}, func(ctx context.Context, previous *cache.Value) (cache.Value, error) {
 		if err := m.loadStart(e); err != nil {
 			return cache.Value{}, err
@@ -556,6 +556,7 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 		if response.StatusCode != 200 && response.StatusCode != 304 && response.StatusCode != 404 {
 			return cache.Value{}, ErrUnavailable
 		}
+		revalidated = response.StatusCode == 304
 		if response.ContentLength > e.metadataLimit {
 			return cache.Value{}, ErrTooLarge
 		}
@@ -574,7 +575,16 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 	if ctx.Err() != nil {
 		return cache.Value{}, ctx.Err()
 	}
-	m.observeCache(r.SourceID, !loaded)
+	if value.Status == 200 {
+		switch {
+		case !loaded:
+			m.observeCache(r.SourceID, CacheHit)
+		case revalidated:
+			m.observeCache(r.SourceID, CacheRevalidated)
+		default:
+			m.observeCache(r.SourceID, CacheMiss)
+		}
+	}
 	return value, nil
 }
 
@@ -636,13 +646,15 @@ func (m *Manager) Fetch(ctx context.Context, r Request) (*Response, error) {
 	started := time.Now()
 	response, err := e.fetcher.Fetch(ctx, http.MethodGet, target(e, r), requestHeaders(r, nil))
 	headerTimer.Stop()
-	m.observeCache(r.SourceID, false)
 	if err != nil {
 		m.health.Record(r.SourceID, 0, time.Since(started), err)
 		finish()
 		return nil, safeError(err)
 	}
 	m.health.Record(r.SourceID, response.StatusCode, time.Since(started), nil)
+	if response.StatusCode == http.StatusOK {
+		m.observeCache(r.SourceID, CacheMiss)
+	}
 	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusGone {
 		e.negativeStore(negative)
 	}

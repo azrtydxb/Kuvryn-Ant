@@ -779,6 +779,37 @@ details > summary {
   justify-content: center;
   min-width: 0;
 }
+.ov-kpi--action {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ov-kpi--action:hover {
+  border-color: var(--az-border-strong);
+}
+.ov-kpi--action:focus-visible {
+  outline: 2px solid var(--az-primary-bg);
+  outline-offset: 2px;
+}
+.ov-ratio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.ov-ratio__bar {
+  width: 72px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--az-border);
+  overflow: hidden;
+}
+.ov-ratio__bar span {
+  display: block;
+  height: 100%;
+  background: var(--az-primary-bg);
+}
 .ov-kpi__label {
   display: flex;
   align-items: center;
