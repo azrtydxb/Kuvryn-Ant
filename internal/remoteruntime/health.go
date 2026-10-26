@@ -341,14 +341,26 @@ func probeOutcome(format string, status int, challenge bool) probeDecision {
 // Health returns the manager's recorder.
 func (m *Manager) Health() *Health { return m.health }
 
-// SetCacheObserver installs a callback invoked once per metadata lookup (hit
-// reports whether it was served without contacting the upstream) and once per
-// artifact fetch (always a miss). It must be cheap and non-blocking and must be
-// set before serving starts.
-func (m *Manager) SetCacheObserver(f func(source string, hit bool)) { m.cacheObserver = f }
+// CacheOutcome classifies one remote lookup for cache-efficiency metrics.
+type CacheOutcome int
 
-func (m *Manager) observeCache(source string, hit bool) {
+const (
+	// CacheHit was answered from the metadata cache without contacting upstream.
+	CacheHit CacheOutcome = iota
+	// CacheRevalidated contacted upstream, which answered 304 Not Modified.
+	CacheRevalidated
+	// CacheMiss transferred a document or artifact from upstream.
+	CacheMiss
+)
+
+// SetCacheObserver installs a callback invoked once per successful metadata
+// lookup and once per artifact fetch that returns content. Not-found answers
+// and upstream failures are not cache outcomes and are not reported. It must be
+// cheap and non-blocking and must be set before serving starts.
+func (m *Manager) SetCacheObserver(f func(source string, outcome CacheOutcome)) { m.cacheObserver = f }
+
+func (m *Manager) observeCache(source string, outcome CacheOutcome) {
 	if f := m.cacheObserver; f != nil {
-		f(source, hit)
+		f(source, outcome)
 	}
 }

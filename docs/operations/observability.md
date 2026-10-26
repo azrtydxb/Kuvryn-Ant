@@ -47,6 +47,27 @@ token, and the console health page shows the same data. Per-feed/source traffic
 and upstream health are available through `/api/v1/metrics/traffic` and
 `/api/v1/source-health`.
 
+### Remote cache efficiency
+
+Every successful lookup on a remote source is counted once, per source:
+
+- **hit**: served from Ant, either an artifact already in storage or metadata
+  still within its TTL;
+- **revalidation**: the metadata TTL expired, upstream answered `304 Not Modified`
+  and the cached copy was served;
+- **miss**: the content was transferred from upstream.
+
+Not-found answers and upstream errors are not counted, so ecosystems that probe
+many paths (Go module lookups) don't distort the ratio. The hit ratio is
+(hits + revalidations) / all lookups. `GET /api/v1/stats/cache?from=&to=` returns
+it per remote source for a window (default the last 24 hours), lowest first;
+the console opens the same breakdown from the Overview "Cache hit ratio" tile.
+A low ratio with many revalidations is healthy (short metadata TTL); a low ratio
+with many misses means artifacts are fetched again, typically because retention
+or storage-pressure eviction removed them, or because clients request mutable
+tags. Counters recorded before this definition (artifact reads from storage were
+not counted as hits) remain in historical totals.
+
 ## Logs
 
 Logs are JSON on stderr (`log/slog`). Every request produces one

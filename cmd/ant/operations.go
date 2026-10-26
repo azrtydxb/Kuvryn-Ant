@@ -23,6 +23,7 @@ import (
 	"github.com/azrtydxb/Kuvryn-Ant/internal/management"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/observability"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/prewarm"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/remoteruntime"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/retention"
 	"github.com/azrtydxb/Kuvryn-Ant/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,6 +36,13 @@ const (
 	// instance takes to apply here.
 	limitsRefreshInterval = 10 * time.Second
 )
+
+// cacheMetrics maps remote lookup outcomes onto traffic counters.
+var cacheMetrics = map[remoteruntime.CacheOutcome]string{
+	remoteruntime.CacheHit:         observability.MetricCacheHits,
+	remoteruntime.CacheRevalidated: observability.MetricCacheRevalidations,
+	remoteruntime.CacheMiss:        observability.MetricCacheMisses,
+}
 
 // operations binds the operational-visibility runtime (traffic counters,
 // upstream health, readiness probes) to the serving instance.
@@ -57,8 +65,11 @@ func newOperations(pool *pgxpool.Pool, r *artifactRuntime, cfg config.Config) *o
 	if r != nil {
 		ops.limiter = &limits.Limiter{DB: pool, InstanceID: r.instanceID, Resolve: limits.TokenResolver(identity.Tokens{DB: pool}), APIError: management.Error, Logger: slog.Default()}
 		r.service.Downloads = ops.traffic
+		r.service.CacheHits = ops.traffic
 		if r.remote != nil {
-			r.remote.SetCacheObserver(ops.traffic.Cache)
+			r.remote.SetCacheObserver(func(source string, outcome remoteruntime.CacheOutcome) {
+				ops.traffic.CacheMetric(source, cacheMetrics[outcome])
+			})
 			// Prewarm requests go to the adapters directly (no listener middleware),
 			// as the principal that owns the run, so every adapter applies its own
 			// authorization, ownership and integrity rules.

@@ -10,12 +10,14 @@ import {
   Icon,
   LineChart,
   Meter,
+  Modal,
   SegmentedControl,
   Table,
   Tabs,
 } from "./ds/bundle";
 import type {
   AuditEvent,
+  SourceCacheStats,
   ComponentStatus,
   Feed,
   ReplicationStatusEntry,
@@ -71,6 +73,38 @@ function Kpi({
   unit,
   sub,
   icon,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  sub: string;
+  icon: string;
+  onClick?: () => void;
+}) {
+  if (onClick)
+    return (
+      <button
+        type="button"
+        className="az-card ov-kpi ov-kpi--action"
+        onClick={onClick}
+      >
+        <KpiBody label={label} value={value} unit={unit} sub={sub} icon={icon} />
+      </button>
+    );
+  return (
+    <div className="az-card ov-kpi">
+      <KpiBody label={label} value={value} unit={unit} sub={sub} icon={icon} />
+    </div>
+  );
+}
+
+function KpiBody({
+  label,
+  value,
+  unit,
+  sub,
+  icon,
 }: {
   label: string;
   value: string;
@@ -79,7 +113,7 @@ function Kpi({
   icon: string;
 }) {
   return (
-    <div className="az-card ov-kpi">
+    <>
       <div className="ov-kpi__label">
         <Icon name={icon} size={14} />
         {label}
@@ -91,7 +125,96 @@ function Kpi({
       <div className="ov-kpi__sub" title={sub}>
         {sub}
       </div>
-    </div>
+    </>
+  );
+}
+
+const pct = (r?: number) => (r == null ? "—" : `${(r * 100).toFixed(1)}%`);
+
+function CacheBreakdown({
+  client,
+  go,
+  range,
+  from,
+  to,
+  onClose,
+}: {
+  client: Client;
+  go: Go;
+  range: string;
+  from: string;
+  to: string;
+  onClose: () => void;
+}) {
+  const stats = useOptionalCall(client, "getCacheStats", {
+    query: { from, to },
+  });
+  return (
+    <Modal
+      title="Cache hit ratio per remote"
+      description={`Last ${range}. Served from Ant or revalidated with a 304, versus downloaded from upstream. Not-found answers and upstream errors are not counted.`}
+      onClose={onClose}
+      width={760}
+      actions={
+        <Button variant="secondary" onClick={onClose}>
+          Close
+        </Button>
+      }
+    >
+      {stats.state === "loading" && <Loading what="cache statistics" />}
+      {stats.state === "unavailable" && (
+        <Unavailable what="Cache statistics" />
+      )}
+      {stats.state === "error" && <Failure error={stats.error} />}
+      {stats.state === "ready" &&
+        (stats.data.items.length === 0 ? (
+          <p className="muted">No remote sources.</p>
+        ) : (
+          <Table
+            onRowClick={(r: SourceCacheStats) => {
+              onClose();
+              go("sources", { source: r.source_id });
+            }}
+            columns={[
+              { key: "name", label: "Source" },
+              { key: "format", label: "Format" },
+              {
+                key: "ratio",
+                label: "Hit ratio",
+                render: (r: SourceCacheStats) => (
+                  <span className="ov-ratio">
+                    <span className="ov-ratio__bar">
+                      <span
+                        style={{
+                          width: `${Math.round((r.cache_hit_ratio ?? 0) * 100)}%`,
+                        }}
+                      />
+                    </span>
+                    {pct(r.cache_hit_ratio)}
+                  </span>
+                ),
+              },
+              {
+                key: "hits",
+                label: "Served",
+                render: (r: SourceCacheStats) => count(r.cache_hits),
+              },
+              {
+                key: "reval",
+                label: "Revalidated",
+                render: (r: SourceCacheStats) => count(r.cache_revalidations),
+              },
+              {
+                key: "misses",
+                label: "Downloaded",
+                render: (r: SourceCacheStats) => count(r.cache_misses),
+              },
+            ]}
+            rows={stats.data.items}
+            rowKey="source_id"
+          />
+        ))}
+    </Modal>
   );
 }
 
@@ -138,6 +261,7 @@ export function Overview({
   const ops = useOpsMaps(client);
   const [range, setRange] = useState<keyof typeof ranges>("24h");
   const [tab, setTab] = useState("activity");
+  const [cacheOpen, setCacheOpen] = useState(false);
   const window = useMemo(() => {
     const to = new Date();
     return {
@@ -293,7 +417,8 @@ export function Overview({
           icon="zap"
           value={hit != null ? (hit * 100).toFixed(1) : "—"}
           unit={hit != null ? "%" : undefined}
-          sub={t ? `remote sources, ${range}` : "Metrics not available"}
+          sub={t ? `remote sources, ${range} · per remote` : "Metrics not available"}
+          onClick={() => setCacheOpen(true)}
         />
         <Kpi
           label="Failing sources"
@@ -657,6 +782,16 @@ export function Overview({
           )}
         </Card>
       </div>
+      {cacheOpen && (
+        <CacheBreakdown
+          client={client}
+          go={go}
+          range={range}
+          from={window.from}
+          to={window.to}
+          onClose={() => setCacheOpen(false)}
+        />
+      )}
     </div>
   );
 }

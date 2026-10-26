@@ -19,7 +19,7 @@ const (
 	retainBuckets  = 400 * 24 * time.Hour
 )
 
-// Traffic metric names (see migration 022 traffic_buckets.metric).
+// Traffic metric names (see migrations 022 and 059, traffic_buckets.metric).
 const (
 	MetricPulls       = "pulls"
 	MetricPublishes   = "publishes"
@@ -27,7 +27,10 @@ const (
 	MetricBytesIn     = "bytes_in"
 	MetricCacheHits   = "cache_hits"
 	MetricCacheMisses = "cache_misses"
-	MetricErrors      = "errors"
+	// MetricCacheRevalidations counts upstream 304s: the cached copy was served
+	// after a conditional request, without transferring it again.
+	MetricCacheRevalidations = "cache_revalidations"
+	MetricErrors             = "errors"
 )
 
 type trafficKey struct {
@@ -76,14 +79,20 @@ func (t *Traffic) Download(assetID string) {
 	t.mu.Unlock()
 }
 
-// Cache counts a remote-source cache outcome for a source.
+// Cache counts a remote-source cache hit or miss for a source.
 func (t *Traffic) Cache(source string, hit bool) {
-	if t == nil || source == "" {
-		return
-	}
 	name := MetricCacheMisses
 	if hit {
 		name = MetricCacheHits
+	}
+	t.CacheMetric(source, name)
+}
+
+// CacheMetric counts one cache outcome (MetricCacheHits, MetricCacheMisses or
+// MetricCacheRevalidations) for a source and for the instance.
+func (t *Traffic) CacheMetric(source, name string) {
+	if t == nil || source == "" {
+		return
 	}
 	t.mu.Lock()
 	t.add("source", source, name, 1)

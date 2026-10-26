@@ -392,6 +392,15 @@ function CreateSource({
   );
 }
 
+// cacheSummary reads served (stored or fresh) + revalidated (304) against
+// downloaded from upstream.
+function cacheSummary(s: SourceStats) {
+  const served = s.cache_hits + s.cache_revalidations;
+  const total = served + s.cache_misses;
+  const ratio = total ? ` · ${((served / total) * 100).toFixed(1)}% hit` : "";
+  return `${count(s.cache_hits)} served · ${count(s.cache_revalidations)} revalidated · ${count(s.cache_misses)} downloaded${ratio}`;
+}
+
 function SourceDrawer({
   client,
   source,
@@ -475,8 +484,8 @@ function SourceDrawer({
                       value: `${count(stats.packages)} · ${count(stats.versions)} versions`,
                     },
                     {
-                      label: "Cache hits / misses",
-                      value: `${count(stats.cache_hits)} / ${count(stats.cache_misses)}`,
+                      label: "Cache (all time)",
+                      value: cacheSummary(stats),
                     },
                   ]
                 : []),

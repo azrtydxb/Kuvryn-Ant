@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/azrtydxb/Kuvryn-Ant/api"
@@ -44,6 +45,8 @@ type SourceStats struct {
 	AttachedFeeds int64  `json:"attached_feeds"`
 	CacheHits     int64  `json:"cache_hits"`
 	CacheMisses   int64  `json:"cache_misses"`
+	// CacheRevalidations are upstream 304s served from the cached copy.
+	CacheRevalidations int64 `json:"cache_revalidations"`
 }
 type SourceStatsPage struct {
 	Items []SourceStats `json:"items"`
@@ -124,14 +127,15 @@ func (h opsHandlers) sourceStats(w http.ResponseWriter, r *http.Request) {
  COALESCE((SELECT sum(size_bytes) FROM blobs b WHERE b.id IN (SELECT a.blob_id FROM assets a JOIN versions v ON v.id=a.version_id JOIN components c ON c.id=v.component_id WHERE c.source_id=s.id)),0)::bigint,
  (SELECT count(*) FROM feed_sources fs WHERE fs.source_id=s.id),
  COALESCE((SELECT sum(value) FROM traffic_buckets t WHERE t.instance_id=s.instance_id AND t.scope='source' AND t.ref=s.id::text AND t.metric='cache_hits'),0)::bigint,
- COALESCE((SELECT sum(value) FROM traffic_buckets t WHERE t.instance_id=s.instance_id AND t.scope='source' AND t.ref=s.id::text AND t.metric='cache_misses'),0)::bigint
+ COALESCE((SELECT sum(value) FROM traffic_buckets t WHERE t.instance_id=s.instance_id AND t.scope='source' AND t.ref=s.id::text AND t.metric='cache_misses'),0)::bigint,
+ COALESCE((SELECT sum(value) FROM traffic_buckets t WHERE t.instance_id=s.instance_id AND t.scope='source' AND t.ref=s.id::text AND t.metric='cache_revalidations'),0)::bigint
  FROM sources s WHERE s.instance_id=$1 AND s.id=ANY($2::uuid[]) ORDER BY s.id`, p.InstanceID, ids)
 		err = qerr
 		if err == nil {
 			defer rows.Close()
 			for rows.Next() {
 				var it SourceStats
-				if err = rows.Scan(&it.SourceID, &it.Name, &it.Kind, &it.Format, &it.Packages, &it.Versions, &it.Assets, &it.Bytes, &it.AttachedFeeds, &it.CacheHits, &it.CacheMisses); err != nil {
+				if err = rows.Scan(&it.SourceID, &it.Name, &it.Kind, &it.Format, &it.Packages, &it.Versions, &it.Assets, &it.Bytes, &it.AttachedFeeds, &it.CacheHits, &it.CacheMisses, &it.CacheRevalidations); err != nil {
 					break
 				}
 				items = append(items, it)
@@ -268,18 +272,21 @@ func (h opsHandlers) storageUsage(w http.ResponseWriter, r *http.Request) {
 	JSON(w, 200, out)
 }
 
-// TrafficPoint holds counters for one time bucket. CacheHitRatio is absent
-// when there were no cache lookups.
+// TrafficPoint holds counters for one time bucket. CacheHitRatio is the share
+// of remote lookups served without transferring from upstream (hits plus 304
+// revalidations); it is absent when there were no cache lookups.
 type TrafficPoint struct {
-	Bucket        time.Time `json:"bucket"`
-	Pulls         int64     `json:"pulls"`
-	Publishes     int64     `json:"publishes"`
-	BytesOut      int64     `json:"bytes_out"`
-	BytesIn       int64     `json:"bytes_in"`
-	CacheHits     int64     `json:"cache_hits"`
-	CacheMisses   int64     `json:"cache_misses"`
-	Errors        int64     `json:"errors"`
-	CacheHitRatio *float64  `json:"cache_hit_ratio,omitempty"`
+	Bucket      time.Time `json:"bucket"`
+	Pulls       int64     `json:"pulls"`
+	Publishes   int64     `json:"publishes"`
+	BytesOut    int64     `json:"bytes_out"`
+	BytesIn     int64     `json:"bytes_in"`
+	CacheHits   int64     `json:"cache_hits"`
+	CacheMisses int64     `json:"cache_misses"`
+	// CacheRevalidations are upstream 304s served from the cached copy.
+	CacheRevalidations int64    `json:"cache_revalidations"`
+	Errors             int64    `json:"errors"`
+	CacheHitRatio      *float64 `json:"cache_hit_ratio,omitempty"`
 }
 type TrafficSeries struct {
 	Scope       string         `json:"scope"`
@@ -305,15 +312,24 @@ func (t *TrafficPoint) add(metric string, v int64) {
 		t.CacheHits += v
 	case observability.MetricCacheMisses:
 		t.CacheMisses += v
+	case observability.MetricCacheRevalidations:
+		t.CacheRevalidations += v
 	case observability.MetricErrors:
 		t.Errors += v
 	}
 }
 func (t *TrafficPoint) ratio() {
-	if n := t.CacheHits + t.CacheMisses; n > 0 {
-		v := float64(t.CacheHits) / float64(n)
-		t.CacheHitRatio = &v
+	t.CacheHitRatio = cacheRatio(t.CacheHits, t.CacheRevalidations, t.CacheMisses)
+}
+
+// cacheRatio is the share of lookups served from cache, or nil without lookups.
+func cacheRatio(hits, revalidations, misses int64) *float64 {
+	n := hits + revalidations + misses
+	if n == 0 {
+		return nil
 	}
+	v := float64(hits+revalidations) / float64(n)
+	return &v
 }
 
 var trafficSteps = map[string]time.Duration{"5m": 5 * time.Minute, "1h": time.Hour, "1d": 24 * time.Hour}
@@ -436,4 +452,102 @@ func (h opsHandlers) attachFeedSourceIDs(ctx context.Context, p identity.Princip
 		}
 	}
 	return rows.Err()
+}
+
+// SourceCacheStats is one remote source's cache efficiency over a window.
+type SourceCacheStats struct {
+	SourceID           string   `json:"source_id"`
+	Name               string   `json:"name"`
+	Format             string   `json:"format"`
+	CacheHits          int64    `json:"cache_hits"`
+	CacheRevalidations int64    `json:"cache_revalidations"`
+	CacheMisses        int64    `json:"cache_misses"`
+	CacheHitRatio      *float64 `json:"cache_hit_ratio,omitempty"`
+}
+
+// CacheStats breaks the instance cache ratio down per remote source, worst
+// ratio first, so poorly caching upstreams stand out.
+type CacheStats struct {
+	From   time.Time          `json:"from"`
+	To     time.Time          `json:"to"`
+	Items  []SourceCacheStats `json:"items"`
+	Totals SourceCacheStats   `json:"totals"`
+}
+
+// maxCacheStatsSources bounds the per-source breakdown; instances have tens of
+// remote sources, not thousands.
+const maxCacheStatsSources = 500
+
+// maxCacheStatsWindow matches traffic counter retention.
+const maxCacheStatsWindow = 400 * 24 * time.Hour
+
+func (h opsHandlers) cacheStats(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	for k, v := range q {
+		if (k != "from" && k != "to") || len(v) != 1 {
+			Error(w, r, 400, api.ErrorCodeInvalidRequest, "unknown or repeated query parameter")
+			return
+		}
+	}
+	to := time.Now().UTC()
+	from := to.Add(-24 * time.Hour)
+	var err error
+	if v := q.Get("to"); v != "" {
+		to, err = time.Parse(time.RFC3339, v)
+		from = to.Add(-24 * time.Hour)
+	}
+	if v := q.Get("from"); v != "" && err == nil {
+		from, err = time.Parse(time.RFC3339, v)
+	}
+	if err != nil || !to.After(from) || to.Sub(from) > maxCacheStatsWindow {
+		Error(w, r, 400, api.ErrorCodeInvalidRequest, "invalid cache statistics window")
+		return
+	}
+	p, policy, ok := h.policy(w, r)
+	if !ok {
+		return
+	}
+	ctx, cancel := h.ctx(r)
+	defer cancel()
+	rows, err := h.db.Query(ctx, `SELECT s.id::text,s.name,s.format,
+ COALESCE(sum(t.value) FILTER (WHERE t.metric='cache_hits'),0)::bigint,
+ COALESCE(sum(t.value) FILTER (WHERE t.metric='cache_revalidations'),0)::bigint,
+ COALESCE(sum(t.value) FILTER (WHERE t.metric='cache_misses'),0)::bigint
+ FROM sources s LEFT JOIN traffic_buckets t ON t.instance_id=s.instance_id AND t.scope='source' AND t.ref=s.id::text AND t.bucket>=$2 AND t.bucket<$3 AND t.metric IN ('cache_hits','cache_revalidations','cache_misses')
+ WHERE s.instance_id=$1 AND s.kind='remote' GROUP BY s.id,s.name,s.format ORDER BY s.name,s.id LIMIT $4`, p.InstanceID, from, to, maxCacheStatsSources)
+	if err != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "cache statistics unavailable")
+		return
+	}
+	defer rows.Close()
+	out := CacheStats{From: from, To: to, Items: []SourceCacheStats{}}
+	for rows.Next() {
+		var it SourceCacheStats
+		if err = rows.Scan(&it.SourceID, &it.Name, &it.Format, &it.CacheHits, &it.CacheRevalidations, &it.CacheMisses); err != nil {
+			Error(w, r, 503, api.ErrorCodeUnavailable, "cache statistics unavailable")
+			return
+		}
+		if !sourceAllowed(policy, p, it.SourceID, identity.Read) {
+			continue
+		}
+		it.CacheHitRatio = cacheRatio(it.CacheHits, it.CacheRevalidations, it.CacheMisses)
+		out.Totals.CacheHits += it.CacheHits
+		out.Totals.CacheRevalidations += it.CacheRevalidations
+		out.Totals.CacheMisses += it.CacheMisses
+		out.Items = append(out.Items, it)
+	}
+	if rows.Err() != nil {
+		Error(w, r, 503, api.ErrorCodeUnavailable, "cache statistics unavailable")
+		return
+	}
+	// Worst first; sources without lookups go last.
+	sort.SliceStable(out.Items, func(i, j int) bool {
+		a, b := out.Items[i].CacheHitRatio, out.Items[j].CacheHitRatio
+		if (a == nil) != (b == nil) {
+			return b == nil
+		}
+		return a != nil && *a < *b
+	})
+	out.Totals.CacheHitRatio = cacheRatio(out.Totals.CacheHits, out.Totals.CacheRevalidations, out.Totals.CacheMisses)
+	JSON(w, 200, out)
 }
