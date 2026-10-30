@@ -168,9 +168,7 @@ function CacheBreakdown({
       }
     >
       {stats.state === "loading" && <Loading what="cache statistics" />}
-      {stats.state === "unavailable" && (
-        <Unavailable what="Cache statistics" />
-      )}
+      {stats.state === "unavailable" && <Unavailable what="Cache statistics" />}
       {stats.state === "error" && <Failure error={stats.error} />}
       {stats.state === "ready" &&
         (stats.data.items.length === 0 ? (
