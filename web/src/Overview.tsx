@@ -89,7 +89,13 @@ function Kpi({
         className="az-card ov-kpi ov-kpi--action"
         onClick={onClick}
       >
-        <KpiBody label={label} value={value} unit={unit} sub={sub} icon={icon} />
+        <KpiBody
+          label={label}
+          value={value}
+          unit={unit}
+          sub={sub}
+          icon={icon}
+        />
       </button>
     );
   return (
