@@ -72,8 +72,8 @@ func runDocker(c *Ctx) {
 	// Denial steps last: failed authentication attempts are rate limited per client address.
 	c.Step("auth denial: invalid token rejected by crane", sh(
 		`mkdir -p /work/bad; printf '{"auths":{"%s":{"auth":"%s"}}}' "$HOST" "$(printf service:invalid-token | base64)" > /work/bad/config.json; DOCKER_CONFIG=/work/bad crane digest `+ref+`:v1 $INSEC`, fail))
-	c.Step("auth denial: bad token and anonymous private-feed reads return 401 (anonymous /v2/ may be 200 for the dockerd handshake)", func() error {
-		if err := c.Expect("GET", "/v2/", NoAuth, 200, 401); err != nil {
+	c.Step("auth denial: bad token and anonymous private-feed reads return 401 (bare /v2/ ping challenges so CRI-O sends credentials)", func() error {
+		if err := c.Expect("GET", "/v2/", NoAuth, 401); err != nil {
 			return err
 		}
 		if err := c.Expect("GET", "/v2/", BadToken, 401); err != nil {

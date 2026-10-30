@@ -305,7 +305,14 @@ func (r *Registry) serveAnonymous(w http.ResponseWriter, req *http.Request) bool
 	ns := req.URL.Query().Get("ns")
 	anonymous := false
 	if req.URL.Path == "/v2/" {
-		slug := r.mirrorSlug(ns)
+		// The bare ping must challenge: containers/image (CRI-O) only sends
+		// credentials when /v2/ answers 401, so an anonymous 200 here makes it
+		// pull protected feeds unauthenticated. Only mirror pings (?ns=) are
+		// answered anonymously.
+		slug := ""
+		if ns != "" {
+			slug = r.mirrorSlug(ns)
+		}
 		if slug == "" {
 			return false
 		}

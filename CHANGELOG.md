@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No version has been tagged yet. This section summarizes the work on `main` so far.
 
+### Fixed
+
+- **OCI:** an unauthenticated `GET`/`HEAD /v2/` without `?ns=` now answers `401` with
+  `WWW-Authenticate: Basic realm="Kuvryn Ant"` instead of an anonymous `200`, so CRI-O
+  and containers/image send credentials and can pull from protected feeds. Mirror pings
+  (`/v2/?ns=...`) stay anonymous.
+
 ### Added
 
 - **Foundation:** PostgreSQL service lifecycle with forward-only, checksummed,

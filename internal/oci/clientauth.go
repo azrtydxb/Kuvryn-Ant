@@ -16,6 +16,11 @@ func (r *Registry) ClientAuthTarget(req *http.Request) (identity.FeedTarget, boo
 	}
 	ns := req.URL.Query().Get("ns")
 	if req.URL.Path == "/v2/" || req.URL.Path == "/v2" {
+		// No ns: the ping is not a mirror request and must not resolve to the
+		// anonymous default feed, so it falls through to the 401 challenge.
+		if ns == "" {
+			return identity.FeedTarget{}, false
+		}
 		slug := r.mirrorSlug(ns)
 		if slug == "" {
 			return identity.FeedTarget{}, false

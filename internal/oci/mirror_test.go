@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/azrtydxb/Kuvryn-Ant/internal/artifact/remotetest"
+	"github.com/azrtydxb/Kuvryn-Ant/internal/identity"
 )
 
 // hub is a fake token-authenticated upstream registry (Docker Hub shaped): a
@@ -113,9 +114,9 @@ func TestMirrorUnprefixedAnonymousPullThroughBearerUpstream(t *testing.T) {
 	defer srv.Close()
 	const idx = "application/vnd.oci.image.index.v1+json"
 
-	// dockerd sends no credentials: the /v2/ ping must not challenge.
-	if status, _, _ := anonGet(t, srv.URL+"/v2/"); status != 200 {
-		t.Fatalf("anonymous ping: %d", status)
+	// A mirror ping carries ?ns= and must not challenge.
+	if status, _, _ := anonGet(t, srv.URL+"/v2/?ns=docker.io"); status != 200 {
+		t.Fatalf("anonymous mirror ping: %d", status)
 	}
 	status, body, header := anonGet(t, srv.URL+"/v2/library/alpine/manifests/latest", "Accept", idx)
 	if status != 200 || body != h.index || header.Get("Content-Type") != idx {
@@ -276,5 +277,82 @@ func TestMirrorSurfacesUpstreamRateLimit(t *testing.T) {
 	h.limit.Store(false)
 	if status, _, _ = anonGet(t, srv.URL+"/v2/library/alpine/blobs/sha256:"+sha(h.layer)); status != 200 {
 		t.Fatalf("recovery: %d", status)
+	}
+}
+
+// TestV2PingChallengesWithoutNamespace covers the CRI-O / containers/image flow:
+// the client pings /v2/ and sends credentials only if that answers 401. The bare
+// ping must therefore challenge even when the default mirror feed is anonymous,
+// while mirror pings (?ns=) and anonymous pulls keep working. Both the registry
+// alone and the registry behind the client-authentication middleware are driven.
+func TestV2PingChallengesWithoutNamespace(t *testing.T) {
+	f := remotetest.New(t)
+	h := newHub(f, "team/alpine")
+	anon := f.AddFeed("dockerhub", "oci")
+	f.AddRemote(anon, "oci", "dockerhub", 0, h.up.URL, remotetest.RemoteOptions{RedirectOrigins: []string{h.cdn.URL}})
+	if _, err := f.Pool.Exec(context.Background(), `UPDATE feeds SET anonymous_read=true WHERE id=$1`, anon); err != nil {
+		t.Fatal(err)
+	}
+	private := f.AddFeed("oci-hosted", "oci")
+	f.AddRemote(private, "oci", "private-hub", 0, h.up.URL, remotetest.RemoteOptions{RedirectOrigins: []string{h.cdn.URL}})
+	registry := mirrorRegistry(t, f)
+	registry.SetMirror(Mirror{DefaultFeed: "dockerhub"})
+	ca := &identity.ClientAuth{DB: f.Pool, InstanceID: f.Service.Lease().InstanceID, ResolveOCI: registry.ClientAuthTarget, CacheTTL: -1}
+	handlers := map[string]http.Handler{"registry": registry, "middleware": ca.Middleware(registry)}
+	for name, handler := range handlers {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(handler)
+			defer srv.Close()
+			const challenge = `Basic realm="Kuvryn Ant"`
+			manifest := "/manifests/sha256:" + sha(h.child)
+			const accept = "application/vnd.oci.image.manifest.v1+json"
+
+			for _, method := range []string{http.MethodGet, http.MethodHead} {
+				req, _ := http.NewRequest(method, srv.URL+"/v2/", nil)
+				resp, err := http.DefaultClient.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				resp.Body.Close()
+				if resp.StatusCode != 401 || resp.Header.Get("WWW-Authenticate") != challenge {
+					t.Fatalf("%s ping without ns: %d %v", method, resp.StatusCode, resp.Header)
+				}
+			}
+			// With credentials the ping succeeds.
+			req, _ := http.NewRequest("GET", srv.URL+"/v2/", nil)
+			req.SetBasicAuth("service", f.Token)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+			if resp.StatusCode != 200 {
+				t.Fatalf("authenticated ping: %d", resp.StatusCode)
+			}
+			// Mirror pings stay anonymous.
+			if status, _, _ := anonGet(t, srv.URL+"/v2/?ns=docker.io"); status != 200 {
+				t.Fatalf("anonymous mirror ping: %d", status)
+			}
+			// A client that was challenged and has no credentials continues anonymously.
+			if status, body, _ := anonGet(t, srv.URL+"/v2/team/alpine"+manifest, "Accept", accept); status != 200 || body != h.child {
+				t.Fatalf("anonymous pull after challenge: %d %s", status, body)
+			}
+			// A protected feed refuses anonymous reads but serves the credentialed pull.
+			if status, _, _ := anonGet(t, srv.URL+"/v2/oci-hosted/team/alpine"+manifest, "Accept", accept); status != 401 {
+				t.Fatalf("anonymous protected pull: %d", status)
+			}
+			preq, _ := http.NewRequest("GET", srv.URL+"/v2/oci-hosted/team/alpine"+manifest, nil)
+			preq.SetBasicAuth("service", f.Token)
+			preq.Header.Set("Accept", accept)
+			presp, err := http.DefaultClient.Do(preq)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, _ := io.ReadAll(presp.Body)
+			presp.Body.Close()
+			if presp.StatusCode != 200 || string(data) != h.child {
+				t.Fatalf("credentialed protected pull: %d %s", presp.StatusCode, data)
+			}
+		})
 	}
 }
