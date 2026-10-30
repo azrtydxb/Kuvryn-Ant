@@ -87,6 +87,13 @@ func TestDockerLoginFlowUnderClientAuthPolicy(t *testing.T) {
 	if status != 401 || !strings.HasPrefix(header.Get("WWW-Authenticate"), "Basic") || !strings.Contains(body, "UNAUTHORIZED") {
 		t.Fatalf("probe: %d %v %s", status, header, body)
 	}
+	// CRI-O answers the challenge with empty Basic when it has no credentials:
+	// challenged again, and never counted against the failed-attempt limit.
+	for i := range 15 {
+		if status, _, header = do("GET", "/v2/", basic("", "")); status != 401 || !strings.HasPrefix(header.Get("WWW-Authenticate"), "Basic") {
+			t.Fatalf("empty Basic probe %d: %d", i, status)
+		}
+	}
 	// 2. docker login with a directory user and password.
 	if status, _, _ = do("GET", "/v2/", basic("alice", "directory password")); status != 200 {
 		t.Fatalf("directory login: %d", status)
@@ -150,6 +157,14 @@ func TestDockerLoginFlowUnderClientAuthPolicy(t *testing.T) {
 	setPolicy(f.feed, "anonymous", "token")
 	if status, _, _ = do("GET", "/v2/images/app/manifests/latest", ""); status != 404 {
 		t.Fatalf("anonymous read of anonymous feed: %d", status)
+	}
+	for i := range 15 {
+		if status, _, _ = do("GET", "/v2/images/app/manifests/latest", basic("", "")); status != 404 {
+			t.Fatalf("empty Basic read of anonymous feed %d: %d", i, status)
+		}
+	}
+	if status, _, _ = do("POST", upload, basic("", "")); status != 401 {
+		t.Fatalf("empty Basic publish: %d", status)
 	}
 	if status, _, _ = do("POST", upload, ""); status != 401 {
 		t.Fatalf("anonymous publish: %d", status)

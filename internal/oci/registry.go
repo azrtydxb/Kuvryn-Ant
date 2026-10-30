@@ -78,10 +78,15 @@ func (r *Registry) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 	w.Header().Set("Docker-Distribution-API-Version", "registry/2.0")
 	// OCI clients discover authentication with an initial credential-free probe.
 	// This cheap challenge does not represent a failed credential verification.
-	if len(request.Header.Values("Authorization")) == 0 {
+	// containers/image (CRI-O, podman, skopeo) answers a Basic challenge with
+	// empty credentials when it has none; that is the same as sending nothing
+	// and is never a failed login.
+	if values := request.Header.Values("Authorization"); len(values) == 0 || len(values) == 1 && identity.EmptyBasic(values[0]) {
 		// Feeds with anonymous_read (typically a pull-through mirror used by
 		// dockerd, which never sends credentials to a mirror) are served without
 		// a challenge. Everything else, and every write, still gets the 401.
+		// The bare /v2/ probe without ?ns= always challenges: it names no
+		// feed, and CRI-O only sends a pull secret after a challenge.
 		// When the client-authentication middleware already applied the feed
 		// policy, it alone decides anonymous access.
 		if !identity.PolicyEnforced(request.Context()) && r.serveAnonymous(w, request) {
@@ -206,6 +211,15 @@ func (r *Registry) mirrorSlug(ns string) string {
 	return r.mirror.DefaultFeed
 }
 
+// pingSlug is the feed a /v2/ probe addresses. Only a mirror namespace
+// (containerd's ?ns=) names one; a bare probe addresses no feed.
+func (r *Registry) pingSlug(ns string) string {
+	if ns == "" {
+		return ""
+	}
+	return r.mirrorSlug(ns)
+}
+
 func (r *Registry) feedBySlug(ctx context.Context, instance, slug string) (id string, anonymous bool, err error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -305,7 +319,7 @@ func (r *Registry) serveAnonymous(w http.ResponseWriter, req *http.Request) bool
 	ns := req.URL.Query().Get("ns")
 	anonymous := false
 	if req.URL.Path == "/v2/" {
-		slug := r.mirrorSlug(ns)
+		slug := r.pingSlug(ns)
 		if slug == "" {
 			return false
 		}

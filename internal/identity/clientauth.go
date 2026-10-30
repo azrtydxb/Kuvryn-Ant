@@ -422,6 +422,18 @@ func (c *ClientAuth) deny(w http.ResponseWriter, r *http.Request, status int, me
 	authError(w, r, status, code, message)
 }
 
+// EmptyBasic reports a Basic header carrying an empty username and password,
+// which containers/image (CRI-O, podman, skopeo) sends after a Basic challenge
+// when it has no credentials for the registry. It means "no credentials".
+func EmptyBasic(header string) bool {
+	scheme, value, found := strings.Cut(strings.TrimSpace(header), " ")
+	if !found || !strings.EqualFold(scheme, "Basic") {
+		return false
+	}
+	raw, err := base64.StdEncoding.DecodeString(strings.TrimSpace(value))
+	return err == nil && (len(raw) == 0 || string(raw) == ":")
+}
+
 func parseCredential(header string) (user, secret string, basic, ok bool) {
 	if len(header) > 8192 {
 		return "", "", false, false
@@ -520,6 +532,9 @@ func (c *ClientAuth) handle(w http.ResponseWriter, r *http.Request, next http.Ha
 			raw = headers[0]
 			headers = []string{"Bearer " + raw}
 		}
+	}
+	if oci && len(headers) == 1 && EmptyBasic(headers[0]) {
+		headers = nil // containers/image's answer to a Basic challenge without credentials
 	}
 	if len(headers) > 1 {
 		next.ServeHTTP(w, enforced)

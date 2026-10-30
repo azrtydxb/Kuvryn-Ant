@@ -16,7 +16,7 @@ func (r *Registry) ClientAuthTarget(req *http.Request) (identity.FeedTarget, boo
 	}
 	ns := req.URL.Query().Get("ns")
 	if req.URL.Path == "/v2/" || req.URL.Path == "/v2" {
-		slug := r.mirrorSlug(ns)
+		slug := r.pingSlug(ns)
 		if slug == "" {
 			return identity.FeedTarget{}, false
 		}

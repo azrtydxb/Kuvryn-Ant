@@ -2,6 +2,7 @@ package oci
 
 import (
 	"context"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -113,9 +114,15 @@ func TestMirrorUnprefixedAnonymousPullThroughBearerUpstream(t *testing.T) {
 	defer srv.Close()
 	const idx = "application/vnd.oci.image.index.v1+json"
 
-	// dockerd sends no credentials: the /v2/ ping must not challenge.
-	if status, _, _ := anonGet(t, srv.URL+"/v2/"); status != 200 {
-		t.Fatalf("anonymous ping: %d", status)
+	// The bare ping names no feed and always challenges: CRI-O only sends a
+	// pull secret after a challenge (issue #344). dockerd and CRI-O without
+	// credentials still pull anonymously below.
+	if status, _, header := anonGet(t, srv.URL+"/v2/"); status != 401 || !strings.HasPrefix(header.Get("WWW-Authenticate"), "Basic") {
+		t.Fatalf("bare ping must challenge: %d %v", status, header)
+	}
+	// containerd names the upstream with ?ns=, and that ping is answered.
+	if status, _, _ := anonGet(t, srv.URL+"/v2/?ns=docker.io"); status != 200 {
+		t.Fatalf("containerd ping: %d", status)
 	}
 	status, body, header := anonGet(t, srv.URL+"/v2/library/alpine/manifests/latest", "Accept", idx)
 	if status != 200 || body != h.index || header.Get("Content-Type") != idx {
@@ -153,6 +160,14 @@ func TestMirrorUnprefixedAnonymousPullThroughBearerUpstream(t *testing.T) {
 	}
 	if h.tokens.Load() < 1 || h.tokens.Load() > 3 {
 		t.Fatalf("token fetches: %d", h.tokens.Load())
+	}
+	// CRI-O answers the Basic challenge with empty credentials when it has no
+	// pull secret: that is an anonymous pull, never a failed login, so it is
+	// served and never runs into the failed-attempt limit.
+	for i := range 15 {
+		if status, body, _ := anonGet(t, srv.URL+"/v2/library/alpine/manifests/sha256:"+sha(h.child), "Authorization", "Basic Og=="); status != 200 || body != h.child {
+			t.Fatalf("empty Basic pull %d: %d", i, status)
+		}
 	}
 
 	// Anonymous callers can never write, even to an anonymous_read feed.
@@ -197,6 +212,21 @@ func TestMirrorNonAnonymousFeedChallengesAndPrefixedFeedWins(t *testing.T) {
 	}
 	if status, _, _ = anonGet(t, srv.URL+"/v2/library/alpine/manifests/latest"); status != 401 {
 		t.Fatalf("unauthenticated pull: %d", status)
+	}
+	// Empty Basic is no credential: challenged again, never rate limited.
+	for i := range 15 {
+		status, _, header = anonGet(t, srv.URL+"/v2/team/alpine/manifests/sha256:"+sha(h.child), "Authorization", "Basic Og==")
+		if status != 401 || !strings.HasPrefix(header.Get("WWW-Authenticate"), "Basic") {
+			t.Fatalf("empty Basic on a protected feed %d: %d", i, status)
+		}
+	}
+	// CRI-O with a pull secret: challenged ping, then Basic(user, token).
+	basic := "Basic " + base64.StdEncoding.EncodeToString([]byte("puller:"+f.Token))
+	if status, _, _ = anonGet(t, srv.URL+"/v2/", "Authorization", basic); status != 200 {
+		t.Fatalf("CRI-O ping with credentials: %d", status)
+	}
+	if status, body, _ := anonGet(t, srv.URL+"/v2/team/alpine/manifests/sha256:"+sha(h.child), "Accept", "application/vnd.oci.image.manifest.v1+json", "Authorization", basic); status != 200 || body != h.child {
+		t.Fatalf("CRI-O pull with credentials: %d %s", status, body)
 	}
 	// Authenticated mirror pull works.
 	if status, body, _ := f.Get(srv.URL+"/v2/team/alpine/manifests/sha256:"+sha(h.child), "Accept", "application/vnd.oci.image.manifest.v1+json"); status != 200 || body != h.child {
