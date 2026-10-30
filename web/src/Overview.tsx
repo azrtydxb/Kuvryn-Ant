@@ -417,7 +417,11 @@ export function Overview({
           icon="zap"
           value={hit != null ? (hit * 100).toFixed(1) : "—"}
           unit={hit != null ? "%" : undefined}
-          sub={t ? `remote sources, ${range} · per remote` : "Metrics not available"}
+          sub={
+            t
+              ? `remote sources, ${range} · per remote`
+              : "Metrics not available"
+          }
           onClick={() => setCacheOpen(true)}
         />
         <Kpi
