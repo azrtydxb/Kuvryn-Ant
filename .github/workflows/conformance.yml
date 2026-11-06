@@ -24,10 +24,7 @@ permissions:
 
 jobs:
   conformance:
-    # The repository's existing workflows use GitHub-hosted runners (no self-hosted ARC label is defined in the repo).
-    # Set the repository variable CONFORMANCE_RUNNER to the ARC runner scale-set name to run inside the cluster
-    # (required for kw, which is only reachable from the lab network).
-    runs-on: ${{ vars.CONFORMANCE_RUNNER || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
