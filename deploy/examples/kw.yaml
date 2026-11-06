@@ -1,10 +1,10 @@
 # Kuvryn Ant on kw: ingress-nginx, TrueNAS SCALE MinIO. No secrets here.
 publicURL: https://ant.kw.watteel.lab
 image:
-  repository: 192.168.10.131/azrtydxb/kuvryn-ant
-  tag: "0.1.0"
-imagePullSecrets:
-  - name: nexus-pull
+  # Ant cannot serve its own image: it comes from ghcr (public package), published by
+  # .github/workflows/release.yml. Pin the multi-arch index digest of the build you deploy.
+  repository: ghcr.io/azrtydxb/kuvryn-ant
+  digest: sha256:387245ff791f42130ee69f4cefca11db0ee4522b6e3f0e0148bbaf6b6cab8a04
 persistence:
   size: 120Gi
   storageClass: longhorn
