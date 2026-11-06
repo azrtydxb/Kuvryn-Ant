@@ -89,7 +89,13 @@ function Kpi({
         className="az-card ov-kpi ov-kpi--action"
         onClick={onClick}
       >
-        <KpiBody label={label} value={value} unit={unit} sub={sub} icon={icon} />
+        <KpiBody
+          label={label}
+          value={value}
+          unit={unit}
+          sub={sub}
+          icon={icon}
+        />
       </button>
     );
   return (
@@ -162,9 +168,7 @@ function CacheBreakdown({
       }
     >
       {stats.state === "loading" && <Loading what="cache statistics" />}
-      {stats.state === "unavailable" && (
-        <Unavailable what="Cache statistics" />
-      )}
+      {stats.state === "unavailable" && <Unavailable what="Cache statistics" />}
       {stats.state === "error" && <Failure error={stats.error} />}
       {stats.state === "ready" &&
         (stats.data.items.length === 0 ? (
@@ -417,7 +421,11 @@ export function Overview({
           icon="zap"
           value={hit != null ? (hit * 100).toFixed(1) : "—"}
           unit={hit != null ? "%" : undefined}
-          sub={t ? `remote sources, ${range} · per remote` : "Metrics not available"}
+          sub={
+            t
+              ? `remote sources, ${range} · per remote`
+              : "Metrics not available"
+          }
           onClick={() => setCacheOpen(true)}
         />
         <Kpi

@@ -20,9 +20,15 @@ ARG TARGETOS=linux
 ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags='-s -w' -o /out/ant ./cmd/ant
 
-FROM ${RUNTIME_IMAGE}
+# Everything that needs RUN happens on the build platform; the target-platform stage below only COPYs.
+FROM --platform=$BUILDPLATFORM ${RUNTIME_IMAGE} AS rootfs
 RUN apk add --no-cache ca-certificates && addgroup -g 10001 ant && adduser -D -H -u 10001 -G ant ant \
-    && mkdir -p /var/lib/ant && chown 10001:10001 /var/lib/ant
+    && mkdir -p /var/lib/ant
+
+FROM ${RUNTIME_IMAGE}
+COPY --from=rootfs /etc/passwd /etc/group /etc/
+COPY --from=rootfs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=rootfs --chown=10001:10001 /var/lib/ant /var/lib/ant
 COPY --from=build /out/ant /usr/local/bin/ant
 COPY --chmod=0555 deploy/entrypoint.sh /usr/local/bin/ant-entrypoint
 USER 10001:10001
