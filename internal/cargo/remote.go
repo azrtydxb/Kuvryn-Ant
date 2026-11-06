@@ -171,16 +171,16 @@ func (s *Registry) pullThrough(w http.ResponseWriter, r *http.Request, p identit
 		return false, false, artifact.ErrUnavailable
 	}
 	pub.MediaType = "application/octet-stream"
-	stream, again, e := s.service.PullThrough(r.Context(), p, pub, artifact.Origin{Path: path, URL: absolute, SourceID: doc.SourceID, Digest: blob.Digest(found.cksum)})
+	stream, again, e := s.service.PullThrough(r.Context(), p, pub, artifact.Origin{Path: path, URL: absolute, SourceID: doc.SourceID, Digest: blob.Digest(found.cksum), StreamVerified: true})
 	if e != nil {
 		return false, false, e
 	}
+	// Best effort: keep the verified index line so the owner's versions
+	// remain listable while upstream is unavailable.
+	ip := pub
+	ip.AssetKey, ip.MediaType = "index", "application/json"
+	_ = s.service.CacheDocument(r.Context(), p, ip, doc.SourceID, found.line)
 	if again {
-		// Best effort: keep the verified index line so the owner's versions
-		// remain listable while upstream is unavailable.
-		ip := pub
-		ip.AssetKey, ip.MediaType = "index", "application/json"
-		_ = s.service.CacheDocument(r.Context(), p, ip, doc.SourceID, found.line)
 		return true, false, nil
 	}
 	stream.ServeStream(w, r.Method)

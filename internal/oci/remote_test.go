@@ -4,10 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -124,9 +126,11 @@ func TestOCIPullThroughNeverServesBytesThatMissDigest(t *testing.T) {
 	}
 	srv := httptest.NewServer(registry)
 	defer srv.Close()
-	status, body, _ := f.Get(srv.URL + "/v2/oci2/lib/app/blobs/sha256:" + sha(want))
-	if status == 200 || strings.Contains(body, "evil") || f.CachedAssets(remote) != 0 {
-		t.Fatalf("digest mismatch must fail closed: %d %q cached=%d", status, body, f.CachedAssets(remote))
+	// The blob is streamed while it is verified, so a mismatch shows up as an
+	// aborted response: never a complete 200, never cached.
+	status, body, rerr := f.TryGet(srv.URL + "/v2/oci2/lib/app/blobs/sha256:" + sha(want))
+	if (status == 200 && rerr == nil) || body == strings.Repeat("evil", 100) || f.CachedAssets(remote) != 0 {
+		t.Fatalf("digest mismatch must fail closed: %d %v %q cached=%d", status, rerr, body, f.CachedAssets(remote))
 	}
 }
 
@@ -150,5 +154,63 @@ func TestNewAcceptsFsGroupWritableUploadsDir(t *testing.T) {
 	}
 	if _, err := New(f.Pool, f.Service, dir); !errors.Is(err, ErrConfiguration) {
 		t.Fatalf("world-writable uploads dir accepted: %v", err)
+	}
+}
+
+// A cold blob streams to the client while the upstream is still sending it: the
+// response headers and first bytes arrive before the upstream finishes, and the
+// blob is cached once the verified body completed.
+func TestOCIColdBlobStreamsBeforeUpstreamFinishes(t *testing.T) {
+	f := remotetest.New(t)
+	blobBytes := strings.Repeat("layer-bytes-", 20000)
+	first := 32 << 10
+	release := make(chan struct{})
+	up := f.Upstream(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", strconv.Itoa(len(blobBytes)))
+		_, _ = io.WriteString(w, blobBytes[:first])
+		w.(http.Flusher).Flush()
+		<-release
+		_, _ = io.WriteString(w, blobBytes[first:])
+	}))
+	feed := f.AddFeed("oci3", "oci")
+	remote := f.AddRemote(feed, "oci", "hub", 0, up.URL, remotetest.RemoteOptions{})
+	registry, err := New(f.Pool, f.Service, filepath.Join(t.TempDir(), "uploads"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(registry)
+	defer srv.Close()
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/v2/oci3/lib/app/blobs/sha256:"+sha(blobBytes), nil)
+	req.Header.Set("Authorization", "Bearer "+f.Token)
+	type result struct {
+		res *http.Response
+		err error
+	}
+	got := make(chan result, 1)
+	go func() { res, err := http.DefaultClient.Do(req); got <- result{res, err} }()
+	var res *http.Response
+	select {
+	case r := <-got:
+		if r.err != nil {
+			t.Fatal(r.err)
+		}
+		res = r.res
+	case <-time.After(3 * time.Second):
+		close(release)
+		t.Fatal("no response headers before the upstream finished: cold blob is buffered")
+	}
+	defer res.Body.Close()
+	head := make([]byte, 1024)
+	if _, err := io.ReadFull(res.Body, head); err != nil || string(head) != blobBytes[:1024] {
+		close(release)
+		t.Fatalf("first bytes: %v", err)
+	}
+	close(release)
+	rest, err := io.ReadAll(res.Body)
+	if err != nil || string(head)+string(rest) != blobBytes || res.Header.Get("X-Kuvryn-Cache") != "miss" {
+		t.Fatalf("body: %v cache=%q", err, res.Header.Get("X-Kuvryn-Cache"))
+	}
+	if f.CachedAssets(remote) != 1 {
+		t.Fatalf("blob not cached: %d", f.CachedAssets(remote))
 	}
 }

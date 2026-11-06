@@ -260,6 +260,28 @@ func (f *Fixture) CachedAssets(source string) int {
 
 // Get performs an authenticated GET against a handler served by an httptest
 // server, returning status, body and headers.
+// TryGet is Get for responses that may legitimately be cut short: it returns
+// the transport or body-read error instead of failing the test, along with
+// whatever status and bytes arrived before it.
+func (f *Fixture) TryGet(url string, headers ...string) (int, string, error) {
+	f.T.Helper()
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		f.T.Fatal(err)
+	}
+	req.Header.Set("Authorization", "Bearer "+f.Token)
+	for i := 0; i+1 < len(headers); i += 2 {
+		req.Header.Set(headers[i], headers[i+1])
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, "", err
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	return res.StatusCode, string(body), err
+}
+
 func (f *Fixture) Get(url string, headers ...string) (int, string, http.Header) {
 	f.T.Helper()
 	req, err := http.NewRequest(http.MethodGet, url, nil)

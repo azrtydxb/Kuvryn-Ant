@@ -75,7 +75,9 @@ type Origin struct {
 	// served so bytes cannot come from a different source than the metadata.
 	SourceID string
 	// Digest, when valid, is verified before the first byte is served: the
-	// artifact is fully staged and checked, then served from the store.
+	// artifact is fully staged and checked, then served from the store, so the
+	// caller can rely on the object being cached when PullThrough returns. Set
+	// StreamVerified to stream instead.
 	Digest blob.Digest
 	// Verify, when set, is an additional check for formats whose upstream
 	// integrity data is not a sha256 of the object (for example a Conan
@@ -83,8 +85,11 @@ type Origin struct {
 	// and an error aborts the cache entry; the client never sees the bytes.
 	Verify func(io.ReadSeeker) error
 	// StreamVerified keeps Digest but streams the bytes to the client while they
-	// are staged (for objects too large to hold back): the digest is checked at
-	// EOF, a mismatch aborts the client connection and is never cached.
+	// are staged, so time to first byte is the upstream's, not the whole
+	// transfer's. The digest is checked at the end of the body; a mismatch (or
+	// any upstream failure) aborts the client response and nothing is cached.
+	// Only for callers that serve the returned stream themselves (the stream
+	// is returned instead of "now in the store").
 	StreamVerified bool
 }
 
@@ -503,6 +508,7 @@ func (t *teeReader) Read(p []byte) (int, error) {
 		return 0, t.err
 	}
 	n, err := t.body.Read(p)
+	out := n // bytes handed to the caller; the digest check may hold the last back
 	if n > 0 {
 		t.n += int64(n)
 		if t.n > t.limit {
@@ -512,6 +518,12 @@ func (t *teeReader) Read(p []byte) (int, error) {
 			return n, t.err
 		}
 		t.hash.Write(p[:n])
+		if t.want.Valid() && t.expected >= 0 && t.n == t.expected {
+			// Withhold the final byte until the digest is verified: a client
+			// that received the declared length would take a corrupted object
+			// for a complete one. A mismatch leaves it short, so it fails.
+			out = n - 1
+		}
 		if t.upload != nil {
 			if _, werr := t.upload.Write(p[:n]); werr != nil {
 				t.abort()
@@ -521,7 +533,7 @@ func (t *teeReader) Read(p []byte) (int, error) {
 					t.abort()
 					t.err = ErrUnavailable
 					t.finish()
-					return n, t.err
+					return out, t.err
 				}
 			}
 		}
@@ -539,20 +551,20 @@ func (t *teeReader) Read(p []byte) (int, error) {
 			t.abort()
 			t.err = io.ErrUnexpectedEOF
 			t.finish()
-			return n, t.err
+			return out, t.err
 		}
 		if t.want.Valid() && blob.Digest(hex.EncodeToString(t.hash.Sum(nil))) != t.want {
 			t.abort()
 			t.err = errDigestMismatch
 			t.finish()
-			return n, t.err
+			return out, t.err
 		}
 		if t.verify != nil {
 			if _, serr := t.spool.Seek(0, io.SeekStart); serr != nil || t.verify(t.spool) != nil {
 				t.abort()
 				t.err = errDigestMismatch
 				t.finish()
-				return n, t.err
+				return out, t.err
 			}
 		}
 		t.commit()
@@ -563,7 +575,7 @@ func (t *teeReader) Read(p []byte) (int, error) {
 		t.abort()
 		t.err = err
 		t.finish()
-		return n, err
+		return out, err
 	}
 	return n, nil
 }
@@ -759,6 +771,9 @@ func (m *Materialized) ServeStream(w http.ResponseWriter, method string) {
 	if method == http.MethodHead {
 		return
 	}
+	// Send the headers now: a slow upstream body must not hold them back, or
+	// clients with a response-header timeout give up on a healthy transfer.
+	_ = http.NewResponseController(w).Flush()
 	if _, err := io.CopyBuffer(struct{ io.Writer }{w}, m.Body, make([]byte, 64<<10)); err != nil {
 		panic(http.ErrAbortHandler)
 	}

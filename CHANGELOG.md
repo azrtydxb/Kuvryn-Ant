@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No version has been tagged yet. This section summarizes the work on `main` so far.
 
+### Fixed
+
+- **Pull-through cache misses stream:** OCI blobs, PyPI files and Cargo crates
+  were fully downloaded and committed before the first byte reached the client,
+  so a large cold layer or wheel exceeded client header and read timeouts. They
+  now stream to the client while being staged; the sha256 is checked at the end
+  of the body, the final byte is held until it verifies, and a mismatch or
+  upstream failure aborts the response and caches nothing. Response headers are
+  flushed immediately.
+
 ### Added
 
 - **Foundation:** PostgreSQL service lifecycle with forward-only, checksummed,
