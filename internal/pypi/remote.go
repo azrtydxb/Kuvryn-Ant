@@ -244,6 +244,7 @@ func (s *Repository) pullThroughFile(w http.ResponseWriter, r *http.Request, p i
 	origin := artifact.Origin{Path: path, URL: absolute, SourceID: source}
 	pub := artifact.Publication{FeedID: feed, Coordinate: name, Version: versionKey(original), AssetKey: file, MediaType: "application/octet-stream"}
 	origin.Digest = blobDigest(found.SHA256)
+	origin.StreamVerified = !sidecar // wheels and sdists can be large; sidecars are tiny
 	if sidecar {
 		pub.MediaType = "text/plain"
 		origin.Digest = blobDigest(found.CoreSHA256) // empty (unverified) when upstream gave none

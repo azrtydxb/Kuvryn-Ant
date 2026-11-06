@@ -172,8 +172,8 @@ func TestPyPIPullThroughRejectsTamperedFileAndForeignDigest(t *testing.T) {
 		t.Fatalf("HTML-only upstream: %d %s", status, body)
 	}
 	link := base + "files/demo/" + remote + "/" + digestOf(good) + "/" + wheel
-	if status, _, _ = f.Get(link); status == 200 || f.CachedAssets(remote) != 0 {
-		t.Fatalf("tampered file served or cached: %d", status)
+	if status, got, rerr := f.TryGet(link); (status == 200 && rerr == nil) || got == "EVIL" || f.CachedAssets(remote) != 0 {
+		t.Fatalf("tampered file served or cached: %d %v", status, rerr)
 	}
 	// A digest that is not the one the upstream advertised is not resolvable.
 	if status, _, _ = f.Get(base + "files/demo/" + remote + "/" + digestOf("other") + "/" + wheel); status != 404 {

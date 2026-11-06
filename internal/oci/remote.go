@@ -48,6 +48,10 @@ func (r *Registry) pullThroughDigest(w http.ResponseWriter, req *http.Request, p
 		origin.Representation = manifestAccept
 	} else {
 		origin.Path = upstreamPath(rep, "blobs", "sha256:"+version)
+		// Blobs can be hundreds of megabytes: stream while caching so the
+		// client's time to first byte is the upstream's. Clients verify the
+		// digest themselves; a mismatch here aborts the response.
+		origin.StreamVerified = true
 		pub.MediaType = "application/octet-stream"
 	}
 	stream, again, err := r.service.PullThrough(req.Context(), p, pub, origin)
