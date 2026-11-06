@@ -41,6 +41,11 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 extraEnv:
+  # Request slots: the default is 32 per CPU (128 at the 4-CPU limit). Cold pnpm installs from
+  # the quadronix CI runners (all private repos since 2026-11-06) hold a slot per tarball for
+  # the whole upstream fetch; five in parallel filled 128, every request (the readiness probe
+  # included) got 503 "busy", and the only replica dropped out of the Service.
+  ANT_MAX_REQUESTS: "1024"
   ANT_OCI_DEFAULT_FEED: dockerhub
   ANT_OCI_MIRROR_MAP: docker.io=dockerhub,ghcr.io=ghcr,quay.io=quay,registry.k8s.io=k8s,gcr.io=gcr,public.ecr.aws=ecr
 
