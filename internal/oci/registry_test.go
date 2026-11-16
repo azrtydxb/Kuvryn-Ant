@@ -229,6 +229,14 @@ func TestPushResumeManifestPullAndTags(t *testing.T) {
 	assertCode(t, f.request("GET", "/v2/images/team/app/manifests/latest", nil, map[string]string{"Accept": dockerManifest}), 406)
 	index, _ := json.Marshal(map[string]any{"schemaVersion": 2, "mediaType": imageIndex, "manifests": []map[string]any{{"mediaType": imageManifest, "digest": digest(manifest), "size": len(manifest), "platform": map[string]string{"architecture": "amd64", "os": "linux"}}}})
 	assertCode(t, f.request("PUT", "/v2/images/team/app/manifests/multi", index, map[string]string{"Content-Type": imageIndex}), 201)
+	// containers/image asks for the single-image manifest type alone first and does not retry a 406:
+	// an index must still be served, with its own Content-Type.
+	multi := f.request("GET", "/v2/images/team/app/manifests/multi", nil, map[string]string{"Accept": imageManifest})
+	assertCode(t, multi, 200)
+	if multi.Header().Get("Content-Type") != imageIndex {
+		t.Fatalf("index served as %q", multi.Header().Get("Content-Type"))
+	}
+	assertCode(t, f.request("GET", "/v2/images/team/app/manifests/multi", nil, map[string]string{"Accept": "application/json"}), 406)
 	tags := f.request("GET", "/v2/images/team/app/tags/list?n=1", nil, nil)
 	assertCode(t, tags, 200)
 	if !strings.Contains(tags.Body.String(), "latest") || tags.Header().Get("Link") == "" {

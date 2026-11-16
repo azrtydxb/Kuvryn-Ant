@@ -175,6 +175,22 @@ func (r *Registry) manifest(w http.ResponseWriter, req *http.Request, p identity
 	w.Header().Set("Content-Length", "0")
 	w.WriteHeader(201)
 }
+
+// indexServedForManifestAccept reports whether a stored image index or manifest list may answer a
+// request whose Accept names the matching single-image manifest type. Docker Hub does this, and
+// containers/image (podman, buildah, skopeo) asks for application/vnd.oci.image.manifest.v1+json
+// alone on its first attempt and does not retry after a 406, so refusing made every multi-arch
+// tag and digest pull through the mirror fail. The client reads the type from Content-Type.
+func indexServedForManifestAccept(media, accepted string) bool {
+	switch media {
+	case imageIndex:
+		return accepted == imageManifest
+	case dockerIndex:
+		return accepted == dockerManifest
+	}
+	return false
+}
+
 func accepts(raw, media string) bool {
 	if raw == "" {
 		return true
@@ -194,7 +210,7 @@ func accepts(raw, media string) bool {
 			}
 		}
 		rank := -1
-		if kind == media {
+		if kind == media || indexServedForManifestAccept(media, kind) {
 			rank = 2
 		} else if kind == "application/*" {
 			rank = 1
