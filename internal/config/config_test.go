@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLoad(t *testing.T) {
@@ -127,5 +128,32 @@ func TestResourceLimitsScaleWithCPUAndAreConfigurable(t *testing.T) {
 	}
 	if c.Database.MaxConns != 48 || c.UploadSlots != 12 || c.MaxRequests != 300 {
 		t.Fatalf("overrides ignored: %d %d %d", c.Database.MaxConns, c.UploadSlots, c.MaxRequests)
+	}
+}
+
+func TestRemoteSlotSettings(t *testing.T) {
+	key := filepath.Join(t.TempDir(), "key")
+	if err := os.WriteFile(key, make([]byte, 32), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	load := func(extra map[string]string) (Config, error) {
+		env := map[string]string{"ANT_DATABASE_URL": "postgres://ant:secret@localhost/ant", "ANT_ROOT_KEY_FILE": key}
+		for k, v := range extra {
+			env[k] = v
+		}
+		return Load(func(k string) string { return env[k] })
+	}
+	c, err := load(nil)
+	if err != nil || c.RemoteMaxInflight != 32 || c.RemoteAdmissionWait != 15*time.Second {
+		t.Fatalf("defaults: %d %v %v", c.RemoteMaxInflight, c.RemoteAdmissionWait, err)
+	}
+	c, err = load(map[string]string{"ANT_REMOTE_MAX_INFLIGHT": "48", "ANT_REMOTE_ADMISSION_WAIT": "30s"})
+	if err != nil || c.RemoteMaxInflight != 48 || c.RemoteAdmissionWait != 30*time.Second {
+		t.Fatalf("overrides: %d %v %v", c.RemoteMaxInflight, c.RemoteAdmissionWait, err)
+	}
+	for _, bad := range []map[string]string{{"ANT_REMOTE_MAX_INFLIGHT": "0"}, {"ANT_REMOTE_MAX_INFLIGHT": "65"}, {"ANT_REMOTE_MAX_INFLIGHT": "x"}, {"ANT_REMOTE_ADMISSION_WAIT": "500ms"}, {"ANT_REMOTE_ADMISSION_WAIT": "3m"}, {"ANT_REMOTE_ADMISSION_WAIT": "soon"}} {
+		if _, err = load(bad); err == nil {
+			t.Fatalf("accepted %v", bad)
+		}
 	}
 }

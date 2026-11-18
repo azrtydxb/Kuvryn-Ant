@@ -11,12 +11,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -35,7 +37,11 @@ var (
 	ErrCapacity = errors.New("remote runtime capacity exceeded")
 	// ErrTooLarge reports a metadata document above the in-memory cache bound; it
 	// is a capacity error whose caller may stream the document instead.
-	ErrTooLarge    = fmt.Errorf("%w: metadata document exceeds the cache bound", ErrCapacity)
+	ErrTooLarge = fmt.Errorf("%w: metadata document exceeds the cache bound", ErrCapacity)
+	// ErrBusy reports that every upstream slot stayed in use for longer than
+	// Options.AdmissionWait. It is load shedding, not an upstream failure: the
+	// caller should answer 503 with Retry-After and the client may retry.
+	ErrBusy        = fmt.Errorf("%w: every upstream slot is in use", ErrCapacity)
 	ErrUnavailable = errors.New("remote runtime unavailable")
 	ErrReloaded    = errors.New("remote source generation changed")
 	ErrPolicy      = errors.New("remote source policy denied request")
@@ -46,6 +52,11 @@ type Options struct {
 	MaxSources, MaxInflight, MaxCacheEntries int
 	MaxCacheBytes                            int64
 	MaxMetadataBytes                         int64
+	// AdmissionWait is how long a request waits for a free upstream slot
+	// (MaxInflight bounds them; default 32, at most 64, and it also sizes the
+	// connection limit per upstream host) before it is shed with ErrBusy.
+	// Default 15s, at most 2m.
+	AdmissionWait time.Duration
 }
 
 // Request intentionally has no arbitrary headers, absolute URL or query string.
@@ -136,6 +147,9 @@ type Manager struct {
 	closed            bool
 	done              chan struct{}
 	requests, network chan struct{}
+	waiting           atomic.Int64
+	busy              atomic.Uint64
+	lastBusyLog       atomic.Int64
 	closeOnce         sync.Once
 	health            *Health
 	cacheObserver     func(string, CacheOutcome)
@@ -152,7 +166,13 @@ func New(pool *pgxpool.Pool, instanceID string, keys *secrets.Keyring, o Options
 		o.MaxSources = 8
 	}
 	if o.MaxInflight == 0 {
-		o.MaxInflight = 16
+		o.MaxInflight = 32
+	}
+	if o.AdmissionWait == 0 {
+		o.AdmissionWait = 15 * time.Second
+	}
+	if o.AdmissionWait < 0 || o.AdmissionWait > 2*time.Minute {
+		return nil, ErrInput
 	}
 	if o.MaxCacheEntries == 0 {
 		o.MaxCacheEntries = 2048
@@ -195,6 +215,8 @@ func safeError(err error) error {
 		return ErrPolicy
 	case errors.Is(err, ErrTooLarge):
 		return ErrTooLarge
+	case errors.Is(err, ErrBusy):
+		return ErrBusy
 	case errors.Is(err, cache.ErrCapacity), errors.Is(err, ErrCapacity):
 		return ErrCapacity
 	case errors.Is(err, ErrReloaded):
@@ -248,22 +270,67 @@ func (r Request) identity() string {
 	}
 	return r.Path
 }
-func (m *Manager) admission(ctx context.Context) (func(), error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+
+// waitSlot takes one slot of ch, waiting at most Options.AdmissionWait. A slot
+// that stays unavailable for that long is shed with ErrBusy so the failure is
+// distinguishable from an upstream or database fault. The caller releases the
+// slot by receiving from ch.
+func (m *Manager) waitSlot(ctx context.Context, ch chan struct{}) error {
 	select {
 	case <-m.done:
-		return nil, ErrClosed
+		return ErrClosed
 	default:
 	}
 	select {
-	case m.requests <- struct{}{}:
-		return func() { <-m.requests }, nil
-	case <-m.done:
-		return nil, ErrClosed
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	case ch <- struct{}{}:
+		return nil
+	default:
 	}
+	m.waiting.Add(1)
+	defer m.waiting.Add(-1)
+	timer := time.NewTimer(m.options.AdmissionWait)
+	defer timer.Stop()
+	select {
+	case ch <- struct{}{}:
+		return nil
+	case <-m.done:
+		return ErrClosed
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		m.noteBusy()
+		return ErrBusy
+	}
+}
+
+// noteBusy counts a shed request and logs at most once every 30 seconds, so a
+// burst cannot flood the log.
+func (m *Manager) noteBusy() {
+	total := m.busy.Add(1)
+	now := time.Now().UnixNano()
+	last := m.lastBusyLog.Load()
+	if now-last >= int64(30*time.Second) && m.lastBusyLog.CompareAndSwap(last, now) {
+		slog.Warn("upstream slots exhausted; requests shed", "shed_total", total, "waiting", m.waiting.Load(), "max_inflight", m.options.MaxInflight, "admission_wait", m.options.AdmissionWait.String())
+	}
+}
+
+// WriteMetrics writes the slot gauges in Prometheus text format.
+func (m *Manager) WriteMetrics(w io.Writer) {
+	fmt.Fprintln(w, "# HELP ant_remote_slots_in_use Upstream exchange slots currently held.\n# TYPE ant_remote_slots_in_use gauge")
+	fmt.Fprintf(w, "ant_remote_slots_in_use{kind=\"network\"} %d\nant_remote_slots_in_use{kind=\"request\"} %d\n", len(m.network), len(m.requests))
+	fmt.Fprintln(w, "# HELP ant_remote_slots_max Upstream exchange slot capacity (ANT_REMOTE_MAX_INFLIGHT).\n# TYPE ant_remote_slots_max gauge")
+	fmt.Fprintf(w, "ant_remote_slots_max %d\n", m.options.MaxInflight)
+	fmt.Fprintln(w, "# HELP ant_remote_slot_waiters Requests waiting for an upstream slot.\n# TYPE ant_remote_slot_waiters gauge")
+	fmt.Fprintf(w, "ant_remote_slot_waiters %d\n", m.waiting.Load())
+	fmt.Fprintln(w, "# HELP ant_remote_slot_shed_total Requests shed because no upstream slot freed within the admission wait.\n# TYPE ant_remote_slot_shed_total counter")
+	fmt.Fprintf(w, "ant_remote_slot_shed_total %d\n", m.busy.Load())
+}
+
+func (m *Manager) admission(ctx context.Context) (func(), error) {
+	if err := m.waitSlot(ctx, m.requests); err != nil {
+		return nil, err
+	}
+	return func() { <-m.requests }, nil
 }
 func (m *Manager) drainLocked(e *entry) {
 	if e.retired && e.users == 0 && e.loads == 0 {
@@ -379,7 +446,7 @@ func (m *Manager) acquire(ctx context.Context, source string) (*entry, error) {
 			// not publish a stale generation under a newer revision's identity.
 			credentialRevision = secretRecord.Revision
 		}
-		fetcher, err := upstream.New(upstream.Config{Origin: record.Config.Origin, RedirectOrigins: withPublicOrigins(record.Config.RedirectOrigins), Credentials: headers, Roots: roots, AllowPrivate: record.Config.AllowPrivate})
+		fetcher, err := upstream.New(upstream.Config{Origin: record.Config.Origin, RedirectOrigins: withPublicOrigins(record.Config.RedirectOrigins), Credentials: headers, Roots: roots, AllowPrivate: record.Config.AllowPrivate, MaxConnsPerHost: m.options.MaxInflight})
 		for key := range headers {
 			delete(headers, key)
 		}
@@ -481,16 +548,7 @@ func operationContext(ctx context.Context, e *entry) (context.Context, context.C
 	stop := context.AfterFunc(e.ctx, cancel)
 	return bounded, func() { stop(); cancel() }
 }
-func (m *Manager) networkSlot(ctx context.Context) error {
-	select {
-	case m.network <- struct{}{}:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-m.done:
-		return ErrClosed
-	}
-}
+func (m *Manager) networkSlot(ctx context.Context) error { return m.waitSlot(ctx, m.network) }
 func requestHeaders(r Request, previous *cache.Value) http.Header {
 	h := http.Header{}
 	if r.Representation != "" {
@@ -516,11 +574,9 @@ func (m *Manager) Metadata(ctx context.Context, r Request) (cache.Value, error) 
 	if err := validate(r); err != nil {
 		return cache.Value{}, err
 	}
-	release, err := m.admission(ctx)
-	if err != nil {
-		return cache.Value{}, err
-	}
-	defer release()
+	// No admission slot is taken here. A cache hit needs none, and requests that
+	// coalesce onto one in-flight load must not each hold a slot while they wait
+	// for it: only the loader below takes a network slot, once per upstream fetch.
 	e, err := m.acquire(ctx, r.SourceID)
 	if err != nil {
 		return cache.Value{}, err

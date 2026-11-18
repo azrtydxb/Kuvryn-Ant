@@ -34,6 +34,9 @@ var (
 	// ErrTooLarge is an unavailable result for a remote metadata document that
 	// exceeds the cache bound; callers able to stream may retry with RemoteStream.
 	ErrTooLarge = fmt.Errorf("%w: remote metadata document too large to cache", ErrUnavailable)
+	// ErrBusy is an unavailable result for a remote read shed because every
+	// upstream slot stayed in use; the client may retry shortly (Retry-After).
+	ErrBusy = fmt.Errorf("%w: every upstream slot is in use", ErrUnavailable)
 )
 
 // Router and Storage are trusted configuration resolvers, not caller-provided

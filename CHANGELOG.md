@@ -11,6 +11,17 @@ No version has been tagged yet. This section summarizes the work on `main` so fa
 
 ### Fixed
 
+- **Pull-through 503s under bursts:** every metadata request held one of 16
+  hard-wired upstream slots for the whole request, so concurrent installs of
+  the same packages each took a slot while one fetch ran, cache hits queued
+  behind slow upstream fetches, and anything that waited longer than 5 seconds
+  failed with a bare 503. A slot is now held per upstream fetch, not per
+  request; the number of slots (`ANT_REMOTE_MAX_INFLIGHT`, default 32, also the
+  connection limit per upstream host) and the wait (`ANT_REMOTE_ADMISSION_WAIT`,
+  default 15s) are configurable; a request that still finds none is answered
+  `503` with `Retry-After` and counted in `ant_remote_slot_shed_total`. npm
+  distinguishes a client that left (499) from an outage, and `/metrics` now
+  reports the PostgreSQL pool (`ant_db_pool_*`).
 - **Pull-through cache misses stream:** OCI blobs, PyPI files and Cargo crates
   were fully downloaded and committed before the first byte reached the client,
   so a large cold layer or wheel exceeded client header and read timeouts. They

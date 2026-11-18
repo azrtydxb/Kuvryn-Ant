@@ -35,6 +35,8 @@ type Config struct {
 	Sleep                   func(context.Context, time.Duration) error
 	FailureThreshold        int
 	OpenFor                 time.Duration
+	// MaxConnsPerHost bounds simultaneous connections to one host (0: 8).
+	MaxConnsPerHost int
 }
 type Fetcher struct {
 	cfg      Config
@@ -146,6 +148,11 @@ func New(c Config) (*Fetcher, error) {
 	tr.MaxConnsPerHost = 8
 	tr.MaxIdleConns = 16
 	tr.MaxIdleConnsPerHost = 4
+	if c.MaxConnsPerHost > tr.MaxConnsPerHost {
+		tr.MaxConnsPerHost = c.MaxConnsPerHost
+		tr.MaxIdleConns = 2 * c.MaxConnsPerHost
+		tr.MaxIdleConnsPerHost = c.MaxConnsPerHost
+	}
 	f.client = &http.Client{Transport: userAgentTransport{tr}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	return f, nil
 }
