@@ -4,7 +4,7 @@ image:
   # Ant cannot serve its own image: it comes from ghcr (public package), published by
   # .github/workflows/release.yml. Pin the multi-arch index digest of the build you deploy.
   repository: ghcr.io/azrtydxb/kuvryn-ant
-  digest: sha256:dc6573057b5c004ef53389e8aab9b2ad31ba94dfc0d79b7d413f8222bb1899b3
+  digest: sha256:912afb323965e8b226b21a2af0820d330b3a6c9e045c3e648d8a2933141f9298
 persistence:
   size: 120Gi
   storageClass: longhorn
