@@ -315,7 +315,7 @@ func openArtifacts(ctx context.Context, pool *pgxpool.Pool, cfg config.Config) (
 	// and feeds serve local content only.
 	var remote *remoteruntime.Manager
 	if cfg.SecretKeys != nil {
-		remote, err = remoteruntime.New(pool, instance, cfg.SecretKeys, remoteruntime.Options{CAFiles: cfg.UpstreamCAs, MaxMetadataBytes: 24 << 20, MaxCacheBytes: 256 << 20})
+		remote, err = remoteruntime.New(pool, instance, cfg.SecretKeys, remoteruntime.Options{CAFiles: cfg.UpstreamCAs, MaxMetadataBytes: 24 << 20, MaxCacheBytes: 256 << 20, MaxInflight: cfg.RemoteMaxInflight, AdmissionWait: cfg.RemoteAdmissionWait})
 		if err != nil {
 			registry.Close()
 			stores.Close()

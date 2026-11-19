@@ -282,6 +282,10 @@ func executeOnce(ctx context.Context, logger *slog.Logger, args []string, output
 		observability.RegisterCollector("incoming_hooks", hookSvc.WriteMetrics)
 	}
 	observability.RegisterCollector("limits", limits.Default.WriteMetrics)
+	observability.RegisterCollector("db_pool", poolCollector(pool))
+	if artifacts != nil && artifacts.remote != nil {
+		observability.RegisterCollector("remote_slots", artifacts.remote.WriteMetrics)
+	}
 	observability.RegisterCollector("prewarm", prewarm.WriteMetrics)
 	observability.RegisterCollector("storage_pressure", retention.WriteMetrics)
 	observability.RegisterCollector("token_cleanup", maintenance.WriteTokenMetrics)

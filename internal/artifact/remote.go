@@ -139,6 +139,8 @@ func mapRemoteError(err error) error {
 		return ErrInput
 	case errors.Is(err, remoteruntime.ErrTooLarge):
 		return ErrTooLarge
+	case errors.Is(err, remoteruntime.ErrBusy):
+		return ErrBusy
 	case errors.As(err, new(*upstream.RateLimitError)):
 		var rl *upstream.RateLimitError
 		errors.As(err, &rl)

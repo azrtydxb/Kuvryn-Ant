@@ -49,6 +49,15 @@ This is the complete list of metrics the server emits. Types are Prometheus type
 | `ant_http_request_duration_seconds`     | histogram | `route`, `method`, `status_class` | Request duration; buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10 s            |
 | `ant_http_active_requests`              | gauge     | none                              | Requests currently executing                                                                   |
 | `ant_http_saturation_total`             | counter   | none                              | Requests rejected by the admission limit (`ANT_MAX_REQUESTS`; answered 503 with `Retry-After`) |
+| `ant_remote_slots_in_use`               | gauge     | `kind`                            | Upstream slots held (`request`, `network`)                                                     |
+| `ant_remote_slots_max`                  | gauge     | none                              | Upstream slot capacity                                                                         |
+| `ant_remote_slot_waiters`               | gauge     | none                              | Requests waiting for an upstream slot                                                          |
+| `ant_remote_slot_shed_total`            | counter   | none                              | Shed after the admission wait: `503` with `Retry-After`                                        |
+| `ant_db_pool_connections`               | gauge     | `state`                           | Pool connections: acquired, idle, constructing, total, max                                     |
+| `ant_db_pool_acquire_total`             | counter   | none                              | Pool connection acquisitions                                                                   |
+| `ant_db_pool_empty_acquire_total`       | counter   | none                              | Acquisitions that waited for a connection                                                      |
+| `ant_db_pool_wait_seconds_total`        | counter   | none                              | Time spent waiting for a connection                                                            |
+| `ant_db_pool_canceled_acquire_total`    | counter   | none                              | Acquisitions abandoned while waiting                                                           |
 | `ant_database_readiness_failures_total` | counter   | none                              | Failed PostgreSQL readiness checks (`/health/ready`)                                           |
 | `ant_data_dir_bytes_free`               | gauge     | none                              | Bytes available on the filesystem holding `ANT_DATA_DIR` (omitted if it cannot be inspected)   |
 | `ant_data_dir_bytes_total`              | gauge     | none                              | Capacity of that filesystem                                                                    |

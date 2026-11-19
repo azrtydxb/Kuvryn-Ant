@@ -66,6 +66,17 @@ func failure(w http.ResponseWriter, status int, msg string) {
 func failService(w http.ResponseWriter, e error) {
 	status, msg := 503, ""
 	switch {
+	case errors.Is(e, context.Canceled):
+		// The client went away; nothing reads this answer. 499 keeps it out of
+		// the 5xx counts that mean a server fault.
+		status, msg = 499, "client closed request"
+	case errors.Is(e, artifact.ErrBusy):
+		// Load shedding, not a fault: say so and tell the client to retry.
+		w.Header().Set("Retry-After", "2")
+		msg = "upstream capacity busy, retry shortly"
+	case errors.Is(e, context.DeadlineExceeded):
+		w.Header().Set("Retry-After", "2")
+		msg = "request timed out, retry shortly"
 	case errors.Is(e, artifact.ErrDenied):
 		status = 403
 	case errors.Is(e, artifact.ErrNotFound), errors.Is(e, blob.ErrNotFound):

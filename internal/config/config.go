@@ -38,6 +38,12 @@ type Config struct {
 	SecretKeys           *secrets.Keyring
 	ShutdownTimeout      time.Duration
 	MaxRequests          int
+	// RemoteMaxInflight bounds concurrent upstream exchanges (ANT_REMOTE_MAX_INFLIGHT,
+	// 1 to 64, default 32); RemoteAdmissionWait is how long a request waits for
+	// one before it is answered 503 with Retry-After (ANT_REMOTE_ADMISSION_WAIT,
+	// 1s to 2m, default 15s).
+	RemoteMaxInflight   int
+	RemoteAdmissionWait time.Duration
 	// UploadSlots bounds concurrent uploads per package format (0: scaled to CPU).
 	UploadSlots    int
 	Retention      Retention
@@ -55,7 +61,7 @@ type Config struct {
 }
 
 func Load(getenv func(string) string) (Config, error) {
-	c := Config{Listen: "127.0.0.1:8080", ShutdownTimeout: 15 * time.Second, MaxRequests: DefaultMaxRequests(runtime.GOMAXPROCS(0))}
+	c := Config{Listen: "127.0.0.1:8080", ShutdownTimeout: 15 * time.Second, MaxRequests: DefaultMaxRequests(runtime.GOMAXPROCS(0)), RemoteMaxInflight: 32, RemoteAdmissionWait: 15 * time.Second}
 	if v := getenv("ANT_LISTEN"); v != "" {
 		c.Listen = v
 	}
@@ -101,6 +107,18 @@ func Load(getenv func(string) string) (Config, error) {
 		c.MaxRequests, err = strconv.Atoi(v)
 		if err != nil || c.MaxRequests < 1 || c.MaxRequests > 4096 {
 			return Config{}, errors.New("ANT_MAX_REQUESTS must be between 1 and 4096")
+		}
+	}
+	if v := getenv("ANT_REMOTE_MAX_INFLIGHT"); v != "" {
+		c.RemoteMaxInflight, err = strconv.Atoi(v)
+		if err != nil || c.RemoteMaxInflight < 1 || c.RemoteMaxInflight > 64 {
+			return Config{}, errors.New("ANT_REMOTE_MAX_INFLIGHT must be between 1 and 64")
+		}
+	}
+	if v := getenv("ANT_REMOTE_ADMISSION_WAIT"); v != "" {
+		c.RemoteAdmissionWait, err = time.ParseDuration(v)
+		if err != nil || c.RemoteAdmissionWait < time.Second || c.RemoteAdmissionWait > 2*time.Minute {
+			return Config{}, errors.New("ANT_REMOTE_ADMISSION_WAIT must be between 1s and 2m")
 		}
 	}
 	c.OCIMirror, err = loadOCIMirror(getenv)
